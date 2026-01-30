@@ -22,10 +22,6 @@ import {
 } from "@tabler/icons-react";
 import { useData } from "../context/DataContext";
 
-/**
- * Definition der Skill-Level.
- * Klick-Reihenfolge: 0 -> -1 (N/A) -> 25 -> 50 -> 75 -> 100
- */
 const LEVELS = [
   {
     value: 0,
@@ -109,6 +105,13 @@ export const SkillMatrix: React.FC = () => {
     getAssessment,
   } = useData();
   const [legendOpened, setLegendOpened] = useState(false);
+
+  // States für das Zeilen- und Spalten-Highlighting
+  const [hoveredSkillId, setHoveredSkillId] = useState<string | null>(null);
+  const [hoveredEmployeeId, setHoveredEmployeeId] = useState<string | null>(
+    null,
+  );
+
   const [collapsedStates, setCollapsedStates] = useState<
     Record<string, boolean>
   >(() => {
@@ -123,22 +126,20 @@ export const SkillMatrix: React.FC = () => {
     );
   }, [collapsedStates]);
 
-  const toggleItem = (id: string) => {
+  const toggleItem = (id: string) =>
     setCollapsedStates((prev) => ({ ...prev, [id]: !prev[id] }));
-  };
 
   const handleGlobalToggle = () => {
     const totalItems = categories.length + subcategories.length;
     const isEverythingCollapsed =
       Object.values(collapsedStates).filter((v) => v).length >= totalItems;
-    if (isEverythingCollapsed) {
-      setCollapsedStates({});
-    } else {
-      const allIds: Record<string, boolean> = {};
-      categories.forEach((c) => (allIds[c.id!] = true));
-      subcategories.forEach((s) => (allIds[s.id!] = true));
-      setCollapsedStates(allIds);
-    }
+    setCollapsedStates(
+      isEverythingCollapsed
+        ? {}
+        : Object.fromEntries(
+            [...categories, ...subcategories].map((x) => [x.id!, true]),
+          ),
+    );
   };
 
   const calculateAverage = (
@@ -146,10 +147,9 @@ export const SkillMatrix: React.FC = () => {
     specificEmployeeId?: string,
   ) => {
     if (skillIds.length === 0 || employees.length === 0) return 0;
-    let totalScore = 0;
-    let relevantCount = 0;
-    let hasAnyRelevant = false;
-
+    let totalScore = 0,
+      relevantCount = 0,
+      hasAnyRelevant = false;
     const targetEmps = specificEmployeeId
       ? employees.filter((e) => e.id === specificEmployeeId)
       : employees;
@@ -164,7 +164,6 @@ export const SkillMatrix: React.FC = () => {
         }
       });
     });
-
     if (specificEmployeeId && !hasAnyRelevant) return null;
     return relevantCount === 0 ? 0 : Math.round(totalScore / relevantCount);
   };
@@ -229,6 +228,7 @@ export const SkillMatrix: React.FC = () => {
               minWidth: "100%",
             }}
           >
+            {/* Header */}
             <div
               style={{
                 display: "flex",
@@ -264,6 +264,7 @@ export const SkillMatrix: React.FC = () => {
                     skills.map((s) => s.id!),
                     emp.id,
                   );
+                  const isColumnHovered = hoveredEmployeeId === emp.id;
                   return (
                     <div
                       key={emp.id}
@@ -277,6 +278,10 @@ export const SkillMatrix: React.FC = () => {
                         paddingBottom: "12px",
                         borderBottom: "2px solid #dee2e6",
                         borderRight: "1px solid #f1f3f5",
+                        backgroundColor: isColumnHovered
+                          ? "#f1f3f5"
+                          : "transparent",
+                        transition: "background-color 0.15s ease",
                       }}
                     >
                       <Badge
@@ -289,6 +294,7 @@ export const SkillMatrix: React.FC = () => {
                       </Badge>
                       <Text
                         size="xs"
+                        fw={isColumnHovered ? 700 : 400}
                         style={{
                           writingMode: "vertical-rl",
                           transform: "rotate(180deg)",
@@ -303,6 +309,7 @@ export const SkillMatrix: React.FC = () => {
               </div>
             </div>
 
+            {/* Matrix Daten */}
             {categories.map((cat) => {
               const subIds = subcategories
                 .filter((s) => s.categoryId === cat.id)
@@ -368,24 +375,31 @@ export const SkillMatrix: React.FC = () => {
                         {calculateAverage(catSkills)}%
                       </Badge>
                     </div>
-                    {employees.map((emp) => {
-                      const avg = calculateAverage(catSkills, emp.id);
-                      return (
-                        <div
-                          key={emp.id}
-                          style={{
-                            width: cellSize,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                          }}
+                    {employees.map((emp) => (
+                      <div
+                        key={emp.id}
+                        style={{
+                          width: cellSize,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          backgroundColor:
+                            hoveredEmployeeId === emp.id
+                              ? "#f1f3f5"
+                              : "transparent",
+                        }}
+                      >
+                        <Text
+                          fw={700}
+                          size="xs"
+                          c={getScoreColor(calculateAverage(catSkills, emp.id))}
                         >
-                          <Text fw={700} size="xs" c={getScoreColor(avg)}>
-                            {avg === null ? "N/A" : `${avg}%`}
-                          </Text>
-                        </div>
-                      );
-                    })}
+                          {calculateAverage(catSkills, emp.id) === null
+                            ? "N/A"
+                            : `${calculateAverage(catSkills, emp.id)}%`}
+                        </Text>
+                      </div>
+                    ))}
                   </div>
 
                   {!isCatCollapsed &&
@@ -455,127 +469,161 @@ export const SkillMatrix: React.FC = () => {
                                   {calculateAverage(subSkills)}%
                                 </Badge>
                               </div>
-                              {employees.map((emp) => {
-                                const avg = calculateAverage(subSkills, emp.id);
-                                return (
-                                  <div
-                                    key={emp.id}
-                                    style={{
-                                      width: cellSize,
-                                      display: "flex",
-                                      alignItems: "center",
-                                      justifyContent: "center",
-                                    }}
+                              {employees.map((emp) => (
+                                <div
+                                  key={emp.id}
+                                  style={{
+                                    width: cellSize,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    backgroundColor:
+                                      hoveredEmployeeId === emp.id
+                                        ? "#f8f9fa"
+                                        : "transparent",
+                                  }}
+                                >
+                                  <Text
+                                    size="xs"
+                                    fw={500}
+                                    c={getScoreColor(
+                                      calculateAverage(subSkills, emp.id),
+                                    )}
                                   >
-                                    <Text
-                                      size="xs"
-                                      fw={500}
-                                      c={getScoreColor(avg)}
-                                    >
-                                      {avg === null ? "N/A" : `${avg}%`}
-                                    </Text>
-                                  </div>
-                                );
-                              })}
+                                    {calculateAverage(subSkills, emp.id) ===
+                                    null
+                                      ? "N/A"
+                                      : `${calculateAverage(subSkills, emp.id)}%`}
+                                  </Text>
+                                </div>
+                              ))}
                             </div>
 
                             {!isSubCollapsed &&
                               skills
                                 .filter((s) => s.subCategoryId === sub.id)
-                                .map((skill) => (
-                                  <div
-                                    key={skill.id}
-                                    style={{ display: "flex" }}
-                                  >
+                                .map((skill) => {
+                                  const isRowHovered =
+                                    hoveredSkillId === skill.id;
+                                  return (
                                     <div
-                                      style={{
-                                        width: labelWidth,
-                                        padding: "6px 12px 6px 44px",
-                                        position: "sticky",
-                                        left: 0,
-                                        zIndex: 5,
-                                        backgroundColor: "white",
-                                        borderRight: "1px solid #dee2e6",
-                                        borderBottom: "1px solid #f8f9fa",
-                                        display: "flex",
-                                        alignItems: "center",
-                                        justifyContent: "space-between",
-                                      }}
+                                      key={skill.id}
+                                      style={{ display: "flex" }}
                                     >
-                                      <Text
-                                        size="sm"
-                                        truncate
-                                        style={{ flex: 1 }}
+                                      <div
+                                        style={{
+                                          width: labelWidth,
+                                          padding: "6px 12px 6px 44px",
+                                          position: "sticky",
+                                          left: 0,
+                                          zIndex: 5,
+                                          backgroundColor: isRowHovered
+                                            ? "#f1f3f5"
+                                            : "white",
+                                          borderRight: "1px solid #dee2e6",
+                                          borderBottom: "1px solid #f8f9fa",
+                                          display: "flex",
+                                          alignItems: "center",
+                                          justifyContent: "space-between",
+                                          transition:
+                                            "background-color 0.15s ease",
+                                        }}
                                       >
-                                        {skill.name}
-                                      </Text>
-                                      <Group gap={8}>
-                                        <InfoTooltip
-                                          title={skill.name}
-                                          description={skill.description}
-                                        />
                                         <Text
-                                          style={{ fontSize: "10px" }}
-                                          c={getScoreColor(
-                                            calculateAverage([skill.id!]),
-                                          )}
+                                          size="sm"
+                                          fw={isRowHovered ? 700 : 400}
+                                          truncate
+                                          style={{ flex: 1 }}
                                         >
-                                          {calculateAverage([skill.id!])}%
+                                          {skill.name}
                                         </Text>
-                                      </Group>
-                                    </div>
-                                    {employees.map((emp) => {
-                                      const val =
-                                        getAssessment(emp.id!, skill.id!)
-                                          ?.level ?? 0;
-                                      const obj = LEVELS.find(
-                                        (l) => l.value === val,
-                                      );
-                                      return (
-                                        <div
-                                          key={`${emp.id}-${skill.id}`}
-                                          style={{
-                                            width: cellSize,
-                                            height: 36,
-                                            display: "flex",
-                                            alignItems: "center",
-                                            justifyContent: "center",
-                                            borderBottom: "1px solid #f8f9fa",
-                                            borderRight: "1px solid #f8f9fa",
-                                          }}
-                                        >
-                                          <Badge
-                                            color={
-                                              val === -1 ? "gray.3" : obj?.color
-                                            }
-                                            variant={
-                                              val <= 0 ? "light" : "filled"
-                                            }
-                                            onClick={() =>
-                                              handleLevelChange(
-                                                emp.id!,
-                                                skill.id!,
-                                                val,
-                                              )
-                                            }
+                                        <Group gap={8}>
+                                          <InfoTooltip
+                                            title={skill.name}
+                                            description={skill.description}
+                                          />
+                                          <Text
+                                            style={{ fontSize: "10px" }}
+                                            c={getScoreColor(
+                                              calculateAverage([skill.id!]),
+                                            )}
+                                          >
+                                            {calculateAverage([skill.id!])}%
+                                          </Text>
+                                        </Group>
+                                      </div>
+                                      {employees.map((emp) => {
+                                        const val =
+                                          getAssessment(emp.id!, skill.id!)
+                                            ?.level ?? 0;
+                                        const obj = LEVELS.find(
+                                          (l) => l.value === val,
+                                        );
+                                        const isColumnHovered =
+                                          hoveredEmployeeId === emp.id;
+
+                                        return (
+                                          <div
+                                            key={`${emp.id}-${skill.id}`}
+                                            onMouseEnter={() => {
+                                              setHoveredSkillId(skill.id!);
+                                              setHoveredEmployeeId(emp.id!);
+                                            }}
+                                            onMouseLeave={() => {
+                                              setHoveredSkillId(null);
+                                              setHoveredEmployeeId(null);
+                                            }}
                                             style={{
-                                              cursor: "pointer",
-                                              width: "80%",
-                                              fontSize: "9px",
-                                              opacity: val === -1 ? 0.6 : 1,
-                                              border:
-                                                val === -1
-                                                  ? "1px dashed #ced4da"
-                                                  : "none",
+                                              width: cellSize,
+                                              height: 36,
+                                              display: "flex",
+                                              alignItems: "center",
+                                              justifyContent: "center",
+                                              borderBottom: "1px solid #f8f9fa",
+                                              borderRight: "1px solid #f8f9fa",
+                                              backgroundColor:
+                                                isRowHovered || isColumnHovered
+                                                  ? "#f8f9fa"
+                                                  : "transparent",
+                                              transition:
+                                                "background-color 0.15s ease",
                                             }}
                                           >
-                                            {obj?.label}
-                                          </Badge>
-                                        </div>
-                                      );
-                                    })}
-                                  </div>
-                                ))}
+                                            <Badge
+                                              color={
+                                                val === -1
+                                                  ? "gray.3"
+                                                  : obj?.color
+                                              }
+                                              variant={
+                                                val <= 0 ? "light" : "filled"
+                                              }
+                                              onClick={() =>
+                                                handleLevelChange(
+                                                  emp.id!,
+                                                  skill.id!,
+                                                  val,
+                                                )
+                                              }
+                                              style={{
+                                                cursor: "pointer",
+                                                width: "80%",
+                                                fontSize: "9px",
+                                                opacity: val === -1 ? 0.6 : 1,
+                                                border:
+                                                  val === -1
+                                                    ? "1px dashed #ced4da"
+                                                    : "none",
+                                              }}
+                                            >
+                                              {obj?.label}
+                                            </Badge>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  );
+                                })}
                           </div>
                         );
                       })}
@@ -655,8 +703,7 @@ export const SkillMatrix: React.FC = () => {
                         Nicht relevant (N/A)
                       </Text>
                       <Text size="xs" c="dimmed">
-                        Fähigkeit wird für die Rolle nicht benötigt und
-                        ignoriert.
+                        Wird bei der Berechnung ignoriert.
                       </Text>
                     </Box>
                   </Group>
