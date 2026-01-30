@@ -57,6 +57,11 @@ interface DataContextType {
     skillId: string,
     level: 0 | 25 | 50 | 75 | 100,
   ) => Promise<void>;
+  setTargetLevel: (
+    employeeId: string,
+    skillId: string,
+    targetLevel: number | undefined,
+  ) => Promise<void>;
   getAssessmentsByEmployee: (employeeId: string) => Assessment[];
   getAssessment: (
     employeeId: string,
@@ -288,6 +293,20 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
     }
   };
 
+  const setTargetLevel = async (
+    employeeId: string,
+    skillId: string,
+    targetLevel: number | undefined,
+  ) => {
+    try {
+      await db.setTargetLevel(employeeId, skillId, targetLevel);
+      await refreshAllData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to set target level");
+      throw err;
+    }
+  };
+
   const getAssessmentsByEmployee = (employeeId: string): Assessment[] => {
     return assessments.filter((a) => a.employeeId === employeeId);
   };
@@ -355,6 +374,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
         deleteSkill,
         getSkillsBySubCategory,
         setAssessment,
+        setTargetLevel,
         getAssessmentsByEmployee,
         getAssessment,
         exportData,

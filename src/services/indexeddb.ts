@@ -11,18 +11,21 @@ export interface Employee {
 export interface Category {
   id?: string;
   name: string;
+  description?: string;
 }
 
 export interface SubCategory {
   id?: string;
   categoryId: string;
   name: string;
+  description?: string;
 }
 
 export interface Skill {
   id?: string;
   subCategoryId: string;
   name: string;
+  description?: string;
 }
 
 export interface Assessment {
@@ -30,6 +33,7 @@ export interface Assessment {
   employeeId: string;
   skillId: string;
   level: 0 | 25 | 50 | 75 | 100;
+  targetLevel?: number; // Individuelles Soll pro Mitarbeiter/Skill
 }
 
 class IndexedDBService {
@@ -266,7 +270,33 @@ class IndexedDBService {
     level: 0 | 25 | 50 | 75 | 100,
   ): Promise<void> {
     const id = `${employeeId}-${skillId}`;
-    const data: Assessment = { id, employeeId, skillId, level };
+    // Preserve existing targetLevel if present
+    const existing = await this.getAssessment(employeeId, skillId);
+    const data: Assessment = {
+      id,
+      employeeId,
+      skillId,
+      level,
+      targetLevel: existing?.targetLevel
+    };
+    await this.execute("assessments", "put", data);
+  }
+
+  async setTargetLevel(
+    employeeId: string,
+    skillId: string,
+    targetLevel: number | undefined,
+  ): Promise<void> {
+    const id = `${employeeId}-${skillId}`;
+    // Get existing or create new
+    const existing = await this.getAssessment(employeeId, skillId);
+    const data: Assessment = {
+      id,
+      employeeId,
+      skillId,
+      level: existing?.level ?? 0,
+      targetLevel
+    };
     await this.execute("assessments", "put", data);
   }
 

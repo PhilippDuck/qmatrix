@@ -6,7 +6,7 @@ import { getScoreColor } from "../../utils/skillCalculations";
 import { InfoTooltip } from "../shared/InfoTooltip";
 import { BulkLevelMenu } from "./BulkLevelMenu";
 import { MatrixSubcategoryRow } from "./MatrixSubcategoryRow";
-import { Employee, Category, SubCategory, Skill } from "../../context/DataContext";
+import { Employee, Category, SubCategory, Skill, Assessment } from "../../context/DataContext";
 
 interface MatrixCategoryRowProps {
   category: Category;
@@ -21,9 +21,10 @@ interface MatrixCategoryRowProps {
   onSkillHover: (skillId: string | null) => void;
   onEmployeeHover: (employeeId: string | null) => void;
   calculateAverage: (skillIds: string[], employeeId?: string) => number | null;
-  getAssessmentLevel: (employeeId: string, skillId: string) => number;
+  getAssessment: (employeeId: string, skillId: string) => Assessment | undefined;
   onBulkSetLevel: (employeeId: string, skillIds: string[], level: number) => void;
-  onLevelChange: (employeeId: string, skillId: string, currentLevel: number) => void;
+  onLevelChange: (employeeId: string, skillId: string, newLevel: number) => void;
+  onTargetLevelChange: (employeeId: string, skillId: string, targetLevel: number | undefined) => void;
 }
 
 export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = ({
@@ -39,9 +40,10 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = ({
   onSkillHover,
   onEmployeeHover,
   calculateAverage,
-  getAssessmentLevel,
+  getAssessment,
   onBulkSetLevel,
   onLevelChange,
+  onTargetLevelChange,
 }) => {
   const { cellSize, labelWidth } = MATRIX_LAYOUT;
   const isCatCollapsed = collapsedStates[category.id!];
@@ -153,9 +155,10 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = ({
               onSkillHover={onSkillHover}
               onEmployeeHover={onEmployeeHover}
               calculateAverage={calculateAverage}
-              getAssessmentLevel={getAssessmentLevel}
+              getAssessment={getAssessment}
               onBulkSetLevel={onBulkSetLevel}
               onLevelChange={onLevelChange}
+              onTargetLevelChange={onTargetLevelChange}
             />
           );
         })}

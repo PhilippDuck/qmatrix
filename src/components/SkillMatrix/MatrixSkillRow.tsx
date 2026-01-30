@@ -4,7 +4,7 @@ import { MATRIX_LAYOUT } from "../../constants/skillLevels";
 import { getScoreColor } from "../../utils/skillCalculations";
 import { InfoTooltip } from "../shared/InfoTooltip";
 import { SkillCell } from "./SkillCell";
-import { Employee, Skill } from "../../context/DataContext";
+import { Employee, Skill, Assessment } from "../../context/DataContext";
 
 interface MatrixSkillRowProps {
   skill: Skill;
@@ -13,9 +13,10 @@ interface MatrixSkillRowProps {
   hoveredEmployeeId: string | null;
   onSkillHover: (skillId: string | null) => void;
   onEmployeeHover: (employeeId: string | null) => void;
-  getAssessmentLevel: (employeeId: string, skillId: string) => number;
+  getAssessment: (employeeId: string, skillId: string) => Assessment | undefined;
   calculateSkillAverage: (skillId: string) => number;
-  onLevelChange: (employeeId: string, skillId: string, currentLevel: number) => void;
+  onLevelChange: (employeeId: string, skillId: string, newLevel: number) => void;
+  onTargetLevelChange: (employeeId: string, skillId: string, targetLevel: number | undefined) => void;
 }
 
 export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = ({
@@ -25,9 +26,10 @@ export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = ({
   hoveredEmployeeId,
   onSkillHover,
   onEmployeeHover,
-  getAssessmentLevel,
+  getAssessment,
   calculateSkillAverage,
   onLevelChange,
+  onTargetLevelChange,
 }) => {
   const { labelWidth } = MATRIX_LAYOUT;
   const isRowHovered = hoveredSkillId === skill.id;
@@ -64,14 +66,17 @@ export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = ({
         </Group>
       </div>
       {employees.map((emp) => {
-        const level = getAssessmentLevel(emp.id!, skill.id!);
+        const assessment = getAssessment(emp.id!, skill.id!);
+        const level = assessment?.level ?? 0;
         return (
           <SkillCell
             key={`${emp.id}-${skill.id}`}
             level={level}
+            targetLevel={assessment?.targetLevel}
             isRowHovered={isRowHovered}
             isColumnHovered={hoveredEmployeeId === emp.id}
-            onLevelChange={() => onLevelChange(emp.id!, skill.id!, level)}
+            onLevelChange={(newLevel) => onLevelChange(emp.id!, skill.id!, newLevel)}
+            onTargetLevelChange={(target) => onTargetLevelChange(emp.id!, skill.id!, target)}
             onMouseEnter={() => {
               onSkillHover(skill.id!);
               onEmployeeHover(emp.id!);

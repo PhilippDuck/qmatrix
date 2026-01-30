@@ -6,7 +6,7 @@ import { getScoreColor } from "../../utils/skillCalculations";
 import { InfoTooltip } from "../shared/InfoTooltip";
 import { BulkLevelMenu } from "./BulkLevelMenu";
 import { MatrixSkillRow } from "./MatrixSkillRow";
-import { Employee, SubCategory, Skill } from "../../context/DataContext";
+import { Employee, SubCategory, Skill, Assessment } from "../../context/DataContext";
 
 interface MatrixSubcategoryRowProps {
   subcategory: SubCategory;
@@ -19,9 +19,10 @@ interface MatrixSubcategoryRowProps {
   onSkillHover: (skillId: string | null) => void;
   onEmployeeHover: (employeeId: string | null) => void;
   calculateAverage: (skillIds: string[], employeeId?: string) => number | null;
-  getAssessmentLevel: (employeeId: string, skillId: string) => number;
+  getAssessment: (employeeId: string, skillId: string) => Assessment | undefined;
   onBulkSetLevel: (employeeId: string, skillIds: string[], level: number) => void;
-  onLevelChange: (employeeId: string, skillId: string, currentLevel: number) => void;
+  onLevelChange: (employeeId: string, skillId: string, newLevel: number) => void;
+  onTargetLevelChange: (employeeId: string, skillId: string, targetLevel: number | undefined) => void;
 }
 
 export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
@@ -35,9 +36,10 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
   onSkillHover,
   onEmployeeHover,
   calculateAverage,
-  getAssessmentLevel,
+  getAssessment,
   onBulkSetLevel,
   onLevelChange,
+  onTargetLevelChange,
 }) => {
   const { cellSize, labelWidth } = MATRIX_LAYOUT;
   const subSkillIds = skills.map((s) => s.id!);
@@ -130,11 +132,12 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
             hoveredEmployeeId={hoveredEmployeeId}
             onSkillHover={onSkillHover}
             onEmployeeHover={onEmployeeHover}
-            getAssessmentLevel={getAssessmentLevel}
+            getAssessment={getAssessment}
             calculateSkillAverage={(skillId) =>
               calculateAverage([skillId]) ?? 0
             }
             onLevelChange={onLevelChange}
+            onTargetLevelChange={onTargetLevelChange}
           />
         ))}
     </div>

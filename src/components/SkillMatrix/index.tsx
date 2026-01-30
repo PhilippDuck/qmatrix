@@ -15,7 +15,6 @@ import {
   IconUserPlus,
 } from "@tabler/icons-react";
 import { useData } from "../../context/DataContext";
-import { getNextLevel } from "../../utils/skillCalculations";
 import { EmployeeDrawer } from "../shared/EmployeeDrawer";
 import { EmptyState } from "./EmptyState";
 import { MatrixHeader } from "./MatrixHeader";
@@ -30,6 +29,7 @@ export const SkillMatrix: React.FC = () => {
     subcategories,
     skills,
     setAssessment,
+    setTargetLevel,
     getAssessment,
     addEmployee,
     addSkill,
@@ -129,13 +129,12 @@ export const SkillMatrix: React.FC = () => {
     }
   };
 
-  const handleLevelChange = async (empId: string, sId: string, cur: number) => {
-    const nextLevel = getNextLevel(cur);
-    await setAssessment(empId, sId, nextLevel as any);
+  const handleLevelChange = async (empId: string, sId: string, newLevel: number) => {
+    await setAssessment(empId, sId, newLevel as any);
   };
 
-  const getAssessmentLevel = (employeeId: string, skillId: string): number => {
-    return getAssessment(employeeId, skillId)?.level ?? 0;
+  const handleTargetLevelChange = async (empId: string, sId: string, target: number | undefined) => {
+    await setTargetLevel(empId, sId, target);
   };
 
   const calculateEmployeeAverage = (employeeId: string): number | null => {
@@ -257,9 +256,10 @@ export const SkillMatrix: React.FC = () => {
                 onSkillHover={setHoveredSkillId}
                 onEmployeeHover={setHoveredEmployeeId}
                 calculateAverage={calculateAverage}
-                getAssessmentLevel={getAssessmentLevel}
+                getAssessment={getAssessment}
                 onBulkSetLevel={bulkSetLevel}
                 onLevelChange={handleLevelChange}
+                onTargetLevelChange={handleTargetLevelChange}
               />
             ))}
           </div>
