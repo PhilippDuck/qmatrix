@@ -58,5 +58,5 @@ export const LEVELS: SkillLevel[] = [
 export const MATRIX_LAYOUT = {
   cellSize: 85,
   labelWidth: 260,
-  headerHeight: 170,
+  headerHeight: 140,
 } as const;

@@ -1,6 +1,5 @@
 import React from "react";
-import { Box, ActionIcon, Badge, Text } from "@mantine/core";
-import { IconSearch } from "@tabler/icons-react";
+import { Badge, Text } from "@mantine/core";
 import { MATRIX_LAYOUT } from "../../constants/skillLevels";
 import { getScoreColor } from "../../utils/skillCalculations";
 import { Employee } from "../../context/DataContext";
@@ -81,21 +80,6 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
                 transition: "background-color 0.15s ease",
               }}
             >
-              <Box
-                style={{
-                  height: "28px",
-                  visibility: isColumnHovered || isFocused ? "visible" : "hidden",
-                }}
-              >
-                <ActionIcon
-                  variant={isFocused ? "filled" : "light"}
-                  color={isFocused ? "blue" : "gray"}
-                  size="sm"
-                  onClick={() => onFocusChange(isFocused ? null : emp.id!)}
-                >
-                  <IconSearch size={14} />
-                </ActionIcon>
-              </Box>
               <Badge
                 size="xs"
                 variant="outline"
@@ -107,10 +91,13 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
               <Text
                 size="xs"
                 fw={isColumnHovered || isFocused ? 700 : 400}
+                onClick={() => onFocusChange(isFocused ? null : emp.id!)}
                 style={{
                   writingMode: "vertical-rl",
                   transform: "rotate(180deg)",
                   height: "80px",
+                  cursor: "pointer",
+                  color: isFocused ? "var(--mantine-color-blue-filled)" : undefined,
                 }}
               >
                 {emp.name}
