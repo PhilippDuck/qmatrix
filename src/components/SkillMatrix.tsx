@@ -13,6 +13,7 @@ import {
   Title,
   Tooltip,
   Menu,
+  Center,
 } from "@mantine/core";
 import {
   IconInfoCircle,
@@ -22,6 +23,7 @@ import {
   IconSearch,
   IconX,
   IconCheck,
+  IconDatabaseOff,
 } from "@tabler/icons-react";
 import { useData } from "../context/DataContext";
 
@@ -181,9 +183,6 @@ export const SkillMatrix: React.FC = () => {
     return relevantCount === 0 ? 0 : Math.round(totalScore / relevantCount);
   };
 
-  /**
-   * Setzt alle Skills einer Gruppe auf einen bestimmten Wert.
-   */
   const bulkSetLevel = async (
     empId: string,
     skillIds: string[],
@@ -212,6 +211,37 @@ export const SkillMatrix: React.FC = () => {
   const cellSize = 85;
   const labelWidth = 260;
   const headerHeight = 170;
+
+  // --- EMPTY STATE PRÜFUNG ---
+  if (employees.length === 0 || categories.length === 0) {
+    return (
+      <Box p="xl">
+        <Title order={2} mb="lg">
+          Qualifizierungsmatrix
+        </Title>
+        <Card
+          withBorder
+          radius="md"
+          p={50}
+          style={{ backgroundColor: "#fcfcfc", borderStyle: "dashed" }}
+        >
+          <Center>
+            <Stack align="center" gap="xs">
+              <IconDatabaseOff size={50} color="#dee2e6" stroke={1.5} />
+              <Text fw={700} size="lg" c="dimmed">
+                Keine Daten verfügbar
+              </Text>
+              <Text size="sm" c="dimmed" ta="center" style={{ maxWidth: 400 }}>
+                Damit die Matrix angezeigt werden kann, müssen zuerst
+                **Mitarbeiter** und **Kategorien/Skills** in den entsprechenden
+                Menüpunkten angelegt werden.
+              </Text>
+            </Stack>
+          </Center>
+        </Card>
+      </Box>
+    );
+  }
 
   return (
     <Box
@@ -266,7 +296,7 @@ export const SkillMatrix: React.FC = () => {
               minWidth: "100%",
             }}
           >
-            {/* Header mit Spalten-Highlighting */}
+            {/* Header */}
             <div
               style={{
                 display: "flex",
@@ -749,7 +779,6 @@ export const SkillMatrix: React.FC = () => {
         </div>
       </Card>
 
-      {/* Legende */}
       <Box mt="md">
         <Button
           variant="subtle"

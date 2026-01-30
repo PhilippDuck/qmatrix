@@ -13,6 +13,7 @@ import {
   ActionIcon,
   Tooltip,
   Text,
+  Badge,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import {
@@ -33,6 +34,9 @@ import "@mantine/core/styles.css";
 
 const theme = createTheme({});
 
+// Definiere die Versionsnummer an zentraler Stelle
+const APP_VERSION = "v1.0.4";
+
 function AppContent() {
   const { loading } = useData();
   const [activeTab, setActiveTab] = useState("matrix");
@@ -45,10 +49,6 @@ function AppContent() {
   useEffect(() => {
     const loadSidebarState = async () => {
       try {
-        // Wir nutzen den localStorage als schnellen Fallback,
-        // da IndexedDB für UI-Layout-States (Open/Closed) oft zu träge ist.
-        // Wenn du es absolut in IndexedDB willst, müsste dein DataProvider
-        // eine Methode wie 'getSettings' bereitstellen.
         const saved = localStorage.getItem("sidebar-opened");
         if (saved !== null) {
           setDesktopOpened(JSON.parse(saved));
@@ -65,7 +65,6 @@ function AppContent() {
     localStorage.setItem("sidebar-opened", JSON.stringify(desktopOpened));
   }, [desktopOpened]);
 
-  // Korrigierte Funktion ohne TypeScript-Syntax für .jsx
   const toggleDesktop = () => setDesktopOpened((o) => !o);
 
   if (loading) {
@@ -122,18 +121,32 @@ function AppContent() {
               )}
             </ActionIcon>
 
-            <Title
-              order={4}
-              c="blue"
-              style={{
-                letterSpacing: -0.5,
-                fontSize: desktopOpened ? "1.1rem" : "0.9rem",
-                transition: "all 0.2s ease",
-                userSelect: "none",
-              }}
-            >
-              {desktopOpened ? "Skill Management" : "SMS"}
-            </Title>
+            <Group gap="xs">
+              <Title
+                order={4}
+                c="blue"
+                style={{
+                  letterSpacing: -0.5,
+                  fontSize: desktopOpened ? "1.1rem" : "0.9rem",
+                  transition: "all 0.2s ease",
+                  userSelect: "none",
+                }}
+              >
+                {desktopOpened ? "Q-Matrix" : "QM"}
+              </Title>
+
+              {/* Versions-Badge */}
+              {desktopOpened && (
+                <Badge
+                  variant="subtle"
+                  color="gray"
+                  size="xs"
+                  styles={{ root: { textTransform: "none", opacity: 0.7 } }}
+                >
+                  {APP_VERSION}
+                </Badge>
+              )}
+            </Group>
           </Group>
         </Group>
       </AppShell.Header>
@@ -182,7 +195,6 @@ function AppContent() {
                   height: 40,
                   transition: "all 0.15s ease",
                 }}
-                // Hover-Animation für das Icon
                 styles={{
                   root: {
                     "&:hover": {
