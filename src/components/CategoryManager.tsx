@@ -3,6 +3,7 @@ import {
   Table,
   Button,
   TextInput,
+  Textarea,
   Group,
   ActionIcon,
   Title,
@@ -13,6 +14,7 @@ import {
   Divider,
   Box,
   Badge,
+  Tooltip,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import {
@@ -22,6 +24,7 @@ import {
   IconCategory,
   IconArrowRight,
   IconTarget,
+  IconInfoCircle,
 } from "@tabler/icons-react";
 import { useData } from "../context/DataContext";
 
@@ -43,18 +46,17 @@ export const CategoryManager: React.FC = () => {
     getSkillsBySubCategory,
   } = useData();
 
-  // Drawer Steuerung
   const [opened, { open, close }] = useDisclosure(false);
   const [formMode, setFormMode] = useState<FormMode>("category");
 
-  // Auswahl-Status
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedSubCategory, setSelectedSubCategory] = useState<string | null>(
     null,
   );
 
-  // Formular-Status
+  // Formular-Status erweitert um Description
   const [inputValue, setInputValue] = useState("");
+  const [inputDescription, setInputDescription] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
 
   // Öffnet das Formular im Drawer
@@ -62,10 +64,12 @@ export const CategoryManager: React.FC = () => {
     mode: FormMode,
     id: string | null = null,
     initialValue: string = "",
+    initialDescription: string = "",
   ) => {
     setFormMode(mode);
     setEditingId(id);
     setInputValue(initialValue);
+    setInputDescription(initialDescription);
     open();
   };
 
@@ -75,31 +79,42 @@ export const CategoryManager: React.FC = () => {
     try {
       if (formMode === "category") {
         editingId
-          ? await updateCategory(editingId, { name: inputValue })
-          : await addCategory({ name: inputValue });
+          ? await updateCategory(editingId, {
+              name: inputValue,
+              description: inputDescription,
+            })
+          : await addCategory({
+              name: inputValue,
+              description: inputDescription,
+            });
       } else if (formMode === "subcategory" && selectedCategory) {
         editingId
           ? await updateSubCategory(editingId, {
               categoryId: selectedCategory,
               name: inputValue,
+              description: inputDescription,
             })
           : await addSubCategory({
               categoryId: selectedCategory,
               name: inputValue,
+              description: inputDescription,
             });
       } else if (formMode === "skill" && selectedSubCategory) {
         editingId
           ? await updateSkill(editingId, {
               subCategoryId: selectedSubCategory,
               name: inputValue,
+              description: inputDescription,
             })
           : await addSkill({
               subCategoryId: selectedSubCategory,
               name: inputValue,
+              description: inputDescription,
             });
       }
 
       setInputValue("");
+      setInputDescription("");
       close();
     } catch (error) {
       console.error("Fehler beim Speichern:", error);
@@ -165,12 +180,24 @@ export const CategoryManager: React.FC = () => {
                 >
                   <Table.Td>
                     <Group justify="space-between" wrap="nowrap">
-                      <Text
-                        size="sm"
-                        fw={selectedCategory === cat.id ? 600 : 400}
-                      >
-                        {cat.name}
-                      </Text>
+                      <Group gap="xs">
+                        <Text
+                          size="sm"
+                          fw={selectedCategory === cat.id ? 600 : 400}
+                        >
+                          {cat.name}
+                        </Text>
+                        {cat.description && (
+                          <Tooltip
+                            label={cat.description}
+                            multiline
+                            w={220}
+                            withArrow
+                          >
+                            <IconInfoCircle size={14} color="#adb5bd" />
+                          </Tooltip>
+                        )}
+                      </Group>
                       <Badge variant="light" color="blue" size="xs" circle>
                         {getSubCategoriesByCategory(cat.id!).length}
                       </Badge>
@@ -183,7 +210,12 @@ export const CategoryManager: React.FC = () => {
                         variant="subtle"
                         onClick={(e) => {
                           e.stopPropagation();
-                          openForm("category", cat.id!, cat.name);
+                          openForm(
+                            "category",
+                            cat.id!,
+                            cat.name,
+                            cat.description || "",
+                          );
                         }}
                       >
                         <IconEdit size={14} />
@@ -247,12 +279,24 @@ export const CategoryManager: React.FC = () => {
                   >
                     <Table.Td>
                       <Group justify="space-between" wrap="nowrap">
-                        <Text
-                          size="sm"
-                          fw={selectedSubCategory === sub.id ? 600 : 400}
-                        >
-                          {sub.name}
-                        </Text>
+                        <Group gap="xs">
+                          <Text
+                            size="sm"
+                            fw={selectedSubCategory === sub.id ? 600 : 400}
+                          >
+                            {sub.name}
+                          </Text>
+                          {sub.description && (
+                            <Tooltip
+                              label={sub.description}
+                              multiline
+                              w={220}
+                              withArrow
+                            >
+                              <IconInfoCircle size={14} color="#adb5bd" />
+                            </Tooltip>
+                          )}
+                        </Group>
                         <Badge variant="light" color="cyan" size="xs" circle>
                           {getSkillsBySubCategory(sub.id!).length}
                         </Badge>
@@ -265,7 +309,12 @@ export const CategoryManager: React.FC = () => {
                           variant="subtle"
                           onClick={(e) => {
                             e.stopPropagation();
-                            openForm("subcategory", sub.id!, sub.name);
+                            openForm(
+                              "subcategory",
+                              sub.id!,
+                              sub.name,
+                              sub.description || "",
+                            );
                           }}
                         >
                           <IconEdit size={14} />
@@ -323,7 +372,19 @@ export const CategoryManager: React.FC = () => {
                 {skillsInSubCategory.map((skill) => (
                   <Table.Tr key={skill.id}>
                     <Table.Td>
-                      <Text size="sm">{skill.name}</Text>
+                      <Group gap="xs">
+                        <Text size="sm">{skill.name}</Text>
+                        {skill.description && (
+                          <Tooltip
+                            label={skill.description}
+                            multiline
+                            w={220}
+                            withArrow
+                          >
+                            <IconInfoCircle size={14} color="#adb5bd" />
+                          </Tooltip>
+                        )}
+                      </Group>
                     </Table.Td>
                     <Table.Td style={{ width: 70 }}>
                       <Group gap={4} justify="flex-end">
@@ -331,7 +392,12 @@ export const CategoryManager: React.FC = () => {
                           size="sm"
                           variant="subtle"
                           onClick={() =>
-                            openForm("skill", skill.id!, skill.name)
+                            openForm(
+                              "skill",
+                              skill.id!,
+                              skill.name,
+                              skill.description || "",
+                            )
                           }
                         >
                           <IconEdit size={14} />
@@ -382,8 +448,17 @@ export const CategoryManager: React.FC = () => {
             placeholder="Bezeichnung eingeben..."
             value={inputValue}
             onChange={(e) => setInputValue(e.currentTarget.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSave()}
             data-autofocus
+            required
+          />
+
+          <Textarea
+            label="Beschreibung"
+            placeholder="Zusätzliche Informationen, Details oder Lernziele..."
+            value={inputDescription}
+            onChange={(e) => setInputDescription(e.currentTarget.value)}
+            minRows={4}
+            autosize
           />
 
           <Group justify="flex-end" mt="xl">
