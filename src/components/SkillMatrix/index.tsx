@@ -6,17 +6,22 @@ import {
   Title,
   Button,
   ActionIcon,
+  Tooltip,
 } from "@mantine/core";
 import {
   IconLayoutNavbarCollapse,
   IconX,
+  IconPlus,
+  IconUserPlus,
 } from "@tabler/icons-react";
 import { useData } from "../../context/DataContext";
 import { getNextLevel } from "../../utils/skillCalculations";
+import { EmployeeDrawer } from "../shared/EmployeeDrawer";
 import { EmptyState } from "./EmptyState";
 import { MatrixHeader } from "./MatrixHeader";
 import { MatrixCategoryRow } from "./MatrixCategoryRow";
 import { MatrixLegend } from "./MatrixLegend";
+import { QuickAddDrawer } from "./QuickAddDrawer";
 
 export const SkillMatrix: React.FC = () => {
   const {
@@ -26,12 +31,20 @@ export const SkillMatrix: React.FC = () => {
     skills,
     setAssessment,
     getAssessment,
+    addEmployee,
+    addSkill,
   } = useData();
 
   const [legendOpened, setLegendOpened] = useState(false);
   const [focusEmployeeId, setFocusEmployeeId] = useState<string | null>(null);
   const [hoveredSkillId, setHoveredSkillId] = useState<string | null>(null);
   const [hoveredEmployeeId, setHoveredEmployeeId] = useState<string | null>(null);
+
+  // Employee Drawer state
+  const [employeeDrawerOpened, setEmployeeDrawerOpened] = useState(false);
+
+  // Skill Drawer state
+  const [skillDrawerOpened, setSkillDrawerOpened] = useState(false);
 
   const [collapsedStates, setCollapsedStates] = useState<Record<string, boolean>>(() => {
     const saved = localStorage.getItem("skill-matrix-collapsed");
@@ -54,16 +67,30 @@ export const SkillMatrix: React.FC = () => {
     setCollapsedStates((prev) => ({ ...prev, [id]: !prev[id] }));
 
   const handleGlobalToggle = () => {
-    const totalItems = categories.length + subcategories.length;
-    const isEverythingCollapsed =
-      Object.values(collapsedStates).filter((v) => v).length >= totalItems;
-    setCollapsedStates(
-      isEverythingCollapsed
-        ? {}
-        : Object.fromEntries(
-            [...categories, ...subcategories].map((x) => [x.id!, true])
-          )
-    );
+    const categoryIds = categories.map((c) => c.id!);
+    const subcategoryIds = subcategories.map((s) => s.id!);
+
+    const collapsedCategories = categoryIds.filter((id) => collapsedStates[id]).length;
+    const collapsedSubcategories = subcategoryIds.filter((id) => collapsedStates[id]).length;
+
+    const allCollapsed = collapsedCategories === categoryIds.length;
+    const onlySubsCollapsed = collapsedCategories === 0 && collapsedSubcategories === subcategoryIds.length;
+    const allExpanded = collapsedCategories === 0 && collapsedSubcategories === 0;
+
+    if (allCollapsed) {
+      // State 1 -> State 2: Open categories, keep subcategories collapsed
+      setCollapsedStates(
+        Object.fromEntries(subcategoryIds.map((id) => [id, true]))
+      );
+    } else if (onlySubsCollapsed) {
+      // State 2 -> State 3: Expand everything
+      setCollapsedStates({});
+    } else {
+      // State 3 (or any other) -> State 1: Collapse everything
+      setCollapsedStates(
+        Object.fromEntries([...categoryIds, ...subcategoryIds].map((id) => [id, true]))
+      );
+    }
   };
 
   const calculateAverage = (
@@ -118,8 +145,16 @@ export const SkillMatrix: React.FC = () => {
     );
   };
 
-  // Empty state check
-  if (employees.length === 0 || categories.length === 0) {
+  const handleAddEmployee = async (name: string, department: string) => {
+    await addEmployee({ name, department });
+  };
+
+  const handleAddSkill = async (subcategoryId: string, name: string, description: string) => {
+    await addSkill({ subCategoryId: subcategoryId, name, description });
+  };
+
+  // Empty state check - but allow adding if we have categories
+  if (employees.length === 0 && categories.length === 0) {
     return <EmptyState />;
   }
 
@@ -136,14 +171,36 @@ export const SkillMatrix: React.FC = () => {
       <Group mb="lg" justify="space-between">
         <Group gap="sm">
           <Title order={2}>Qualifizierungsmatrix</Title>
-          <ActionIcon
-            variant="light"
-            color="gray"
-            onClick={handleGlobalToggle}
-            size="lg"
-          >
-            <IconLayoutNavbarCollapse size={20} />
-          </ActionIcon>
+          <Tooltip label="Alle ein-/ausklappen">
+            <ActionIcon
+              variant="light"
+              color="gray"
+              onClick={handleGlobalToggle}
+              size="lg"
+            >
+              <IconLayoutNavbarCollapse size={20} />
+            </ActionIcon>
+          </Tooltip>
+          <Tooltip label="Skill hinzufügen">
+            <ActionIcon
+              variant="light"
+              color="gray"
+              onClick={() => setSkillDrawerOpened(true)}
+              size="lg"
+            >
+              <IconPlus size={20} />
+            </ActionIcon>
+          </Tooltip>
+          <Tooltip label="Mitarbeiter hinzufügen">
+            <ActionIcon
+              variant="light"
+              color="gray"
+              onClick={() => setEmployeeDrawerOpened(true)}
+              size="lg"
+            >
+              <IconUserPlus size={20} />
+            </ActionIcon>
+          </Tooltip>
         </Group>
         {focusEmployeeId && (
           <Button
@@ -212,6 +269,24 @@ export const SkillMatrix: React.FC = () => {
       <MatrixLegend
         opened={legendOpened}
         onToggle={() => setLegendOpened((o) => !o)}
+      />
+
+      {/* Employee Drawer - same as on Mitarbeiter page */}
+      <EmployeeDrawer
+        opened={employeeDrawerOpened}
+        onClose={() => setEmployeeDrawerOpened(false)}
+        onSave={handleAddEmployee}
+      />
+
+      {/* Skill Quick Add Drawer */}
+      <QuickAddDrawer
+        opened={skillDrawerOpened}
+        onClose={() => setSkillDrawerOpened(false)}
+        mode="skill"
+        subcategories={subcategories}
+        preselectedSubcategoryId={null}
+        onAddEmployee={async () => {}}
+        onAddSkill={handleAddSkill}
       />
     </Box>
   );

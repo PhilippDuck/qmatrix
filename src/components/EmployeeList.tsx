@@ -2,64 +2,45 @@ import React, { useState } from "react";
 import {
   Table,
   Button,
-  TextInput,
   Group,
   ActionIcon,
   Title,
   Card,
-  Stack,
-  Box,
-  Drawer,
   Text,
-  Divider,
-  Container,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { IconPlus, IconEdit, IconTrash, IconUser } from "@tabler/icons-react";
 import { useData } from "../context/DataContext";
 import { Employee } from "../services/indexeddb";
+import { EmployeeDrawer } from "./shared/EmployeeDrawer";
 
 export const EmployeeList: React.FC = () => {
   const { employees, addEmployee, updateEmployee, deleteEmployee } = useData();
 
-  // Drawer Steuerung
   const [opened, { open, close }] = useDisclosure(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [formData, setFormData] = useState({ name: "", department: "" });
+  const [initialData, setInitialData] = useState({ name: "", department: "" });
 
   const handleOpenNew = () => {
-    setFormData({ name: "", department: "" });
+    setInitialData({ name: "", department: "" });
     setIsEditing(false);
     setEditingId(null);
     open();
   };
 
   const handleOpenEdit = (employee: Employee) => {
-    setFormData({ name: employee.name, department: employee.department || "" });
+    setInitialData({ name: employee.name, department: employee.department || "" });
     setIsEditing(true);
     setEditingId(employee.id!);
     open();
   };
 
-  const handleSave = async () => {
-    if (!formData.name.trim()) return;
-
-    try {
-      if (isEditing && editingId) {
-        await updateEmployee(editingId, {
-          name: formData.name,
-          department: formData.department,
-        });
-      } else {
-        await addEmployee({
-          name: formData.name,
-          department: formData.department,
-        });
-      }
-      close();
-    } catch (error) {
-      console.error("Fehler beim Speichern:", error);
+  const handleSave = async (name: string, department: string) => {
+    if (isEditing && editingId) {
+      await updateEmployee(editingId, { name, department });
+    } else {
+      await addEmployee({ name, department });
     }
   };
 
@@ -152,54 +133,13 @@ export const EmployeeList: React.FC = () => {
         </Table>
       </Card>
 
-      {/* Mitarbeiter Drawer */}
-      <Drawer
+      <EmployeeDrawer
         opened={opened}
         onClose={close}
-        position="right"
-        size="md"
-        overlayProps={{ backgroundOpacity: 0.5, blur: 4 }}
-        title={
-          <Text fw={700} size="lg">
-            {isEditing ? "Mitarbeiter bearbeiten" : "Neuen Mitarbeiter anlegen"}
-          </Text>
-        }
-      >
-        <Stack gap="md">
-          <Divider label="Personalinformationen" labelPosition="center" />
-
-          <TextInput
-            label="Vollständiger Name"
-            placeholder="z.B. Max Mustermann"
-            value={formData.name}
-            onChange={(e) =>
-              setFormData({ ...formData, name: e.currentTarget.value })
-            }
-            onKeyDown={(e) => e.key === "Enter" && handleSave()}
-            data-autofocus
-            required
-          />
-
-          <TextInput
-            label="Abteilung / Team"
-            placeholder="z.B. Softwareentwicklung"
-            value={formData.department}
-            onChange={(e) =>
-              setFormData({ ...formData, department: e.currentTarget.value })
-            }
-            onKeyDown={(e) => e.key === "Enter" && handleSave()}
-          />
-
-          <Group justify="flex-end" mt="xl">
-            <Button variant="subtle" color="gray" onClick={close}>
-              Abbrechen
-            </Button>
-            <Button onClick={handleSave} leftSection={<IconPlus size={16} />}>
-              {isEditing ? "Aktualisieren" : "Mitarbeiter anlegen"}
-            </Button>
-          </Group>
-        </Stack>
-      </Drawer>
+        onSave={handleSave}
+        initialData={initialData}
+        isEditing={isEditing}
+      />
     </>
   );
 };
