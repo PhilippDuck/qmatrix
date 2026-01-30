@@ -14,6 +14,9 @@ import {
   Assessment,
 } from "../services/indexeddb";
 
+// Re-export types for convenience
+export type { Employee, Category, SubCategory, Skill, Assessment };
+
 interface DataContextType {
   employees: Employee[];
   categories: Category[];
