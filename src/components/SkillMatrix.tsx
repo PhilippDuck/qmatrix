@@ -10,6 +10,8 @@ import {
   Box,
   ActionIcon,
   Popover,
+  Stack,
+  Divider,
 } from "@mantine/core";
 import {
   IconInfoCircle,
@@ -21,21 +23,54 @@ import {
 import { useData } from "../context/DataContext";
 
 /**
- * Definition der Skill-Level.
- * -1 (N/A) wird aus den Durchschnittsberechnungen ausgeschlossen.
+ * Definition der Skill-Level mit erweiterten Erklärungen.
  */
 const LEVELS = [
-  { value: -1, label: "N/A", color: "gray.3", description: "Nicht relevant" },
-  { value: 0, label: "0%", color: "gray", description: "Keine Kenntnisse" },
-  { value: 25, label: "25%", color: "orange", description: "Grundlagen" },
-  { value: 50, label: "50%", color: "yellow", description: "Fortgeschritten" },
-  { value: 75, label: "75%", color: "lime", description: "Experte" },
-  { value: 100, label: "100%", color: "green", description: "Spezialist" },
+  {
+    value: -1,
+    label: "N/A",
+    color: "gray.3",
+    title: "Nicht relevant (N/A)",
+    description:
+      "Diese Fähigkeit wird für die aktuelle Rolle oder Abteilung nicht benötigt und fließt nicht in die Berechnung ein.",
+  },
+  {
+    value: 0,
+    label: "0%",
+    color: "gray",
+    title: "Keine Kenntnisse",
+    description: "Bisher keine Erfahrung oder Schulung in diesem Bereich.",
+  },
+  {
+    value: 25,
+    label: "25%",
+    color: "orange",
+    title: "Grundkenntnisse",
+    description: "Theoretisch vertraut; erste Berührungspunkte vorhanden.",
+  },
+  {
+    value: 50,
+    label: "50%",
+    color: "yellow",
+    title: "Anwender",
+    description: "Setzt Aufgaben um; benötigt bei Details noch Unterstützung.",
+  },
+  {
+    value: 75,
+    label: "75%",
+    color: "lime",
+    title: "Fachkompetent",
+    description: "Beherrscht den Standard sicher und eigenständig.",
+  },
+  {
+    value: 100,
+    label: "100%",
+    color: "green",
+    title: "Experte / Mentor",
+    description: "Löst komplexe Probleme und gibt Wissen aktiv weiter.",
+  },
 ];
 
-/**
- * Komponente für die Beschreibungs-Popover
- */
 const InfoTooltip: React.FC<{ title: string; description?: string }> = ({
   title,
   description,
@@ -108,16 +143,11 @@ export const SkillMatrix: React.FC = () => {
     }
   };
 
-  /**
-   * Berechnet den Durchschnittswert. Ignoriert -1 (N/A) Einträge komplett.
-   */
   const calculateAverage = (skillIds: string | string[]) => {
     const ids = Array.isArray(skillIds) ? skillIds : [skillIds];
     if (ids.length === 0 || employees.length === 0) return 0;
-
     let totalScore = 0;
     let relevantCount = 0;
-
     ids.forEach((skillId) => {
       employees.forEach((emp) => {
         const assessment = getAssessment(emp.id!, skillId);
@@ -166,7 +196,6 @@ export const SkillMatrix: React.FC = () => {
               ...s,
               avgScore: calculateAverage(s.id!),
             }));
-
             return {
               subCategory: sub,
               skills: skillsWithAvg,
@@ -174,7 +203,6 @@ export const SkillMatrix: React.FC = () => {
             };
           })
           .filter((sub) => sub.skills.length > 0);
-
         return {
           category: cat,
           subcategories: subCatsWithSkills,
@@ -455,8 +483,8 @@ export const SkillMatrix: React.FC = () => {
                                     />
                                     <Text
                                       style={{
-                                        fontSize: "10px", // Hier wird es kleiner
-                                        fontWeight: 400, // Hier wird es dünner
+                                        fontSize: "10px",
+                                        fontWeight: 400,
                                         minWidth: "30px",
                                         textAlign: "right",
                                       }}
@@ -526,28 +554,92 @@ export const SkillMatrix: React.FC = () => {
         </div>
       </Card>
 
+      {/* Erweiterte Legende */}
       <Box mt="md">
         <Button
           variant="subtle"
           size="xs"
           onClick={() => setLegendOpened((o) => !o)}
         >
-          Legende {legendOpened ? "aus" : "an"}
+          Legende {legendOpened ? "ausblenden" : "einblenden"}
         </Button>
         <Collapse in={legendOpened}>
-          <Card withBorder mt="xs" p="xs">
-            <Group gap="xl">
-              {LEVELS.map((l) => (
-                <Group key={l.value} gap={5}>
-                  <Badge color={l.color} size="sm">
-                    {l.label}
-                  </Badge>
-                  <Text size="xs" c="dimmed">
-                    {l.description}
-                  </Text>
-                </Group>
-              ))}
-            </Group>
+          <Card withBorder mt="xs" p="md">
+            <Stack gap="md">
+              {/* Kompetenzstufen */}
+              <Box>
+                <Text size="xs" fw={700} c="dimmed" mb="xs" tt="uppercase">
+                  Kompetenzstufen
+                </Text>
+                <Stack gap="xs">
+                  {LEVELS.filter((l) => l.value > 0).map((l) => (
+                    <Group key={l.value} wrap="nowrap" align="flex-start">
+                      <Badge
+                        color={l.color}
+                        size="sm"
+                        style={{ minWidth: "50px" }}
+                      >
+                        {l.value}%
+                      </Badge>
+                      <Box>
+                        <Text size="xs" fw={700}>
+                          {l.title}
+                        </Text>
+                        <Text size="xs" c="dimmed">
+                          {l.description}
+                        </Text>
+                      </Box>
+                    </Group>
+                  ))}
+                </Stack>
+              </Box>
+
+              <Divider variant="dashed" />
+
+              {/* Status-Werte */}
+              <Box>
+                <Text size="xs" fw={700} c="dimmed" mb="xs" tt="uppercase">
+                  Status-Werte
+                </Text>
+                <Stack gap="xs">
+                  {/* 0% Erklärung */}
+                  <Group wrap="nowrap" align="flex-start">
+                    <Badge color="gray" size="sm" style={{ minWidth: "50px" }}>
+                      0%
+                    </Badge>
+                    <Box>
+                      <Text size="xs" fw={700}>
+                        Keine Kenntnisse
+                      </Text>
+                      <Text size="xs" c="dimmed">
+                        Bisher keine Erfahrung oder Schulung in diesem Bereich
+                        vorhanden.
+                      </Text>
+                    </Box>
+                  </Group>
+                  {/* N/A Erklärung */}
+                  <Group wrap="nowrap" align="flex-start">
+                    <Badge
+                      color="gray.3"
+                      size="sm"
+                      style={{ minWidth: "50px" }}
+                    >
+                      N/A
+                    </Badge>
+                    <Box>
+                      <Text size="xs" fw={700}>
+                        Nicht relevant (Not Applicable)
+                      </Text>
+                      <Text size="xs" c="dimmed">
+                        Diese Fähigkeit wird für die aktuelle Rolle nicht
+                        benötigt. Sie wird bei der Berechnung von
+                        Durchschnittswerten ignoriert.
+                      </Text>
+                    </Box>
+                  </Group>
+                </Stack>
+              </Box>
+            </Stack>
           </Card>
         </Collapse>
       </Box>
