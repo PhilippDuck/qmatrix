@@ -3,15 +3,15 @@ import {
   Badge,
   Group,
   Card,
-  Tooltip,
   Text,
   Button,
   Collapse,
   Box,
   ActionIcon,
-  Popover,
   Stack,
   Divider,
+  Title,
+  Tooltip,
 } from "@mantine/core";
 import {
   IconInfoCircle,
@@ -23,7 +23,7 @@ import {
 import { useData } from "../context/DataContext";
 
 /**
- * Definition der Skill-Level mit erweiterten Erklärungen.
+ * Definition der Skill-Level
  */
 const LEVELS = [
   {
@@ -71,27 +71,36 @@ const LEVELS = [
   },
 ];
 
+/**
+ * Optimierte Info-Komponente mit echtem Hover-Tooltip
+ */
 const InfoTooltip: React.FC<{ title: string; description?: string }> = ({
   title,
   description,
 }) => {
   if (!description) return null;
   return (
-    <Popover width={300} position="bottom" withArrow shadow="md">
-      <Popover.Target>
-        <ActionIcon variant="subtle" color="gray" size="xs">
-          <IconInfoCircle size={14} />
-        </ActionIcon>
-      </Popover.Target>
-      <Popover.Dropdown p="xs" style={{ pointerEvents: "none" }}>
-        <Text fw={700} size="xs" mb={4}>
-          {title}
-        </Text>
-        <Text size="xs" c="dimmed" style={{ lineHeight: 1.4 }}>
-          {description}
-        </Text>
-      </Popover.Dropdown>
-    </Popover>
+    <Tooltip
+      multiline
+      w={250}
+      withArrow
+      transitionProps={{ transition: "fade", duration: 200 }}
+      label={
+        <Box p={2}>
+          <Text fw={700} size="xs" mb={2}>
+            {title}
+          </Text>
+          <Text size="xs" style={{ lineHeight: 1.4 }}>
+            {description}
+          </Text>
+        </Box>
+      }
+    >
+      {/* Box als Wrapper für den Tooltip-Trigger */}
+      <Box style={{ cursor: "help", display: "flex", alignItems: "center" }}>
+        <IconInfoCircle size={15} color="#adb5bd" />
+      </Box>
+    </Tooltip>
   );
 };
 
@@ -236,7 +245,9 @@ export const SkillMatrix: React.FC = () => {
         userSelect: "none",
       }}
     >
-      <Group mb="xs">
+      {/* Titelzeile */}
+      <Group mb="lg" gap="sm">
+        <Title order={2}>Qualifizierungsmatrix</Title>
         <ActionIcon
           variant="light"
           color={isEverythingCollapsed ? "blue" : "gray"}
@@ -270,7 +281,7 @@ export const SkillMatrix: React.FC = () => {
               minWidth: "100%",
             }}
           >
-            {/* Header */}
+            {/* Table Header */}
             <div
               style={{
                 display: "flex",
@@ -329,7 +340,7 @@ export const SkillMatrix: React.FC = () => {
               </div>
             </div>
 
-            {/* Content */}
+            {/* Matrix Daten */}
             {nestedData.map((catGroup) => {
               const isCatCollapsed = collapsedStates[catGroup.category.id!];
               return (
@@ -520,13 +531,14 @@ export const SkillMatrix: React.FC = () => {
                                         variant={
                                           level <= 0 ? "light" : "filled"
                                         }
-                                        onClick={() =>
+                                        onClick={(e) => {
+                                          e.preventDefault();
                                           handleLevelChange(
                                             emp.id!,
                                             skill.id!,
                                             level,
-                                          )
-                                        }
+                                          );
+                                        }}
                                         onContextMenu={(e) =>
                                           e.preventDefault()
                                         }
@@ -554,7 +566,7 @@ export const SkillMatrix: React.FC = () => {
         </div>
       </Card>
 
-      {/* Erweiterte Legende */}
+      {/* Legende */}
       <Box mt="md">
         <Button
           variant="subtle"
@@ -564,9 +576,8 @@ export const SkillMatrix: React.FC = () => {
           Legende {legendOpened ? "ausblenden" : "einblenden"}
         </Button>
         <Collapse in={legendOpened}>
-          <Card withBorder mt="xs" p="md">
+          <Card withBorder mt="xs" p="md" shadow="sm">
             <Stack gap="md">
-              {/* Kompetenzstufen */}
               <Box>
                 <Text size="xs" fw={700} c="dimmed" mb="xs" tt="uppercase">
                   Kompetenzstufen
@@ -577,7 +588,7 @@ export const SkillMatrix: React.FC = () => {
                       <Badge
                         color={l.color}
                         size="sm"
-                        style={{ minWidth: "50px" }}
+                        style={{ minWidth: "55px" }}
                       >
                         {l.value}%
                       </Badge>
@@ -593,18 +604,14 @@ export const SkillMatrix: React.FC = () => {
                   ))}
                 </Stack>
               </Box>
-
               <Divider variant="dashed" />
-
-              {/* Status-Werte */}
               <Box>
                 <Text size="xs" fw={700} c="dimmed" mb="xs" tt="uppercase">
                   Status-Werte
                 </Text>
                 <Stack gap="xs">
-                  {/* 0% Erklärung */}
                   <Group wrap="nowrap" align="flex-start">
-                    <Badge color="gray" size="sm" style={{ minWidth: "50px" }}>
+                    <Badge color="gray" size="sm" style={{ minWidth: "55px" }}>
                       0%
                     </Badge>
                     <Box>
@@ -617,12 +624,11 @@ export const SkillMatrix: React.FC = () => {
                       </Text>
                     </Box>
                   </Group>
-                  {/* N/A Erklärung */}
                   <Group wrap="nowrap" align="flex-start">
                     <Badge
                       color="gray.3"
                       size="sm"
-                      style={{ minWidth: "50px" }}
+                      style={{ minWidth: "55px" }}
                     >
                       N/A
                     </Badge>
