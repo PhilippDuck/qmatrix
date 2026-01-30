@@ -19,6 +19,8 @@ import {
   IconPlus,
   IconLayoutNavbarExpand,
   IconLayoutNavbarCollapse,
+  IconSearch,
+  IconX,
 } from "@tabler/icons-react";
 import { useData } from "../context/DataContext";
 
@@ -106,7 +108,7 @@ export const SkillMatrix: React.FC = () => {
   } = useData();
   const [legendOpened, setLegendOpened] = useState(false);
 
-  // States für das Zeilen- und Spalten-Highlighting
+  const [focusEmployeeId, setFocusEmployeeId] = useState<string | null>(null);
   const [hoveredSkillId, setHoveredSkillId] = useState<string | null>(null);
   const [hoveredEmployeeId, setHoveredEmployeeId] = useState<string | null>(
     null,
@@ -125,6 +127,14 @@ export const SkillMatrix: React.FC = () => {
       JSON.stringify(collapsedStates),
     );
   }, [collapsedStates]);
+
+  const displayedEmployees = useMemo(
+    () =>
+      focusEmployeeId
+        ? employees.filter((e) => e.id === focusEmployeeId)
+        : employees,
+    [employees, focusEmployeeId],
+  );
 
   const toggleItem = (id: string) =>
     setCollapsedStates((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -152,7 +162,7 @@ export const SkillMatrix: React.FC = () => {
       hasAnyRelevant = false;
     const targetEmps = specificEmployeeId
       ? employees.filter((e) => e.id === specificEmployeeId)
-      : employees;
+      : displayedEmployees;
 
     skillIds.forEach((sId) => {
       targetEmps.forEach((emp) => {
@@ -185,7 +195,7 @@ export const SkillMatrix: React.FC = () => {
 
   const cellSize = 85;
   const labelWidth = 260;
-  const headerHeight = 150;
+  const headerHeight = 170;
 
   return (
     <Box
@@ -197,16 +207,29 @@ export const SkillMatrix: React.FC = () => {
         userSelect: "none",
       }}
     >
-      <Group mb="lg" gap="sm">
-        <Title order={2}>Qualifizierungsmatrix</Title>
-        <ActionIcon
-          variant="light"
-          color="gray"
-          onClick={handleGlobalToggle}
-          size="lg"
-        >
-          <IconLayoutNavbarCollapse size={20} />
-        </ActionIcon>
+      <Group mb="lg" justify="space-between">
+        <Group gap="sm">
+          <Title order={2}>Qualifizierungsmatrix</Title>
+          <ActionIcon
+            variant="light"
+            color="gray"
+            onClick={handleGlobalToggle}
+            size="lg"
+          >
+            <IconLayoutNavbarCollapse size={20} />
+          </ActionIcon>
+        </Group>
+
+        {focusEmployeeId && (
+          <Button
+            leftSection={<IconX size={16} />}
+            variant="filled"
+            color="red"
+            onClick={() => setFocusEmployeeId(null)}
+          >
+            Fokus beenden
+          </Button>
+        )}
       </Group>
 
       <Card
@@ -228,7 +251,6 @@ export const SkillMatrix: React.FC = () => {
               minWidth: "100%",
             }}
           >
-            {/* Header */}
             <div
               style={{
                 display: "flex",
@@ -259,15 +281,19 @@ export const SkillMatrix: React.FC = () => {
                 Struktur / Team
               </div>
               <div style={{ display: "flex", backgroundColor: "white" }}>
-                {employees.map((emp) => {
+                {displayedEmployees.map((emp) => {
                   const avg = calculateAverage(
                     skills.map((s) => s.id!),
                     emp.id,
                   );
                   const isColumnHovered = hoveredEmployeeId === emp.id;
+                  const isFocused = focusEmployeeId === emp.id;
+
                   return (
                     <div
                       key={emp.id}
+                      onMouseEnter={() => setHoveredEmployeeId(emp.id!)}
+                      onMouseLeave={() => setHoveredEmployeeId(null)}
                       style={{
                         width: cellSize,
                         height: headerHeight,
@@ -279,11 +305,32 @@ export const SkillMatrix: React.FC = () => {
                         borderBottom: "2px solid #dee2e6",
                         borderRight: "1px solid #f1f3f5",
                         backgroundColor: isColumnHovered
-                          ? "#f1f3f5"
+                          ? "#f8f9fa"
                           : "transparent",
                         transition: "background-color 0.15s ease",
+                        position: "relative",
                       }}
                     >
+                      {/* Lupe erscheint nur bei Hover oder aktivem Fokus */}
+                      <Box
+                        style={{
+                          height: "28px",
+                          visibility:
+                            isColumnHovered || isFocused ? "visible" : "hidden",
+                        }}
+                      >
+                        <ActionIcon
+                          variant={isFocused ? "filled" : "light"}
+                          color={isFocused ? "blue" : "gray"}
+                          size="sm"
+                          onClick={() =>
+                            setFocusEmployeeId(isFocused ? null : emp.id!)
+                          }
+                        >
+                          <IconSearch size={14} />
+                        </ActionIcon>
+                      </Box>
+
                       <Badge
                         size="xs"
                         variant="outline"
@@ -294,7 +341,7 @@ export const SkillMatrix: React.FC = () => {
                       </Badge>
                       <Text
                         size="xs"
-                        fw={isColumnHovered ? 700 : 400}
+                        fw={isColumnHovered || isFocused ? 700 : 400}
                         style={{
                           writingMode: "vertical-rl",
                           transform: "rotate(180deg)",
@@ -309,7 +356,7 @@ export const SkillMatrix: React.FC = () => {
               </div>
             </div>
 
-            {/* Matrix Daten */}
+            {/* Matrix Daten (wie gehabt, inkl. Highlighting) */}
             {categories.map((cat) => {
               const subIds = subcategories
                 .filter((s) => s.categoryId === cat.id)
@@ -375,7 +422,7 @@ export const SkillMatrix: React.FC = () => {
                         {calculateAverage(catSkills)}%
                       </Badge>
                     </div>
-                    {employees.map((emp) => (
+                    {displayedEmployees.map((emp) => (
                       <div
                         key={emp.id}
                         style={{
@@ -469,7 +516,7 @@ export const SkillMatrix: React.FC = () => {
                                   {calculateAverage(subSkills)}%
                                 </Badge>
                               </div>
-                              {employees.map((emp) => (
+                              {displayedEmployees.map((emp) => (
                                 <div
                                   key={emp.id}
                                   style={{
@@ -552,7 +599,7 @@ export const SkillMatrix: React.FC = () => {
                                           </Text>
                                         </Group>
                                       </div>
-                                      {employees.map((emp) => {
+                                      {displayedEmployees.map((emp) => {
                                         const val =
                                           getAssessment(emp.id!, skill.id!)
                                             ?.level ?? 0;
@@ -633,86 +680,7 @@ export const SkillMatrix: React.FC = () => {
           </div>
         </div>
       </Card>
-
-      <Box mt="md">
-        <Button
-          variant="subtle"
-          size="xs"
-          onClick={() => setLegendOpened((o) => !o)}
-        >
-          Legende {legendOpened ? "aus" : "an"}
-        </Button>
-        <Collapse in={legendOpened} mt="xs">
-          <Card withBorder p="md" shadow="sm">
-            <Stack gap="md">
-              <Box>
-                <Text size="xs" fw={700} c="dimmed" mb="xs" tt="uppercase">
-                  Kompetenzstufen
-                </Text>
-                <Stack gap="xs">
-                  {LEVELS.filter((l) => l.value > 0).map((l) => (
-                    <Group key={l.value} wrap="nowrap" align="flex-start">
-                      <Badge
-                        color={l.color}
-                        size="sm"
-                        style={{ minWidth: "55px" }}
-                      >
-                        {l.value}%
-                      </Badge>
-                      <Box>
-                        <Text size="xs" fw={700}>
-                          {l.title}
-                        </Text>
-                        <Text size="xs" c="dimmed">
-                          {l.description}
-                        </Text>
-                      </Box>
-                    </Group>
-                  ))}
-                </Stack>
-              </Box>
-              <Divider variant="dashed" />
-              <Box>
-                <Text size="xs" fw={700} c="dimmed" mb="xs" tt="uppercase">
-                  Status-Werte
-                </Text>
-                <Stack gap="xs">
-                  <Group wrap="nowrap" align="flex-start">
-                    <Badge color="gray" size="sm" style={{ minWidth: "55px" }}>
-                      0%
-                    </Badge>
-                    <Box>
-                      <Text size="xs" fw={700}>
-                        Keine Kenntnisse
-                      </Text>
-                      <Text size="xs" c="dimmed">
-                        Bisher keine Erfahrung vorhanden.
-                      </Text>
-                    </Box>
-                  </Group>
-                  <Group wrap="nowrap" align="flex-start">
-                    <Badge
-                      color="gray.3"
-                      size="sm"
-                      style={{ minWidth: "55px" }}
-                    >
-                      N/A
-                    </Badge>
-                    <Box>
-                      <Text size="xs" fw={700}>
-                        Nicht relevant (N/A)
-                      </Text>
-                      <Text size="xs" c="dimmed">
-                        Wird bei der Berechnung ignoriert.
-                      </Text>
-                    </Box>
-                  </Group>
-                </Stack>
-              </Box>
-            </Stack>
-          </Card>
-        </Collapse>
-      </Box>
+      {/* Legende ... */}
     </Box>
   );
 };
