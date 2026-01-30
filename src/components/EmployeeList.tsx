@@ -9,15 +9,21 @@ import {
   Card,
   Stack,
   Box,
+  Drawer,
+  Text,
+  Divider,
   Container,
 } from "@mantine/core";
-import { IconPlus, IconEdit, IconTrash } from "@tabler/icons-react";
+import { useDisclosure } from "@mantine/hooks";
+import { IconPlus, IconEdit, IconTrash, IconUser } from "@tabler/icons-react";
 import { useData } from "../context/DataContext";
 import { Employee } from "../services/indexeddb";
 
 export const EmployeeList: React.FC = () => {
   const { employees, addEmployee, updateEmployee, deleteEmployee } = useData();
-  const [showForm, setShowForm] = useState(false);
+
+  // Drawer Steuerung
+  const [opened, { open, close }] = useDisclosure(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({ name: "", department: "" });
@@ -26,19 +32,14 @@ export const EmployeeList: React.FC = () => {
     setFormData({ name: "", department: "" });
     setIsEditing(false);
     setEditingId(null);
-    setShowForm(true);
+    open();
   };
 
   const handleOpenEdit = (employee: Employee) => {
     setFormData({ name: employee.name, department: employee.department || "" });
     setIsEditing(true);
     setEditingId(employee.id!);
-    setShowForm(true);
-  };
-
-  const handleCancel = () => {
-    setShowForm(false);
-    setFormData({ name: "", department: "" });
+    open();
   };
 
   const handleSave = async () => {
@@ -56,9 +57,9 @@ export const EmployeeList: React.FC = () => {
           department: formData.department,
         });
       }
-      handleCancel();
+      close();
     } catch (error) {
-      console.error("Error saving employee:", error);
+      console.error("Fehler beim Speichern:", error);
     }
   };
 
@@ -67,100 +68,138 @@ export const EmployeeList: React.FC = () => {
       try {
         await deleteEmployee(id);
       } catch (error) {
-        console.error("Error deleting employee:", error);
+        console.error("Fehler beim Löschen:", error);
       }
     }
   };
 
-  const rows = employees.map((employee) => (
-    <Table.Tr key={employee.id}>
-      <Table.Td>{employee.name}</Table.Td>
-      <Table.Td>{employee.department || "-"}</Table.Td>
-      <Table.Td>
-        <Group gap="xs">
-          <ActionIcon
-            size="sm"
-            color="blue"
-            variant="light"
-            onClick={() => handleOpenEdit(employee)}
-          >
-            <IconEdit size={16} />
-          </ActionIcon>
-          <ActionIcon
-            size="sm"
-            color="red"
-            variant="light"
-            onClick={() => handleDelete(employee.id!)}
-          >
-            <IconTrash size={16} />
-          </ActionIcon>
-        </Group>
-      </Table.Td>
-    </Table.Tr>
-  ));
-
   return (
     <>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "20px",
-        }}
-      >
-        <Title order={2}>Mitarbeiter</Title>
-        <Button leftSection={<IconPlus size={16} />} onClick={handleOpenNew}>
-          Hinzufügen
+      <Group justify="space-between" mb="lg">
+        <Title order={2}>Mitarbeiterverwaltung</Title>
+        <Button
+          leftSection={<IconPlus size={18} />}
+          onClick={handleOpenNew}
+          variant="filled"
+        >
+          Mitarbeiter hinzufügen
         </Button>
-      </div>
+      </Group>
 
-      {showForm && (
-        <Card withBorder mb="lg" style={{ width: "100%" }}>
-          <Stack gap="md">
-            <Title order={4}>
-              {isEditing ? "Mitarbeiter bearbeiten" : "Neuer Mitarbeiter"}
-            </Title>
-            <TextInput
-              label="Name"
-              placeholder="Name eingeben"
-              value={formData.name}
-              onChange={(e) =>
-                setFormData({ ...formData, name: e.currentTarget.value })
-              }
-            />
-            <TextInput
-              label="Abteilung"
-              placeholder="Abteilung eingeben (optional)"
-              value={formData.department}
-              onChange={(e) =>
-                setFormData({ ...formData, department: e.currentTarget.value })
-              }
-            />
-            <Group justify="flex-end">
-              <Button variant="light" onClick={handleCancel}>
-                Abbrechen
-              </Button>
-              <Button onClick={handleSave}>
-                {isEditing ? "Aktualisieren" : "Erstellen"}
-              </Button>
-            </Group>
-          </Stack>
-        </Card>
-      )}
-
-      <Box withBorder style={{ width: "100%", overflowX: "auto" }}>
-        <Table striped highlightOnHover style={{ width: "100%" }}>
+      <Card withBorder padding={0} radius="md" shadow="sm">
+        <Table striped highlightOnHover verticalSpacing="sm">
           <Table.Thead>
             <Table.Tr>
-              <Table.Th>Name</Table.Th>
+              <Table.Th style={{ paddingLeft: "20px" }}>Name</Table.Th>
               <Table.Th>Abteilung</Table.Th>
-              <Table.Th style={{ width: 100 }}>Aktionen</Table.Th>
+              <Table.Th
+                style={{ width: 120, textAlign: "right", paddingRight: "20px" }}
+              >
+                Aktionen
+              </Table.Th>
             </Table.Tr>
           </Table.Thead>
-          <Table.Tbody>{rows}</Table.Tbody>
+          <Table.Tbody>
+            {employees.length > 0 ? (
+              employees.map((employee) => (
+                <Table.Tr key={employee.id}>
+                  <Table.Td style={{ paddingLeft: "20px" }}>
+                    <Group gap="sm">
+                      <IconUser size={16} color="gray" />
+                      <Text size="sm" fw={500}>
+                        {employee.name}
+                      </Text>
+                    </Group>
+                  </Table.Td>
+                  <Table.Td>
+                    <Text
+                      size="sm"
+                      c={employee.department ? "inherit" : "dimmed"}
+                    >
+                      {employee.department || "Keine Abteilung"}
+                    </Text>
+                  </Table.Td>
+                  <Table.Td style={{ paddingRight: "20px" }}>
+                    <Group gap="xs" justify="flex-end">
+                      <ActionIcon
+                        size="md"
+                        color="blue"
+                        variant="subtle"
+                        onClick={() => handleOpenEdit(employee)}
+                      >
+                        <IconEdit size={18} />
+                      </ActionIcon>
+                      <ActionIcon
+                        size="md"
+                        color="red"
+                        variant="subtle"
+                        onClick={() => handleDelete(employee.id!)}
+                      >
+                        <IconTrash size={18} />
+                      </ActionIcon>
+                    </Group>
+                  </Table.Td>
+                </Table.Tr>
+              ))
+            ) : (
+              <Table.Tr>
+                <Table.Td colSpan={3} style={{ textAlign: "center", py: "xl" }}>
+                  <Text c="dimmed">Noch keine Mitarbeiter angelegt</Text>
+                </Table.Td>
+              </Table.Tr>
+            )}
+          </Table.Tbody>
         </Table>
-      </Box>
+      </Card>
+
+      {/* Mitarbeiter Drawer */}
+      <Drawer
+        opened={opened}
+        onClose={close}
+        position="right"
+        size="md"
+        overlayProps={{ backgroundOpacity: 0.5, blur: 4 }}
+        title={
+          <Text fw={700} size="lg">
+            {isEditing ? "Mitarbeiter bearbeiten" : "Neuen Mitarbeiter anlegen"}
+          </Text>
+        }
+      >
+        <Stack gap="md">
+          <Divider label="Personalinformationen" labelPosition="center" />
+
+          <TextInput
+            label="Vollständiger Name"
+            placeholder="z.B. Max Mustermann"
+            value={formData.name}
+            onChange={(e) =>
+              setFormData({ ...formData, name: e.currentTarget.value })
+            }
+            onKeyDown={(e) => e.key === "Enter" && handleSave()}
+            data-autofocus
+            required
+          />
+
+          <TextInput
+            label="Abteilung / Team"
+            placeholder="z.B. Softwareentwicklung"
+            value={formData.department}
+            onChange={(e) =>
+              setFormData({ ...formData, department: e.currentTarget.value })
+            }
+            onKeyDown={(e) => e.key === "Enter" && handleSave()}
+          />
+
+          <Group justify="flex-end" mt="xl">
+            <Button variant="subtle" color="gray" onClick={close}>
+              Abbrechen
+            </Button>
+            <Button onClick={handleSave} leftSection={<IconPlus size={16} />}>
+              {isEditing ? "Aktualisieren" : "Mitarbeiter anlegen"}
+            </Button>
+          </Group>
+        </Stack>
+      </Drawer>
     </>
   );
 };

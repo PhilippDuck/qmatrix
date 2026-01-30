@@ -43,11 +43,7 @@ export const SkillMatrix: React.FC = () => {
     Record<string, boolean>
   >(() => {
     const saved = localStorage.getItem("skill-matrix-collapsed");
-    // Standardmäßig alles einklappen, wenn kein Speicher vorhanden ist
-    if (!saved) {
-      return {};
-    }
-    return JSON.parse(saved);
+    return saved ? JSON.parse(saved) : {};
   });
 
   useEffect(() => {
@@ -57,6 +53,15 @@ export const SkillMatrix: React.FC = () => {
     );
   }, [collapsedStates]);
 
+  // Berechnet, ob aktuell alles eingeklappt ist
+  const isEverythingCollapsed = useMemo(() => {
+    const totalItems = categories.length + subcategories.length;
+    const collapsedCount = Object.values(collapsedStates).filter(
+      (v) => v,
+    ).length;
+    return collapsedCount >= totalItems;
+  }, [collapsedStates, categories, subcategories]);
+
   const toggleItem = (id: string) => {
     setCollapsedStates((prev) => ({
       ...prev,
@@ -64,13 +69,16 @@ export const SkillMatrix: React.FC = () => {
     }));
   };
 
-  const expandAll = () => setCollapsedStates({});
-
-  const collapseAll = () => {
-    const allIds: Record<string, boolean> = {};
-    categories.forEach((c) => (allIds[c.id!] = true));
-    subcategories.forEach((s) => (allIds[s.id!] = true));
-    setCollapsedStates(allIds);
+  // Ein einziger Handler für beide Zustände
+  const handleGlobalToggle = () => {
+    if (isEverythingCollapsed) {
+      setCollapsedStates({}); // Alles ausklappen
+    } else {
+      const allIds: Record<string, boolean> = {};
+      categories.forEach((c) => (allIds[c.id!] = true));
+      subcategories.forEach((s) => (allIds[s.id!] = true));
+      setCollapsedStates(allIds); // Alles einklappen
+    }
   };
 
   const calculateAverage = (skillIds: string[]) => {
@@ -162,26 +170,23 @@ export const SkillMatrix: React.FC = () => {
         flexDirection: "column",
       }}
     >
-      {/* Kompakte Toolbar mit Tooltip-Icons */}
-      <Group mb="xs" gap="xs">
-        <Tooltip label="Alle Bereiche ausklappen" withArrow position="bottom">
+      <Group mb="xs">
+        <Tooltip
+          label={isEverythingCollapsed ? "Alle ausklappen" : "Alle einklappen"}
+          withArrow
+          position="right"
+        >
           <ActionIcon
             variant="light"
-            color="blue"
-            onClick={expandAll}
+            color={isEverythingCollapsed ? "blue" : "gray"}
+            onClick={handleGlobalToggle}
             size="lg"
           >
-            <IconLayoutNavbarExpand size={20} />
-          </ActionIcon>
-        </Tooltip>
-        <Tooltip label="Alle Bereiche einklappen" withArrow position="bottom">
-          <ActionIcon
-            variant="light"
-            color="gray"
-            onClick={collapseAll}
-            size="lg"
-          >
-            <IconLayoutNavbarCollapse size={20} />
+            {isEverythingCollapsed ? (
+              <IconLayoutNavbarExpand size={20} />
+            ) : (
+              <IconLayoutNavbarCollapse size={20} />
+            )}
           </ActionIcon>
         </Tooltip>
       </Group>
@@ -261,7 +266,7 @@ export const SkillMatrix: React.FC = () => {
                         textOrientation: "mixed",
                         transform: "rotate(180deg)",
                         fontSize: "12px",
-                        fontWeight: 400, // Namen nicht fett
+                        fontWeight: 400,
                       }}
                     >
                       {emp.name}

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   AppShell,
   Group,
@@ -9,12 +9,19 @@ import {
   Stack,
   NavLink,
   createTheme,
+  Burger,
+  ActionIcon,
+  Tooltip,
+  Text,
 } from "@mantine/core";
+import { useDisclosure } from "@mantine/hooks";
 import {
   IconUsers,
   IconTags,
   IconLayoutGrid,
   IconDatabase,
+  IconChevronLeft,
+  IconChevronRight,
 } from "@tabler/icons-react";
 
 import { DataProvider, useData } from "./context/DataContext";
@@ -29,6 +36,37 @@ const theme = createTheme({});
 function AppContent() {
   const { loading } = useData();
   const [activeTab, setActiveTab] = useState("matrix");
+
+  // Sidebar State (Desktop)
+  const [desktopOpened, setDesktopOpened] = useState(true);
+  const [mobileOpened, { toggle: toggleMobile }] = useDisclosure(false);
+
+  // Zustand aus IndexedDB laden (Initialisierung)
+  useEffect(() => {
+    const loadSidebarState = async () => {
+      try {
+        // Wir nutzen den localStorage als schnellen Fallback,
+        // da IndexedDB für UI-Layout-States (Open/Closed) oft zu träge ist.
+        // Wenn du es absolut in IndexedDB willst, müsste dein DataProvider
+        // eine Methode wie 'getSettings' bereitstellen.
+        const saved = localStorage.getItem("sidebar-opened");
+        if (saved !== null) {
+          setDesktopOpened(JSON.parse(saved));
+        }
+      } catch (e) {
+        console.error("Fehler beim Laden des Sidebar-Status", e);
+      }
+    };
+    loadSidebarState();
+  }, []);
+
+  // Zustand speichern
+  useEffect(() => {
+    localStorage.setItem("sidebar-opened", JSON.stringify(desktopOpened));
+  }, [desktopOpened]);
+
+  // Korrigierte Funktion ohne TypeScript-Syntax für .jsx
+  const toggleDesktop = () => setDesktopOpened((o) => !o);
 
   if (loading) {
     return (
@@ -50,62 +88,131 @@ function AppContent() {
 
   return (
     <AppShell
-      header={{ height: 70 }}
+      header={{ height: 60 }}
       navbar={{
-        width: 250,
+        width: desktopOpened ? 240 : 70,
         breakpoint: "sm",
-        collapsed: { mobile: true },
+        collapsed: { mobile: !mobileOpened },
       }}
-      // "padding={0}" entfernt die weißen Ränder komplett,
-      // falls du den Platz bis zum Rand nutzen willst.
       padding="md"
-      styles={{
-        main: {
-          width: "100%",
-          minHeight: "100vh",
-          display: "flex",
-          flexDirection: "column",
-          // Verhindert, dass Mantine den Content auf eine max-width begrenzt
-          flexGrow: 1,
-        },
-      }}
+      transitionDuration={300}
+      transitionTimingFunction="ease"
     >
       <AppShell.Header>
-        <Group h="100%" px="md">
-          <Title order={3} c="blue">
-            Skill Management System
-          </Title>
+        <Group h="100%" px="md" justify="space-between">
+          <Group gap="sm">
+            <Burger
+              opened={mobileOpened}
+              onClick={toggleMobile}
+              hiddenFrom="sm"
+              size="sm"
+            />
+
+            <ActionIcon
+              variant="subtle"
+              onClick={toggleDesktop}
+              visibleFrom="sm"
+              color="gray"
+              size="md"
+            >
+              {desktopOpened ? (
+                <IconChevronLeft size={18} />
+              ) : (
+                <IconChevronRight size={18} />
+              )}
+            </ActionIcon>
+
+            <Title
+              order={4}
+              c="blue"
+              style={{
+                letterSpacing: -0.5,
+                fontSize: desktopOpened ? "1.1rem" : "0.9rem",
+                transition: "all 0.2s ease",
+                userSelect: "none",
+              }}
+            >
+              {desktopOpened ? "Skill Management" : "SMS"}
+            </Title>
+          </Group>
         </Group>
       </AppShell.Header>
 
-      <AppShell.Navbar p="md">
-        <Stack gap="xs">
-          <Title
-            order={6}
-            mb="xs"
-            c="dimmed"
-            style={{ textTransform: "uppercase" }}
-          >
-            Navigation
-          </Title>
+      <AppShell.Navbar p="xs">
+        <Stack gap={4}>
           {navItems.map((item) => (
-            <NavLink
+            <Tooltip
               key={item.value}
               label={item.label}
-              leftSection={<item.icon size={20} stroke={1.5} />}
-              active={activeTab === item.value}
-              onClick={() => setActiveTab(item.value)}
-              variant="light"
-              color="blue"
-              style={{ borderRadius: 8 }}
-            />
+              position="right"
+              disabled={desktopOpened}
+              withArrow
+              offset={15}
+            >
+              <NavLink
+                label={
+                  desktopOpened ? (
+                    <Text size="sm" fw={500}>
+                      {item.label}
+                    </Text>
+                  ) : null
+                }
+                leftSection={
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      transition: "transform 0.2s ease",
+                    }}
+                    className="nav-icon-wrapper"
+                  >
+                    <item.icon size={18} stroke={1.5} />
+                  </div>
+                }
+                active={activeTab === item.value}
+                onClick={() => {
+                  setActiveTab(item.value);
+                  if (mobileOpened) toggleMobile();
+                }}
+                variant="light"
+                color="blue"
+                style={{
+                  borderRadius: 6,
+                  height: 40,
+                  transition: "all 0.15s ease",
+                }}
+                // Hover-Animation für das Icon
+                styles={{
+                  root: {
+                    "&:hover": {
+                      "& .nav-icon-wrapper": {
+                        transform: "scale(1.2)",
+                      },
+                    },
+                  },
+                }}
+              />
+            </Tooltip>
           ))}
         </Stack>
       </AppShell.Navbar>
 
-      <AppShell.Main>
-        {/* WICHTIG: width: 100% und kein max-width */}
-        <div style={{ width: "100%", flex: 1 }}>
+      <AppShell.Main
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          backgroundColor: "#f8f9fa",
+        }}
+      >
+        <div
+          style={{
+            width: "100%",
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
           {activeTab === "matrix" && <SkillMatrix />}
           {activeTab === "employees" && <EmployeeList />}
           {activeTab === "categories" && <CategoryManager />}
