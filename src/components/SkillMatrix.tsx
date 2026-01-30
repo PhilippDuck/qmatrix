@@ -12,18 +12,22 @@ import {
   Divider,
   Title,
   Tooltip,
+  Menu,
 } from "@mantine/core";
 import {
   IconInfoCircle,
   IconMinus,
   IconPlus,
-  IconLayoutNavbarExpand,
   IconLayoutNavbarCollapse,
   IconSearch,
   IconX,
+  IconCheck,
 } from "@tabler/icons-react";
 import { useData } from "../context/DataContext";
 
+/**
+ * Definition der Skill-Level.
+ */
 const LEVELS = [
   {
     value: 0,
@@ -107,7 +111,6 @@ export const SkillMatrix: React.FC = () => {
     getAssessment,
   } = useData();
   const [legendOpened, setLegendOpened] = useState(false);
-
   const [focusEmployeeId, setFocusEmployeeId] = useState<string | null>(null);
   const [hoveredSkillId, setHoveredSkillId] = useState<string | null>(null);
   const [hoveredEmployeeId, setHoveredEmployeeId] = useState<string | null>(
@@ -178,6 +181,19 @@ export const SkillMatrix: React.FC = () => {
     return relevantCount === 0 ? 0 : Math.round(totalScore / relevantCount);
   };
 
+  /**
+   * Setzt alle Skills einer Gruppe auf einen bestimmten Wert.
+   */
+  const bulkSetLevel = async (
+    empId: string,
+    skillIds: string[],
+    newLevel: number,
+  ) => {
+    for (const sId of skillIds) {
+      await setAssessment(empId, sId, newLevel as any);
+    }
+  };
+
   const getScoreColor = (score: number | null) => {
     if (score === null) return "gray.4";
     if (score >= 75) return "green";
@@ -219,7 +235,6 @@ export const SkillMatrix: React.FC = () => {
             <IconLayoutNavbarCollapse size={20} />
           </ActionIcon>
         </Group>
-
         {focusEmployeeId && (
           <Button
             leftSection={<IconX size={16} />}
@@ -251,6 +266,7 @@ export const SkillMatrix: React.FC = () => {
               minWidth: "100%",
             }}
           >
+            {/* Header mit Spalten-Highlighting */}
             <div
               style={{
                 display: "flex",
@@ -288,7 +304,6 @@ export const SkillMatrix: React.FC = () => {
                   );
                   const isColumnHovered = hoveredEmployeeId === emp.id;
                   const isFocused = focusEmployeeId === emp.id;
-
                   return (
                     <div
                       key={emp.id}
@@ -307,11 +322,10 @@ export const SkillMatrix: React.FC = () => {
                         backgroundColor: isColumnHovered
                           ? "#f8f9fa"
                           : "transparent",
-                        transition: "background-color 0.15s ease",
                         position: "relative",
+                        transition: "background-color 0.15s ease",
                       }}
                     >
-                      {/* Lupe erscheint nur bei Hover oder aktivem Fokus */}
                       <Box
                         style={{
                           height: "28px",
@@ -330,7 +344,6 @@ export const SkillMatrix: React.FC = () => {
                           <IconSearch size={14} />
                         </ActionIcon>
                       </Box>
-
                       <Badge
                         size="xs"
                         variant="outline"
@@ -356,7 +369,7 @@ export const SkillMatrix: React.FC = () => {
               </div>
             </div>
 
-            {/* Matrix Daten (wie gehabt, inkl. Highlighting) */}
+            {/* Matrix Content */}
             {categories.map((cat) => {
               const subIds = subcategories
                 .filter((s) => s.categoryId === cat.id)
@@ -422,31 +435,53 @@ export const SkillMatrix: React.FC = () => {
                         {calculateAverage(catSkills)}%
                       </Badge>
                     </div>
-                    {displayedEmployees.map((emp) => (
-                      <div
-                        key={emp.id}
-                        style={{
-                          width: cellSize,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          backgroundColor:
-                            hoveredEmployeeId === emp.id
-                              ? "#f1f3f5"
-                              : "transparent",
-                        }}
-                      >
-                        <Text
-                          fw={700}
-                          size="xs"
-                          c={getScoreColor(calculateAverage(catSkills, emp.id))}
-                        >
-                          {calculateAverage(catSkills, emp.id) === null
-                            ? "N/A"
-                            : `${calculateAverage(catSkills, emp.id)}%`}
-                        </Text>
-                      </div>
-                    ))}
+                    {displayedEmployees.map((emp) => {
+                      const avg = calculateAverage(catSkills, emp.id);
+                      return (
+                        <Menu key={emp.id} shadow="md" width={200}>
+                          <Menu.Target>
+                            <div
+                              onMouseEnter={() => setHoveredEmployeeId(emp.id!)}
+                              onMouseLeave={() => setHoveredEmployeeId(null)}
+                              style={{
+                                width: cellSize,
+                                cursor: "pointer",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                backgroundColor:
+                                  hoveredEmployeeId === emp.id
+                                    ? "#f1f3f5"
+                                    : "transparent",
+                                transition: "background-color 0.15s ease",
+                              }}
+                            >
+                              <Text fw={700} size="xs" c={getScoreColor(avg)}>
+                                {avg === null ? "N/A" : `${avg}%`}
+                              </Text>
+                            </div>
+                          </Menu.Target>
+                          <Menu.Dropdown>
+                            <Menu.Label>
+                              Alle "{cat.name}" setzen für {emp.name}
+                            </Menu.Label>
+                            {LEVELS.map((lvl) => (
+                              <Menu.Item
+                                key={lvl.value}
+                                leftSection={
+                                  <IconCheck size={14} color={lvl.color} />
+                                }
+                                onClick={() =>
+                                  bulkSetLevel(emp.id!, catSkills, lvl.value)
+                                }
+                              >
+                                Alle auf {lvl.label}
+                              </Menu.Item>
+                            ))}
+                          </Menu.Dropdown>
+                        </Menu>
+                      );
+                    })}
                   </div>
 
                   {!isCatCollapsed &&
@@ -457,7 +492,6 @@ export const SkillMatrix: React.FC = () => {
                           .filter((s) => s.subCategoryId === sub.id)
                           .map((s) => s.id!);
                         const isSubCollapsed = collapsedStates[sub.id!];
-
                         return (
                           <div key={sub.id}>
                             <div
@@ -516,34 +550,69 @@ export const SkillMatrix: React.FC = () => {
                                   {calculateAverage(subSkills)}%
                                 </Badge>
                               </div>
-                              {displayedEmployees.map((emp) => (
-                                <div
-                                  key={emp.id}
-                                  style={{
-                                    width: cellSize,
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    backgroundColor:
-                                      hoveredEmployeeId === emp.id
-                                        ? "#f8f9fa"
-                                        : "transparent",
-                                  }}
-                                >
-                                  <Text
-                                    size="xs"
-                                    fw={500}
-                                    c={getScoreColor(
-                                      calculateAverage(subSkills, emp.id),
-                                    )}
-                                  >
-                                    {calculateAverage(subSkills, emp.id) ===
-                                    null
-                                      ? "N/A"
-                                      : `${calculateAverage(subSkills, emp.id)}%`}
-                                  </Text>
-                                </div>
-                              ))}
+                              {displayedEmployees.map((emp) => {
+                                const avg = calculateAverage(subSkills, emp.id);
+                                return (
+                                  <Menu key={emp.id} shadow="md" width={200}>
+                                    <Menu.Target>
+                                      <div
+                                        onMouseEnter={() =>
+                                          setHoveredEmployeeId(emp.id!)
+                                        }
+                                        onMouseLeave={() =>
+                                          setHoveredEmployeeId(null)
+                                        }
+                                        style={{
+                                          width: cellSize,
+                                          cursor: "pointer",
+                                          display: "flex",
+                                          alignItems: "center",
+                                          justifyContent: "center",
+                                          backgroundColor:
+                                            hoveredEmployeeId === emp.id
+                                              ? "#f8f9fa"
+                                              : "transparent",
+                                          transition:
+                                            "background-color 0.15s ease",
+                                        }}
+                                      >
+                                        <Text
+                                          size="xs"
+                                          fw={500}
+                                          c={getScoreColor(avg)}
+                                        >
+                                          {avg === null ? "N/A" : `${avg}%`}
+                                        </Text>
+                                      </div>
+                                    </Menu.Target>
+                                    <Menu.Dropdown>
+                                      <Menu.Label>
+                                        Alle "{sub.name}" setzen für {emp.name}
+                                      </Menu.Label>
+                                      {LEVELS.map((lvl) => (
+                                        <Menu.Item
+                                          key={lvl.value}
+                                          leftSection={
+                                            <IconCheck
+                                              size={14}
+                                              color={lvl.color}
+                                            />
+                                          }
+                                          onClick={() =>
+                                            bulkSetLevel(
+                                              emp.id!,
+                                              subSkills,
+                                              lvl.value,
+                                            )
+                                          }
+                                        >
+                                          Alle auf {lvl.label}
+                                        </Menu.Item>
+                                      ))}
+                                    </Menu.Dropdown>
+                                  </Menu>
+                                );
+                              })}
                             </div>
 
                             {!isSubCollapsed &&
@@ -608,7 +677,6 @@ export const SkillMatrix: React.FC = () => {
                                         );
                                         const isColumnHovered =
                                           hoveredEmployeeId === emp.id;
-
                                         return (
                                           <div
                                             key={`${emp.id}-${skill.id}`}
@@ -680,7 +748,87 @@ export const SkillMatrix: React.FC = () => {
           </div>
         </div>
       </Card>
-      {/* Legende ... */}
+
+      {/* Legende */}
+      <Box mt="md">
+        <Button
+          variant="subtle"
+          size="xs"
+          onClick={() => setLegendOpened((o) => !o)}
+        >
+          Legende {legendOpened ? "ausblenden" : "einblenden"}
+        </Button>
+        <Collapse in={legendOpened} mt="xs">
+          <Card withBorder p="md" shadow="sm">
+            <Stack gap="md">
+              <Box>
+                <Text size="xs" fw={700} c="dimmed" mb="xs" tt="uppercase">
+                  Kompetenzstufen
+                </Text>
+                <Stack gap="xs">
+                  {LEVELS.filter((l) => l.value > 0).map((l) => (
+                    <Group key={l.value} wrap="nowrap" align="flex-start">
+                      <Badge
+                        color={l.color}
+                        size="sm"
+                        style={{ minWidth: "55px" }}
+                      >
+                        {l.value}%
+                      </Badge>
+                      <Box>
+                        <Text size="xs" fw={700}>
+                          {l.title}
+                        </Text>
+                        <Text size="xs" c="dimmed">
+                          {l.description}
+                        </Text>
+                      </Box>
+                    </Group>
+                  ))}
+                </Stack>
+              </Box>
+              <Divider variant="dashed" />
+              <Box>
+                <Text size="xs" fw={700} c="dimmed" mb="xs" tt="uppercase">
+                  Status-Werte
+                </Text>
+                <Stack gap="xs">
+                  <Group wrap="nowrap" align="flex-start">
+                    <Badge color="gray" size="sm" style={{ minWidth: "55px" }}>
+                      0%
+                    </Badge>
+                    <Box>
+                      <Text size="xs" fw={700}>
+                        Keine Kenntnisse
+                      </Text>
+                      <Text size="xs" c="dimmed">
+                        Bisher keine Erfahrung vorhanden.
+                      </Text>
+                    </Box>
+                  </Group>
+                  <Group wrap="nowrap" align="flex-start">
+                    <Badge
+                      color="gray.3"
+                      size="sm"
+                      style={{ minWidth: "55px" }}
+                    >
+                      N/A
+                    </Badge>
+                    <Box>
+                      <Text size="xs" fw={700}>
+                        Nicht relevant (N/A)
+                      </Text>
+                      <Text size="xs" c="dimmed">
+                        Wird bei der Berechnung ignoriert.
+                      </Text>
+                    </Box>
+                  </Group>
+                </Stack>
+              </Box>
+            </Stack>
+          </Card>
+        </Collapse>
+      </Box>
     </Box>
   );
 };
