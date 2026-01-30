@@ -85,7 +85,7 @@ export const CategoryColumn: React.FC<CategoryColumnProps> = ({
                         w={220}
                         withArrow
                       >
-                        <IconInfoCircle size={14} color="#adb5bd" />
+                        <IconInfoCircle size={14} style={{ color: "var(--mantine-color-dimmed)" }} />
                       </Tooltip>
                     )}
                   </Group>

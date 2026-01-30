@@ -12,11 +12,15 @@ export const EmptyState: React.FC = () => {
         withBorder
         radius="md"
         p={50}
-        style={{ backgroundColor: "#fcfcfc", borderStyle: "dashed" }}
+        style={{ borderStyle: "dashed" }}
       >
         <Center>
           <Stack align="center" gap="xs">
-            <IconDatabaseOff size={50} color="#dee2e6" stroke={1.5} />
+            <IconDatabaseOff
+              size={50}
+              style={{ color: "var(--mantine-color-dimmed)" }}
+              stroke={1.5}
+            />
             <Text fw={700} size="lg" c="dimmed">
               Keine Daten verfügbar
             </Text>

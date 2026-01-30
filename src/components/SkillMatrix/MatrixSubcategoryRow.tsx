@@ -48,8 +48,8 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
       <div
         style={{
           display: "flex",
-          borderBottom: "1px solid #f1f3f5",
-          backgroundColor: "#fff",
+          borderBottom: "1px solid var(--mantine-color-default-border)",
+          backgroundColor: "var(--mantine-color-body)",
         }}
       >
         <div
@@ -59,8 +59,8 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
             position: "sticky",
             left: 0,
             zIndex: 10,
-            backgroundColor: "white",
-            borderRight: "1px solid #dee2e6",
+            backgroundColor: "var(--mantine-color-body)",
+            borderRight: "1px solid var(--mantine-color-default-border)",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
@@ -105,7 +105,9 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
                   alignItems: "center",
                   justifyContent: "center",
                   backgroundColor:
-                    hoveredEmployeeId === emp.id ? "#f8f9fa" : "transparent",
+                    hoveredEmployeeId === emp.id
+                      ? "var(--mantine-color-default-hover)"
+                      : "transparent",
                   transition: "background-color 0.15s ease",
                 }}
               >

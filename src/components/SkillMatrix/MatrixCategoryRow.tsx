@@ -64,8 +64,8 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = ({
       <div
         style={{
           display: "flex",
-          backgroundColor: "#f8f9fa",
-          borderBottom: "1px solid #dee2e6",
+          backgroundColor: "var(--mantine-color-gray-light)",
+          borderBottom: "1px solid var(--mantine-color-default-border)",
         }}
       >
         <div
@@ -75,8 +75,8 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = ({
             position: "sticky",
             left: 0,
             zIndex: 15,
-            backgroundColor: "#f8f9fa",
-            borderRight: "1px solid #dee2e6",
+            backgroundColor: "var(--mantine-color-gray-light)",
+            borderRight: "1px solid var(--mantine-color-default-border)",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
@@ -122,7 +122,9 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = ({
                   alignItems: "center",
                   justifyContent: "center",
                   backgroundColor:
-                    hoveredEmployeeId === emp.id ? "#f1f3f5" : "transparent",
+                    hoveredEmployeeId === emp.id
+                      ? "var(--mantine-color-default-hover)"
+                      : "transparent",
                   transition: "background-color 0.15s ease",
                 }}
               >

@@ -14,8 +14,10 @@ import {
   Tooltip,
   Text,
   Badge,
+  useMantineColorScheme,
+  useComputedColorScheme,
 } from "@mantine/core";
-import { useDisclosure } from "@mantine/hooks";
+import { useDisclosure, useLocalStorage } from "@mantine/hooks";
 import {
   IconUsers,
   IconTags,
@@ -23,6 +25,8 @@ import {
   IconDatabase,
   IconChevronLeft,
   IconChevronRight,
+  IconSun,
+  IconMoon,
 } from "@tabler/icons-react";
 
 import { DataProvider, useData } from "./context/DataContext";
@@ -32,13 +36,34 @@ import { SkillMatrix } from "./components/SkillMatrix";
 import { DataManagement } from "./components/DataManagement";
 import "@mantine/core/styles.css";
 
-const theme = createTheme({});
+const theme = createTheme({
+  primaryColor: "blue",
+});
 
 // Definiere die Versionsnummer an zentraler Stelle
 const APP_VERSION = "v1.0.4";
 
+function ColorSchemeToggle() {
+  const { setColorScheme } = useMantineColorScheme();
+  const computedColorScheme = useComputedColorScheme("light");
+
+  return (
+    <Tooltip label={computedColorScheme === "dark" ? "Light Mode" : "Dark Mode"}>
+      <ActionIcon
+        variant="subtle"
+        color="gray"
+        size="md"
+        onClick={() => setColorScheme(computedColorScheme === "dark" ? "light" : "dark")}
+      >
+        {computedColorScheme === "dark" ? <IconSun size={18} /> : <IconMoon size={18} />}
+      </ActionIcon>
+    </Tooltip>
+  );
+}
+
 function AppContent() {
   const { loading } = useData();
+  const computedColorScheme = useComputedColorScheme("light");
   const [activeTab, setActiveTab] = useState("matrix");
 
   // Sidebar State (Desktop)
@@ -105,6 +130,7 @@ function AppContent() {
               onClick={toggleMobile}
               hiddenFrom="sm"
               size="sm"
+              color={computedColorScheme === "dark" ? "white" : undefined}
             />
 
             <ActionIcon
@@ -148,6 +174,7 @@ function AppContent() {
               )}
             </Group>
           </Group>
+          <ColorSchemeToggle />
         </Group>
       </AppShell.Header>
 
@@ -214,7 +241,7 @@ function AppContent() {
         style={{
           display: "flex",
           flexDirection: "column",
-          backgroundColor: "#f8f9fa",
+          backgroundColor: computedColorScheme === "dark" ? "var(--mantine-color-dark-8)" : "#f8f9fa",
         }}
       >
         <div
@@ -236,8 +263,13 @@ function AppContent() {
 }
 
 function App() {
+  const [colorScheme, setColorScheme] = useLocalStorage({
+    key: "qmatrix-color-scheme",
+    defaultValue: "light",
+  });
+
   return (
-    <MantineProvider theme={theme}>
+    <MantineProvider theme={theme} defaultColorScheme={colorScheme}>
       <DataProvider>
         <AppContent />
       </DataProvider>

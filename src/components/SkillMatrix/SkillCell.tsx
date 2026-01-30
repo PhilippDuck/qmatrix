@@ -32,10 +32,12 @@ export const SkillCell: React.FC<SkillCellProps> = ({
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        borderBottom: "1px solid #f8f9fa",
-        borderRight: "1px solid #f8f9fa",
+        borderBottom: "1px solid var(--mantine-color-default-border)",
+        borderRight: "1px solid var(--mantine-color-default-border)",
         backgroundColor:
-          isRowHovered || isColumnHovered ? "#f8f9fa" : "transparent",
+          isRowHovered || isColumnHovered
+            ? "var(--mantine-color-default-hover)"
+            : "transparent",
         transition: "background-color 0.15s ease",
       }}
     >
@@ -48,7 +50,7 @@ export const SkillCell: React.FC<SkillCellProps> = ({
           width: "80%",
           fontSize: "9px",
           opacity: level === -1 ? 0.6 : 1,
-          border: level === -1 ? "1px dashed #ced4da" : "none",
+          border: level === -1 ? "1px dashed var(--mantine-color-default-border)" : "none",
         }}
       >
         {levelObj?.label}

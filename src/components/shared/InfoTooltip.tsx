@@ -29,7 +29,7 @@ export const InfoTooltip: React.FC<InfoTooltipProps> = ({
       }
     >
       <Box style={{ cursor: "help", display: "flex", alignItems: "center" }}>
-        <IconInfoCircle size={15} color="#adb5bd" />
+        <IconInfoCircle size={15} style={{ color: "var(--mantine-color-dimmed)" }} />
       </Box>
     </Tooltip>
   );

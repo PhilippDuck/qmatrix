@@ -191,7 +191,7 @@ export const DataManagement = () => {
           withBorder
           shadow="sm"
           radius="md"
-          style={{ border: "1px solid #ffc9c9" }}
+          style={{ border: "1px solid var(--mantine-color-red-3)" }}
         >
           <Stack gap="md">
             <Group gap="xs">

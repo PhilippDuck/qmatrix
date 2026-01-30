@@ -40,13 +40,13 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
           position: "sticky",
           left: 0,
           zIndex: 21,
-          backgroundColor: "white",
-          borderRight: "1px solid #dee2e6",
-          borderBottom: "2px solid #dee2e6",
+          backgroundColor: "var(--mantine-color-body)",
+          borderRight: "1px solid var(--mantine-color-default-border)",
+          borderBottom: "2px solid var(--mantine-color-default-border)",
           display: "flex",
           alignItems: "center",
           paddingLeft: "12px",
-          color: "#adb5bd",
+          color: "var(--mantine-color-dimmed)",
           fontSize: "11px",
           fontWeight: 600,
           textTransform: "uppercase",
@@ -54,7 +54,7 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
       >
         Struktur / Team
       </div>
-      <div style={{ display: "flex", backgroundColor: "white" }}>
+      <div style={{ display: "flex", backgroundColor: "var(--mantine-color-body)" }}>
         {employees.map((emp) => {
           const avg = calculateEmployeeAverage(emp.id!);
           const isColumnHovered = hoveredEmployeeId === emp.id;
@@ -72,9 +72,11 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
                 alignItems: "center",
                 justifyContent: "flex-end",
                 paddingBottom: "12px",
-                borderBottom: "2px solid #dee2e6",
-                borderRight: "1px solid #f1f3f5",
-                backgroundColor: isColumnHovered ? "#f8f9fa" : "transparent",
+                borderBottom: "2px solid var(--mantine-color-default-border)",
+                borderRight: "1px solid var(--mantine-color-default-border)",
+                backgroundColor: isColumnHovered
+                  ? "var(--mantine-color-default-hover)"
+                  : "transparent",
                 position: "relative",
                 transition: "background-color 0.15s ease",
               }}

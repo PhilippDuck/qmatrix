@@ -42,9 +42,11 @@ export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = ({
           position: "sticky",
           left: 0,
           zIndex: 5,
-          backgroundColor: isRowHovered ? "#f1f3f5" : "white",
-          borderRight: "1px solid #dee2e6",
-          borderBottom: "1px solid #f8f9fa",
+          backgroundColor: isRowHovered
+            ? "var(--mantine-color-default-hover)"
+            : "var(--mantine-color-body)",
+          borderRight: "1px solid var(--mantine-color-default-border)",
+          borderBottom: "1px solid var(--mantine-color-default-border)",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
