@@ -96,7 +96,7 @@ export const DataManagement = () => {
           <Group justify="space-between">
             <Stack gap={2}>
               <Group gap="xs">
-                <IconHistory size={18} color="gray" />
+                <IconHistory size={18} style={{ color: "var(--mantine-color-dimmed)" }} />
                 <Text fw={600} size="sm">
                   System-Status
                 </Text>
@@ -113,7 +113,7 @@ export const DataManagement = () => {
             </Stack>
             <Group gap="xl">
               <Stack gap={0} align="center">
-                <Text fw={700} size="xl" c="blue">
+                <Text fw={700} size="xl">
                   {employees.length}
                 </Text>
                 <Text size="xs" c="dimmed">
@@ -121,7 +121,7 @@ export const DataManagement = () => {
                 </Text>
               </Stack>
               <Stack gap={0} align="center">
-                <Text fw={700} size="xl" c="blue">
+                <Text fw={700} size="xl">
                   {skills.length}
                 </Text>
                 <Text size="xs" c="dimmed">
@@ -137,7 +137,7 @@ export const DataManagement = () => {
           <Card withBorder shadow="sm" radius="md">
             <Stack gap="md">
               <Group gap="xs">
-                <IconDownload size={20} color="blue" />
+                <IconDownload size={20} style={{ color: "var(--mantine-color-dimmed)" }} />
                 <Title order={4}>Backup</Title>
               </Group>
               <Text size="xs" c="dimmed">
@@ -160,7 +160,7 @@ export const DataManagement = () => {
           <Card withBorder shadow="sm" radius="md">
             <Stack gap="md">
               <Group gap="xs">
-                <IconUpload size={20} color="orange" />
+                <IconUpload size={20} style={{ color: "var(--mantine-color-dimmed)" }} />
                 <Title order={4}>Wiederherstellen</Title>
               </Group>
               <Text size="xs" c="dimmed">
@@ -170,7 +170,6 @@ export const DataManagement = () => {
               <Button
                 leftSection={<IconUpload size={16} />}
                 onClick={handleImportClick}
-                color="orange"
                 variant="light"
               >
                 Datei wählen
@@ -191,12 +190,12 @@ export const DataManagement = () => {
           withBorder
           shadow="sm"
           radius="md"
-          style={{ border: "1px solid var(--mantine-color-red-3)" }}
+          style={{ borderColor: "var(--mantine-color-red-filled)" }}
         >
           <Stack gap="md">
             <Group gap="xs">
-              <IconAlertCircle size={20} color="red" />
-              <Title order={4} c="red.9">
+              <IconAlertCircle size={20} style={{ color: "var(--mantine-color-red-filled)" }} />
+              <Title order={4} c="red">
                 Gefahrenzone
               </Title>
             </Group>
@@ -224,7 +223,7 @@ export const DataManagement = () => {
           </Stack>
         </Card>
 
-        <Alert icon={<IconAlertCircle size={16} />} color="yellow" radius="md">
+        <Alert icon={<IconAlertCircle size={16} />} color="gray" radius="md">
           <Text size="xs">
             <strong>Wichtig:</strong> Da die Daten lokal im Browser gespeichert
             werden, sollten Sie regelmäßig ein Backup (Export) erstellen, um

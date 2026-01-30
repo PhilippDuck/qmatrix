@@ -49,7 +49,7 @@ export const SubcategoryColumn: React.FC<SubcategoryColumnProps> = ({
     >
       <Group justify="space-between" mb="md">
         <Group gap="xs">
-          <IconArrowRight size={20} color="gray" />
+          <IconArrowRight size={20} style={{ color: "var(--mantine-color-dimmed)" }} />
           <Title order={4}>Unterkategorien</Title>
         </Group>
         <Button
@@ -73,8 +73,12 @@ export const SubcategoryColumn: React.FC<SubcategoryColumnProps> = ({
                   cursor: "pointer",
                   backgroundColor:
                     selectedSubCategory === sub.id
-                      ? "var(--mantine-color-blue-light)"
+                      ? "var(--mantine-color-default-hover)"
                       : "transparent",
+                  borderLeft:
+                    selectedSubCategory === sub.id
+                      ? "3px solid var(--mantine-color-blue-filled)"
+                      : "3px solid transparent",
                 }}
                 onClick={() => onSelect(sub.id!)}
               >
@@ -98,7 +102,7 @@ export const SubcategoryColumn: React.FC<SubcategoryColumnProps> = ({
                         </Tooltip>
                       )}
                     </Group>
-                    <Badge variant="light" color="cyan" size="xs" circle>
+                    <Badge variant="light" color="gray" size="xs" circle>
                       {getSkillCount(sub.id!)}
                     </Badge>
                   </Group>

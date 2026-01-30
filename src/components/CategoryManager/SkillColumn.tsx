@@ -42,7 +42,7 @@ export const SkillColumn: React.FC<SkillColumnProps> = ({
     >
       <Group justify="space-between" mb="md">
         <Group gap="xs">
-          <IconTarget size={20} color="var(--mantine-color-teal-filled)" />
+          <IconTarget size={20} style={{ color: "var(--mantine-color-dimmed)" }} />
           <Title order={4}>Skills</Title>
         </Group>
         <Button

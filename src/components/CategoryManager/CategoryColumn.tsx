@@ -42,7 +42,7 @@ export const CategoryColumn: React.FC<CategoryColumnProps> = ({
     <Card withBorder shadow="sm" radius="md" style={{ flex: 1 }}>
       <Group justify="space-between" mb="md">
         <Group gap="xs">
-          <IconCategory size={20} color="var(--mantine-color-blue-filled)" />
+          <IconCategory size={20} style={{ color: "var(--mantine-color-dimmed)" }} />
           <Title order={4}>Kategorien</Title>
         </Group>
         <Button
@@ -64,8 +64,12 @@ export const CategoryColumn: React.FC<CategoryColumnProps> = ({
                 cursor: "pointer",
                 backgroundColor:
                   selectedCategory === cat.id
-                    ? "var(--mantine-color-blue-light)"
+                    ? "var(--mantine-color-default-hover)"
                     : "transparent",
+                borderLeft:
+                  selectedCategory === cat.id
+                    ? "3px solid var(--mantine-color-blue-filled)"
+                    : "3px solid transparent",
               }}
               onClick={() => onSelect(cat.id!)}
             >
@@ -89,7 +93,7 @@ export const CategoryColumn: React.FC<CategoryColumnProps> = ({
                       </Tooltip>
                     )}
                   </Group>
-                  <Badge variant="light" color="blue" size="xs" circle>
+                  <Badge variant="light" color="gray" size="xs" circle>
                     {getSubcategoryCount(cat.id!)}
                   </Badge>
                 </Group>

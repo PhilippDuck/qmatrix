@@ -49,7 +49,7 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
         style={{
           display: "flex",
           borderBottom: "1px solid var(--mantine-color-default-border)",
-          backgroundColor: "var(--mantine-color-gray-0)",
+          backgroundColor: "var(--mantine-color-default-hover)",
         }}
       >
         <div
@@ -59,7 +59,7 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
             position: "sticky",
             left: 0,
             zIndex: 10,
-            backgroundColor: "var(--mantine-color-gray-0)",
+            backgroundColor: "var(--mantine-color-default-hover)",
             borderRight: "1px solid var(--mantine-color-default-border)",
             display: "flex",
             alignItems: "center",
