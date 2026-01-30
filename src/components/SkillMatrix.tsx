@@ -20,16 +20,21 @@ import {
 } from "@tabler/icons-react";
 import { useData } from "../context/DataContext";
 
+/**
+ * Definition der Skill-Level.
+ * -1 (N/A) wird aus den Durchschnittsberechnungen ausgeschlossen.
+ */
 const LEVELS = [
-  { value: 0, label: "0%", color: "gray" },
-  { value: 25, label: "25%", color: "orange" },
-  { value: 50, label: "50%", color: "yellow" },
-  { value: 75, label: "75%", color: "lime" },
-  { value: 100, label: "100%", color: "green" },
+  { value: -1, label: "N/A", color: "gray.3", description: "Nicht relevant" },
+  { value: 0, label: "0%", color: "gray", description: "Keine Kenntnisse" },
+  { value: 25, label: "25%", color: "orange", description: "Grundlagen" },
+  { value: 50, label: "50%", color: "yellow", description: "Fortgeschritten" },
+  { value: 75, label: "75%", color: "lime", description: "Experte" },
+  { value: 100, label: "100%", color: "green", description: "Spezialist" },
 ];
 
 /**
- * Eine kleine Hilfskomponente für die Info-Icons
+ * Komponente für die Beschreibungs-Popover
  */
 const InfoTooltip: React.FC<{ title: string; description?: string }> = ({
   title,
@@ -43,7 +48,7 @@ const InfoTooltip: React.FC<{ title: string; description?: string }> = ({
           <IconInfoCircle size={14} />
         </ActionIcon>
       </Popover.Target>
-      <Popover.Dropdown p="xs">
+      <Popover.Dropdown p="xs" style={{ pointerEvents: "none" }}>
         <Text fw={700} size="xs" mb={4}>
           {title}
         </Text>
@@ -66,7 +71,6 @@ export const SkillMatrix: React.FC = () => {
   } = useData();
 
   const [legendOpened, setLegendOpened] = useState(false);
-
   const [collapsedStates, setCollapsedStates] = useState<
     Record<string, boolean>
   >(() => {
@@ -104,18 +108,27 @@ export const SkillMatrix: React.FC = () => {
     }
   };
 
-  const calculateAverage = (skillIds: string[]) => {
-    if (skillIds.length === 0 || employees.length === 0) return 0;
+  /**
+   * Berechnet den Durchschnittswert. Ignoriert -1 (N/A) Einträge komplett.
+   */
+  const calculateAverage = (skillIds: string | string[]) => {
+    const ids = Array.isArray(skillIds) ? skillIds : [skillIds];
+    if (ids.length === 0 || employees.length === 0) return 0;
+
     let totalScore = 0;
-    let count = 0;
-    skillIds.forEach((skillId) => {
+    let relevantCount = 0;
+
+    ids.forEach((skillId) => {
       employees.forEach((emp) => {
         const assessment = getAssessment(emp.id!, skillId);
-        totalScore += assessment?.level || 0;
-        count++;
+        const level = assessment?.level ?? 0;
+        if (level !== -1) {
+          totalScore += level;
+          relevantCount++;
+        }
       });
     });
-    return Math.round(totalScore / count);
+    return relevantCount === 0 ? 0 : Math.round(totalScore / relevantCount);
   };
 
   const getScoreColor = (score: number) => {
@@ -134,11 +147,7 @@ export const SkillMatrix: React.FC = () => {
     try {
       const currentIdx = LEVELS.findIndex((l) => l.value === currentLevel);
       const nextIdx = (currentIdx + 1) % LEVELS.length;
-      await setAssessment(
-        employeeId,
-        skillId,
-        LEVELS[nextIdx].value as 0 | 25 | 50 | 75 | 100,
-      );
+      await setAssessment(employeeId, skillId, LEVELS[nextIdx].value as any);
     } catch (error) {
       console.error("Error setting assessment:", error);
     }
@@ -153,24 +162,33 @@ export const SkillMatrix: React.FC = () => {
             const subCatSkills = skills.filter(
               (s) => s.subCategoryId === sub.id,
             );
+            const skillsWithAvg = subCatSkills.map((s) => ({
+              ...s,
+              avgScore: calculateAverage(s.id!),
+            }));
+
             return {
               subCategory: sub,
-              skills: subCatSkills,
+              skills: skillsWithAvg,
               avgScore: calculateAverage(subCatSkills.map((s) => s.id!)),
             };
           })
           .filter((sub) => sub.skills.length > 0);
-        const allSkillIdsInCat = subCatsWithSkills.flatMap((s) =>
-          s.skills.map((sk) => sk.id!),
-        );
+
         return {
           category: cat,
           subcategories: subCatsWithSkills,
-          avgScore: calculateAverage(allSkillIdsInCat),
+          avgScore: calculateAverage(
+            subCatsWithSkills.flatMap((s) => s.skills.map((sk) => sk.id!)),
+          ),
         };
       })
       .filter((cat) => cat.subcategories.length > 0);
   }, [categories, subcategories, skills, employees, getAssessment]);
+
+  const cellSize = 85;
+  const labelWidth = 260;
+  const headerHeight = 120;
 
   if (employees.length === 0 || nestedData.length === 0) {
     return (
@@ -180,10 +198,6 @@ export const SkillMatrix: React.FC = () => {
     );
   }
 
-  const cellSize = 85;
-  const labelWidth = 260;
-  const headerHeight = 120;
-
   return (
     <Box
       style={{
@@ -191,27 +205,22 @@ export const SkillMatrix: React.FC = () => {
         width: "100%",
         display: "flex",
         flexDirection: "column",
+        userSelect: "none",
       }}
     >
       <Group mb="xs">
-        <Tooltip
-          label={isEverythingCollapsed ? "Alle ausklappen" : "Alle einklappen"}
-          withArrow
-          position="right"
+        <ActionIcon
+          variant="light"
+          color={isEverythingCollapsed ? "blue" : "gray"}
+          onClick={handleGlobalToggle}
+          size="lg"
         >
-          <ActionIcon
-            variant="light"
-            color={isEverythingCollapsed ? "blue" : "gray"}
-            onClick={handleGlobalToggle}
-            size="lg"
-          >
-            {isEverythingCollapsed ? (
-              <IconLayoutNavbarExpand size={20} />
-            ) : (
-              <IconLayoutNavbarCollapse size={20} />
-            )}
-          </ActionIcon>
-        </Tooltip>
+          {isEverythingCollapsed ? (
+            <IconLayoutNavbarExpand size={20} />
+          ) : (
+            <IconLayoutNavbarCollapse size={20} />
+          )}
+        </ActionIcon>
       </Group>
 
       <Card
@@ -222,18 +231,18 @@ export const SkillMatrix: React.FC = () => {
           display: "flex",
           flexDirection: "column",
           overflow: "hidden",
-          width: "100%",
         }}
       >
-        <div style={{ overflow: "auto", flex: 1, width: "100%" }}>
+        <div style={{ overflow: "auto", flex: 1 }}>
           <div
             style={{
-              minWidth: "100%",
               width: "max-content",
               display: "flex",
               flexDirection: "column",
+              minWidth: "100%",
             }}
           >
+            {/* Header */}
             <div
               style={{
                 display: "flex",
@@ -246,7 +255,6 @@ export const SkillMatrix: React.FC = () => {
                 style={{
                   width: labelWidth,
                   height: headerHeight,
-                  flexShrink: 0,
                   position: "sticky",
                   left: 0,
                   zIndex: 21,
@@ -260,14 +268,11 @@ export const SkillMatrix: React.FC = () => {
                   fontSize: "11px",
                   fontWeight: 600,
                   textTransform: "uppercase",
-                  userSelect: "none",
                 }}
               >
                 Struktur / Team
               </div>
-              <div
-                style={{ display: "flex", backgroundColor: "white", flex: 1 }}
-              >
+              <div style={{ display: "flex", backgroundColor: "white" }}>
                 {employees.map((emp) => (
                   <div
                     key={emp.id}
@@ -280,32 +285,23 @@ export const SkillMatrix: React.FC = () => {
                       paddingBottom: "12px",
                       borderBottom: "2px solid #dee2e6",
                       borderRight: "1px solid #f1f3f5",
-                      userSelect: "none",
                     }}
                   >
-                    <div
+                    <Text
+                      size="xs"
                       style={{
                         writingMode: "vertical-rl",
-                        textOrientation: "mixed",
                         transform: "rotate(180deg)",
-                        fontSize: "12px",
-                        fontWeight: 400,
                       }}
                     >
                       {emp.name}
-                    </div>
+                    </Text>
                   </div>
                 ))}
-                <div
-                  style={{
-                    flex: 1,
-                    borderBottom: "2px solid #dee2e6",
-                    backgroundColor: "white",
-                  }}
-                />
               </div>
             </div>
 
+            {/* Content */}
             {nestedData.map((catGroup) => {
               const isCatCollapsed = collapsedStates[catGroup.category.id!];
               return (
@@ -313,23 +309,22 @@ export const SkillMatrix: React.FC = () => {
                   <div
                     style={{
                       display: "flex",
-                      width: "100%",
-                      userSelect: "none",
+                      backgroundColor: "#f8f9fa",
+                      borderBottom: "1px solid #dee2e6",
                     }}
                   >
                     <div
                       style={{
                         width: labelWidth,
-                        backgroundColor: "#f8f9fa",
                         padding: "8px 12px",
                         position: "sticky",
                         left: 0,
                         zIndex: 15,
+                        backgroundColor: "#f8f9fa",
                         borderRight: "1px solid #dee2e6",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "space-between",
-                        borderBottom: "1px solid #dee2e6",
                       }}
                     >
                       <Group gap="xs">
@@ -339,15 +334,14 @@ export const SkillMatrix: React.FC = () => {
                           onClick={() => toggleItem(catGroup.category.id!)}
                         >
                           {isCatCollapsed ? (
-                            <IconPlus size={14} color="#228be6" />
+                            <IconPlus size={14} />
                           ) : (
-                            <IconMinus size={14} color="#228be6" />
+                            <IconMinus size={14} />
                           )}
                         </ActionIcon>
                         <Text
                           fw={700}
                           size="xs"
-                          c="gray.8"
                           style={{ cursor: "pointer" }}
                           onClick={() => toggleItem(catGroup.category.id!)}
                         >
@@ -366,13 +360,6 @@ export const SkillMatrix: React.FC = () => {
                         {catGroup.avgScore}%
                       </Badge>
                     </div>
-                    <div
-                      style={{
-                        flex: 1,
-                        backgroundColor: "#f8f9fa",
-                        borderBottom: "1px solid #dee2e6",
-                      }}
-                    />
                   </div>
 
                   {!isCatCollapsed &&
@@ -384,20 +371,18 @@ export const SkillMatrix: React.FC = () => {
                           <div
                             style={{
                               display: "flex",
-                              width: "100%",
-                              userSelect: "none",
+                              borderBottom: "1px solid #f1f3f5",
                             }}
                           >
                             <div
                               style={{
                                 width: labelWidth,
                                 padding: "6px 12px 6px 24px",
-                                backgroundColor: "white",
                                 position: "sticky",
                                 left: 0,
                                 zIndex: 10,
+                                backgroundColor: "white",
                                 borderRight: "1px solid #dee2e6",
-                                borderBottom: "1px solid #f1f3f5",
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "space-between",
@@ -412,15 +397,14 @@ export const SkillMatrix: React.FC = () => {
                                   }
                                 >
                                   {isSubCollapsed ? (
-                                    <IconPlus size={12} color="#adb5bd" />
+                                    <IconPlus size={12} />
                                   ) : (
-                                    <IconMinus size={12} color="#adb5bd" />
+                                    <IconMinus size={12} />
                                   )}
                                 </ActionIcon>
                                 <Text
                                   fw={500}
                                   size="xs"
-                                  c="gray.7"
                                   style={{ cursor: "pointer" }}
                                   onClick={() =>
                                     toggleItem(subGroup.subCategory.id!)
@@ -433,105 +417,103 @@ export const SkillMatrix: React.FC = () => {
                                   description={subGroup.subCategory.description}
                                 />
                               </Group>
-                              <Text size="10px" c="dimmed">
+                              <Badge
+                                size="xs"
+                                variant="light"
+                                color={getScoreColor(subGroup.avgScore)}
+                              >
                                 {subGroup.avgScore}%
-                              </Text>
+                              </Badge>
                             </div>
-                            <div
-                              style={{
-                                flex: 1,
-                                backgroundColor: "white",
-                                borderBottom: "1px solid #f1f3f5",
-                              }}
-                            />
                           </div>
 
                           {!isSubCollapsed &&
                             subGroup.skills.map((skill) => (
-                              <div
-                                key={skill.id}
-                                style={{ display: "flex", width: "100%" }}
-                              >
+                              <div key={skill.id} style={{ display: "flex" }}>
                                 <div
                                   style={{
                                     width: labelWidth,
                                     padding: "6px 12px 6px 44px",
-                                    fontSize: "12px",
-                                    fontWeight: 400,
-                                    backgroundColor: "white",
                                     position: "sticky",
                                     left: 0,
                                     zIndex: 5,
+                                    backgroundColor: "white",
                                     borderRight: "1px solid #dee2e6",
                                     borderBottom: "1px solid #f8f9fa",
-                                    userSelect: "none",
-                                    color: "#495057",
                                     display: "flex",
                                     alignItems: "center",
-                                    gap: "8px",
+                                    justifyContent: "space-between",
                                   }}
                                 >
-                                  <Text size="sm" style={{ flex: 1 }}>
+                                  <Text size="sm" truncate style={{ flex: 1 }}>
                                     {skill.name}
                                   </Text>
-                                  <InfoTooltip
-                                    title={skill.name}
-                                    description={skill.description}
-                                  />
+                                  <Group gap={8}>
+                                    <InfoTooltip
+                                      title={skill.name}
+                                      description={skill.description}
+                                    />
+                                    <Text
+                                      style={{
+                                        fontSize: "10px", // Hier wird es kleiner
+                                        fontWeight: 400, // Hier wird es dünner
+                                        minWidth: "30px",
+                                        textAlign: "right",
+                                      }}
+                                      c={getScoreColor(skill.avgScore)}
+                                    >
+                                      {skill.avgScore}%
+                                    </Text>
+                                  </Group>
                                 </div>
-                                <div style={{ display: "flex", flex: 1 }}>
-                                  {employees.map((emp) => {
-                                    const level =
-                                      getAssessment(emp.id!, skill.id!)
-                                        ?.level || 0;
-                                    const levelObj = LEVELS.find(
-                                      (l) => l.value === level,
-                                    );
-                                    return (
-                                      <div
-                                        key={`${emp.id}-${skill.id}`}
+                                {employees.map((emp) => {
+                                  const level =
+                                    getAssessment(emp.id!, skill.id!)?.level ??
+                                    0;
+                                  const levelObj = LEVELS.find(
+                                    (l) => l.value === level,
+                                  );
+                                  return (
+                                    <div
+                                      key={`${emp.id}-${skill.id}`}
+                                      onContextMenu={(e) => e.preventDefault()}
+                                      style={{
+                                        width: cellSize,
+                                        height: 36,
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        borderBottom: "1px solid #f8f9fa",
+                                        borderRight: "1px solid #f8f9fa",
+                                      }}
+                                    >
+                                      <Badge
+                                        color={levelObj?.color}
+                                        variant={
+                                          level <= 0 ? "light" : "filled"
+                                        }
+                                        onClick={() =>
+                                          handleLevelChange(
+                                            emp.id!,
+                                            skill.id!,
+                                            level,
+                                          )
+                                        }
+                                        onContextMenu={(e) =>
+                                          e.preventDefault()
+                                        }
                                         style={{
-                                          width: cellSize,
-                                          height: "36px",
-                                          display: "flex",
-                                          alignItems: "center",
-                                          justifyContent: "center",
-                                          borderBottom: "1px solid #f8f9fa",
-                                          borderRight: "1px solid #f8f9fa",
+                                          cursor: "pointer",
+                                          width: "80%",
+                                          fontSize: "9px",
+                                          opacity: level === -1 ? 0.4 : 1,
                                         }}
                                       >
-                                        <Badge
-                                          color={levelObj?.color}
-                                          variant={
-                                            level === 0 ? "light" : "filled"
-                                          }
-                                          onClick={() =>
-                                            handleLevelChange(
-                                              emp.id!,
-                                              skill.id!,
-                                              level,
-                                            )
-                                          }
-                                          style={{
-                                            cursor: "pointer",
-                                            width: "80%",
-                                            fontSize: "9px",
-                                            height: "18px",
-                                          }}
-                                        >
-                                          {levelObj?.label}
-                                        </Badge>
-                                      </div>
-                                    );
-                                  })}
-                                  <div
-                                    style={{
-                                      flex: 1,
-                                      borderBottom: "1px solid #f8f9fa",
-                                      backgroundColor: "white",
-                                    }}
-                                  />
-                                </div>
+                                        {levelObj?.label}
+                                      </Badge>
+                                    </div>
+                                  );
+                                })}
                               </div>
                             ))}
                         </div>
@@ -544,7 +526,31 @@ export const SkillMatrix: React.FC = () => {
         </div>
       </Card>
 
-      {/* ... Legende bleibt gleich ... */}
+      <Box mt="md">
+        <Button
+          variant="subtle"
+          size="xs"
+          onClick={() => setLegendOpened((o) => !o)}
+        >
+          Legende {legendOpened ? "aus" : "an"}
+        </Button>
+        <Collapse in={legendOpened}>
+          <Card withBorder mt="xs" p="xs">
+            <Group gap="xl">
+              {LEVELS.map((l) => (
+                <Group key={l.value} gap={5}>
+                  <Badge color={l.color} size="sm">
+                    {l.label}
+                  </Badge>
+                  <Text size="xs" c="dimmed">
+                    {l.description}
+                  </Text>
+                </Group>
+              ))}
+            </Group>
+          </Card>
+        </Collapse>
+      </Box>
     </Box>
   );
 };
