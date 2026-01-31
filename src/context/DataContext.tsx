@@ -95,7 +95,7 @@ interface DataContextType {
   deleteRole: (id: string) => Promise<void>;
 
   // Data management
-  exportData: () => Promise<void>;
+  exportData: () => Promise<ExportData>;
   importData: (jsonData: string) => Promise<void>;
   mergeData: (jsonData: string) => Promise<MergeReport>;
   diffData: (jsonData: string) => Promise<MergeDiff>;
@@ -437,7 +437,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
       const timeStr = now.toLocaleTimeString("de-DE").replace(/:/g, "-");
       a.download = `qtrack_backup_${dateStr}_${timeStr}.json`;
       a.click();
+      a.click();
       URL.revokeObjectURL(url);
+      return data;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to export data");
       throw err;

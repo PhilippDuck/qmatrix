@@ -17,6 +17,7 @@ import {
   ScrollArea,
   Collapse,
   ActionIcon,
+  Select,
 } from "@mantine/core";
 import {
   IconDownload,
@@ -28,8 +29,10 @@ import {
   IconArrowsDiff,
   IconCheck,
   IconChevronDown,
+  IconFileText,
 } from "@tabler/icons-react";
 import { useData, MergeReport, MergeDiff, MergeItemDiff } from "../context/DataContext";
+import { generateQuarterlyReport } from "../services/pdfReportService";
 import { useDisclosure } from "@mantine/hooks";
 
 interface ActionInfo {
@@ -50,6 +53,11 @@ export const DataManagement = () => {
   const [resultOpened, { open: openResult, close: closeResult }] = useDisclosure(false);
   const [diffOpened, { open: openDiff, close: closeDiff }] = useDisclosure(false);
   const [dangerZoneOpened, { toggle: toggleDangerZone }] = useDisclosure(false);
+
+  // Report state
+  const [reportYear, setReportYear] = useState<string>(new Date().getFullYear().toString());
+  const [reportQuarter, setReportQuarter] = useState<string>(Math.ceil((new Date().getMonth() + 1) / 3).toString());
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
 
   useEffect(() => {
     const savedAction = localStorage.getItem("last_data_action");
@@ -153,6 +161,19 @@ export const DataManagement = () => {
       } catch (error) {
         alert("Fehler beim Zurücksetzen.");
       }
+    }
+  };
+
+  const handleGenerateReport = async () => {
+    setIsGeneratingReport(true);
+    try {
+      const data = await exportData(); // Re-use exportData to get the full snapshot
+      generateQuarterlyReport(data, parseInt(reportYear), parseInt(reportQuarter));
+      updateTimestamp("Report");
+    } catch (error: any) {
+      alert("Fehler beim Erstellen des Berichts: " + error.message);
+    } finally {
+      setIsGeneratingReport(false);
     }
   };
 
@@ -306,7 +327,62 @@ export const DataManagement = () => {
               />
             </Stack>
           </Card>
+
+
         </SimpleGrid>
+
+        {/* Report Bereich - Full Width */}
+        <Card withBorder shadow="sm" radius="md">
+          <Group justify="space-between" align="flex-start">
+            <Box style={{ flex: 1 }}>
+              <Group gap="xs" mb="xs">
+                <IconFileText size={20} style={{ color: "var(--mantine-color-teal-filled)" }} />
+                <Title order={4}>Quartalsbericht</Title>
+              </Group>
+              <Text size="sm" c="dimmed" mb="md" maw={600}>
+                Erzeugt eine Management Summary als PDF. Diese enthält wichtige KPIs wie den Gesamt-Qualifikationsscore,
+                das Wachstum im gewählten Zeitraum sowie eine Performance-Übersicht nach Kategorien.
+              </Text>
+
+              <Group align="flex-end">
+                <Select
+                  label="Jahr"
+                  placeholder="Jahr"
+                  w={100}
+                  data={Array.from({ length: 5 }, (_, i) => (new Date().getFullYear() - i).toString())}
+                  value={reportYear}
+                  onChange={(v) => setReportYear(v || new Date().getFullYear().toString())}
+                  allowDeselect={false}
+                />
+                <Select
+                  label="Quartal"
+                  placeholder="Q"
+                  w={80}
+                  data={[
+                    { value: "1", label: "Q1" },
+                    { value: "2", label: "Q2" },
+                    { value: "3", label: "Q3" },
+                    { value: "4", label: "Q4" },
+                  ]}
+                  value={reportQuarter}
+                  onChange={(v) => setReportQuarter(v || "1")}
+                  allowDeselect={false}
+                />
+                <Button
+                  leftSection={<IconFileText size={16} />}
+                  onClick={handleGenerateReport}
+                  variant="light"
+                  color="teal"
+                  loading={isGeneratingReport}
+                >
+                  PDF Erstellen
+                </Button>
+              </Group>
+            </Box>
+
+            <IconFileText size={80} style={{ opacity: 0.1 }} />
+          </Group>
+        </Card>
 
         {/* Modal für die Auswahl der Änderungen */}
         <Modal
