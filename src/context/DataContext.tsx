@@ -32,6 +32,7 @@ interface DataContextType {
   assessments: Assessment[];
   departments: Department[];
   roles: EmployeeRole[];
+  projectTitle: string;
   dataHash: string;
   loading: boolean;
   error: string | null;
@@ -94,6 +95,9 @@ interface DataContextType {
   updateRole: (id: string, role: Omit<EmployeeRole, "id">) => Promise<void>;
   deleteRole: (id: string) => Promise<void>;
 
+  // Settings
+  updateProjectTitle: (title: string) => Promise<void>;
+
   // Data management
   exportData: () => Promise<ExportData>;
   importData: (jsonData: string) => Promise<void>;
@@ -115,6 +119,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [roles, setRoles] = useState<EmployeeRole[]>([]);
+  const [projectTitle, setProjectTitle] = useState<string>("");
   const [dataHash, setDataHash] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -138,7 +143,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
 
   const refreshAllData = async () => {
     try {
-      const [emps, cats, subcats, sks, asms, depts, rls, hash] = await Promise.all([
+      const [emps, cats, subcats, sks, asms, depts, rls, settings, hash] = await Promise.all([
         db.getEmployees(),
         db.getCategories(),
         db.getSubCategories(),
@@ -146,6 +151,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
         db.execute("assessments", "getAll"),
         db.getDepartments(),
         db.getRoles(),
+        db.getSettings(),
         db.getDataHash()
       ]);
 
@@ -156,6 +162,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
       setAssessments(asms || []);
       setDepartments(depts || []);
       setRoles(rls || []);
+      setProjectTitle(settings?.projectTitle || "");
       setDataHash(hash || "");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load data");
@@ -422,6 +429,17 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
     }
   };
 
+  const updateProjectTitle = async (title: string) => {
+    console.log("Updating project title to:", title);
+    try {
+      await db.saveSettings({ projectTitle: title });
+      setProjectTitle(title); // Optimistic update
+      await refreshAllData();
+    } catch (e) {
+      console.error("Failed to update project title", e);
+    }
+  };
+
   // Data management
   const exportData = async () => {
     try {
@@ -539,6 +557,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
         addRole,
         updateRole,
         deleteRole,
+        projectTitle,
+        updateProjectTitle,
         exportData,
         importData,
         mergeData,

@@ -17,6 +17,7 @@ import {
   Box,
   useMantineColorScheme,
   useComputedColorScheme,
+  TextInput,
 } from "@mantine/core";
 import { useDisclosure, useLocalStorage } from "@mantine/hooks";
 import {
@@ -35,6 +36,7 @@ import {
   IconEye,
   IconEyeOff,
   IconDeviceFloppy,
+  IconEdit,
 } from "@tabler/icons-react";
 
 import { DataProvider, useData } from "./context/DataContext";
@@ -88,15 +90,25 @@ function AnonymousToggle() {
 }
 
 function AppContent() {
-  const { loading, exportData } = useData();
+  const { loading, exportData, projectTitle, updateProjectTitle } = useData();
   const computedColorScheme = useComputedColorScheme("light");
   const [activeTab, setActiveTab] = useState("dashboard");
+
+  // Title edit state
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [tempTitle, setTempTitle] = useState("");
+
+  const handleTitleSave = () => {
+    if (tempTitle !== projectTitle) {
+      updateProjectTitle(tempTitle);
+    }
+    setIsEditingTitle(false);
+  };
 
   // Sidebar State (Desktop)
   const [desktopOpened, setDesktopOpened] = useState(true);
   const [mobileOpened, { toggle: toggleMobile }] = useDisclosure(false);
 
-  // Zustand aus IndexedDB laden (Initialisierung)
   // Zustand aus IndexedDB laden (Initialisierung)
   useEffect(() => {
     const loadSidebarState = async () => {
@@ -201,6 +213,35 @@ function AppContent() {
               )}
             </Group>
           </Group>
+
+          {/* Center Project Title */}
+          <Box style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)' }}>
+            {isEditingTitle ? (
+              <TextInput
+                value={tempTitle}
+                onChange={(e) => setTempTitle(e.currentTarget.value)}
+                onBlur={handleTitleSave}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault(); // Prevent accidental form submission
+                    e.currentTarget.blur(); // Trigger blur to save
+                  }
+                  if (e.key === 'Escape') setIsEditingTitle(false);
+                }}
+                size="xs"
+                autoFocus
+                styles={{ input: { textAlign: 'center', fontWeight: 600 } }}
+              />
+            ) : (
+              <Group gap="xs" onClick={() => { setTempTitle(projectTitle); setIsEditingTitle(true); }} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                <Text fw={600} size="sm" c={projectTitle ? undefined : 'dimmed'}>
+                  {projectTitle || "Projektname eingeben"}
+                </Text>
+                <IconEdit size={14} color="var(--mantine-color-gray-5)" style={{ opacity: 0.5 }} />
+              </Group>
+            )}
+          </Box>
+
           <Group gap="xs">
             <Tooltip label="Schnellspeicherung (Backup Export)">
               <ActionIcon
@@ -326,7 +367,7 @@ function AppContent() {
           {activeTab === "system" && <DataManagement />}
         </div>
       </AppShell.Main>
-    </AppShell>
+    </AppShell >
   );
 }
 

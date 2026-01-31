@@ -41,7 +41,7 @@ interface ActionInfo {
 }
 
 export const DataManagement = () => {
-  const { exportData, importData, mergeData, diffData, applyMerge, clearAllData, employees, skills } = useData();
+  const { exportData, importData, mergeData, diffData, applyMerge, clearAllData, employees, skills, projectTitle } = useData();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mergeInputRef = useRef<HTMLInputElement>(null);
@@ -168,7 +168,7 @@ export const DataManagement = () => {
     setIsGeneratingReport(true);
     try {
       const data = await exportData(); // Re-use exportData to get the full snapshot
-      generateQuarterlyReport(data, parseInt(reportYear), parseInt(reportQuarter));
+      generateQuarterlyReport(data, parseInt(reportYear), parseInt(reportQuarter), projectTitle);
       updateTimestamp("Report");
     } catch (error: any) {
       alert("Fehler beim Erstellen des Berichts: " + error.message);

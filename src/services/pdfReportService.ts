@@ -23,7 +23,8 @@ interface ReportKPIs {
 export const generateQuarterlyReport = (
     data: ExportData,
     year: number,
-    quarter: number
+    quarter: number,
+    projectTitle?: string
 ) => {
     // 1. Calculate Date Range
     const startDate = new Date(year, (quarter - 1) * 3, 1).getTime();
@@ -152,8 +153,15 @@ export const generateQuarterlyReport = (
     doc.setFontSize(12);
     doc.text(`Qualifizierungsbericht Q${quarter} ${year}`, 14, 30);
 
+    if (projectTitle) {
+        doc.setFontSize(14);
+        doc.setTextColor(255, 255, 255);
+        doc.text(projectTitle, pageWidth - 14, 20, { align: 'right' });
+    }
+
     doc.setFontSize(10);
-    doc.text(`Erstellt: ${new Date().toLocaleDateString("de-DE")}`, pageWidth - 40, 30);
+    doc.setTextColor(255, 255, 255);
+    doc.text(`Erstellt: ${new Date().toLocaleDateString("de-DE")}`, pageWidth - 14, 30, { align: 'right' });
 
     // -- KPIs Section --
     const kpiY = 55;

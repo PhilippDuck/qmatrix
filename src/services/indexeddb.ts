@@ -1,6 +1,6 @@
 // IndexedDB Service für Qualifizierungsmatrix
 const DB_NAME = "QualificationMatrixDB";
-const DB_VERSION = 7;
+const DB_VERSION = 9;
 
 export interface Employee {
   id?: string;
@@ -68,6 +68,12 @@ export interface EmployeeRole {
   updatedAt?: number;
 }
 
+export interface AppSettings {
+  id: string; // usually 'default'
+  projectTitle: string;
+  updatedAt: number;
+}
+
 export interface ExportData {
   employees: Employee[];
   categories: Category[];
@@ -76,6 +82,7 @@ export interface ExportData {
   assessments: Assessment[];
   departments: Department[];
   roles: EmployeeRole[];
+  settings: AppSettings;
   history: AssessmentLogEntry[];
 }
 
@@ -226,6 +233,10 @@ class IndexedDBService {
               };
             }
           });
+        }
+        // Settings Store (v8)
+        if (!db.objectStoreNames.contains("settings")) {
+          db.createObjectStore("settings", { keyPath: "id" });
         }
       };
     });
@@ -494,6 +505,16 @@ class IndexedDBService {
     await this.execute("roles", "delete", id);
   }
 
+  // Settings
+  async getSettings(): Promise<AppSettings | undefined> {
+    return this.execute("settings", "get", "default");
+  }
+
+  async saveSettings(settings: Omit<AppSettings, "id" | "updatedAt">): Promise<void> {
+    const data = { ...settings, id: "default", updatedAt: Date.now() };
+    await this.execute("settings", "put", data);
+  }
+
   async setTargetLevel(
     employeeId: string,
     skillId: string,
@@ -619,13 +640,14 @@ class IndexedDBService {
       assessments: await this.execute("assessments", "getAll"),
       departments: await this.getDepartments(),
       roles: await this.getRoles(),
+      settings: await this.getSettings() || { id: 'default', projectTitle: '', updatedAt: Date.now() },
       history: await this.execute("assessment_logs", "getAll")
     };
   }
 
   async clearAllData(): Promise<void> {
     if (!this.db) return;
-    const stores = ["employees", "categories", "subcategories", "skills", "assessments", "departments", "roles", "assessment_logs"];
+    const stores = ["employees", "categories", "subcategories", "skills", "assessments", "departments", "roles", "assessment_logs", "settings"];
     const transaction = this.db.transaction(stores, "readwrite");
     for (const storeName of stores) {
       const store = transaction.objectStore(storeName);
@@ -642,7 +664,7 @@ class IndexedDBService {
     // Clear all stores
     if (!this.db) return;
 
-    const stores = ["employees", "categories", "subcategories", "skills", "assessments", "departments", "roles", "assessment_logs"];
+    const stores = ["employees", "categories", "subcategories", "skills", "assessments", "departments", "roles", "assessment_logs", "settings"];
     const transaction = this.db.transaction(stores, "readwrite");
 
     for (const storeName of stores) {
@@ -663,6 +685,7 @@ class IndexedDBService {
       assessments: data.assessments,
       departments: data.departments,
       roles: data.roles,
+      settings: data.settings ? [data.settings] : [],
       assessment_logs: data.history
     };
 
@@ -716,7 +739,9 @@ class IndexedDBService {
     await mergeStore("skills", data.skills);
     await mergeStore("employees", data.employees);
     await mergeStore("assessments", data.assessments);
+    await mergeStore("assessments", data.assessments);
     await mergeStore("assessment_logs", data.history);
+    if (data.settings) await mergeStore("settings", [data.settings]);
 
     return report;
   }
