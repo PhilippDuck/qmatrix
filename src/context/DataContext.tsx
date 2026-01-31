@@ -73,8 +73,11 @@ interface DataContextType {
     skillId: string,
   ) => Assessment | undefined;
 
+
   // History methods
   getHistory: (employeeId: string) => Promise<AssessmentLogEntry[]>;
+  getAllHistory: () => Promise<AssessmentLogEntry[]>;
+
 
   // Department methods
   addDepartment: (name: string) => Promise<string>;
@@ -354,6 +357,15 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
     }
   };
 
+  const getAllHistory = async (): Promise<AssessmentLogEntry[]> => {
+    try {
+      return await db.getAllAssessmentLogs();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load all history");
+      return [];
+    }
+  };
+
   // Department methods
   const addDepartment = async (name: string) => {
     try {
@@ -480,6 +492,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
         getAssessmentsByEmployee,
         getAssessment,
         getHistory,
+        getAllHistory,
         addDepartment,
         updateDepartment,
         deleteDepartment,

@@ -14,6 +14,7 @@ import {
   Tooltip,
   Text,
   Badge,
+  Box,
   useMantineColorScheme,
   useComputedColorScheme,
 } from "@mantine/core";
@@ -30,6 +31,7 @@ import {
   IconMoon,
   IconSettings,
   IconDashboard,
+  IconHeart,
 } from "@tabler/icons-react";
 
 import { DataProvider, useData } from "./context/DataContext";
@@ -44,7 +46,7 @@ const theme = createTheme({
 });
 
 // Definiere die Versionsnummer an zentraler Stelle
-const APP_VERSION = "v1.1.0";
+const APP_VERSION = "v2.0.0";
 
 function ColorSchemeToggle() {
   const { setColorScheme } = useMantineColorScheme();
@@ -181,7 +183,7 @@ function AppContent() {
         </Group>
       </AppShell.Header>
 
-      <AppShell.Navbar p="xs">
+      <AppShell.Navbar p="xs" style={{ display: 'flex', flexDirection: 'column' }}>
         <Stack gap={4}>
           {navItems.map((item) => (
             <Tooltip
@@ -238,6 +240,34 @@ function AppContent() {
             </Tooltip>
           ))}
         </Stack>
+
+        {/* Spacer */}
+        <Box style={{ flex: 1 }} />
+
+        {/* Credits */}
+        {desktopOpened && (
+          <Box
+            py="sm"
+            px="xs"
+            style={{
+              borderTop: '1px solid var(--mantine-color-default-border)',
+              marginTop: 'auto',
+            }}
+          >
+            <Text size="xs" c="dimmed" ta="center">
+              Designed with{' '}
+              <IconHeart
+                size={12}
+                style={{ verticalAlign: 'middle', color: 'var(--mantine-color-red-6)' }}
+                fill="var(--mantine-color-red-6)"
+              />{' '}
+              by
+            </Text>
+            <Text size="xs" c="dimmed" ta="center" fw={500}>
+              Philipp-Marcel Duck
+            </Text>
+          </Box>
+        )}
       </AppShell.Navbar>
 
       <AppShell.Main

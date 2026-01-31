@@ -1,16 +1,107 @@
-# React + Vite
+# Q-Matrix
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Eine moderne Skill-Matrix-Anwendung zur Verwaltung und Visualisierung von Mitarbeiter-Kompetenzen.
 
-Currently, two official plugins are available:
+![Version](https://img.shields.io/badge/version-2.0.0-blue)
+![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)
+![Mantine](https://img.shields.io/badge/Mantine-7-339AF0)
+![Vite](https://img.shields.io/badge/Vite-7-646CFF?logo=vite)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## ✨ Features
 
-## React Compiler
+### 📊 Dashboard
+- Globale KPIs auf einen Blick
+- Top Performer Übersicht
+- Skill-Gap Analyse
+- Abteilungs- und Rollen-Statistiken
+- Kategorie-Performance
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 🎯 Skill-Matrix
+- Interaktive Matrix-Ansicht aller Mitarbeiter und Skills
+- Hover-Cards mit detaillierten Mitarbeiter-Informationen
+- KPIs: Expertise, Vielseitigkeit, Volumen (XP), Zielerfüllung
+- Lernbedarf-Anzeige für Skills unter Zielniveau
+- Skill-Verlauf und Historie
 
-## Expanding the ESLint configuration
+### 👥 Stammdaten
+- Mitarbeiter-Verwaltung mit Abteilung und Rolle
+- Kategorien und Unterkategorien für Skills
+- Skill-Definitionen mit Rollen-Zuordnung
+- Abteilungs-Management
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### 🏢 Rollen-Management
+- Rollen mit anpassbaren Icons
+- Vererbungs-Hierarchie zwischen Rollen
+- Organigramm-Visualisierung
+- Skill-Zuordnung pro Rolle
+- Mitarbeiter-Übersicht pro Rolle
+
+### 💾 Daten-Management
+- Lokale IndexedDB Speicherung (keine Server erforderlich)
+- Export/Import als JSON
+- Vollständiger Reset möglich
+
+## 🚀 Installation
+
+```bash
+# Repository klonen
+git clone https://github.com/PhilippDuck/qmatrix.git
+
+# In das Verzeichnis wechseln
+cd qmatrix
+
+# Abhängigkeiten installieren
+npm install
+
+# Entwicklungsserver starten
+npm run dev
+
+# Für Produktion bauen
+npm run build
+```
+
+## 🛠️ Technologie-Stack
+
+- **Frontend**: React 19 mit Vite
+- **UI-Bibliothek**: Mantine 7
+- **Icons**: Tabler Icons
+- **Charts**: react-organizational-chart
+- **Speicherung**: IndexedDB (browser-basiert)
+- **Styling**: CSS Variablen mit Dark/Light Mode
+
+## 📁 Projektstruktur
+
+```
+src/
+├── components/
+│   ├── Dashboard/          # Dashboard mit globalen KPIs
+│   ├── SkillMatrix/        # Matrix-Komponenten
+│   ├── organization/       # Rollen & Organigramm
+│   ├── shared/             # Wiederverwendbare Komponenten
+│   └── ...
+├── context/
+│   └── DataContext.tsx     # Globaler Datenzustand
+├── services/
+│   └── indexeddb.ts        # Datenbank-Service
+├── utils/
+│   └── skillCalculations.ts # Berechnungsfunktionen
+└── App.jsx                 # Hauptanwendung
+```
+
+## 📋 Roadmap
+
+- [ ] PDF-Export von Berichten
+- [ ] Team-Ansicht
+- [ ] Zertifikats-Tracking
+- [ ] Skill-Empfehlungen basierend auf Rolle
+- [ ] Multi-User Support
+
+## 📄 Lizenz
+
+MIT License - siehe [LICENSE](LICENSE) für Details.
+
+---
+
+<p align="center">
+  Designed with ❤️ by <strong>Philipp-Marcel Duck</strong>
+</p>

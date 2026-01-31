@@ -372,8 +372,13 @@ class IndexedDBService {
     return id;
   }
 
+
   async getAssessmentLogs(employeeId: string): Promise<AssessmentLogEntry[]> {
     return this.executeIndex("assessment_logs", "employeeId", "getAll", employeeId);
+  }
+
+  async getAllAssessmentLogs(): Promise<AssessmentLogEntry[]> {
+    return this.execute("assessment_logs", "getAll");
   }
 
   async deleteAssessment(employeeId: string, skillId: string): Promise<void> {
