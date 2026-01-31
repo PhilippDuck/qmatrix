@@ -39,7 +39,7 @@ export interface Assessment {
   id?: string;
   employeeId: string;
   skillId: string;
-  level: 0 | 25 | 50 | 75 | 100;
+  level: -1 | 0 | 25 | 50 | 75 | 100;
   targetLevel?: number; // Individuelles Soll pro Mitarbeiter/Skill
   updatedAt?: number;
 }
@@ -393,7 +393,7 @@ class IndexedDBService {
   async setAssessment(
     employeeId: string,
     skillId: string,
-    level: 0 | 25 | 50 | 75 | 100,
+    level: -1 | 0 | 25 | 50 | 75 | 100,
   ): Promise<void> {
     const id = `${employeeId}-${skillId}`;
     // Preserve existing targetLevel if present

@@ -88,7 +88,7 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
             />
           </Group>
           <Badge size="xs" variant="light" color={getScoreColor(subAvg)}>
-            {subAvg}%
+            {subAvg === null ? "N/A" : `${subAvg}%`}
           </Badge>
         </div>
         {employees.map((emp) => {
@@ -136,7 +136,7 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
             onEmployeeHover={onEmployeeHover}
             getAssessment={getAssessment}
             calculateSkillAverage={(skillId) =>
-              calculateAverage([skillId]) ?? 0
+              calculateAverage([skillId]) ?? null
             }
             onLevelChange={onLevelChange}
             onTargetLevelChange={onTargetLevelChange}

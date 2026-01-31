@@ -65,7 +65,7 @@ interface DataContextType {
   setAssessment: (
     employeeId: string,
     skillId: string,
-    level: 0 | 25 | 50 | 75 | 100,
+    level: -1 | 0 | 25 | 50 | 75 | 100,
   ) => Promise<void>;
   setTargetLevel: (
     employeeId: string,
@@ -298,7 +298,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
   const setAssessment = async (
     employeeId: string,
     skillId: string,
-    level: 0 | 25 | 50 | 75 | 100,
+    level: -1 | 0 | 25 | 50 | 75 | 100,
   ) => {
     try {
       await db.setAssessment(employeeId, skillId, level);

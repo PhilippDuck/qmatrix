@@ -14,7 +14,7 @@ interface MatrixSkillRowProps {
   onSkillHover: (skillId: string | null) => void;
   onEmployeeHover: (employeeId: string | null) => void;
   getAssessment: (employeeId: string, skillId: string) => Assessment | undefined;
-  calculateSkillAverage: (skillId: string) => number;
+  calculateSkillAverage: (skillId: string) => number | null;
   onLevelChange: (employeeId: string, skillId: string, newLevel: number) => void;
   onTargetLevelChange: (employeeId: string, skillId: string, targetLevel: number | undefined) => void;
 }
@@ -61,7 +61,7 @@ export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = ({
         <Group gap={8}>
           <InfoTooltip title={skill.name} description={skill.description} />
           <Text style={{ fontSize: "10px" }} c={getScoreColor(skillAvg)}>
-            {skillAvg}%
+            {skillAvg === null ? "N/A" : `${skillAvg}%`}
           </Text>
         </Group>
       </div>

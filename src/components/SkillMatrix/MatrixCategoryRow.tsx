@@ -106,7 +106,7 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = ({
             <InfoTooltip title={category.name} description={category.description} />
           </Group>
           <Badge size="xs" variant="filled" color={getScoreColor(catAvg)}>
-            {catAvg}%
+            {catAvg === null ? "N/A" : `${catAvg}%`}
           </Badge>
         </div>
         {employees.map((emp) => {

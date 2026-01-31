@@ -155,16 +155,21 @@ export const SkillMatrix: React.FC = () => {
     skillIds.forEach((sId) => {
       targetEmps.forEach((emp) => {
         const assessment = getAssessment(emp.id!, sId);
-        // If assessment exists, use its level, otherwise treat as 0 (for average calculation)
+        // If assessment exists, use its level, otherwise treat as 0
         const val = assessment?.level ?? 0;
+
+        // Ignore N/A (-1)
+        if (val === -1) return;
 
         totalScore += val;
         relevantCount++;
         hasAnyRelevant = true;
       });
     });
-    if (specificEmployeeId && !hasAnyRelevant) return null;
-    return relevantCount === 0 ? 0 : Math.round(totalScore / relevantCount);
+
+    // If no relevant assessments found (all N/A or empty), return null
+    if (relevantCount === 0) return null;
+    return Math.round(totalScore / relevantCount);
   };
 
   const bulkSetLevel = async (
