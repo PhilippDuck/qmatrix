@@ -34,6 +34,7 @@ import {
   IconHeart,
   IconEye,
   IconEyeOff,
+  IconDeviceFloppy,
 } from "@tabler/icons-react";
 
 import { DataProvider, useData } from "./context/DataContext";
@@ -87,7 +88,7 @@ function AnonymousToggle() {
 }
 
 function AppContent() {
-  const { loading } = useData();
+  const { loading, exportData } = useData();
   const computedColorScheme = useComputedColorScheme("light");
   const [activeTab, setActiveTab] = useState("dashboard");
 
@@ -200,6 +201,16 @@ function AppContent() {
             </Group>
           </Group>
           <Group gap="xs">
+            <Tooltip label="Schnellspeicherung (Backup Export)">
+              <ActionIcon
+                variant="subtle"
+                color="gray"
+                size="md"
+                onClick={() => exportData()}
+              >
+                <IconDeviceFloppy size={18} />
+              </ActionIcon>
+            </Tooltip>
             <AnonymousToggle />
             <ColorSchemeToggle />
           </Group>

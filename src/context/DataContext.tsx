@@ -15,10 +15,14 @@ import {
   AssessmentLogEntry,
   Department,
   EmployeeRole,
+  ExportData,
+  MergeReport,
+  MergeDiff,
+  MergeItemDiff,
 } from "../services/indexeddb";
 
 // Re-export types for convenience
-export type { Employee, Category, SubCategory, Skill, Assessment, AssessmentLogEntry, Department, EmployeeRole };
+export type { Employee, Category, SubCategory, Skill, Assessment, AssessmentLogEntry, Department, EmployeeRole, ExportData, MergeReport, MergeDiff, MergeItemDiff };
 
 interface DataContextType {
   employees: Employee[];
@@ -92,6 +96,9 @@ interface DataContextType {
   // Data management
   exportData: () => Promise<void>;
   importData: (jsonData: string) => Promise<void>;
+  mergeData: (jsonData: string) => Promise<MergeReport>;
+  diffData: (jsonData: string) => Promise<MergeDiff>;
+  applyMerge: (diff: MergeDiff, selectedIds: string[]) => Promise<MergeReport>;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -461,6 +468,39 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
     }
   };
 
+  const mergeData = async (jsonData: string): Promise<MergeReport> => {
+    try {
+      const data: ExportData = JSON.parse(jsonData);
+      const report = await db.mergeData(data);
+      await refreshAllData();
+      return report;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to merge data");
+      throw err;
+    }
+  };
+
+  const diffData = async (jsonData: string): Promise<MergeDiff> => {
+    try {
+      const data: ExportData = JSON.parse(jsonData);
+      return await db.diffData(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to diff data");
+      throw err;
+    }
+  };
+
+  const applyMerge = async (diff: MergeDiff, selectedIds: string[]): Promise<MergeReport> => {
+    try {
+      const report = await db.applyMerge(diff, selectedIds);
+      await refreshAllData();
+      return report;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to apply merge");
+      throw err;
+    }
+  };
+
   return (
     <DataContext.Provider
       value={{
@@ -501,6 +541,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
         deleteRole,
         exportData,
         importData,
+        mergeData,
+        diffData,
+        applyMerge,
       }}
     >
       {children}

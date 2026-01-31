@@ -1,18 +1,20 @@
 // IndexedDB Service für Qualifizierungsmatrix
 const DB_NAME = "QualificationMatrixDB";
-const DB_VERSION = 5;
+const DB_VERSION = 6;
 
 export interface Employee {
   id?: string;
   name: string;
   department?: string;
   role?: string;
+  updatedAt?: number;
 }
 
 export interface Category {
   id?: string;
   name: string;
   description?: string;
+  updatedAt?: number;
 }
 
 export interface SubCategory {
@@ -20,6 +22,7 @@ export interface SubCategory {
   categoryId: string;
   name: string;
   description?: string;
+  updatedAt?: number;
 }
 
 export interface Skill {
@@ -29,6 +32,7 @@ export interface Skill {
   description?: string;
   departmentId?: string;
   requiredByRoleIds?: string[];
+  updatedAt?: number;
 }
 
 export interface Assessment {
@@ -37,6 +41,7 @@ export interface Assessment {
   skillId: string;
   level: 0 | 25 | 50 | 75 | 100;
   targetLevel?: number; // Individuelles Soll pro Mitarbeiter/Skill
+  updatedAt?: number;
 }
 
 export interface AssessmentLogEntry {
@@ -52,6 +57,7 @@ export interface AssessmentLogEntry {
 export interface Department {
   id?: string;
   name: string;
+  updatedAt?: number;
 }
 
 export interface EmployeeRole {
@@ -59,6 +65,39 @@ export interface EmployeeRole {
   name: string;
   inheritsFromId?: string;
   icon?: string; // Tabler icon name, e.g. "IconUser"
+  updatedAt?: number;
+}
+
+export interface ExportData {
+  employees: Employee[];
+  categories: Category[];
+  subcategories: SubCategory[];
+  skills: Skill[];
+  assessments: Assessment[];
+  departments: Department[];
+  roles: EmployeeRole[];
+}
+
+export interface MergeReport {
+  added: number;
+  updated: number;
+  skipped: number;
+  conflicts: number;
+}
+
+export interface MergeItemDiff {
+  id: string;
+  storeName: string;
+  label: string;
+  type: 'new' | 'update' | 'conflict' | 'identical';
+  localTimestamp?: number;
+  remoteTimestamp?: number;
+  localData?: any;
+  remoteData?: any;
+}
+
+export interface MergeDiff {
+  items: MergeItemDiff[];
 }
 
 class IndexedDBService {
@@ -162,14 +201,37 @@ class IndexedDBService {
             skillStore.createIndex("departmentId", "departmentId", { unique: false });
           }
         }
+
+        // Migration to v6: Add updatedAt to all records
+        if (event.oldVersion < 6) {
+          const stores = ["employees", "categories", "subcategories", "skills", "assessments", "departments", "roles"];
+          const transaction = (event.target as IDBOpenDBRequest).transaction!;
+          stores.forEach(storeName => {
+            if (db.objectStoreNames.contains(storeName)) {
+              const store = transaction.objectStore(storeName);
+              const cursorRequest = store.openCursor();
+              cursorRequest.onsuccess = (e: any) => {
+                const cursor = e.target.result;
+                if (cursor) {
+                  const data = cursor.value;
+                  if (!data.updatedAt) {
+                    data.updatedAt = Date.now();
+                    cursor.update(data);
+                  }
+                  cursor.continue();
+                }
+              };
+            }
+          });
+        }
       };
     });
   }
 
   // Employees
-  async addEmployee(employee: Omit<Employee, "id">): Promise<string> {
+  async addEmployee(employee: Omit<Employee, "id" | "updatedAt">): Promise<string> {
     const id = crypto.randomUUID();
-    const data = { ...employee, id };
+    const data = { ...employee, id, updatedAt: Date.now() };
     await this.execute("employees", "add", data);
     return id;
   }
@@ -180,9 +242,9 @@ class IndexedDBService {
 
   async updateEmployee(
     id: string,
-    employee: Omit<Employee, "id">,
+    employee: Omit<Employee, "id" | "updatedAt">,
   ): Promise<void> {
-    const data = { ...employee, id };
+    const data = { ...employee, id, updatedAt: Date.now() };
     await this.execute("employees", "put", data);
   }
 
@@ -198,9 +260,9 @@ class IndexedDBService {
   }
 
   // Categories
-  async addCategory(category: Omit<Category, "id">): Promise<string> {
+  async addCategory(category: Omit<Category, "id" | "updatedAt">): Promise<string> {
     const id = crypto.randomUUID();
-    const data = { ...category, id };
+    const data = { ...category, id, updatedAt: Date.now() };
     await this.execute("categories", "add", data);
     return id;
   }
@@ -211,9 +273,9 @@ class IndexedDBService {
 
   async updateCategory(
     id: string,
-    category: Omit<Category, "id">,
+    category: Omit<Category, "id" | "updatedAt">,
   ): Promise<void> {
-    const data = { ...category, id };
+    const data = { ...category, id, updatedAt: Date.now() };
     await this.execute("categories", "put", data);
   }
 
@@ -242,9 +304,9 @@ class IndexedDBService {
   }
 
   // SubCategories
-  async addSubCategory(subCategory: Omit<SubCategory, "id">): Promise<string> {
+  async addSubCategory(subCategory: Omit<SubCategory, "id" | "updatedAt">): Promise<string> {
     const id = crypto.randomUUID();
-    const data = { ...subCategory, id };
+    const data = { ...subCategory, id, updatedAt: Date.now() };
     await this.execute("subcategories", "add", data);
     return id;
   }
@@ -264,9 +326,9 @@ class IndexedDBService {
 
   async updateSubCategory(
     id: string,
-    subCategory: Omit<SubCategory, "id">,
+    subCategory: Omit<SubCategory, "id" | "updatedAt">,
   ): Promise<void> {
-    const data = { ...subCategory, id };
+    const data = { ...subCategory, id, updatedAt: Date.now() };
     await this.execute("subcategories", "put", data);
   }
 
@@ -288,9 +350,9 @@ class IndexedDBService {
   }
 
   // Skills
-  async addSkill(skill: Omit<Skill, "id">): Promise<string> {
+  async addSkill(skill: Omit<Skill, "id" | "updatedAt">): Promise<string> {
     const id = crypto.randomUUID();
-    const data = { ...skill, id };
+    const data = { ...skill, id, updatedAt: Date.now() };
     await this.execute("skills", "add", data);
     return id;
   }
@@ -308,8 +370,8 @@ class IndexedDBService {
     );
   }
 
-  async updateSkill(id: string, skill: Omit<Skill, "id">): Promise<void> {
-    const data = { ...skill, id };
+  async updateSkill(id: string, skill: Omit<Skill, "id" | "updatedAt">): Promise<void> {
+    const data = { ...skill, id, updatedAt: Date.now() };
     await this.execute("skills", "put", data);
   }
 
@@ -355,11 +417,12 @@ class IndexedDBService {
     }
 
     const data: Assessment = {
+      ...(existing || {}),
       id,
       employeeId,
       skillId,
       level,
-      targetLevel: existing?.targetLevel
+      updatedAt: Date.now()
     };
     await this.execute("assessments", "put", data);
   }
@@ -389,7 +452,7 @@ class IndexedDBService {
   // Departments
   async addDepartment(name: string): Promise<string> {
     const id = crypto.randomUUID();
-    const data = { name, id };
+    const data = { name, id, updatedAt: Date.now() };
     await this.execute("departments", "add", data);
     return id;
   }
@@ -398,8 +461,8 @@ class IndexedDBService {
     return this.execute("departments", "getAll");
   }
 
-  async updateDepartment(id: string, department: Omit<Department, "id">): Promise<void> {
-    const data = { ...department, id };
+  async updateDepartment(id: string, department: Omit<Department, "id" | "updatedAt">): Promise<void> {
+    const data = { ...department, id, updatedAt: Date.now() };
     await this.execute("departments", "put", data);
   }
 
@@ -408,9 +471,9 @@ class IndexedDBService {
   }
 
   // Roles
-  async addRole(role: Omit<EmployeeRole, "id">): Promise<string> {
+  async addRole(role: Omit<EmployeeRole, "id" | "updatedAt">): Promise<string> {
     const id = crypto.randomUUID();
-    const data = { ...role, id };
+    const data = { ...role, id, updatedAt: Date.now() };
     await this.execute("roles", "add", data);
     return id;
   }
@@ -419,8 +482,8 @@ class IndexedDBService {
     return this.execute("roles", "getAll");
   }
 
-  async updateRole(id: string, role: Omit<EmployeeRole, "id">): Promise<void> {
-    const data = { ...role, id };
+  async updateRole(id: string, role: Omit<EmployeeRole, "id" | "updatedAt">): Promise<void> {
+    const data = { ...role, id, updatedAt: Date.now() };
     await this.execute("roles", "put", data);
   }
 
@@ -437,11 +500,13 @@ class IndexedDBService {
     // Get existing or create new
     const existing = await this.getAssessment(employeeId, skillId);
     const data: Assessment = {
+      ...(existing || {}),
       id,
       employeeId,
       skillId,
       level: existing?.level ?? 0,
-      targetLevel
+      targetLevel,
+      updatedAt: Date.now()
     };
     await this.execute("assessments", "put", data);
   }
@@ -469,6 +534,10 @@ class IndexedDBService {
       request.onerror = () => reject(request.error);
       request.onsuccess = () => resolve(request.result);
     });
+  }
+
+  async getById(storeName: string, id: string): Promise<any> {
+    return this.execute(storeName, "get", id);
   }
 
   // Helper methods
@@ -538,15 +607,7 @@ class IndexedDBService {
   }
 
   // Export all data as JSON
-  async exportData(): Promise<{
-    employees: Employee[];
-    categories: Category[];
-    subcategories: SubCategory[];
-    skills: Skill[];
-    assessments: Assessment[];
-    departments: Department[];
-    roles: EmployeeRole[];
-  }> {
+  async exportData(): Promise<ExportData> {
     return {
       employees: await this.getEmployees(),
       categories: await this.getCategories(),
@@ -558,33 +619,15 @@ class IndexedDBService {
     };
   }
 
-  // Import data from JSON
-  async importData(data: {
-    employees?: Employee[];
-    categories?: Category[];
-    subcategories?: SubCategory[];
-    skills?: Skill[];
-    assessments?: Assessment[];
-    departments?: Department[];
-    roles?: EmployeeRole[];
-  }): Promise<void> {
+  // Import data from JSON (Destructive)
+  async importData(data: ExportData): Promise<void> {
     // Clear all stores
     if (!this.db) return;
 
-    const transaction = this.db.transaction(
-      ["employees", "categories", "subcategories", "skills", "assessments", "departments", "roles"],
-      "readwrite",
-    );
+    const stores = ["employees", "categories", "subcategories", "skills", "assessments", "departments", "roles"];
+    const transaction = this.db.transaction(stores, "readwrite");
 
-    for (const storeName of [
-      "employees",
-      "categories",
-      "subcategories",
-      "skills",
-      "assessments",
-      "departments",
-      "roles"
-    ]) {
+    for (const storeName of stores) {
       await new Promise<void>((resolve, reject) => {
         const store = transaction.objectStore(storeName);
         const request = store.clear();
@@ -594,41 +637,161 @@ class IndexedDBService {
     }
 
     // Import data
-    if (data.employees) {
-      for (const emp of data.employees) {
-        await this.execute("employees", "add", emp);
+    const mappings: Record<string, any[]> = {
+      employees: data.employees,
+      categories: data.categories,
+      subcategories: data.subcategories,
+      skills: data.skills,
+      assessments: data.assessments,
+      departments: data.departments,
+      roles: data.roles
+    };
+
+    for (const [storeName, items] of Object.entries(mappings)) {
+      if (items) {
+        for (const item of items) {
+          // Ensure imported items have updatedAt
+          const dataToSave = { ...item, updatedAt: item.updatedAt || Date.now() };
+          await this.execute(storeName, "add", dataToSave);
+        }
       }
     }
-    if (data.categories) {
-      for (const cat of data.categories) {
-        await this.execute("categories", "add", cat);
+  }
+
+  // Merge tool (Non-destructive, based on updatedAt)
+  async mergeData(data: ExportData): Promise<MergeReport> {
+    const report: MergeReport = { added: 0, updated: 0, skipped: 0, conflicts: 0 };
+
+    const mergeStore = async (storeName: string, items: any[]) => {
+      if (!items) return;
+      for (const item of items) {
+        if (!item.id) continue;
+        const local = await this.getById(storeName, item.id);
+
+        if (!local) {
+          const dataToSave = { ...item, updatedAt: item.updatedAt || Date.now() };
+          await this.execute(storeName, "add", dataToSave);
+          report.added++;
+        } else if (item.updatedAt && (!local.updatedAt || item.updatedAt > local.updatedAt)) {
+          await this.execute(storeName, "put", item);
+          report.updated++;
+        } else {
+          report.skipped++;
+          if (item.updatedAt && local.updatedAt && item.updatedAt < local.updatedAt) {
+            report.conflicts++;
+          }
+        }
+      }
+    };
+
+    await mergeStore("departments", data.departments);
+    await mergeStore("roles", data.roles);
+    await mergeStore("categories", data.categories);
+    await mergeStore("subcategories", data.subcategories);
+    await mergeStore("skills", data.skills);
+    await mergeStore("employees", data.employees);
+    await mergeStore("assessments", data.assessments);
+
+    return report;
+  }
+
+  // Interactive Merge: Diff
+  async diffData(data: ExportData): Promise<MergeDiff> {
+    const diff: MergeDiff = { items: [] };
+
+    const stores = [
+      { name: "departments", label: "Abteilung" },
+      { name: "roles", label: "Rolle" },
+      { name: "categories", label: "Kategorie" },
+      { name: "subcategories", label: "Unterkategorie" },
+      { name: "skills", label: "Skill" },
+      { name: "employees", label: "Mitarbeiter" },
+      { name: "assessments", label: "Bewertung" }
+    ];
+
+    for (const store of stores) {
+      const items = (data as any)[store.name];
+      if (!items) continue;
+
+      for (const item of items) {
+        if (!item.id) continue;
+        const local = await this.getById(store.name, item.id);
+
+        let label = item.name || item.id;
+        if (store.name === "assessments") {
+          label = `Bewertung ${item.id}`;
+        }
+
+        if (!local) {
+          diff.items.push({
+            id: item.id,
+            storeName: store.name,
+            label: `${store.label}: ${label}`,
+            type: 'new',
+            remoteTimestamp: item.updatedAt,
+            remoteData: item
+          });
+        } else if (item.updatedAt && local.updatedAt) {
+          if (item.updatedAt > local.updatedAt) {
+            diff.items.push({
+              id: item.id,
+              storeName: store.name,
+              label: `${store.label}: ${label}`,
+              type: 'update',
+              localTimestamp: local.updatedAt,
+              remoteTimestamp: item.updatedAt,
+              localData: local,
+              remoteData: item
+            });
+          } else if (item.updatedAt < local.updatedAt) {
+            diff.items.push({
+              id: item.id,
+              storeName: store.name,
+              label: `${store.label}: ${label}`,
+              type: 'conflict',
+              localTimestamp: local.updatedAt,
+              remoteTimestamp: item.updatedAt,
+              localData: local,
+              remoteData: item
+            });
+          } else {
+            diff.items.push({
+              id: item.id,
+              storeName: store.name,
+              label: `${store.label}: ${label}`,
+              type: 'identical',
+              localTimestamp: local.updatedAt,
+              remoteTimestamp: item.updatedAt,
+              localData: local,
+              remoteData: item
+            });
+          }
+        }
       }
     }
-    if (data.subcategories) {
-      for (const subcat of data.subcategories) {
-        await this.execute("subcategories", "add", subcat);
+
+    return diff;
+  }
+
+  // Interactive Merge: Apply
+  async applyMerge(diff: MergeDiff, selectedIds: string[]): Promise<MergeReport> {
+    const report: MergeReport = { added: 0, updated: 0, skipped: 0, conflicts: 0 };
+    const selectedSet = new Set(selectedIds);
+
+    for (const itemDiff of diff.items) {
+      const fullId = `${itemDiff.storeName}-${itemDiff.id}`;
+      if (selectedSet.has(fullId)) {
+        const dataToSave = { ...itemDiff.remoteData, updatedAt: itemDiff.remoteData.updatedAt || Date.now() };
+        await this.execute(itemDiff.storeName, "put", dataToSave);
+        if (itemDiff.type === 'new') report.added++;
+        else report.updated++;
+      } else {
+        report.skipped++;
+        if (itemDiff.type === 'conflict') report.conflicts++;
       }
     }
-    if (data.skills) {
-      for (const skill of data.skills) {
-        await this.execute("skills", "add", skill);
-      }
-    }
-    if (data.assessments) {
-      for (const assessment of data.assessments) {
-        await this.execute("assessments", "add", assessment);
-      }
-    }
-    if (data.departments) {
-      for (const dept of data.departments) {
-        await this.execute("departments", "add", dept);
-      }
-    }
-    if (data.roles) {
-      for (const role of data.roles) {
-        await this.execute("roles", "add", role);
-      }
-    }
+
+    return report;
   }
 }
 
