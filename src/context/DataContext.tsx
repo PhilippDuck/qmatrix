@@ -12,10 +12,11 @@ import {
   SubCategory,
   Skill,
   Assessment,
+  AssessmentLogEntry,
 } from "../services/indexeddb";
 
 // Re-export types for convenience
-export type { Employee, Category, SubCategory, Skill, Assessment };
+export type { Employee, Category, SubCategory, Skill, Assessment, AssessmentLogEntry };
 
 interface DataContextType {
   employees: Employee[];
@@ -67,6 +68,9 @@ interface DataContextType {
     employeeId: string,
     skillId: string,
   ) => Assessment | undefined;
+
+  // History methods
+  getHistory: (employeeId: string) => Promise<AssessmentLogEntry[]>;
 
   // Data management
   exportData: () => Promise<void>;
@@ -320,6 +324,16 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
     );
   };
 
+  // History methods
+  const getHistory = async (employeeId: string): Promise<AssessmentLogEntry[]> => {
+    try {
+      return await db.getAssessmentLogs(employeeId);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load history");
+      return [];
+    }
+  };
+
   // Data management
   const exportData = async () => {
     try {
@@ -377,6 +391,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
         setTargetLevel,
         getAssessmentsByEmployee,
         getAssessment,
+        getHistory,
         exportData,
         importData,
       }}

@@ -139,6 +139,7 @@ export const EmployeeList: React.FC = () => {
         onSave={handleSave}
         initialData={initialData}
         isEditing={isEditing}
+        employeeId={editingId}
       />
     </>
   );

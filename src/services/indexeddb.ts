@@ -1,6 +1,6 @@
 // IndexedDB Service für Qualifizierungsmatrix
 const DB_NAME = "QualificationMatrixDB";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 export interface Employee {
   id?: string;
@@ -34,6 +34,16 @@ export interface Assessment {
   skillId: string;
   level: 0 | 25 | 50 | 75 | 100;
   targetLevel?: number; // Individuelles Soll pro Mitarbeiter/Skill
+}
+
+export interface AssessmentLogEntry {
+  id?: string;
+  employeeId: string;
+  skillId: string;
+  previousLevel: number;
+  newLevel: number;
+  timestamp: number;
+  note?: string;
 }
 
 class IndexedDBService {
@@ -95,11 +105,16 @@ class IndexedDBService {
             unique: false,
           });
           assessmentStore.createIndex("skillId", "skillId", { unique: false });
-          assessmentStore.createIndex(
-            "employeeSkill",
-            ["employeeId", "skillId"],
-            { unique: true },
-          );
+          assessmentStore.createIndex("employeeSkill", ["employeeId", "skillId"], { unique: true });
+        }
+
+        // Assessment Logs Store
+        if (!db.objectStoreNames.contains("assessment_logs")) {
+          const logStore = db.createObjectStore("assessment_logs", {
+            keyPath: "id",
+          });
+          logStore.createIndex("employeeId", "employeeId", { unique: false });
+          logStore.createIndex("skillId", "skillId", { unique: false });
         }
       };
     });
@@ -272,6 +287,27 @@ class IndexedDBService {
     const id = `${employeeId}-${skillId}`;
     // Preserve existing targetLevel if present
     const existing = await this.getAssessment(employeeId, skillId);
+
+    // Only log if level actually changed
+    if (existing && existing.level !== level) {
+      await this.addAssessmentLog({
+        employeeId,
+        skillId,
+        previousLevel: existing.level,
+        newLevel: level,
+        timestamp: Date.now(),
+      });
+    } else if (!existing && level > 0) {
+      // Log initial assessment if > 0
+      await this.addAssessmentLog({
+        employeeId,
+        skillId,
+        previousLevel: 0,
+        newLevel: level,
+        timestamp: Date.now(),
+      });
+    }
+
     const data: Assessment = {
       id,
       employeeId,
@@ -280,6 +316,23 @@ class IndexedDBService {
       targetLevel: existing?.targetLevel
     };
     await this.execute("assessments", "put", data);
+  }
+
+  // Assessment Logs
+  async addAssessmentLog(entry: AssessmentLogEntry): Promise<string> {
+    const id = crypto.randomUUID();
+    const data = { ...entry, id };
+    await this.execute("assessment_logs", "add", data);
+    return id;
+  }
+
+  async getAssessmentLogs(employeeId: string): Promise<AssessmentLogEntry[]> {
+    return this.executeIndex("assessment_logs", "employeeId", "getAll", employeeId);
+  }
+
+  async deleteAssessment(employeeId: string, skillId: string): Promise<void> {
+    const id = `${employeeId}-${skillId}`;
+    await this.execute("assessments", "delete", id);
   }
 
   async setTargetLevel(
@@ -323,11 +376,6 @@ class IndexedDBService {
       request.onerror = () => reject(request.error);
       request.onsuccess = () => resolve(request.result);
     });
-  }
-
-  async deleteAssessment(employeeId: string, skillId: string): Promise<void> {
-    const id = `${employeeId}-${skillId}`;
-    await this.execute("assessments", "delete", id);
   }
 
   // Helper methods
