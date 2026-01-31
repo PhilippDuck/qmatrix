@@ -8,7 +8,10 @@ import {
   Group,
   Button,
   Text,
+  Select,
+  MultiSelect,
 } from "@mantine/core";
+import { Department, EmployeeRole } from "../../services/indexeddb";
 
 export type FormMode = "category" | "subcategory" | "skill";
 
@@ -17,11 +20,21 @@ interface EntityFormDrawerProps {
   onClose: () => void;
   formMode: FormMode;
   editingId: string | null;
+
   inputValue: string;
   inputDescription: string;
+  selectedDepartmentId?: string | null;
+  selectedRoleIds?: string[];
+
   onInputChange: (value: string) => void;
   onDescriptionChange: (value: string) => void;
+  onDepartmentChange?: (value: string | null) => void;
+  onRolesChange?: (values: string[]) => void;
+
   onSave: () => void;
+
+  departments: Department[];
+  roles: EmployeeRole[];
 }
 
 const MODE_LABELS: Record<FormMode, string> = {
@@ -37,9 +50,15 @@ export const EntityFormDrawer: React.FC<EntityFormDrawerProps> = ({
   editingId,
   inputValue,
   inputDescription,
+  selectedDepartmentId,
+  selectedRoleIds,
   onInputChange,
   onDescriptionChange,
+  onDepartmentChange,
+  onRolesChange,
   onSave,
+  departments,
+  roles,
 }) => {
   return (
     <Drawer
@@ -77,6 +96,32 @@ export const EntityFormDrawer: React.FC<EntityFormDrawerProps> = ({
           minRows={4}
           autosize
         />
+
+        {formMode === "skill" && (
+          <>
+            <Divider label="Zuordnung & Anforderungen" labelPosition="center" />
+
+            <Select
+              label="Zuständige Abteilung (Optional)"
+              placeholder="Wähle eine Abteilung"
+              data={departments.map(d => ({ value: d.id!, label: d.name }))}
+              value={selectedDepartmentId}
+              onChange={(val) => onDepartmentChange?.(val)}
+              clearable
+              searchable
+            />
+
+            <MultiSelect
+              label="Erforderlich für Rollen / Level (Optional)"
+              placeholder="Wähle Rollen aus"
+              data={roles.map(r => ({ value: r.id!, label: r.name }))}
+              value={selectedRoleIds || []}
+              onChange={(vals) => onRolesChange?.(vals)}
+              searchable
+              clearable
+            />
+          </>
+        )}
 
         <Group justify="flex-end" mt="xl">
           <Button variant="subtle" color="gray" onClick={onClose}>

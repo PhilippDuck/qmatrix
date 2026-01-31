@@ -21,26 +21,36 @@ export const CategoryManager: React.FC = () => {
     deleteSkill,
     getSubCategoriesByCategory,
     getSkillsBySubCategory,
+    departments,
+    roles,
   } = useData();
 
   const [opened, { open, close }] = useDisclosure(false);
   const [formMode, setFormMode] = useState<FormMode>("category");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedSubCategory, setSelectedSubCategory] = useState<string | null>(null);
+
+  // Form State
   const [inputValue, setInputValue] = useState("");
   const [inputDescription, setInputDescription] = useState("");
+  const [selectedDepartmentId, setSelectedDepartmentId] = useState<string | null>(null);
+  const [selectedRoleIds, setSelectedRoleIds] = useState<string[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const openForm = (
     mode: FormMode,
     id: string | null = null,
     initialValue: string = "",
-    initialDescription: string = ""
+    initialDescription: string = "",
+    initialDeptId: string | null = null,
+    initialRoleIds: string[] = []
   ) => {
     setFormMode(mode);
     setEditingId(id);
     setInputValue(initialValue);
     setInputDescription(initialDescription);
+    setSelectedDepartmentId(initialDeptId);
+    setSelectedRoleIds(initialRoleIds);
     open();
   };
 
@@ -51,41 +61,43 @@ export const CategoryManager: React.FC = () => {
       if (formMode === "category") {
         editingId
           ? await updateCategory(editingId, {
-              name: inputValue,
-              description: inputDescription,
-            })
+            name: inputValue,
+            description: inputDescription,
+          })
           : await addCategory({
-              name: inputValue,
-              description: inputDescription,
-            });
+            name: inputValue,
+            description: inputDescription,
+          });
       } else if (formMode === "subcategory" && selectedCategory) {
         editingId
           ? await updateSubCategory(editingId, {
-              categoryId: selectedCategory,
-              name: inputValue,
-              description: inputDescription,
-            })
+            categoryId: selectedCategory,
+            name: inputValue,
+            description: inputDescription,
+          })
           : await addSubCategory({
-              categoryId: selectedCategory,
-              name: inputValue,
-              description: inputDescription,
-            });
+            categoryId: selectedCategory,
+            name: inputValue,
+            description: inputDescription,
+          });
       } else if (formMode === "skill" && selectedSubCategory) {
+        const skillData = {
+          subCategoryId: selectedSubCategory,
+          name: inputValue,
+          description: inputDescription,
+          departmentId: selectedDepartmentId || undefined,
+          requiredByRoleIds: selectedRoleIds.length > 0 ? selectedRoleIds : undefined,
+        };
+
         editingId
-          ? await updateSkill(editingId, {
-              subCategoryId: selectedSubCategory,
-              name: inputValue,
-              description: inputDescription,
-            })
-          : await addSkill({
-              subCategoryId: selectedSubCategory,
-              name: inputValue,
-              description: inputDescription,
-            });
+          ? await updateSkill(editingId, skillData)
+          : await addSkill(skillData);
       }
 
       setInputValue("");
       setInputDescription("");
+      setSelectedDepartmentId(null);
+      setSelectedRoleIds([]);
       close();
     } catch (error) {
       console.error("Fehler beim Speichern:", error);
@@ -140,7 +152,16 @@ export const CategoryManager: React.FC = () => {
           skills={skillsInSubCategory}
           isEnabled={!!selectedSubCategory}
           onAdd={() => openForm("skill")}
-          onEdit={(skill) => openForm("skill", skill.id!, skill.name, skill.description || "")}
+          onEdit={(skill) =>
+            openForm(
+              "skill",
+              skill.id!,
+              skill.name,
+              skill.description || "",
+              skill.departmentId || null,
+              skill.requiredByRoleIds || []
+            )
+          }
           onDelete={deleteSkill}
         />
       </Group>
@@ -152,9 +173,15 @@ export const CategoryManager: React.FC = () => {
         editingId={editingId}
         inputValue={inputValue}
         inputDescription={inputDescription}
+        selectedDepartmentId={selectedDepartmentId}
+        selectedRoleIds={selectedRoleIds}
         onInputChange={setInputValue}
         onDescriptionChange={setInputDescription}
+        onDepartmentChange={setSelectedDepartmentId}
+        onRolesChange={setSelectedRoleIds}
         onSave={handleSave}
+        departments={departments}
+        roles={roles}
       />
     </Box>
   );

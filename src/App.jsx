@@ -23,15 +23,16 @@ import {
   IconTags,
   IconLayoutGrid,
   IconDatabase,
+  IconBuildingSkyscraper,
   IconChevronLeft,
   IconChevronRight,
   IconSun,
   IconMoon,
+  IconSettings,
 } from "@tabler/icons-react";
 
 import { DataProvider, useData } from "./context/DataContext";
-import { EmployeeList } from "./components/EmployeeList";
-import { CategoryManager } from "./components/CategoryManager";
+import { UnifiedDataView } from "./components/UnifiedDataView";
 import { SkillMatrix } from "./components/SkillMatrix";
 import { DataManagement } from "./components/DataManagement";
 import "@mantine/core/styles.css";
@@ -105,9 +106,8 @@ function AppContent() {
 
   const navItems = [
     { value: "matrix", label: "Skill-Matrix", icon: IconLayoutGrid },
-    { value: "employees", label: "Mitarbeiter", icon: IconUsers },
-    { value: "categories", label: "Kategorien & Skills", icon: IconTags },
-    { value: "data", label: "Datenverwaltung", icon: IconDatabase },
+    { value: "data", label: "Stammdaten", icon: IconDatabase },
+    { value: "system", label: "System", icon: IconSettings },
   ];
 
   return (
@@ -253,9 +253,8 @@ function AppContent() {
           }}
         >
           {activeTab === "matrix" && <SkillMatrix />}
-          {activeTab === "employees" && <EmployeeList />}
-          {activeTab === "categories" && <CategoryManager />}
-          {activeTab === "data" && <DataManagement />}
+          {activeTab === "data" && <UnifiedDataView />}
+          {activeTab === "system" && <DataManagement />}
         </div>
       </AppShell.Main>
     </AppShell>

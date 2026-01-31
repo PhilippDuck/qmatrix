@@ -13,10 +13,12 @@ import {
   Skill,
   Assessment,
   AssessmentLogEntry,
+  Department,
+  EmployeeRole,
 } from "../services/indexeddb";
 
 // Re-export types for convenience
-export type { Employee, Category, SubCategory, Skill, Assessment, AssessmentLogEntry };
+export type { Employee, Category, SubCategory, Skill, Assessment, AssessmentLogEntry, Department, EmployeeRole };
 
 interface DataContextType {
   employees: Employee[];
@@ -24,6 +26,8 @@ interface DataContextType {
   subcategories: SubCategory[];
   skills: Skill[];
   assessments: Assessment[];
+  departments: Department[];
+  roles: EmployeeRole[];
   loading: boolean;
   error: string | null;
 
@@ -72,6 +76,16 @@ interface DataContextType {
   // History methods
   getHistory: (employeeId: string) => Promise<AssessmentLogEntry[]>;
 
+  // Department methods
+  addDepartment: (name: string) => Promise<string>;
+  updateDepartment: (id: string, department: Omit<Department, "id">) => Promise<void>;
+  deleteDepartment: (id: string) => Promise<void>;
+
+  // Role methods
+  addRole: (role: Omit<EmployeeRole, "id">) => Promise<string>;
+  updateRole: (id: string, role: Omit<EmployeeRole, "id">) => Promise<void>;
+  deleteRole: (id: string) => Promise<void>;
+
   // Data management
   exportData: () => Promise<void>;
   importData: (jsonData: string) => Promise<void>;
@@ -87,6 +101,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
   const [subcategories, setSubCategories] = useState<SubCategory[]>([]);
   const [skills, setSkills] = useState<Skill[]>([]);
   const [assessments, setAssessments] = useState<Assessment[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [roles, setRoles] = useState<EmployeeRole[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -109,17 +125,21 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
 
   const refreshAllData = async () => {
     try {
-      const [employees, categories, subCategories, skills] = await Promise.all([
+      const [employees, categories, subCategories, skills, departments, roles] = await Promise.all([
         db.getEmployees(),
         db.getCategories(),
         db.getSubCategories(),
         db.getSkills(),
+        db.getDepartments(),
+        db.getRoles(),
       ]);
 
       setEmployees(employees);
       setCategories(categories);
       setSubCategories(subCategories);
       setSkills(skills);
+      setDepartments(departments);
+      setRoles(roles);
 
       // Get all assessments
       const allAssessments: Assessment[] = [];
@@ -334,6 +354,72 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
     }
   };
 
+  // Department methods
+  const addDepartment = async (name: string) => {
+    try {
+      const id = await db.addDepartment(name);
+      await refreshAllData();
+      return id;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to add department");
+      throw err;
+    }
+  };
+
+  const updateDepartment = async (id: string, department: Omit<Department, "id">) => {
+    try {
+      await db.updateDepartment(id, department);
+      await refreshAllData();
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to update department",
+      );
+      throw err;
+    }
+  };
+
+  const deleteDepartment = async (id: string) => {
+    try {
+      await db.deleteDepartment(id);
+      await refreshAllData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete department");
+      throw err;
+    }
+  };
+
+  // Role methods
+  const addRole = async (role: Omit<EmployeeRole, "id">) => {
+    try {
+      const id = await db.addRole(role);
+      await refreshAllData();
+      return id;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to add role");
+      throw err;
+    }
+  };
+
+  const updateRole = async (id: string, role: Omit<EmployeeRole, "id">) => {
+    try {
+      await db.updateRole(id, role);
+      await refreshAllData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update role");
+      throw err;
+    }
+  };
+
+  const deleteRole = async (id: string) => {
+    try {
+      await db.deleteRole(id);
+      await refreshAllData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete role");
+      throw err;
+    }
+  };
+
   // Data management
   const exportData = async () => {
     try {
@@ -371,6 +457,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
         subcategories,
         skills,
         assessments,
+        departments,
+        roles,
         loading,
         error,
         addEmployee,
@@ -392,6 +480,12 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
         getAssessmentsByEmployee,
         getAssessment,
         getHistory,
+        addDepartment,
+        updateDepartment,
+        deleteDepartment,
+        addRole,
+        updateRole,
+        deleteRole,
         exportData,
         importData,
       }}

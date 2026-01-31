@@ -1,11 +1,12 @@
 // IndexedDB Service für Qualifizierungsmatrix
 const DB_NAME = "QualificationMatrixDB";
-const DB_VERSION = 2;
+const DB_VERSION = 5;
 
 export interface Employee {
   id?: string;
   name: string;
   department?: string;
+  role?: string;
 }
 
 export interface Category {
@@ -26,6 +27,8 @@ export interface Skill {
   subCategoryId: string;
   name: string;
   description?: string;
+  departmentId?: string;
+  requiredByRoleIds?: string[];
 }
 
 export interface Assessment {
@@ -44,6 +47,17 @@ export interface AssessmentLogEntry {
   newLevel: number;
   timestamp: number;
   note?: string;
+}
+
+export interface Department {
+  id?: string;
+  name: string;
+}
+
+export interface EmployeeRole {
+  id?: string;
+  name: string;
+  inheritsFromId?: string;
 }
 
 class IndexedDBService {
@@ -68,6 +82,13 @@ class IndexedDBService {
             keyPath: "id",
           });
           employeeStore.createIndex("name", "name", { unique: false });
+          employeeStore.createIndex("role", "role", { unique: false });
+        } else {
+          // Migration for existing store
+          const employeeStore = (event.target as IDBOpenDBRequest).transaction!.objectStore("employees");
+          if (!employeeStore.indexNames.contains("role")) {
+            employeeStore.createIndex("role", "role", { unique: false });
+          }
         }
 
         // Categories Store
@@ -115,6 +136,30 @@ class IndexedDBService {
           });
           logStore.createIndex("employeeId", "employeeId", { unique: false });
           logStore.createIndex("skillId", "skillId", { unique: false });
+        }
+
+        // Departments Store
+        if (!db.objectStoreNames.contains("departments")) {
+          const deptStore = db.createObjectStore("departments", {
+            keyPath: "id",
+          });
+          deptStore.createIndex("name", "name", { unique: true });
+        }
+
+        // Roles Store
+        if (!db.objectStoreNames.contains("roles")) {
+          const roleStore = db.createObjectStore("roles", {
+            keyPath: "id",
+          });
+          roleStore.createIndex("name", "name", { unique: true });
+        }
+
+        // Migration to v5: Skills indices
+        if (event.oldVersion < 5) {
+          const skillStore = (event.target as IDBOpenDBRequest).transaction!.objectStore("skills");
+          if (!skillStore.indexNames.contains("departmentId")) {
+            skillStore.createIndex("departmentId", "departmentId", { unique: false });
+          }
         }
       };
     });
@@ -335,6 +380,48 @@ class IndexedDBService {
     await this.execute("assessments", "delete", id);
   }
 
+  // Departments
+  async addDepartment(name: string): Promise<string> {
+    const id = crypto.randomUUID();
+    const data = { name, id };
+    await this.execute("departments", "add", data);
+    return id;
+  }
+
+  async getDepartments(): Promise<Department[]> {
+    return this.execute("departments", "getAll");
+  }
+
+  async updateDepartment(id: string, department: Omit<Department, "id">): Promise<void> {
+    const data = { ...department, id };
+    await this.execute("departments", "put", data);
+  }
+
+  async deleteDepartment(id: string): Promise<void> {
+    await this.execute("departments", "delete", id);
+  }
+
+  // Roles
+  async addRole(role: Omit<EmployeeRole, "id">): Promise<string> {
+    const id = crypto.randomUUID();
+    const data = { ...role, id };
+    await this.execute("roles", "add", data);
+    return id;
+  }
+
+  async getRoles(): Promise<EmployeeRole[]> {
+    return this.execute("roles", "getAll");
+  }
+
+  async updateRole(id: string, role: Omit<EmployeeRole, "id">): Promise<void> {
+    const data = { ...role, id };
+    await this.execute("roles", "put", data);
+  }
+
+  async deleteRole(id: string): Promise<void> {
+    await this.execute("roles", "delete", id);
+  }
+
   async setTargetLevel(
     employeeId: string,
     skillId: string,
@@ -451,6 +538,8 @@ class IndexedDBService {
     subcategories: SubCategory[];
     skills: Skill[];
     assessments: Assessment[];
+    departments: Department[];
+    roles: EmployeeRole[];
   }> {
     return {
       employees: await this.getEmployees(),
@@ -458,6 +547,8 @@ class IndexedDBService {
       subcategories: await this.getSubCategories(),
       skills: await this.getSkills(),
       assessments: await this.execute("assessments", "getAll"),
+      departments: await this.getDepartments(),
+      roles: await this.getRoles()
     };
   }
 
@@ -468,12 +559,14 @@ class IndexedDBService {
     subcategories?: SubCategory[];
     skills?: Skill[];
     assessments?: Assessment[];
+    departments?: Department[];
+    roles?: EmployeeRole[];
   }): Promise<void> {
     // Clear all stores
     if (!this.db) return;
 
     const transaction = this.db.transaction(
-      ["employees", "categories", "subcategories", "skills", "assessments"],
+      ["employees", "categories", "subcategories", "skills", "assessments", "departments", "roles"],
       "readwrite",
     );
 
@@ -483,6 +576,8 @@ class IndexedDBService {
       "subcategories",
       "skills",
       "assessments",
+      "departments",
+      "roles"
     ]) {
       await new Promise<void>((resolve, reject) => {
         const store = transaction.objectStore(storeName);
@@ -516,6 +611,16 @@ class IndexedDBService {
     if (data.assessments) {
       for (const assessment of data.assessments) {
         await this.execute("assessments", "add", assessment);
+      }
+    }
+    if (data.departments) {
+      for (const dept of data.departments) {
+        await this.execute("departments", "add", dept);
+      }
+    }
+    if (data.roles) {
+      for (const role of data.roles) {
+        await this.execute("roles", "add", role);
       }
     }
   }

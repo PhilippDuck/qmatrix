@@ -7,6 +7,7 @@ import {
   Title,
   Card,
   Text,
+  Select,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { IconPlus, IconEdit, IconTrash, IconUser } from "@tabler/icons-react";
@@ -15,32 +16,37 @@ import { Employee } from "../services/indexeddb";
 import { EmployeeDrawer } from "./shared/EmployeeDrawer";
 
 export const EmployeeList: React.FC = () => {
-  const { employees, addEmployee, updateEmployee, deleteEmployee } = useData();
+  const { employees, addEmployee, updateEmployee, deleteEmployee, roles } = useData();
 
   const [opened, { open, close }] = useDisclosure(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [initialData, setInitialData] = useState({ name: "", department: "" });
+  const [initialData, setInitialData] = useState({ name: "", department: "", role: "" });
+  const [filterRole, setFilterRole] = useState<string | null>(null);
 
   const handleOpenNew = () => {
-    setInitialData({ name: "", department: "" });
+    setInitialData({ name: "", department: "", role: "" });
     setIsEditing(false);
     setEditingId(null);
     open();
   };
 
   const handleOpenEdit = (employee: Employee) => {
-    setInitialData({ name: employee.name, department: employee.department || "" });
+    setInitialData({
+      name: employee.name,
+      department: employee.department || "",
+      role: employee.role || ""
+    });
     setIsEditing(true);
     setEditingId(employee.id!);
     open();
   };
 
-  const handleSave = async (name: string, department: string) => {
+  const handleSave = async (name: string, department: string, role: string) => {
     if (isEditing && editingId) {
-      await updateEmployee(editingId, { name, department });
+      await updateEmployee(editingId, { name, department, role });
     } else {
-      await addEmployee({ name, department });
+      await addEmployee({ name, department, role });
     }
   };
 
@@ -53,6 +59,11 @@ export const EmployeeList: React.FC = () => {
       }
     }
   };
+
+  const filteredEmployees = employees.filter((emp) => {
+    if (filterRole && emp.role !== filterRole) return false;
+    return true;
+  });
 
   return (
     <>
@@ -67,12 +78,27 @@ export const EmployeeList: React.FC = () => {
         </Button>
       </Group>
 
+      <Card withBorder padding="sm" mb="md" radius="md">
+        <Group>
+          <Select
+            label="Filter nach Rolle"
+            placeholder="Alle Rollen"
+            data={roles.map(r => r.name)}
+            value={filterRole}
+            onChange={setFilterRole}
+            clearable
+            style={{ width: 250 }}
+          />
+        </Group>
+      </Card>
+
       <Card withBorder padding={0} radius="md" shadow="sm">
         <Table striped highlightOnHover verticalSpacing="sm">
           <Table.Thead>
             <Table.Tr>
               <Table.Th style={{ paddingLeft: "20px" }}>Name</Table.Th>
               <Table.Th>Abteilung</Table.Th>
+              <Table.Th>Rolle</Table.Th>
               <Table.Th
                 style={{ width: 120, textAlign: "right", paddingRight: "20px" }}
               >
@@ -81,8 +107,8 @@ export const EmployeeList: React.FC = () => {
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
-            {employees.length > 0 ? (
-              employees.map((employee) => (
+            {filteredEmployees.length > 0 ? (
+              filteredEmployees.map((employee) => (
                 <Table.Tr key={employee.id}>
                   <Table.Td style={{ paddingLeft: "20px" }}>
                     <Group gap="sm">
@@ -98,6 +124,14 @@ export const EmployeeList: React.FC = () => {
                       c={employee.department ? "inherit" : "dimmed"}
                     >
                       {employee.department || "Keine Abteilung"}
+                    </Text>
+                  </Table.Td>
+                  <Table.Td>
+                    <Text
+                      size="sm"
+                      c={employee.role ? "inherit" : "dimmed"}
+                    >
+                      {employee.role || "-"}
                     </Text>
                   </Table.Td>
                   <Table.Td style={{ paddingRight: "20px" }}>
@@ -124,8 +158,8 @@ export const EmployeeList: React.FC = () => {
               ))
             ) : (
               <Table.Tr>
-                <Table.Td colSpan={3} style={{ textAlign: "center", py: "xl" }}>
-                  <Text c="dimmed">Noch keine Mitarbeiter angelegt</Text>
+                <Table.Td colSpan={4} style={{ textAlign: "center", py: "xl" }}>
+                  <Text c="dimmed">Keine Mitarbeiter gefunden</Text>
                 </Table.Td>
               </Table.Tr>
             )}
