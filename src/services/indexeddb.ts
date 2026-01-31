@@ -58,6 +58,7 @@ export interface EmployeeRole {
   id?: string;
   name: string;
   inheritsFromId?: string;
+  icon?: string; // Tabler icon name, e.g. "IconUser"
 }
 
 class IndexedDBService {

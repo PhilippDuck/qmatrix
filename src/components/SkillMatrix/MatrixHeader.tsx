@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { Badge, Text, HoverCard, Stack, Group, Divider, ThemeIcon, Box, SimpleGrid, Tooltip } from "@mantine/core";
-import { IconBuilding, IconBadge, IconHistory, IconTrendingUp, IconTrendingDown, IconMinus } from "@tabler/icons-react";
+import { IconBuilding, IconHistory, IconTrendingUp, IconTrendingDown, IconMinus } from "@tabler/icons-react";
 import { MATRIX_LAYOUT } from "../../constants/skillLevels";
 import { getScoreColor } from "../../utils/skillCalculations";
 import { Employee, Skill, Assessment, useData, AssessmentLogEntry } from "../../context/DataContext";
+import { getIconByName } from "../shared/RoleIconPicker";
 
 interface MatrixHeaderProps {
   employees: Employee[];
@@ -22,7 +23,7 @@ const EmployeeInfoCard: React.FC<{
   skills: Skill[];
   getAssessment: (empId: string, skillId: string) => Assessment | undefined
 }> = ({ emp, avg, skills, getAssessment }) => {
-  const { getHistory, categories, subcategories } = useData();
+  const { getHistory, categories, subcategories, roles } = useData();
   const [history, setHistory] = useState<AssessmentLogEntry[]>([]);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [loadingHistory, setLoadingHistory] = useState(true);
@@ -103,10 +104,16 @@ const EmployeeInfoCard: React.FC<{
               </Group>
             )}
             {emp.role && (
-              <Group gap={6}>
-                <IconBadge size={12} color="gray" />
-                <Text size="xs" c="dimmed">{emp.role}</Text>
-              </Group>
+              (() => {
+                const role = roles.find(r => r.name === emp.role);
+                const RoleIcon = getIconByName(role?.icon);
+                return (
+                  <Group gap={6}>
+                    <RoleIcon size={12} color="gray" />
+                    <Text size="xs" c="dimmed">{emp.role}</Text>
+                  </Group>
+                );
+              })()
             )}
           </Stack>
         </Box>
@@ -122,7 +129,7 @@ const EmployeeInfoCard: React.FC<{
           withArrow
           transitionProps={{ duration: 200 }}
         >
-          <Box p="xs" bg="var(--mantine-color-gray-1)" style={{ borderRadius: 8, cursor: 'help' }}>
+          <Box p="xs" bg="light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-6))" style={{ borderRadius: 8, cursor: 'help' }}>
             <Text size="xs" c="dimmed" fw={700} tt="uppercase">Expertise</Text>
             <Text size="lg" fw={700} c={getScoreColor(avg)}>{avg || 0}%</Text>
             <Text size="xs" c="dimmed" style={{ fontSize: '10px' }}>Qualität</Text>
@@ -135,7 +142,7 @@ const EmployeeInfoCard: React.FC<{
           w={220}
           withArrow
         >
-          <Box p="xs" bg="var(--mantine-color-gray-1)" style={{ borderRadius: 8, cursor: 'help' }}>
+          <Box p="xs" bg="light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-6))" style={{ borderRadius: 8, cursor: 'help' }}>
             <Text size="xs" c="dimmed" fw={700} tt="uppercase">Vielseitigkeit</Text>
             <Text size="lg" fw={700}>{activeSkillCount}</Text>
             <Text size="xs" c="dimmed" style={{ fontSize: '10px' }}>Aktive Themen</Text>
@@ -148,7 +155,7 @@ const EmployeeInfoCard: React.FC<{
           w={220}
           withArrow
         >
-          <Box p="xs" bg="var(--mantine-color-gray-1)" style={{ borderRadius: 8, cursor: 'help' }}>
+          <Box p="xs" bg="light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-6))" style={{ borderRadius: 8, cursor: 'help' }}>
             <Text size="xs" c="dimmed" fw={700} tt="uppercase">Volumen (XP)</Text>
             <Text size="lg" fw={700} c="blue">{totalXP}</Text>
             <Text size="xs" c="dimmed" style={{ fontSize: '10px' }}>Punkte Summe</Text>
@@ -161,7 +168,7 @@ const EmployeeInfoCard: React.FC<{
           w={220}
           withArrow
         >
-          <Box p="xs" bg="var(--mantine-color-gray-1)" style={{ borderRadius: 8, cursor: 'help' }}>
+          <Box p="xs" bg="light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-6))" style={{ borderRadius: 8, cursor: 'help' }}>
             <Text size="xs" c="dimmed" fw={700} tt="uppercase">Ziel-Erfüllung</Text>
             <Text size="lg" fw={700} c={fulfillment && fulfillment >= 100 ? "teal" : "orange"}>
               {fulfillment !== null ? `${fulfillment}%` : "-"}
