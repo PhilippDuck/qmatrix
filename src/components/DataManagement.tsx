@@ -188,6 +188,19 @@ export const DataManagement = () => {
               )}
             </Stack>
             <Group gap="xl">
+              <Stack gap={0} align="center" style={{ minWidth: 100 }}>
+                <Text size="xs" c="dimmed" mb={2}>Daten-Fingerprint</Text>
+                <Badge
+                  variant="outline"
+                  color="gray"
+                  size="lg"
+                  styles={{ label: { fontFamily: 'monospace', letterSpacing: '1px' } }}
+                  title="Dieser Hash-Code ist identisch, wenn zwei Personen denselben Datenstand haben."
+                >
+                  {useData().dataHash || "CALC..."}
+                </Badge>
+              </Stack>
+              <Divider orientation="vertical" />
               <Stack gap={0} align="center">
                 <Text fw={700} size="xl">
                   {employees.length}
@@ -486,7 +499,7 @@ export const DataManagement = () => {
             Datenverlust zu vermeiden.
           </Text>
         </Alert>
-      </Stack>
-    </Box>
+      </Stack >
+    </Box >
   );
 };

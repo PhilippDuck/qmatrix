@@ -32,6 +32,7 @@ interface DataContextType {
   assessments: Assessment[];
   departments: Department[];
   roles: EmployeeRole[];
+  dataHash: string;
   loading: boolean;
   error: string | null;
 
@@ -113,6 +114,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [roles, setRoles] = useState<EmployeeRole[]>([]);
+  const [dataHash, setDataHash] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -135,29 +137,25 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
 
   const refreshAllData = async () => {
     try {
-      const [employees, categories, subCategories, skills, departments, roles] = await Promise.all([
+      const [emps, cats, subcats, sks, asms, depts, rls, hash] = await Promise.all([
         db.getEmployees(),
         db.getCategories(),
         db.getSubCategories(),
         db.getSkills(),
+        db.execute("assessments", "getAll"),
         db.getDepartments(),
         db.getRoles(),
+        db.getDataHash()
       ]);
 
-      setEmployees(employees);
-      setCategories(categories);
-      setSubCategories(subCategories);
-      setSkills(skills);
-      setDepartments(departments);
-      setRoles(roles);
-
-      // Get all assessments
-      const allAssessments: Assessment[] = [];
-      for (const emp of employees) {
-        const empAssessments = await db.getAssessmentsByEmployee(emp.id!);
-        allAssessments.push(...empAssessments);
-      }
-      setAssessments(allAssessments);
+      setEmployees(emps);
+      setCategories(cats || []);
+      setSubCategories(subcats || []);
+      setSkills(sks || []);
+      setAssessments(asms || []);
+      setDepartments(depts || []);
+      setRoles(rls || []);
+      setDataHash(hash || "");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load data");
     }
@@ -179,9 +177,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
       await db.updateEmployee(id, employee);
       await refreshAllData();
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to update employee",
-      );
+      setError(err instanceof Error ? err.message : "Failed to update employee");
       throw err;
     }
   };
@@ -191,9 +187,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
       await db.deleteEmployee(id);
       await refreshAllData();
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to delete employee",
-      );
+      setError(err instanceof Error ? err.message : "Failed to delete employee");
       throw err;
     }
   };
@@ -214,9 +208,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
       await db.updateCategory(id, category);
       await refreshAllData();
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to update category",
-      );
+      setError(err instanceof Error ? err.message : "Failed to update category");
       throw err;
     }
   };
@@ -226,9 +218,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
       await db.deleteCategory(id);
       await refreshAllData();
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to delete category",
-      );
+      setError(err instanceof Error ? err.message : "Failed to delete category");
       throw err;
     }
   };
@@ -239,24 +229,17 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
       await db.addSubCategory(subCategory);
       await refreshAllData();
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to add subcategory",
-      );
+      setError(err instanceof Error ? err.message : "Failed to add subcategory");
       throw err;
     }
   };
 
-  const updateSubCategory = async (
-    id: string,
-    subCategory: Omit<SubCategory, "id">,
-  ) => {
+  const updateSubCategory = async (id: string, subCategory: Omit<SubCategory, "id">) => {
     try {
       await db.updateSubCategory(id, subCategory);
       await refreshAllData();
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to update subcategory",
-      );
+      setError(err instanceof Error ? err.message : "Failed to update subcategory");
       throw err;
     }
   };
@@ -266,9 +249,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
       await db.deleteSubCategory(id);
       await refreshAllData();
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to delete subcategory",
-      );
+      setError(err instanceof Error ? err.message : "Failed to delete subcategory");
       throw err;
     }
   };
@@ -354,10 +335,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
     );
   };
 
-  // History methods
   const getHistory = async (employeeId: string): Promise<AssessmentLogEntry[]> => {
     try {
-      return await db.getAssessmentLogs(employeeId);
+      return await db.execute("assessment_logs", "getAll", employeeId); // Needs filter if execute getAll doesn't filter
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load history");
       return [];
@@ -366,7 +346,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
 
   const getAllHistory = async (): Promise<AssessmentLogEntry[]> => {
     try {
-      return await db.getAllAssessmentLogs();
+      return await db.execute("assessment_logs", "getAll");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load all history");
       return [];
@@ -443,12 +423,15 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
   const exportData = async () => {
     try {
       const data = await db.exportData();
-      const json = JSON.stringify(data, null, 2);
-      const blob = new Blob([json], { type: "application/json" });
+      const blob = new Blob([JSON.stringify(data, null, 2)], {
+        type: "application/json",
+      });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `qmatrix-export-${new Date().toISOString()}.json`;
+      a.download = `qmatrix_backup_${new Date()
+        .toISOString()
+        .split("T")[0]}.json`;
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {
@@ -511,6 +494,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
         assessments,
         departments,
         roles,
+        dataHash,
         loading,
         error,
         addEmployee,

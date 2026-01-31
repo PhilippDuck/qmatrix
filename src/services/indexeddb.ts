@@ -76,6 +76,7 @@ export interface ExportData {
   assessments: Assessment[];
   departments: Department[];
   roles: EmployeeRole[];
+  history: AssessmentLogEntry[];
 }
 
 export interface MergeReport {
@@ -541,7 +542,7 @@ class IndexedDBService {
   }
 
   // Helper methods
-  private execute(
+  async execute(
     storeName: string,
     method: "add" | "put" | "delete" | "get" | "getAll" | "clear",
     data?: any,
@@ -615,7 +616,8 @@ class IndexedDBService {
       skills: await this.getSkills(),
       assessments: await this.execute("assessments", "getAll"),
       departments: await this.getDepartments(),
-      roles: await this.getRoles()
+      roles: await this.getRoles(),
+      history: await this.execute("assessment_logs", "getAll")
     };
   }
 
@@ -644,7 +646,8 @@ class IndexedDBService {
       skills: data.skills,
       assessments: data.assessments,
       departments: data.departments,
-      roles: data.roles
+      roles: data.roles,
+      assessment_logs: data.history
     };
 
     for (const [storeName, items] of Object.entries(mappings)) {
@@ -691,6 +694,7 @@ class IndexedDBService {
     await mergeStore("skills", data.skills);
     await mergeStore("employees", data.employees);
     await mergeStore("assessments", data.assessments);
+    await mergeStore("assessment_logs", data.history);
 
     return report;
   }
@@ -706,7 +710,8 @@ class IndexedDBService {
       { name: "subcategories", label: "Unterkategorie" },
       { name: "skills", label: "Skill" },
       { name: "employees", label: "Mitarbeiter" },
-      { name: "assessments", label: "Bewertung" }
+      { name: "assessments", label: "Bewertung" },
+      { name: "assessment_logs", label: "Historie" }
     ];
 
     for (const store of stores) {
@@ -720,6 +725,8 @@ class IndexedDBService {
         let label = item.name || item.id;
         if (store.name === "assessments") {
           label = `Bewertung ${item.id}`;
+        } else if (store.name === "assessment_logs") {
+          label = `Log ${new Date(item.timestamp).toLocaleString("de-DE")}`;
         }
 
         if (!local) {
@@ -792,6 +799,35 @@ class IndexedDBService {
     }
 
     return report;
+  }
+
+  // Generate a stable hash of all data for comparison
+  async getDataHash(): Promise<string> {
+    const data = await this.exportData();
+    const stableData = this.makeStable(data);
+    const msgUint8 = new TextEncoder().encode(JSON.stringify(stableData));
+    const hashBuffer = await crypto.subtle.digest("SHA-256", msgUint8);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, "0")).join("").substring(0, 10).toUpperCase();
+  }
+
+  private makeStable(obj: any): any {
+    if (Array.isArray(obj)) {
+      // Sort arrays of objects by ID for stability
+      const sortedArray = obj.map(item => this.makeStable(item));
+      if (sortedArray.length > 0 && sortedArray[0] && typeof sortedArray[0] === 'object' && sortedArray[0].id) {
+        return sortedArray.sort((a, b) => String(a.id).localeCompare(String(b.id)));
+      }
+      return sortedArray;
+    } else if (obj !== null && typeof obj === "object") {
+      const sortedKeys = Object.keys(obj).sort();
+      const result: any = {};
+      for (const key of sortedKeys) {
+        result[key] = this.makeStable(obj[key]);
+      }
+      return result;
+    }
+    return obj;
   }
 }
 
