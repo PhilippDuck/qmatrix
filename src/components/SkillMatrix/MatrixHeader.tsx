@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Badge, Text, HoverCard, Stack, Group, Divider, ThemeIcon, Box } from "@mantine/core";
+import { Badge, Text, HoverCard, Stack, Group, Divider, ThemeIcon, Box, SimpleGrid, Tooltip } from "@mantine/core";
 import { IconBuilding, IconBadge, IconHistory, IconTrendingUp, IconTrendingDown, IconMinus } from "@tabler/icons-react";
 import { MATRIX_LAYOUT } from "../../constants/skillLevels";
 import { getScoreColor } from "../../utils/skillCalculations";
@@ -43,7 +43,7 @@ const EmployeeInfoCard: React.FC<{
     };
   };
 
-  // Calculate KPIs
+  // 1. Vielseitigkeit (Active Skills > 0)
   const employeeSkills = skills
     .map((skill) => ({
       skill,
@@ -51,26 +51,42 @@ const EmployeeInfoCard: React.FC<{
     }))
     .filter((item) => item.assessment && item.assessment.level > 0);
 
-  const totalAssessed = employeeSkills.length;
+  const activeSkillCount = employeeSkills.length; // Vielseitigkeit
+
+  // 2. XP (Wissens-Volumen)
+  const totalXP = employeeSkills.reduce((sum, item) => sum + (item.assessment?.level || 0), 0);
+
+  // 3. Soll-Erfüllungsgrad
+  let totalTarget = 0;
+  let totalActualForTarget = 0;
+
+  skills.forEach(skill => {
+    const assessment = getAssessment(emp.id!, skill.id!);
+    const target = assessment?.targetLevel;
+    if (target !== undefined && target > 0) {
+      totalTarget += target;
+      totalActualForTarget += (assessment?.level || 0);
+    }
+  });
+
+  const fulfillment = totalTarget > 0 ? Math.round((totalActualForTarget / totalTarget) * 100) : null;
+
+  // Top Skills sorted by level
   const topSkills = [...employeeSkills]
     .sort((a, b) => (b.assessment?.level || 0) - (a.assessment?.level || 0))
     .slice(0, 3);
 
-  // Calculate Deviation (Gap)
-  let totalDeviation = 0;
-  let deviationCount = 0;
-
-  skills.forEach(skill => {
-    const assessment = getAssessment(emp.id!, skill.id!);
-    if (assessment && assessment.targetLevel !== undefined) {
-      const val = assessment.level;
-      const target = assessment.targetLevel;
-      totalDeviation += (val - target);
-      deviationCount++;
-    }
-  });
-
-  const avgDeviation = deviationCount > 0 ? Math.round(totalDeviation / deviationCount) : null;
+  // Learning Needs (Gaps) - Skills below target
+  const learningNeeds = skills
+    .map((skill) => {
+      const assessment = getAssessment(emp.id!, skill.id!);
+      const target = assessment?.targetLevel || 0;
+      const level = assessment?.level || 0;
+      return { skill, level, target, gap: level - target };
+    })
+    .filter(item => item.gap < 0 && item.target > 0)
+    .sort((a, b) => a.gap - b.gap)
+    .slice(0, 3);
 
   return (
     <Stack gap="sm">
@@ -94,28 +110,66 @@ const EmployeeInfoCard: React.FC<{
             )}
           </Stack>
         </Box>
-        <Stack gap={0} align="center">
-          <Text size="xs" c="dimmed" tt="uppercase" fw={700}>Ø Level</Text>
-          <Badge size="xl" variant="light" color={getScoreColor(avg)}>
-            {avg === null ? "0" : avg}%
-          </Badge>
-        </Stack>
       </Group>
 
       <Divider />
 
-      <Group grow>
-        <Stack gap={0} align="center">
-          <Text size="lg" fw={700}>{totalAssessed}</Text>
-          <Text size="xs" c="dimmed">Skill Bew.</Text>
-        </Stack>
-        <Stack gap={0} align="center">
-          <Text size="lg" fw={700} c={avgDeviation === null ? "dimmed" : (avgDeviation! >= 0 ? "green" : "red")}>
-            {avgDeviation === null ? "-" : (avgDeviation! > 0 ? `+${avgDeviation}` : avgDeviation)}%
-          </Text>
-          <Text size="xs" c="dimmed">Ø Abw.</Text>
-        </Stack>
-      </Group>
+      <SimpleGrid cols={2} spacing="xs" verticalSpacing="xs">
+        <Tooltip
+          label="Durchschnitt der aktiven Themen. Zeigt die aktuelle Qualität der Arbeit in den bekannten Feldern."
+          multiline
+          w={220}
+          withArrow
+          transitionProps={{ duration: 200 }}
+        >
+          <Box p="xs" bg="var(--mantine-color-gray-1)" style={{ borderRadius: 8, cursor: 'help' }}>
+            <Text size="xs" c="dimmed" fw={700} tt="uppercase">Expertise</Text>
+            <Text size="lg" fw={700} c={getScoreColor(avg)}>{avg || 0}%</Text>
+            <Text size="xs" c="dimmed" style={{ fontSize: '10px' }}>Qualität</Text>
+          </Box>
+        </Tooltip>
+
+        <Tooltip
+          label="Anzahl der Themen mit Score > 0%. Zeigt die Flexibilität und Einsatzbreite."
+          multiline
+          w={220}
+          withArrow
+        >
+          <Box p="xs" bg="var(--mantine-color-gray-1)" style={{ borderRadius: 8, cursor: 'help' }}>
+            <Text size="xs" c="dimmed" fw={700} tt="uppercase">Vielseitigkeit</Text>
+            <Text size="lg" fw={700}>{activeSkillCount}</Text>
+            <Text size="xs" c="dimmed" style={{ fontSize: '10px' }}>Aktive Themen</Text>
+          </Box>
+        </Tooltip>
+
+        <Tooltip
+          label="Summe aller Prozentpunkte. Belohnt Breite und Einsatzbereitschaft."
+          multiline
+          w={220}
+          withArrow
+        >
+          <Box p="xs" bg="var(--mantine-color-gray-1)" style={{ borderRadius: 8, cursor: 'help' }}>
+            <Text size="xs" c="dimmed" fw={700} tt="uppercase">Volumen (XP)</Text>
+            <Text size="lg" fw={700} c="blue">{totalXP}</Text>
+            <Text size="xs" c="dimmed" style={{ fontSize: '10px' }}>Punkte Summe</Text>
+          </Box>
+        </Tooltip>
+
+        <Tooltip
+          label="Ist-Werte im Verhältnis zur Soll-Vorgabe. Relativiert die Leistung an den Zielen."
+          multiline
+          w={220}
+          withArrow
+        >
+          <Box p="xs" bg="var(--mantine-color-gray-1)" style={{ borderRadius: 8, cursor: 'help' }}>
+            <Text size="xs" c="dimmed" fw={700} tt="uppercase">Ziel-Erfüllung</Text>
+            <Text size="lg" fw={700} c={fulfillment && fulfillment >= 100 ? "teal" : "orange"}>
+              {fulfillment !== null ? `${fulfillment}%` : "-"}
+            </Text>
+            <Text size="xs" c="dimmed" style={{ fontSize: '10px' }}>Ist / Soll</Text>
+          </Box>
+        </Tooltip>
+      </SimpleGrid>
 
       {topSkills.length > 0 && (
         <>
@@ -144,6 +198,49 @@ const EmployeeInfoCard: React.FC<{
                   <Badge size="sm" variant="outline">
                     {item.assessment?.level}%
                   </Badge>
+                </Group>
+              );
+            })}
+          </Stack>
+        </>
+      )}
+
+      {learningNeeds.length > 0 && (
+        <>
+          <Divider />
+          <Tooltip
+            label="Skills mit negativer Abweichung zum definierten Soll-Wert. Diese sollten priorisiert werden."
+            multiline
+            w={220}
+            withArrow
+          >
+            <Text size="xs" c="dimmed" fw={700} tt="uppercase" style={{ cursor: 'help' }}>
+              Lernbedarf
+            </Text>
+          </Tooltip>
+          <Stack gap={8}>
+            {learningNeeds.map((item) => {
+              const ctx = resolveContext(item.skill);
+              return (
+                <Group
+                  key={item.skill.id}
+                  justify="space-between"
+                  wrap="nowrap"
+                  align="center"
+                >
+                  <Box style={{ flex: 1, overflow: "hidden" }}>
+                    <Text size="sm" truncate fw={500}>
+                      {item.skill.name}
+                    </Text>
+                    <Text size="10px" c="dimmed" truncate>
+                      {ctx.catName} • {ctx.subName}
+                    </Text>
+                  </Box>
+                  <Group gap={4} wrap="nowrap">
+                    <Badge size="xs" variant="light" color="red">{item.level}%</Badge>
+                    <Text size="xs" c="dimmed">/</Text>
+                    <Badge size="xs" variant="light" color="teal">{item.target}%</Badge>
+                  </Group>
                 </Group>
               );
             })}
@@ -235,8 +332,6 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
           const avg = calculateEmployeeAverage(emp.id!);
           const isColumnHovered = hoveredEmployeeId === emp.id;
           const isFocused = focusEmployeeId === emp.id;
-
-
 
           return (
             <HoverCard
