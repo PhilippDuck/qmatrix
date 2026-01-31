@@ -29,12 +29,14 @@ import {
   IconSun,
   IconMoon,
   IconSettings,
+  IconDashboard,
 } from "@tabler/icons-react";
 
 import { DataProvider, useData } from "./context/DataContext";
 import { UnifiedDataView } from "./components/UnifiedDataView";
 import { SkillMatrix } from "./components/SkillMatrix";
 import { DataManagement } from "./components/DataManagement";
+import { Dashboard } from "./components/Dashboard/Dashboard";
 import "@mantine/core/styles.css";
 
 const theme = createTheme({
@@ -65,7 +67,7 @@ function ColorSchemeToggle() {
 function AppContent() {
   const { loading } = useData();
   const computedColorScheme = useComputedColorScheme("light");
-  const [activeTab, setActiveTab] = useState("matrix");
+  const [activeTab, setActiveTab] = useState("dashboard");
 
   // Sidebar State (Desktop)
   const [desktopOpened, setDesktopOpened] = useState(true);
@@ -105,6 +107,7 @@ function AppContent() {
   }
 
   const navItems = [
+    { value: "dashboard", label: "Dashboard", icon: IconDashboard },
     { value: "matrix", label: "Skill-Matrix", icon: IconLayoutGrid },
     { value: "data", label: "Stammdaten", icon: IconDatabase },
     { value: "system", label: "System", icon: IconSettings },
@@ -252,6 +255,7 @@ function AppContent() {
             flexDirection: "column",
           }}
         >
+          {activeTab === "dashboard" && <Dashboard />}
           {activeTab === "matrix" && <SkillMatrix />}
           {activeTab === "data" && <UnifiedDataView />}
           {activeTab === "system" && <DataManagement />}
