@@ -42,6 +42,8 @@ export const SkillMatrix: React.FC = () => {
     getAssessment,
     addEmployee,
     addSkill,
+    addCategory,
+    addSubCategory,
   } = useData();
 
   const [legendOpened, setLegendOpened] = useState(false);
@@ -474,10 +476,17 @@ export const SkillMatrix: React.FC = () => {
         opened={skillDrawerOpened}
         onClose={() => setSkillDrawerOpened(false)}
         mode="skill"
+        categories={categories}
         subcategories={subcategories}
         preselectedSubcategoryId={null}
         onAddEmployee={async () => { }}
         onAddSkill={handleAddSkill}
+        onAddCategory={async (name) => {
+          return await addCategory({ name });
+        }}
+        onAddSubCategory={async (categoryId, name) => {
+          return await addSubCategory({ categoryId, name });
+        }}
       />
     </Box >
   );

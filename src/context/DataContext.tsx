@@ -42,12 +42,12 @@ interface DataContextType {
   deleteEmployee: (id: string) => Promise<void>;
 
   // Category methods
-  addCategory: (category: Omit<Category, "id">) => Promise<void>;
+  addCategory: (category: Omit<Category, "id">) => Promise<string>;
   updateCategory: (id: string, category: Omit<Category, "id">) => Promise<void>;
   deleteCategory: (id: string) => Promise<void>;
 
   // SubCategory methods
-  addSubCategory: (subCategory: Omit<SubCategory, "id">) => Promise<void>;
+  addSubCategory: (subCategory: Omit<SubCategory, "id">) => Promise<string>;
   updateSubCategory: (
     id: string,
     subCategory: Omit<SubCategory, "id">,
@@ -196,8 +196,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
   // Category methods
   const addCategory = async (category: Omit<Category, "id">) => {
     try {
-      await db.addCategory(category);
+      const id = await db.addCategory(category);
       await refreshAllData();
+      return id;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to add category");
       throw err;
@@ -227,8 +228,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
   // SubCategory methods
   const addSubCategory = async (subCategory: Omit<SubCategory, "id">) => {
     try {
-      await db.addSubCategory(subCategory);
+      const id = await db.addSubCategory(subCategory);
       await refreshAllData();
+      return id;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to add subcategory");
       throw err;
