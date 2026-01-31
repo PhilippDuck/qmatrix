@@ -17,7 +17,11 @@ import {
     useMantineColorScheme,
     SegmentedControl,
     Loader,
+    ActionIcon,
+    Menu,
+    Checkbox,
 } from "@mantine/core";
+import { useLocalStorage } from "@mantine/hooks";
 import {
     IconUsers,
     IconBulb,
@@ -35,6 +39,9 @@ import {
     IconChartHistogram,
     IconPlus,
     IconChecklist,
+    IconEye,
+    IconEyeOff,
+    IconSettings,
 } from "@tabler/icons-react";
 import { useData, AssessmentLogEntry } from "../../context/DataContext";
 import { getScoreColor } from "../../utils/skillCalculations";
@@ -169,6 +176,30 @@ export const Dashboard: React.FC = () => {
     const [period, setPeriod] = useState<ComparisonPeriod>("quarter");
     const [historyLogs, setHistoryLogs] = useState<AssessmentLogEntry[]>([]);
     const [loadingHistory, setLoadingHistory] = useState(true);
+
+    const periodLabel = period === "quarter" ? "Vorquartal" : "Vorjahr";
+    const periodName = period === "quarter" ? "Quartal" : "Jahr";
+
+    const [visibleTiles, setVisibleTiles] = useLocalStorage<Record<string, boolean>>({
+        key: 'qmatrix-dashboard-tiles',
+        defaultValue: {
+            stats: true,
+            activity: true,
+            improvedSkills: true,
+            coverage: true,
+            lowCoverage: true,
+            distribution: true,
+            learningGoals: true,
+            deptProgress: true,
+            skillGaps: true,
+            roleDist: true,
+            catPerformance: true,
+        },
+    });
+
+    const toggleTile = (id: string) => {
+        setVisibleTiles((prev) => ({ ...prev, [id]: !prev[id] }));
+    };
 
     useEffect(() => {
         const loadHistory = async () => {
@@ -385,8 +416,35 @@ export const Dashboard: React.FC = () => {
         };
     }, [employees, skills, assessments, categories, subcategories, departments, roles, historyLogs, period]);
 
-    const periodLabel = period === "quarter" ? "Vorquartal" : "Vorjahr";
-    const periodName = period === "quarter" ? "Quartal" : "Jahr";
+
+
+    const tileLabels: Record<string, string> = {
+        stats: "Haupt-KPIs",
+        activity: "Aktivitäts-Übersicht",
+        improvedSkills: "Verbesserte Skills",
+        coverage: "Skill-Abdeckung",
+        lowCoverage: "Geringe Abdeckung",
+        distribution: "Level-Verteilung",
+        learningGoals: "Lernziele",
+        deptProgress: "Abteilungs-Fortschritt",
+        skillGaps: "Skill-Gaps",
+        roleDist: "Rollen-Verteilung",
+        catPerformance: "Kategorie-Performance",
+    };
+
+    const HideButton = ({ id }: { id: string }) => (
+        <Tooltip label="Kachel vorübergehend ausblenden">
+            <ActionIcon
+                variant="subtle"
+                color="gray"
+                size="sm"
+                onClick={() => toggleTile(id)}
+                className="hide-button"
+            >
+                <IconEyeOff size={14} />
+            </ActionIcon>
+        </Tooltip>
+    );
 
     return (
         <Stack gap="lg" p="md" style={{ height: '100%', overflow: 'auto' }}>
@@ -403,49 +461,104 @@ export const Dashboard: React.FC = () => {
                             { label: 'Jahr', value: 'year' },
                         ]}
                     />
+
+                    <Menu shadow="md" width={200} position="bottom-end" closeOnItemClick={false}>
+                        <Menu.Target>
+                            <Tooltip label="Dashboard anpassen">
+                                <ActionIcon variant="light" color="blue" size="md">
+                                    <IconSettings size={18} />
+                                </ActionIcon>
+                            </Tooltip>
+                        </Menu.Target>
+
+                        <Menu.Dropdown>
+                            <Menu.Label>Sichtbare Kacheln</Menu.Label>
+                            {Object.entries(tileLabels).map(([id, label]) => (
+                                <Menu.Item
+                                    key={id}
+                                    onClick={() => toggleTile(id)}
+                                >
+                                    <Group gap="xs">
+                                        <Checkbox
+                                            checked={visibleTiles[id]}
+                                            readOnly
+                                            size="xs"
+                                        />
+                                        <Text size="sm">{label}</Text>
+                                    </Group>
+                                </Menu.Item>
+                            ))}
+                            <Menu.Divider />
+                            <Menu.Item
+                                color="red"
+                                onClick={() => setVisibleTiles({
+                                    stats: true,
+                                    activity: true,
+                                    improvedSkills: true,
+                                    coverage: true,
+                                    lowCoverage: true,
+                                    distribution: true,
+                                    learningGoals: true,
+                                    deptProgress: true,
+                                    skillGaps: true,
+                                    roleDist: true,
+                                    catPerformance: true,
+                                })}
+                            >
+                                Alle einblenden
+                            </Menu.Item>
+                        </Menu.Dropdown>
+                    </Menu>
+
                     {loadingHistory && <Loader size="xs" />}
                 </Group>
             </Group>
 
             {/* Main Stats */}
-            <SimpleGrid cols={{ base: 1, xs: 2, md: 4 }} spacing="md">
-                <StatCard
-                    title="Mitarbeiter"
-                    value={kpis.employeeCount}
-                    subtitle={`${departments.length} Abteilungen`}
-                    icon={<IconUsers size={24} />}
-                    color="blue"
-                />
-                <StatCard
-                    title="Globale Expertise"
-                    value={`${kpis.globalAverage}%`}
-                    subtitle="Durchschnitt aller Mitarbeiter"
-                    icon={<IconChartBar size={24} />}
-                    color={kpis.globalAverage >= 50 ? "teal" : kpis.globalAverage >= 25 ? "yellow" : "red"}
-                />
-                <StatCard
-                    title="Gesamt-XP"
-                    value={kpis.totalXP.toLocaleString()}
-                    subtitle={`${kpis.activeSkillCount} aktive Skills`}
-                    icon={<IconBulb size={24} />}
-                    color="violet"
-                    trend={!loadingHistory ? {
-                        value: kpis.xpChange,
-                        label: periodLabel
-                    } : undefined}
-                />
-                <StatCard
-                    title="Zielerfüllung"
-                    value={`${kpis.goalFulfillment}%`}
-                    subtitle="Ziele erreicht"
-                    icon={<IconTarget size={24} />}
-                    color={kpis.goalFulfillment >= 70 ? "teal" : kpis.goalFulfillment >= 40 ? "yellow" : "red"}
-                />
-            </SimpleGrid>
+            {visibleTiles.stats && (
+                <SimpleGrid cols={{ base: 1, xs: 2, md: 4 }} spacing="md">
+                    <StatCard
+                        title="Mitarbeiter"
+                        value={kpis.employeeCount}
+                        subtitle={`${departments.length} Abteilungen`}
+                        icon={<IconUsers size={24} />}
+                        color="blue"
+                    />
+                    <StatCard
+                        title="Globale Expertise"
+                        value={`${kpis.globalAverage}%`}
+                        subtitle="Durchschnitt aller Mitarbeiter"
+                        icon={<IconChartBar size={24} />}
+                        color={kpis.globalAverage >= 50 ? "teal" : kpis.globalAverage >= 25 ? "yellow" : "red"}
+                    />
+                    <StatCard
+                        title="Gesamt-XP"
+                        value={kpis.totalXP.toLocaleString()}
+                        subtitle={`${kpis.activeSkillCount} aktive Skills`}
+                        icon={<IconBulb size={24} />}
+                        color="violet"
+                        trend={!loadingHistory ? {
+                            value: kpis.xpChange,
+                            label: periodLabel
+                        } : undefined}
+                    />
+                    <StatCard
+                        title="Zielerfüllung"
+                        value={`${kpis.goalFulfillment}%`}
+                        subtitle="Ziele erreicht"
+                        icon={<IconTarget size={24} />}
+                        color={kpis.goalFulfillment >= 70 ? "teal" : kpis.goalFulfillment >= 40 ? "yellow" : "red"}
+                    />
+                </SimpleGrid>
+            )}
 
             {/* Activity Card */}
-            {!loadingHistory && (
+            {visibleTiles.activity && !loadingHistory && (
                 <Card withBorder radius="md" p="md">
+                    <Group justify="space-between" mb="xs">
+                        <Text size="xs" c="dimmed" fw={700} tt="uppercase">Aktivitäts-Übersicht</Text>
+                        <HideButton id="activity" />
+                    </Group>
                     <Group justify="space-around" wrap="wrap">
                         <Box ta="center">
                             <Text size="xs" c="dimmed" tt="uppercase">Skill-Verbesserungen</Text>
@@ -499,329 +612,366 @@ export const Dashboard: React.FC = () => {
 
             <SimpleGrid cols={{ base: 1, md: 2, lg: 3 }} spacing="md">
                 {/* Most Improved Skills */}
-                <Card withBorder radius="md" p="md">
-                    <Group justify="space-between" mb="md">
-                        <Text fw={700} size="sm">
-                            <Group gap={8}>
-                                <IconRocket size={16} color="var(--mantine-color-teal-6)" />
-                                Am meisten verbesserte Skills
-                            </Group>
-                        </Text>
-                        <Badge size="xs" variant="light">dieses {periodName}</Badge>
-                    </Group>
-                    <Stack gap="sm">
-                        {kpis.mostImprovedSkills.length > 0 ? (
-                            kpis.mostImprovedSkills.map((item) => (
-                                <Group key={item.skill?.id} justify="space-between">
-                                    <Text size="sm" fw={500} truncate style={{ maxWidth: 180 }}>
-                                        {item.skill?.name}
-                                    </Text>
-                                    <Badge color="teal" variant="light" size="sm">
-                                        +{item.improvement} XP
-                                    </Badge>
+                {visibleTiles.improvedSkills && (
+                    <Card withBorder radius="md" p="md">
+                        <Group justify="space-between" mb="md">
+                            <Text fw={700} size="sm">
+                                <Group gap={8}>
+                                    <IconRocket size={16} color="var(--mantine-color-teal-6)" />
+                                    Am meisten verbesserte Skills
                                 </Group>
-                            ))
-                        ) : (
-                            <Text size="sm" c="dimmed" ta="center">Noch keine Verbesserungen dieses {periodName}</Text>
-                        )}
-                    </Stack>
-                </Card>
+                            </Text>
+                            <Group gap="xs">
+                                <Badge size="xs" variant="light">dieses {periodName}</Badge>
+                                <HideButton id="improvedSkills" />
+                            </Group>
+                        </Group>
+                        <Stack gap="sm">
+                            {kpis.mostImprovedSkills.length > 0 ? (
+                                kpis.mostImprovedSkills.map((item) => (
+                                    <Group key={item.skill?.id} justify="space-between">
+                                        <Text size="sm" fw={500} truncate style={{ maxWidth: 180 }}>
+                                            {item.skill?.name}
+                                        </Text>
+                                        <Badge color="teal" variant="light" size="sm">
+                                            +{item.improvement} XP
+                                        </Badge>
+                                    </Group>
+                                ))
+                            ) : (
+                                <Text size="sm" c="dimmed" ta="center">Noch keine Verbesserungen dieses {periodName}</Text>
+                            )}
+                        </Stack>
+                    </Card>
+                )}
 
                 {/* Skill Coverage */}
-                <Card withBorder radius="md" p="md">
-                    <Group justify="space-between" mb="md">
-                        <Text fw={700} size="sm">
-                            <Group gap={8}>
-                                <IconShieldCheck size={16} color="var(--mantine-color-blue-6)" />
-                                Höchste Skill-Abdeckung
-                            </Group>
-                        </Text>
-                        <Tooltip label="Mitarbeiter mit ≥50% Level" withArrow>
-                            <Badge size="xs" variant="light" color="gray">≥50%</Badge>
-                        </Tooltip>
-                    </Group>
-                    <Stack gap="sm">
-                        {kpis.skillCoverage.length > 0 ? (
-                            kpis.skillCoverage.map((item) => (
-                                <Box key={item.skill.id}>
-                                    <Group justify="space-between" mb={4}>
-                                        <Text size="sm" fw={500} truncate style={{ maxWidth: 160 }}>
-                                            {item.skill.name}
-                                        </Text>
-                                        <Text size="xs" c="dimmed">
-                                            {item.coverage}/{employees.length} ({item.percentage}%)
-                                        </Text>
-                                    </Group>
-                                    <Progress
-                                        value={item.percentage}
-                                        color="blue"
-                                        size="xs"
-                                        radius="xl"
-                                    />
-                                </Box>
-                            ))
-                        ) : (
-                            <Text size="sm" c="dimmed" ta="center">Keine Skills vorhanden</Text>
-                        )}
-                    </Stack>
-                </Card>
-
-                {/* Low Coverage Skills */}
-                <Card withBorder radius="md" p="md">
-                    <Group justify="space-between" mb="md">
-                        <Text fw={700} size="sm">
-                            <Group gap={8}>
-                                <IconAlertTriangle size={16} color="var(--mantine-color-orange-6)" />
-                                Geringe Skill-Abdeckung
-                            </Group>
-                        </Text>
-                        <Tooltip label="Skills mit <30% Abdeckung" withArrow>
-                            <Badge size="xs" variant="light" color="orange">&lt;30%</Badge>
-                        </Tooltip>
-                    </Group>
-                    <Stack gap="sm">
-                        {kpis.lowCoverageSkills.length > 0 ? (
-                            kpis.lowCoverageSkills.map((item) => (
-                                <Box key={item.skill.id}>
-                                    <Group justify="space-between" mb={4}>
-                                        <Text size="sm" fw={500} truncate style={{ maxWidth: 160 }}>
-                                            {item.skill.name}
-                                        </Text>
-                                        <Badge color="orange" variant="light" size="sm">
-                                            {item.coverage}/{employees.length}
-                                        </Badge>
-                                    </Group>
-                                    <Progress
-                                        value={item.percentage}
-                                        color="orange"
-                                        size="xs"
-                                        radius="xl"
-                                    />
-                                </Box>
-                            ))
-                        ) : (
-                            <Text size="sm" c="dimmed" ta="center">Alle Skills gut abgedeckt 🎉</Text>
-                        )}
-                    </Stack>
-                </Card>
-
-                {/* Skill Level Distribution */}
-                <Card withBorder radius="md" p="md">
-                    <Group justify="space-between" mb="md">
-                        <Text fw={700} size="sm">
-                            <Group gap={8}>
-                                <IconChartHistogram size={16} color="var(--mantine-color-violet-6)" />
-                                Skill-Level Verteilung
-                            </Group>
-                        </Text>
-                        <Text size="xs" c="dimmed">{kpis.totalAssessments} Bewertungen</Text>
-                    </Group>
-                    <Stack gap="xs">
-                        {[
-                            { level: '100%', count: kpis.levelDistribution.level100, color: 'teal' },
-                            { level: '75%', count: kpis.levelDistribution.level75, color: 'green' },
-                            { level: '50%', count: kpis.levelDistribution.level50, color: 'yellow' },
-                            { level: '25%', count: kpis.levelDistribution.level25, color: 'orange' },
-                            { level: '0%', count: kpis.levelDistribution.level0, color: 'gray' },
-                        ].map((item) => {
-                            const pct = kpis.totalAssessments > 0
-                                ? Math.round((item.count / kpis.totalAssessments) * 100)
-                                : 0;
-                            return (
-                                <Group key={item.level} gap="xs">
-                                    <Text size="xs" w={35} ta="right" c="dimmed">{item.level}</Text>
-                                    <Progress
-                                        value={pct}
-                                        color={item.color}
-                                        size="sm"
-                                        radius="xl"
-                                        style={{ flex: 1 }}
-                                    />
-                                    <Text size="xs" w={40} c="dimmed">{item.count}</Text>
+                {visibleTiles.coverage && (
+                    <Card withBorder radius="md" p="md">
+                        <Group justify="space-between" mb="md">
+                            <Text fw={700} size="sm">
+                                <Group gap={8}>
+                                    <IconShieldCheck size={16} color="var(--mantine-color-blue-6)" />
+                                    Höchste Skill-Abdeckung
                                 </Group>
-                            );
-                        })}
-                    </Stack>
-                </Card>
-
-                {/* Open Learning Goals */}
-                <Card withBorder radius="md" p="md">
-                    <Group justify="space-between" mb="md">
-                        <Text fw={700} size="sm">
-                            <Group gap={8}>
-                                <IconChecklist size={16} color="var(--mantine-color-orange-6)" />
-                                Offene Lernziele
+                            </Text>
+                            <Group gap="xs">
+                                <Tooltip label="Mitarbeiter mit ≥50% Level" withArrow>
+                                    <Badge size="xs" variant="light" color="gray">≥50%</Badge>
+                                </Tooltip>
+                                <HideButton id="coverage" />
                             </Group>
-                        </Text>
-                    </Group>
-                    <Stack gap="sm" align="center">
-                        <RingProgress
-                            size={100}
-                            thickness={10}
-                            roundCaps
-                            sections={[{ value: kpis.goalFulfillment, color: kpis.goalFulfillment >= 70 ? 'teal' : kpis.goalFulfillment >= 40 ? 'yellow' : 'orange' }]}
-                            label={
-                                <Text size="lg" ta="center" fw={700}>
-                                    {kpis.goalFulfillment}%
-                                </Text>
-                            }
-                        />
-                        <Text size="sm" c="dimmed" ta="center">
-                            {kpis.openGoalsCount} von {kpis.openGoalsCount + Math.round(kpis.openGoalsCount * kpis.goalFulfillment / (100 - kpis.goalFulfillment) || 0)} Zielen noch offen
-                        </Text>
-                    </Stack>
-                </Card>
-
-                {/* Department Progress */}
-                <Card withBorder radius="md" p="md">
-                    <Group justify="space-between" mb="md">
-                        <Text fw={700} size="sm">
-                            <Group gap={8}>
-                                <IconBuildingSkyscraper size={16} color="var(--mantine-color-cyan-6)" />
-                                Abteilungs-Fortschritt
-                            </Group>
-                        </Text>
-                        <Badge size="xs" variant="light">dieses {periodName}</Badge>
-                    </Group>
-                    <Stack gap="sm">
-                        {kpis.departmentProgress.length > 0 ? (
-                            kpis.departmentProgress.slice(0, 5).map((item, idx) => (
-                                <Group key={item.department.id} justify="space-between">
-                                    <Group gap="xs">
-                                        {idx === 0 && item.improvements > 0 && (
-                                            <ThemeIcon size="xs" color="cyan" variant="light">
-                                                <IconTrendingUp size={10} />
-                                            </ThemeIcon>
-                                        )}
-                                        <Text size="sm" fw={500}>{item.department.name}</Text>
-                                    </Group>
-                                    <Badge color="cyan" variant="light" size="sm">
-                                        {item.improvements} Verbesserungen
-                                    </Badge>
-                                </Group>
-                            ))
-                        ) : (
-                            <Text size="sm" c="dimmed" ta="center">Keine Abteilungen vorhanden</Text>
-                        )}
-                    </Stack>
-                </Card>
-
-                {/* Biggest Skill Gaps */}
-                <Card withBorder radius="md" p="md">
-                    <Group justify="space-between" mb="md">
-                        <Text fw={700} size="sm">
-                            <Group gap={8}>
-                                <IconAlertTriangle size={16} color="var(--mantine-color-red-6)" />
-                                Größte Skill-Gaps
-                            </Group>
-                        </Text>
-                    </Group>
-                    <Stack gap="sm">
-                        {kpis.biggestGaps.length > 0 ? (
-                            kpis.biggestGaps.map((item) => (
-                                <Box key={item.skill.id}>
-                                    <Group justify="space-between" mb={4}>
-                                        <Text size="sm" fw={500} truncate style={{ maxWidth: 180 }}>
-                                            {item.skill.name}
-                                        </Text>
-                                        <Badge color="red" variant="light" size="sm">
-                                            -{Math.round(item.avgGap)}%
-                                        </Badge>
-                                    </Group>
-                                    <Progress
-                                        value={100 - item.avgGap}
-                                        color="red"
-                                        size="xs"
-                                        radius="xl"
-                                    />
-                                </Box>
-                            ))
-                        ) : (
-                            <Text size="sm" c="dimmed" ta="center">Keine Gaps vorhanden 🎉</Text>
-                        )}
-                    </Stack>
-                </Card>
-
-                {/* Role Distribution */}
-                <Card withBorder radius="md" p="md">
-                    <Group justify="space-between" mb="md">
-                        <Text fw={700} size="sm">
-                            <Group gap={8}>
-                                <IconBadge size={16} />
-                                Rollen-Verteilung
-                            </Group>
-                        </Text>
-                    </Group>
-                    <Stack gap="sm">
-                        {kpis.roleDistribution.length > 0 ? (
-                            kpis.roleDistribution.slice(0, 5).map((item) => {
-                                const RoleIcon = getIconByName(item.role.icon);
-                                const percentage = Math.round((item.count / employees.length) * 100);
-                                return (
-                                    <Box key={item.role.id}>
+                        </Group>
+                        <Stack gap="sm">
+                            {kpis.skillCoverage.length > 0 ? (
+                                kpis.skillCoverage.map((item) => (
+                                    <Box key={item.skill.id}>
                                         <Group justify="space-between" mb={4}>
-                                            <Group gap="xs">
-                                                <RoleIcon size={14} />
-                                                <Text size="sm" fw={500}>{item.role.name}</Text>
-                                            </Group>
-                                            <Text size="xs" c="dimmed">{item.count} ({percentage}%)</Text>
+                                            <Text size="sm" fw={500} truncate style={{ maxWidth: 160 }}>
+                                                {item.skill.name}
+                                            </Text>
+                                            <Text size="xs" c="dimmed">
+                                                {item.coverage}/{employees.length} ({item.percentage}%)
+                                            </Text>
                                         </Group>
                                         <Progress
-                                            value={percentage}
+                                            value={item.percentage}
                                             color="blue"
                                             size="xs"
                                             radius="xl"
                                         />
                                     </Box>
+                                ))
+                            ) : (
+                                <Text size="sm" c="dimmed" ta="center">Keine Skills vorhanden</Text>
+                            )}
+                        </Stack>
+                    </Card>
+                )}
+
+                {/* Low Coverage Skills */}
+                {visibleTiles.lowCoverage && (
+                    <Card withBorder radius="md" p="md">
+                        <Group justify="space-between" mb="md">
+                            <Text fw={700} size="sm">
+                                <Group gap={8}>
+                                    <IconAlertTriangle size={16} color="var(--mantine-color-orange-6)" />
+                                    Geringe Skill-Abdeckung
+                                </Group>
+                            </Text>
+                            <Group gap="xs">
+                                <Tooltip label="Skills mit <30% Abdeckung" withArrow>
+                                    <Badge size="xs" variant="light" color="orange">&lt;30%</Badge>
+                                </Tooltip>
+                                <HideButton id="lowCoverage" />
+                            </Group>
+                        </Group>
+                        <Stack gap="sm">
+                            {kpis.lowCoverageSkills.length > 0 ? (
+                                kpis.lowCoverageSkills.map((item) => (
+                                    <Box key={item.skill.id}>
+                                        <Group justify="space-between" mb={4}>
+                                            <Text size="sm" fw={500} truncate style={{ maxWidth: 160 }}>
+                                                {item.skill.name}
+                                            </Text>
+                                            <Badge color="orange" variant="light" size="sm">
+                                                {item.coverage}/{employees.length}
+                                            </Badge>
+                                        </Group>
+                                        <Progress
+                                            value={item.percentage}
+                                            color="orange"
+                                            size="xs"
+                                            radius="xl"
+                                        />
+                                    </Box>
+                                ))
+                            ) : (
+                                <Text size="sm" c="dimmed" ta="center">Alle Skills gut abgedeckt 🎉</Text>
+                            )}
+                        </Stack>
+                    </Card>
+                )}
+
+                {/* Skill Level Distribution */}
+                {visibleTiles.distribution && (
+                    <Card withBorder radius="md" p="md">
+                        <Group justify="space-between" mb="md">
+                            <Text fw={700} size="sm">
+                                <Group gap={8}>
+                                    <IconChartHistogram size={16} color="var(--mantine-color-violet-6)" />
+                                    Skill-Level Verteilung
+                                </Group>
+                            </Text>
+                            <Group gap="xs">
+                                <Text size="xs" c="dimmed">{kpis.totalAssessments} Bewertungen</Text>
+                                <HideButton id="distribution" />
+                            </Group>
+                        </Group>
+                        <Stack gap="xs">
+                            {[
+                                { level: '100%', count: kpis.levelDistribution.level100, color: 'teal' },
+                                { level: '75%', count: kpis.levelDistribution.level75, color: 'green' },
+                                { level: '50%', count: kpis.levelDistribution.level50, color: 'yellow' },
+                                { level: '25%', count: kpis.levelDistribution.level25, color: 'orange' },
+                                { level: '0%', count: kpis.levelDistribution.level0, color: 'gray' },
+                            ].map((item) => {
+                                const pct = kpis.totalAssessments > 0
+                                    ? Math.round((item.count / kpis.totalAssessments) * 100)
+                                    : 0;
+                                return (
+                                    <Group key={item.level} gap="xs">
+                                        <Text size="xs" w={35} ta="right" c="dimmed">{item.level}</Text>
+                                        <Progress
+                                            value={pct}
+                                            color={item.color}
+                                            size="sm"
+                                            radius="xl"
+                                            style={{ flex: 1 }}
+                                        />
+                                        <Text size="xs" w={40} c="dimmed">{item.count}</Text>
+                                    </Group>
                                 );
-                            })
-                        ) : (
-                            <Text size="sm" c="dimmed" ta="center">Keine Rollen zugewiesen</Text>
-                        )}
-                    </Stack>
-                </Card>
+                            })}
+                        </Stack>
+                    </Card>
+                )}
+
+                {/* Open Learning Goals */}
+                {visibleTiles.learningGoals && (
+                    <Card withBorder radius="md" p="md">
+                        <Group justify="space-between" mb="md">
+                            <Text fw={700} size="sm">
+                                <Group gap={8}>
+                                    <IconChecklist size={16} color="var(--mantine-color-orange-6)" />
+                                    Offene Lernziele
+                                </Group>
+                            </Text>
+                            <HideButton id="learningGoals" />
+                        </Group>
+                        <Stack gap="sm" align="center">
+                            <RingProgress
+                                size={100}
+                                thickness={10}
+                                roundCaps
+                                sections={[{ value: kpis.goalFulfillment, color: kpis.goalFulfillment >= 70 ? 'teal' : kpis.goalFulfillment >= 40 ? 'yellow' : 'orange' }]}
+                                label={
+                                    <Text size="lg" ta="center" fw={700}>
+                                        {kpis.goalFulfillment}%
+                                    </Text>
+                                }
+                            />
+                            <Text size="sm" c="dimmed" ta="center">
+                                {kpis.openGoalsCount} von {kpis.openGoalsCount + Math.round(kpis.openGoalsCount * kpis.goalFulfillment / (100 - kpis.goalFulfillment) || 0)} Zielen noch offen
+                            </Text>
+                        </Stack>
+                    </Card>
+                )}
+
+                {/* Department Progress */}
+                {visibleTiles.deptProgress && (
+                    <Card withBorder radius="md" p="md">
+                        <Group justify="space-between" mb="md">
+                            <Text fw={700} size="sm">
+                                <Group gap={8}>
+                                    <IconBuildingSkyscraper size={16} color="var(--mantine-color-cyan-6)" />
+                                    Abteilungs-Fortschritt
+                                </Group>
+                            </Text>
+                            <Group gap="xs">
+                                <Badge size="xs" variant="light">dieses {periodName}</Badge>
+                                <HideButton id="deptProgress" />
+                            </Group>
+                        </Group>
+                        <Stack gap="sm">
+                            {kpis.departmentProgress.length > 0 ? (
+                                kpis.departmentProgress.slice(0, 5).map((item, idx) => (
+                                    <Group key={item.department.id} justify="space-between">
+                                        <Group gap="xs">
+                                            {idx === 0 && item.improvements > 0 && (
+                                                <ThemeIcon size="xs" color="cyan" variant="light">
+                                                    <IconTrendingUp size={10} />
+                                                </ThemeIcon>
+                                            )}
+                                            <Text size="sm" fw={500}>{item.department.name}</Text>
+                                        </Group>
+                                        <Badge color="cyan" variant="light" size="sm">
+                                            {item.improvements} Verbesserungen
+                                        </Badge>
+                                    </Group>
+                                ))
+                            ) : (
+                                <Text size="sm" c="dimmed" ta="center">Keine Abteilungen vorhanden</Text>
+                            )}
+                        </Stack>
+                    </Card>
+                )}
+
+                {/* Biggest Skill Gaps */}
+                {visibleTiles.skillGaps && (
+                    <Card withBorder radius="md" p="md">
+                        <Group justify="space-between" mb="md">
+                            <Text fw={700} size="sm">
+                                <Group gap={8}>
+                                    <IconAlertTriangle size={16} color="var(--mantine-color-red-6)" />
+                                    Größte Skill-Gaps
+                                </Group>
+                            </Text>
+                            <HideButton id="skillGaps" />
+                        </Group>
+                        <Stack gap="sm">
+                            {kpis.biggestGaps.length > 0 ? (
+                                kpis.biggestGaps.map((item) => (
+                                    <Box key={item.skill.id}>
+                                        <Group justify="space-between" mb={4}>
+                                            <Text size="sm" fw={500} truncate style={{ maxWidth: 180 }}>
+                                                {item.skill.name}
+                                            </Text>
+                                            <Badge color="red" variant="light" size="sm">
+                                                -{Math.round(item.avgGap)}%
+                                            </Badge>
+                                        </Group>
+                                        <Progress
+                                            value={100 - item.avgGap}
+                                            color="red"
+                                            size="xs"
+                                            radius="xl"
+                                        />
+                                    </Box>
+                                ))
+                            ) : (
+                                <Text size="sm" c="dimmed" ta="center">Keine Gaps vorhanden 🎉</Text>
+                            )}
+                        </Stack>
+                    </Card>
+                )}
+
+                {/* Role Distribution */}
+                {visibleTiles.roleDist && (
+                    <Card withBorder radius="md" p="md">
+                        <Group justify="space-between" mb="md">
+                            <Text fw={700} size="sm">
+                                <Group gap={8}>
+                                    <IconBadge size={16} />
+                                    Rollen-Verteilung
+                                </Group>
+                            </Text>
+                            <HideButton id="roleDist" />
+                        </Group>
+                        <Stack gap="sm">
+                            {kpis.roleDistribution.length > 0 ? (
+                                kpis.roleDistribution.slice(0, 5).map((item) => {
+                                    const RoleIcon = getIconByName(item.role.icon);
+                                    const percentage = Math.round((item.count / employees.length) * 100);
+                                    return (
+                                        <Box key={item.role.id}>
+                                            <Group justify="space-between" mb={4}>
+                                                <Group gap="xs">
+                                                    <RoleIcon size={14} />
+                                                    <Text size="sm" fw={500}>{item.role.name}</Text>
+                                                </Group>
+                                                <Text size="xs" c="dimmed">{item.count} ({percentage}%)</Text>
+                                            </Group>
+                                            <Progress
+                                                value={percentage}
+                                                color="blue"
+                                                size="xs"
+                                                radius="xl"
+                                            />
+                                        </Box>
+                                    );
+                                })
+                            ) : (
+                                <Text size="sm" c="dimmed" ta="center">Keine Rollen zugewiesen</Text>
+                            )}
+                        </Stack>
+                    </Card>
+                )}
 
                 {/* Category Performance */}
-                <Card withBorder radius="md" p="md" style={{ gridColumn: 'span 2' }}>
-                    <Group justify="space-between" mb="md">
-                        <Text fw={700} size="sm">
-                            <Group gap={8}>
-                                <IconTrendingUp size={16} />
-                                Kategorie-Performance
-                            </Group>
-                        </Text>
-                    </Group>
-                    <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
-                        {kpis.categoryStats.length > 0 ? (
-                            kpis.categoryStats.map((item) => (
-                                <Paper
-                                    key={item.category.id}
-                                    p="sm"
-                                    radius="md"
-                                    bg={isDark ? 'var(--mantine-color-dark-6)' : 'var(--mantine-color-gray-0)'}
-                                >
-                                    <Group justify="space-between" mb="xs">
-                                        <Box style={{ flex: 1 }}>
-                                            <Text size="sm" fw={600}>{item.category.name}</Text>
-                                            <Text size="xs" c="dimmed">{item.skillCount} Skills</Text>
-                                        </Box>
-                                        <Text size="lg" fw={700} c={getScoreColor(item.avgLevel)}>
-                                            {item.avgLevel}%
-                                        </Text>
-                                    </Group>
-                                    <Progress
-                                        value={item.avgLevel}
-                                        color={getScoreColor(item.avgLevel)}
-                                        size="sm"
-                                        radius="xl"
-                                    />
-                                </Paper>
-                            ))
-                        ) : (
-                            <Text size="sm" c="dimmed" ta="center">Keine Kategorien vorhanden</Text>
-                        )}
-                    </SimpleGrid>
-                </Card>
+                {visibleTiles.catPerformance && (
+                    <Card withBorder radius="md" p="md" style={{ gridColumn: 'span 2' }}>
+                        <Group justify="space-between" mb="md">
+                            <Text fw={700} size="sm">
+                                <Group gap={8}>
+                                    <IconTrendingUp size={16} />
+                                    Kategorie-Performance
+                                </Group>
+                            </Text>
+                            <HideButton id="catPerformance" />
+                        </Group>
+                        <SimpleGrid cols={{ base: 1, sm: kpis.categoryStats.length === 1 ? 1 : 2 }} spacing="md">
+                            {kpis.categoryStats.length > 0 ? (
+                                kpis.categoryStats.map((item) => (
+                                    <Paper
+                                        key={item.category.id}
+                                        p="sm"
+                                        radius="md"
+                                        bg={isDark ? 'var(--mantine-color-dark-6)' : 'var(--mantine-color-gray-0)'}
+                                    >
+                                        <Group justify="space-between" mb="xs">
+                                            <Box style={{ flex: 1 }}>
+                                                <Text size="sm" fw={600}>{item.category.name}</Text>
+                                                <Text size="xs" c="dimmed">{item.skillCount} Skills</Text>
+                                            </Box>
+                                            <Text size="lg" fw={700} c={getScoreColor(item.avgLevel)}>
+                                                {item.avgLevel}%
+                                            </Text>
+                                        </Group>
+                                        <Progress
+                                            value={item.avgLevel}
+                                            color={getScoreColor(item.avgLevel)}
+                                            size="sm"
+                                            radius="xl"
+                                        />
+                                    </Paper>
+                                ))
+                            ) : (
+                                <Text size="sm" c="dimmed" ta="center">Keine Kategorien vorhanden</Text>
+                            )}
+                        </SimpleGrid>
+                    </Card>
+                )}
             </SimpleGrid>
         </Stack>
     );
