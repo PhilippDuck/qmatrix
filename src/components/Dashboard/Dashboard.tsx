@@ -181,7 +181,7 @@ export const Dashboard: React.FC = () => {
     const periodName = period === "quarter" ? "Quartal" : "Jahr";
 
     const [visibleTiles, setVisibleTiles] = useLocalStorage<Record<string, boolean>>({
-        key: 'qmatrix-dashboard-tiles',
+        key: 'qtrack-dashboard-tiles',
         defaultValue: {
             stats: true,
             activity: true,
@@ -447,7 +447,7 @@ export const Dashboard: React.FC = () => {
     );
 
     return (
-        <Stack gap="lg" p="md" style={{ height: '100%', overflow: 'auto' }}>
+        <Stack gap="lg" style={{ height: '100%', overflow: 'auto' }}>
             <Group justify="space-between" align="center">
                 <Title order={2}>Dashboard</Title>
                 <Group gap="sm">

@@ -1,4 +1,4 @@
-# Q-Matrix
+# Q-Track
 
 Eine moderne Skill-Matrix-Anwendung zur Verwaltung und Visualisierung von Mitarbeiter-Kompetenzen.
 

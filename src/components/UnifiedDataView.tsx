@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Tabs, Title, Container, Paper } from "@mantine/core";
+import { Tabs, Title, Box, Paper } from "@mantine/core";
 import {
     IconUsers,
     IconBuilding,
@@ -28,9 +28,9 @@ export const UnifiedDataView: React.FC = () => {
     }, [activeTab]);
 
     return (
-        <Container fluid p="md" style={{ width: '100%', maxWidth: '100%' }}>
+        <Box style={{ width: '100%', maxWidth: '100%' }}>
             <Title order={2} mb="lg">
-                Stammdatenverwaltung
+                Stammdaten
             </Title>
 
             <Paper shadow="xs" p="md" radius="md" withBorder>
@@ -68,6 +68,6 @@ export const UnifiedDataView: React.FC = () => {
 
                 </Tabs>
             </Paper>
-        </Container>
+        </Box>
     );
 };

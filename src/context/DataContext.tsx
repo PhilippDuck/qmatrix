@@ -433,7 +433,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
       const now = new Date();
       const dateStr = now.toISOString().split("T")[0];
       const timeStr = now.toLocaleTimeString("de-DE").replace(/:/g, "-");
-      a.download = `qmatrix_backup_${dateStr}_${timeStr}.json`;
+      a.download = `qtrack_backup_${dateStr}_${timeStr}.json`;
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {

@@ -222,7 +222,7 @@ export const SkillMatrix: React.FC = () => {
     >
       <Group mb="lg" justify="space-between">
         <Group gap="sm">
-          <Title order={2}>Qualifizierungsmatrix</Title>
+          <Title order={2}>Skill-Matrix</Title>
           <Tooltip label="Alle ein-/ausklappen">
             <ActionIcon
               variant="light"

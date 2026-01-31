@@ -32,7 +32,7 @@ const getPseudonymIndex = (id: string): number => {
 export const PrivacyProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [anonymousMode, setAnonymousModeState] = useState<boolean>(() => {
         try {
-            const saved = localStorage.getItem('qmatrix-anonymous-mode');
+            const saved = localStorage.getItem('qtrack-anonymous-mode');
             return saved ? JSON.parse(saved) : false;
         } catch {
             return false;
@@ -42,7 +42,7 @@ export const PrivacyProvider: React.FC<{ children: ReactNode }> = ({ children })
     const setAnonymousMode = (value: boolean) => {
         setAnonymousModeState(value);
         try {
-            localStorage.setItem('qmatrix-anonymous-mode', JSON.stringify(value));
+            localStorage.setItem('qtrack-anonymous-mode', JSON.stringify(value));
         } catch (e) {
             console.error('Failed to save anonymous mode setting', e);
         }

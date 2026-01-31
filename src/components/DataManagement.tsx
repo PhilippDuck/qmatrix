@@ -15,6 +15,8 @@ import {
   Badge,
   Checkbox,
   ScrollArea,
+  Collapse,
+  ActionIcon,
 } from "@mantine/core";
 import {
   IconDownload,
@@ -25,6 +27,7 @@ import {
   IconGitMerge,
   IconArrowsDiff,
   IconCheck,
+  IconChevronDown,
 } from "@tabler/icons-react";
 import { useData, MergeReport, MergeDiff, MergeItemDiff } from "../context/DataContext";
 import { useDisclosure } from "@mantine/hooks";
@@ -46,6 +49,7 @@ export const DataManagement = () => {
   const [isMerging, setIsMerging] = useState(false);
   const [resultOpened, { open: openResult, close: closeResult }] = useDisclosure(false);
   const [diffOpened, { open: openDiff, close: closeDiff }] = useDisclosure(false);
+  const [dangerZoneOpened, { toggle: toggleDangerZone }] = useDisclosure(false);
 
   useEffect(() => {
     const savedAction = localStorage.getItem("last_data_action");
@@ -155,7 +159,7 @@ export const DataManagement = () => {
   return (
     <Box style={{ width: "100%" }}>
       <Title order={2} mb="lg">
-        Datenverwaltung
+        System
       </Title>
 
       <Stack gap="lg" style={{ width: "100%" }}>
@@ -452,35 +456,49 @@ export const DataManagement = () => {
           shadow="sm"
           radius="md"
           style={{ borderColor: "var(--mantine-color-red-filled)" }}
+          p="md"
         >
           <Stack gap="md">
-            <Group gap="xs">
-              <IconAlertCircle size={20} style={{ color: "var(--mantine-color-red-filled)" }} />
-              <Title order={4} c="red">
-                Gefahrenzone
-              </Title>
+            <Group justify="space-between" style={{ cursor: "pointer" }} onClick={toggleDangerZone}>
+              <Group gap="xs">
+                <IconAlertCircle size={20} style={{ color: "var(--mantine-color-red-filled)" }} />
+                <Title order={4} c="red">
+                  Gefahrenzone
+                </Title>
+              </Group>
+              <ActionIcon variant="subtle" color="red">
+                <IconChevronDown
+                  style={{
+                    transform: dangerZoneOpened ? "rotate(180deg)" : "none",
+                    transition: "transform 0.2s ease",
+                  }}
+                />
+              </ActionIcon>
             </Group>
 
-            <Divider />
-
-            <Box>
-              <Text fw={600} size="sm">
-                Datenbank vollständig leeren
-              </Text>
-              <Text size="xs" c="dimmed" mb="sm">
-                Löscht alle Inhalte (Mitarbeiter, Kategorien, Skills und
-                Assessments) unwiderruflich aus der lokalen Datenbank.
-              </Text>
-              <Button
-                variant="outline"
-                color="red"
-                size="xs"
-                leftSection={<IconTrash size={14} />}
-                onClick={handleReset}
-              >
-                System zurücksetzen
-              </Button>
-            </Box>
+            <Collapse in={dangerZoneOpened}>
+              <Stack gap="md">
+                <Divider />
+                <Box>
+                  <Text fw={600} size="sm">
+                    Datenbank vollständig leeren
+                  </Text>
+                  <Text size="xs" c="dimmed" mb="sm">
+                    Löscht alle Inhalte (Mitarbeiter, Kategorien, Skills und
+                    Assessments) unwiderruflich aus der lokalen Datenbank.
+                  </Text>
+                  <Button
+                    variant="outline"
+                    color="red"
+                    size="xs"
+                    leftSection={<IconTrash size={14} />}
+                    onClick={handleReset}
+                  >
+                    System zurücksetzen
+                  </Button>
+                </Box>
+              </Stack>
+            </Collapse>
           </Stack>
         </Card>
 

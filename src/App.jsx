@@ -184,7 +184,7 @@ function AppContent() {
                   userSelect: "none",
                 }}
               >
-                {desktopOpened ? "Q-Matrix" : "QM"}
+                {desktopOpened ? "Q-Track" : "QT"}
               </Title>
 
               {/* Versions-Badge */}
@@ -331,7 +331,7 @@ function AppContent() {
 
 function App() {
   const [colorScheme, setColorScheme] = useLocalStorage({
-    key: "qmatrix-color-scheme",
+    key: "qtrack-color-scheme",
     defaultValue: "light",
   });
 
