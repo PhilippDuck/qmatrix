@@ -228,16 +228,16 @@ function AppContent() {
                   }
                   if (e.key === 'Escape') setIsEditingTitle(false);
                 }}
-                size="xs"
+                size="sm"
                 autoFocus
-                styles={{ input: { textAlign: 'center', fontWeight: 600 } }}
+                styles={{ input: { textAlign: 'center', fontWeight: 700, fontSize: 'var(--mantine-font-size-lg)' } }}
               />
             ) : (
               <Group gap="xs" onClick={() => { setTempTitle(projectTitle); setIsEditingTitle(true); }} style={{ cursor: 'pointer', userSelect: 'none' }}>
-                <Text fw={600} size="sm" c={projectTitle ? undefined : 'dimmed'}>
+                <Text fw={700} size="lg" c={projectTitle ? undefined : 'dimmed'}>
                   {projectTitle || "Projektname eingeben"}
                 </Text>
-                <IconEdit size={14} color="var(--mantine-color-gray-5)" style={{ opacity: 0.5 }} />
+                <IconEdit size={18} color="var(--mantine-color-gray-5)" style={{ opacity: 0.5 }} />
               </Group>
             )}
           </Box>

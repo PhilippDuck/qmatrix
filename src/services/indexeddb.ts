@@ -758,12 +758,18 @@ class IndexedDBService {
       { name: "skills", property: "skills", label: "Skill" },
       { name: "employees", property: "employees", label: "Mitarbeiter" },
       { name: "assessments", property: "assessments", label: "Bewertung" },
-      { name: "assessment_logs", property: "history", label: "Historie" }
+      { name: "assessment_logs", property: "history", label: "Historie" },
+      { name: "settings", property: "settings", label: "Einstellungen" }
     ];
 
     for (const store of stores) {
-      const items = (data as any)[store.property];
+      let items = (data as any)[store.property];
       if (!items) continue;
+
+      // Handle single object (settings) by wrapping in array
+      if (!Array.isArray(items)) {
+        items = [items];
+      }
 
       for (const item of items) {
         if (!item.id) continue;
@@ -774,6 +780,8 @@ class IndexedDBService {
           label = `Bewertung ${item.id}`;
         } else if (store.name === "assessment_logs") {
           label = `Log ${new Date(item.timestamp).toLocaleString("de-DE")}`;
+        } else if (store.name === "settings") {
+          label = `Projekttitel: "${(item as any).projectTitle}"`;
         }
 
         const itemUpdatedAt = item.updatedAt || item.timestamp;
