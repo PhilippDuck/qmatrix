@@ -2,7 +2,7 @@
 
 Eine moderne Skill-Matrix-Anwendung zur Verwaltung und Visualisierung von Mitarbeiter-Kompetenzen.
 
-![Version](https://img.shields.io/badge/version-2.1.0-blue)
+![Version](https://img.shields.io/badge/version-2.2.0-blue)
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)
 ![Mantine](https://img.shields.io/badge/Mantine-7-339AF0)
 ![Vite](https://img.shields.io/badge/Vite-7-646CFF?logo=vite)
@@ -17,6 +17,7 @@ Eine moderne Skill-Matrix-Anwendung zur Verwaltung und Visualisierung von Mitarb
 - Zielerfüllung und offene Lernziele
 - Abteilungs-Fortschritt
 - Kategorie-Performance-Metriken
+- Drill-Down in Skill-Listen (Kategorie > Unterkategorie wird angezeigt)
 
 ### 🛡️ Datenschutz & Privacy
 - **Anonymous Mode**: Namen können per Klick verschleiert werden
@@ -30,6 +31,7 @@ Eine moderne Skill-Matrix-Anwendung zur Verwaltung und Visualisierung von Mitarb
 - KPIs: Expertise, Vielseitigkeit, Volumen (XP), Zielerfüllung
 - Lernbedarf-Anzeige für Skills unter Zielniveau
 - Skill-Verlauf und Historie
+- **Quick Add Drawer**: Neue Kategorien und Unterkategorien können beim Hinzufügen eines Skills direkt erstellt werden
 
 ### 👥 Stammdaten
 - Mitarbeiter-Verwaltung mit Abteilung und Rolle
@@ -49,7 +51,8 @@ Eine moderne Skill-Matrix-Anwendung zur Verwaltung und Visualisierung von Mitarb
 - Export/Import als JSON mit Zeitstempel im Dateinamen
 - **Intelligente Merge-Funktion**: Vergleich von Backups mit der aktuellen Datenbank inkl. Historie
 - **Daten-Fingerprint (Hash)**: Eindeutiger Code zur Überprüfung des Synchronisationsstandes
-- **Vollständiger Reset**: Tiefenbereinigung der gesamten Datenbank inklusive Historie
+- **Vollständiger Reset**: Tiefenbereinigung der gesamten Datenbank inklusive Historie (in "Danger Zone" collapsible gesichert)
+- **Rebranding**: Umbenennung zu Q-Track für konsistentere Markenidentität
 
 ## 🚀 Installation
 

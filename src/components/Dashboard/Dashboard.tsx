@@ -180,6 +180,15 @@ export const Dashboard: React.FC = () => {
     const periodLabel = period === "quarter" ? "Vorquartal" : "Vorjahr";
     const periodName = period === "quarter" ? "Quartal" : "Jahr";
 
+    const getCategoryPath = (skillId: string) => {
+        const skill = skills.find(s => s.id === skillId);
+        if (!skill) return "";
+        const subcat = subcategories.find(sc => sc.id === skill.subCategoryId);
+        if (!subcat) return "";
+        const cat = categories.find(c => c.id === subcat.categoryId);
+        return `${cat?.name || '?'} > ${subcat.name}`;
+    };
+
     const [visibleTiles, setVisibleTiles] = useLocalStorage<Record<string, boolean>>({
         key: 'qtrack-dashboard-tiles',
         defaultValue: {
@@ -630,9 +639,14 @@ export const Dashboard: React.FC = () => {
                             {kpis.mostImprovedSkills.length > 0 ? (
                                 kpis.mostImprovedSkills.map((item) => (
                                     <Group key={item.skill?.id} justify="space-between">
-                                        <Text size="sm" fw={500} truncate style={{ maxWidth: 180 }}>
-                                            {item.skill?.name}
-                                        </Text>
+                                        <Box style={{ maxWidth: '70%' }}>
+                                            <Text size="sm" fw={500} truncate>
+                                                {item.skill?.name}
+                                            </Text>
+                                            <Text size="xs" c="dimmed" truncate>
+                                                {item.skill?.id && getCategoryPath(item.skill.id)}
+                                            </Text>
+                                        </Box>
                                         <Badge color="teal" variant="light" size="sm">
                                             +{item.improvement} XP
                                         </Badge>
@@ -667,9 +681,14 @@ export const Dashboard: React.FC = () => {
                                 kpis.skillCoverage.map((item) => (
                                     <Box key={item.skill.id}>
                                         <Group justify="space-between" mb={4}>
-                                            <Text size="sm" fw={500} truncate style={{ maxWidth: 160 }}>
-                                                {item.skill.name}
-                                            </Text>
+                                            <Box style={{ maxWidth: '75%' }}>
+                                                <Text size="sm" fw={500} truncate>
+                                                    {item.skill.name}
+                                                </Text>
+                                                <Text size="xs" c="dimmed" truncate>
+                                                    {getCategoryPath(item.skill.id!)}
+                                                </Text>
+                                            </Box>
                                             <Text size="xs" c="dimmed">
                                                 {item.coverage}/{employees.length} ({item.percentage}%)
                                             </Text>
@@ -711,9 +730,14 @@ export const Dashboard: React.FC = () => {
                                 kpis.lowCoverageSkills.map((item) => (
                                     <Box key={item.skill.id}>
                                         <Group justify="space-between" mb={4}>
-                                            <Text size="sm" fw={500} truncate style={{ maxWidth: 160 }}>
-                                                {item.skill.name}
-                                            </Text>
+                                            <Box style={{ maxWidth: '75%' }}>
+                                                <Text size="sm" fw={500} truncate>
+                                                    {item.skill.name}
+                                                </Text>
+                                                <Text size="xs" c="dimmed" truncate>
+                                                    {getCategoryPath(item.skill.id!)}
+                                                </Text>
+                                            </Box>
                                             <Badge color="orange" variant="light" size="sm">
                                                 {item.coverage}/{employees.length}
                                             </Badge>
@@ -864,9 +888,14 @@ export const Dashboard: React.FC = () => {
                                 kpis.biggestGaps.map((item) => (
                                     <Box key={item.skill.id}>
                                         <Group justify="space-between" mb={4}>
-                                            <Text size="sm" fw={500} truncate style={{ maxWidth: 180 }}>
-                                                {item.skill.name}
-                                            </Text>
+                                            <Box style={{ maxWidth: '75%' }}>
+                                                <Text size="sm" fw={500} truncate>
+                                                    {item.skill.name}
+                                                </Text>
+                                                <Text size="xs" c="dimmed" truncate>
+                                                    {getCategoryPath(item.skill.id!)}
+                                                </Text>
+                                            </Box>
                                             <Badge color="red" variant="light" size="sm">
                                                 -{Math.round(item.avgGap)}%
                                             </Badge>
