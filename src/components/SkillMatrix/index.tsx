@@ -154,12 +154,13 @@ export const SkillMatrix: React.FC = () => {
 
     skillIds.forEach((sId) => {
       targetEmps.forEach((emp) => {
-        const val = getAssessment(emp.id!, sId)?.level ?? 0;
-        if (val !== -1) {
-          totalScore += val;
-          relevantCount++;
-          hasAnyRelevant = true;
-        }
+        const assessment = getAssessment(emp.id!, sId);
+        // If assessment exists, use its level, otherwise treat as 0 (for average calculation)
+        const val = assessment?.level ?? 0;
+
+        totalScore += val;
+        relevantCount++;
+        hasAnyRelevant = true;
       });
     });
     if (specificEmployeeId && !hasAnyRelevant) return null;
@@ -422,6 +423,8 @@ export const SkillMatrix: React.FC = () => {
               onFocusChange={setFocusEmployeeId}
               onHoverChange={setHoveredEmployeeId}
               calculateEmployeeAverage={calculateEmployeeAverage}
+              skills={skills}
+              getAssessment={getAssessment}
             />
 
             {displayedCategories.map((cat) => (

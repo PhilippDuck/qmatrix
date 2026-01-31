@@ -8,7 +8,7 @@ interface HistoryTimelineProps {
 }
 
 export const HistoryTimeline: React.FC<HistoryTimelineProps> = ({ employeeId }) => {
-    const { getHistory, skills } = useData();
+    const { getHistory, skills, categories, subcategories } = useData();
     const [history, setHistory] = useState<AssessmentLogEntry[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -40,8 +40,17 @@ export const HistoryTimeline: React.FC<HistoryTimelineProps> = ({ employeeId }) 
         );
     }
 
-    const getSkillName = (skillId: string) => {
-        return skills.find(s => s.id === skillId)?.name || "Unbekannter Skill";
+    const resolveSkillInfo = (skillId: string) => {
+        const skill = skills.find(s => s.id === skillId);
+        if (!skill) return { name: "Unbekannter Skill", context: "" };
+
+        const sub = subcategories.find(s => s.id === skill.subCategoryId);
+        const cat = sub ? categories.find(c => c.id === sub.categoryId) : null;
+
+        return {
+            name: skill.name,
+            context: sub && cat ? `${cat.name} • ${sub.name}` : ""
+        };
     };
 
     return (
@@ -49,6 +58,7 @@ export const HistoryTimeline: React.FC<HistoryTimelineProps> = ({ employeeId }) 
             {history.map((entry) => {
                 const isImprovement = entry.newLevel > entry.previousLevel;
                 const isFirst = entry.previousLevel === 0 && entry.newLevel > 0;
+                const { name, context } = resolveSkillInfo(entry.skillId);
 
                 return (
                     <Timeline.Item
@@ -66,7 +76,12 @@ export const HistoryTimeline: React.FC<HistoryTimelineProps> = ({ employeeId }) 
                                 {isFirst ? <IconStar size={12} /> : isImprovement ? <IconArrowUp size={12} /> : <IconArrowDown size={12} />}
                             </ThemeIcon>
                         }
-                        title={getSkillName(entry.skillId)}
+                        title={
+                            <div>
+                                <Text size="sm" fw={500}>{name}</Text>
+                                {context && <Text size="xs" c="dimmed">{context}</Text>}
+                            </div>
+                        }
                     >
                         <Text c="dimmed" size="xs" mt={4}>
                             {new Date(entry.timestamp).toLocaleString()}
