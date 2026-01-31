@@ -1,120 +1,61 @@
-# Q-Track
+# SkillGrid - Qualifikationsmatrix & Skill-Management
 
-Eine moderne Skill-Matrix-Anwendung zur Verwaltung und Visualisierung von Mitarbeiter-Kompetenzen.
+**SkillGrid** (ehemals Q-Track) ist eine lokale Webanwendung zur Verwaltung von Mitarbeiter-Skills, Qualifizierungsniveaus und Abteilungsstrukturen. Die Anwendung läuft vollständig im Browser (Offline-First) und speichert alle Daten lokal via IndexedDB.
 
-![Version](https://img.shields.io/badge/version-2.2.0-blue)
-![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)
-![Mantine](https://img.shields.io/badge/Mantine-7-339AF0)
-![Vite](https://img.shields.io/badge/Vite-7-646CFF?logo=vite)
+![SkillGrid Screenshot](./screenshot.png)
 
-## ✨ Features
+## Funktionen
 
-### 📊 Dashboard
-- Globale KPIs mit Trend-Vergleich (Quartal/Jahr)
-- Skill-Verbesserungen aggregiert nach Zeitraum
-- Skill-Abdeckung & Risiko-Analyse (Low Coverage)
-- Skill-Level Verteilung Histogramm
-- Zielerfüllung und offene Lernziele
-- Abteilungs-Fortschritt
-- Kategorie-Performance-Metriken
-- Drill-Down in Skill-Listen (Kategorie > Unterkategorie wird angezeigt)
+*   **Mitarbeiter-Verwaltung**: Anlegen, Bearbeiten und Löschen von Mitarbeitern.
+*   **Skill-Matrix**: Übersichtliche Matrix-Darstellung von Kompetenzen (Soll/Ist-Vergleich).
+*   **Hierarchische Struktur**: Organisation von Skills in Kategorien und Unterkategorien.
+*   **Rollen & Abteilungen**: Zuweisung von Mitarbeitern zu Rollen und Abteilungen.
+*   **Historie**: Automatische Protokollierung von Skill-Veränderungen (Wer, Wann, Was).
+*   **Dashboard**: Visualisierung wichtiger KPIs (Qualifizierungsgrad, Skill-Gaps, Entwicklung).
+*   **Einstellungen**:
+    *   **Projekttitel**: Individueller Titel (z.B. Abteilungsname) im Header, der auch auf Reports erscheint.
+    *   **Dark Mode**: Augenschonendes Design für jede Umgebung.
+    *   **Anonymisierung**: "Präsentationsmodus" zum Ausblenden von Klarnamen.
+*   **Import/Export**:
+    *   Vollständiges Backup als JSON.
+    *   Intelligenter Datenabgleich (Merge) zum Zusammenführen von Datenständen.
+    *   PDF-Export für Management-Reports.
 
-### 🛡️ Datenschutz & Privacy
-- **Anonymous Mode**: Namen können per Klick verschleiert werden
-- Pseudonymisierung für Präsentationen vor abteilungsfremden Personen
-- Lokale Datenspeicherung (IndexedDB) - Daten verlassen nie den Browser
-- Keine Cloud-Anbindung, kein Tracking
+## Installation & Start
 
-### 🎯 Skill-Matrix
-- Interaktive Matrix-Ansicht aller Mitarbeiter und Skills
-- Hover-Cards mit detaillierten Mitarbeiter-Informationen
-- KPIs: Expertise, Vielseitigkeit, Volumen (XP), Zielerfüllung
-- Lernbedarf-Anzeige für Skills unter Zielniveau
-- Skill-Verlauf und Historie
-- **Quick Add Drawer**: Neue Kategorien und Unterkategorien können beim Hinzufügen eines Skills direkt erstellt werden
+Voraussetzung: [Node.js](https://nodejs.org/) ist installiert.
 
-### 👥 Stammdaten
-- Mitarbeiter-Verwaltung mit Abteilung und Rolle
-- Kategorien und Unterkategorien für Skills
-- Skill-Definitionen mit Rollen-Zuordnung
-- Abteilungs-Management
+1.  Repository klonen oder entpacken.
+2.  Abhängigkeiten installieren:
+    ```bash
+    npm install
+    ```
+3.  Entwicklungsserver starten:
+    ```bash
+    npm run dev
+    ```
+4.  Browser öffnen auf `http://localhost:5173`.
 
-### 🏢 Rollen-Management
-- Rollen mit anpassbaren Icons
-- Vererbungs-Hierarchie zwischen Rollen
-- Organigramm-Visualisierung
-- Skill-Zuordnung pro Rolle
-- Mitarbeiter-Übersicht pro Rolle
+## Nutzungshinweise
 
-### 💾 Daten-Management
-- Lokale IndexedDB Speicherung (keine Server erforderlich)
-- Export/Import als JSON mit Zeitstempel im Dateinamen
-- **Intelligente Merge-Funktion**: Vergleich von Backups mit der aktuellen Datenbank inkl. Historie
-- **Daten-Fingerprint (Hash)**: Eindeutiger Code zur Überprüfung des Synchronisationsstandes
-- **Vollständiger Reset**: Tiefenbereinigung der gesamten Datenbank inklusive Historie (in "Danger Zone" collapsible gesichert)
-- **Rebranding**: Umbenennung zu Q-Track für konsistentere Markenidentität
+### Datenhaltung
+Alle Daten werden ausschließlich im **Local Storage / IndexedDB** Ihres Browsers gespeichert. Es werden keine Daten an einen Server gesendet.
+*   **Backup**: Nutzen Sie regelmäßig die "Backup"-Funktion im Bereich "System", um Ihre Daten als JSON-Datei zu sichern.
+*   **Reset**: Im Bereich "System" (Gefahrenzone) können Sie die Datenbank vollständig zurücksetzen.
 
-## 🚀 Installation
+### Projekttitel anpassen
+Klicken Sie einfach auf den Titel "SkillGrid" (oder "Projektname eingeben") in der oberen Navigationsleiste, um einen individuellen Namen für Ihr Projekt festzulegen (z.B. "Team Frontend"). Dieser Titel wird gespeichert und erscheint auf allen PDF-Exporten.
 
-```bash
-# Repository klonen
-git clone https://github.com/PhilippDuck/qmatrix.git
+## Technologie-Stack
 
-# In das Verzeichnis wechseln
-cd qmatrix
+*   **Frontend**: React, TypeScript, Vite
+*   **UI-Framework**: Mantine UI, Tabler Icons
+*   **Datenbank**: IndexedDB (via Wrapper)
+*   **PDF-Generierung**: jsPDF
+*   **Charts**: Recharts
 
-# Abhängigkeiten installieren
-npm install
-
-# Entwicklungsserver starten
-npm run dev
-
-# Für Produktion bauen
-npm run build
-```
-
-## 🛠️ Technologie-Stack
-
-- **Frontend**: React 19 mit Vite
-- **UI-Bibliothek**: Mantine 7
-- **Icons**: Tabler Icons
-- **Charts**: react-organizational-chart
-- **Speicherung**: IndexedDB (browser-basiert)
-- **Styling**: CSS Variablen mit Dark/Light Mode
-
-## 📁 Projektstruktur
-
-```
-src/
-├── components/
-│   ├── Dashboard/          # Dashboard mit globalen KPIs
-│   ├── SkillMatrix/        # Matrix-Komponenten
-│   ├── organization/       # Rollen & Organigramm
-│   ├── shared/             # Wiederverwendbare Komponenten
-│   └── ...
-├── context/
-│   └── DataContext.tsx     # Globaler Datenzustand
-├── services/
-│   └── indexeddb.ts        # Datenbank-Service
-├── utils/
-│   └── skillCalculations.ts # Berechnungsfunktionen
-└── App.jsx                 # Hauptanwendung
-```
-
-## 📋 Roadmap
-
-- [ ] PDF-Export von Berichten
-- [ ] Team-Ansicht
-- [ ] Zertifikats-Tracking
-- [ ] Skill-Empfehlungen basierend auf Rolle
-- [ ] Multi-User Support
-
-## 📄 Lizenz
-
-MIT License - siehe [LICENSE](LICENSE) für Details.
+## Lizenz
+Private Nutzung.
 
 ---
-
-<p align="center">
-  Designed with ❤️ by <strong>Philipp-Marcel Duck</strong>
-</p>
+*Version 2.3.0*
