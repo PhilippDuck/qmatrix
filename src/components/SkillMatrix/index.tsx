@@ -13,8 +13,15 @@ import {
   IconX,
   IconPlus,
   IconUserPlus,
+  IconFilter,
 } from "@tabler/icons-react";
 import { useData } from "../../context/DataContext";
+import {
+  Popover,
+  Stack,
+  MultiSelect,
+  Badge,
+} from "@mantine/core";
 import { EmployeeDrawer } from "../shared/EmployeeDrawer";
 import { EmptyState } from "./EmptyState";
 import { MatrixHeader } from "./MatrixHeader";
@@ -28,6 +35,8 @@ export const SkillMatrix: React.FC = () => {
     categories,
     subcategories,
     skills,
+    departments, // Get departments
+    roles,       // Get roles
     setAssessment,
     setTargetLevel,
     getAssessment,
@@ -55,13 +64,51 @@ export const SkillMatrix: React.FC = () => {
     localStorage.setItem("skill-matrix-collapsed", JSON.stringify(collapsedStates));
   }, [collapsedStates]);
 
-  const displayedEmployees = useMemo(
-    () =>
-      focusEmployeeId
-        ? employees.filter((e) => e.id === focusEmployeeId)
-        : employees,
-    [employees, focusEmployeeId]
-  );
+  // Filters
+  const [filterDepartments, setFilterDepartments] = useState<string[]>([]);
+  const [filterRoles, setFilterRoles] = useState<string[]>([]);
+  const [filterCategories, setFilterCategories] = useState<string[]>([]);
+
+  const displayedEmployees = useMemo(() => {
+    let result = employees;
+
+    if (focusEmployeeId) {
+      result = result.filter((e) => e.id === focusEmployeeId);
+    }
+
+    if (filterDepartments.length > 0) {
+      const targetDepartmentNames = departments
+        .filter((d) => filterDepartments.includes(d.id!))
+        .map((d) => d.name);
+
+      if (targetDepartmentNames.length > 0) {
+        result = result.filter(
+          (e) => e.department && targetDepartmentNames.includes(e.department)
+        );
+      }
+    }
+
+    if (filterRoles.length > 0) {
+      const targetRoleNames = roles
+        .filter((r) => filterRoles.includes(r.id!))
+        .map((r) => r.name);
+
+      if (targetRoleNames.length > 0) {
+        result = result.filter(
+          (e) => e.role && targetRoleNames.includes(e.role)
+        );
+      }
+    }
+
+    return result;
+  }, [employees, focusEmployeeId, filterDepartments, filterRoles, departments, roles]);
+
+  const displayedCategories = useMemo(() => {
+    if (filterCategories.length > 0) {
+      return categories.filter((c) => filterCategories.includes(c.id!));
+    }
+    return categories;
+  }, [categories, filterCategories]);
 
   const toggleItem = (id: string) =>
     setCollapsedStates((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -200,6 +247,44 @@ export const SkillMatrix: React.FC = () => {
               <IconUserPlus size={20} />
             </ActionIcon>
           </Tooltip>
+          <Popover width={300} position="bottom" withArrow shadow="md">
+            <Popover.Target>
+              <ActionIcon variant="light" color="gray" size="lg" aria-label="Filter">
+                <IconFilter size={20} />
+              </ActionIcon>
+            </Popover.Target>
+            <Popover.Dropdown>
+              <Stack>
+                <MultiSelect
+                  label="Abteilungen"
+                  placeholder="Wähle Abteilungen"
+                  data={departments.map(d => ({ value: d.id!, label: d.name }))}
+                  value={filterDepartments}
+                  onChange={setFilterDepartments}
+                  clearable
+                  searchable
+                />
+                <MultiSelect
+                  label="Rollen / Level"
+                  placeholder="Wähle Rollen"
+                  data={roles.map(r => ({ value: r.id!, label: r.name }))}
+                  value={filterRoles}
+                  onChange={setFilterRoles}
+                  clearable
+                  searchable
+                />
+                <MultiSelect
+                  label="Hauptkategorien"
+                  placeholder="Wähle Kategorien"
+                  data={categories.map(c => ({ value: c.id!, label: c.name }))}
+                  value={filterCategories}
+                  onChange={setFilterCategories}
+                  clearable
+                  searchable
+                />
+              </Stack>
+            </Popover.Dropdown>
+          </Popover>
         </Group>
         {focusEmployeeId && (
           <Button
@@ -212,6 +297,104 @@ export const SkillMatrix: React.FC = () => {
           </Button>
         )}
       </Group>
+
+      {
+        (filterDepartments.length > 0 || filterRoles.length > 0 || filterCategories.length > 0) && (
+          <Group mb="md" gap="xs">
+            {filterDepartments.map((id) => {
+              const item = departments.find((d) => d.id === id);
+              return item ? (
+                <Badge
+                  key={id}
+                  size="lg"
+                  variant="light"
+                  color="blue"
+                  rightSection={
+                    <ActionIcon
+                      size="xs"
+                      color="blue"
+                      variant="transparent"
+                      onClick={() =>
+                        setFilterDepartments((prev) => prev.filter((x) => x !== id))
+                      }
+                    >
+                      <IconX size={12} />
+                    </ActionIcon>
+                  }
+                >
+                  {item.name}
+                </Badge>
+              ) : null;
+            })}
+
+            {filterRoles.map((id) => {
+              const item = roles.find((r) => r.id === id);
+              return item ? (
+                <Badge
+                  key={id}
+                  size="lg"
+                  variant="light"
+                  color="green"
+                  rightSection={
+                    <ActionIcon
+                      size="xs"
+                      color="green"
+                      variant="transparent"
+                      onClick={() =>
+                        setFilterRoles((prev) => prev.filter((x) => x !== id))
+                      }
+                    >
+                      <IconX size={12} />
+                    </ActionIcon>
+                  }
+                >
+                  {item.name}
+                </Badge>
+              ) : null;
+            })}
+
+            {filterCategories.map((id) => {
+              const item = categories.find((c) => c.id === id);
+              return item ? (
+                <Badge
+                  key={id}
+                  size="lg"
+                  variant="light"
+                  color="grape"
+                  rightSection={
+                    <ActionIcon
+                      size="xs"
+                      color="grape"
+                      variant="transparent"
+                      onClick={() =>
+                        setFilterCategories((prev) => prev.filter((x) => x !== id))
+                      }
+                    >
+                      <IconX size={12} />
+                    </ActionIcon>
+                  }
+                >
+                  {item.name}
+                </Badge>
+              ) : null;
+            })}
+
+            <Badge
+              size="lg"
+              variant="light"
+              color="gray"
+              style={{ cursor: "pointer" }}
+              onClick={() => {
+                setFilterDepartments([]);
+                setFilterRoles([]);
+                setFilterCategories([]);
+              }}
+            >
+              Alle Filter entfernen
+            </Badge>
+          </Group>
+        )
+      }
 
       <Card
         withBorder
@@ -241,7 +424,7 @@ export const SkillMatrix: React.FC = () => {
               calculateEmployeeAverage={calculateEmployeeAverage}
             />
 
-            {categories.map((cat) => (
+            {displayedCategories.map((cat) => (
               <MatrixCategoryRow
                 key={cat.id}
                 category={cat}
@@ -285,9 +468,9 @@ export const SkillMatrix: React.FC = () => {
         mode="skill"
         subcategories={subcategories}
         preselectedSubcategoryId={null}
-        onAddEmployee={async () => {}}
+        onAddEmployee={async () => { }}
         onAddSkill={handleAddSkill}
       />
-    </Box>
+    </Box >
   );
 };
