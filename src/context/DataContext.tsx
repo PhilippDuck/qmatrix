@@ -100,6 +100,7 @@ interface DataContextType {
   mergeData: (jsonData: string) => Promise<MergeReport>;
   diffData: (jsonData: string) => Promise<MergeDiff>;
   applyMerge: (diff: MergeDiff, selectedIds: string[]) => Promise<MergeReport>;
+  clearAllData: () => Promise<void>;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -337,7 +338,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
 
   const getHistory = async (employeeId: string): Promise<AssessmentLogEntry[]> => {
     try {
-      return await db.execute("assessment_logs", "getAll", employeeId); // Needs filter if execute getAll doesn't filter
+      return await db.getAssessmentLogs(employeeId);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load history");
       return [];
@@ -429,9 +430,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `qmatrix_backup_${new Date()
-        .toISOString()
-        .split("T")[0]}.json`;
+      const now = new Date();
+      const dateStr = now.toISOString().split("T")[0];
+      const timeStr = now.toLocaleTimeString("de-DE").replace(/:/g, "-");
+      a.download = `qmatrix_backup_${dateStr}_${timeStr}.json`;
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {
@@ -484,6 +486,16 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
     }
   };
 
+  const clearAllData = async () => {
+    try {
+      await db.clearAllData();
+      await refreshAllData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to clear all data");
+      throw err;
+    }
+  };
+
   return (
     <DataContext.Provider
       value={{
@@ -528,6 +540,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
         mergeData,
         diffData,
         applyMerge,
+        clearAllData,
       }}
     >
       {children}

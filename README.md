@@ -2,7 +2,7 @@
 
 Eine moderne Skill-Matrix-Anwendung zur Verwaltung und Visualisierung von Mitarbeiter-Kompetenzen.
 
-![Version](https://img.shields.io/badge/version-2.0.0-blue)
+![Version](https://img.shields.io/badge/version-2.1.0-blue)
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)
 ![Mantine](https://img.shields.io/badge/Mantine-7-339AF0)
 ![Vite](https://img.shields.io/badge/Vite-7-646CFF?logo=vite)
@@ -46,8 +46,10 @@ Eine moderne Skill-Matrix-Anwendung zur Verwaltung und Visualisierung von Mitarb
 
 ### 💾 Daten-Management
 - Lokale IndexedDB Speicherung (keine Server erforderlich)
-- Export/Import als JSON
-- Vollständiger Reset möglich
+- Export/Import als JSON mit Zeitstempel im Dateinamen
+- **Intelligente Merge-Funktion**: Vergleich von Backups mit der aktuellen Datenbank inkl. Historie
+- **Daten-Fingerprint (Hash)**: Eindeutiger Code zur Überprüfung des Synchronisationsstandes
+- **Vollständiger Reset**: Tiefenbereinigung der gesamten Datenbank inklusive Historie
 
 ## 🚀 Installation
 

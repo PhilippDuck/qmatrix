@@ -35,7 +35,7 @@ interface ActionInfo {
 }
 
 export const DataManagement = () => {
-  const { exportData, importData, mergeData, diffData, applyMerge, employees, skills } = useData();
+  const { exportData, importData, mergeData, diffData, applyMerge, clearAllData, employees, skills } = useData();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mergeInputRef = useRef<HTMLInputElement>(null);
@@ -142,15 +142,7 @@ export const DataManagement = () => {
       )
     ) {
       try {
-        await importData(
-          JSON.stringify({
-            employees: [],
-            categories: [],
-            subcategories: [],
-            skills: [],
-            assessments: [],
-          }),
-        );
+        await clearAllData(); // Use the new clearAllData function from context
         updateTimestamp("Reset");
         alert("Datenbank wurde vollständig geleert.");
         window.location.reload();

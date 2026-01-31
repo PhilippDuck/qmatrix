@@ -1,6 +1,6 @@
 // IndexedDB Service für Qualifizierungsmatrix
 const DB_NAME = "QualificationMatrixDB";
-const DB_VERSION = 6;
+const DB_VERSION = 7;
 
 export interface Employee {
   id?: string;
@@ -203,9 +203,9 @@ class IndexedDBService {
           }
         }
 
-        // Migration to v6: Add updatedAt to all records
-        if (event.oldVersion < 6) {
-          const stores = ["employees", "categories", "subcategories", "skills", "assessments", "departments", "roles"];
+        // Migration to v7: Add updatedAt to all records (including logs)
+        if (event.oldVersion < 7) {
+          const stores = ["employees", "categories", "subcategories", "skills", "assessments", "departments", "roles", "assessment_logs"];
           const transaction = (event.target as IDBOpenDBRequest).transaction!;
           stores.forEach(storeName => {
             if (db.objectStoreNames.contains(storeName)) {
@@ -215,8 +215,10 @@ class IndexedDBService {
                 const cursor = e.target.result;
                 if (cursor) {
                   const data = cursor.value;
+                  // For logs, use timestamp as fallback for updatedAt
+                  const fallback = data.timestamp || Date.now();
                   if (!data.updatedAt) {
-                    data.updatedAt = Date.now();
+                    data.updatedAt = fallback;
                     cursor.update(data);
                   }
                   cursor.continue();
@@ -431,7 +433,7 @@ class IndexedDBService {
   // Assessment Logs
   async addAssessmentLog(entry: AssessmentLogEntry): Promise<string> {
     const id = crypto.randomUUID();
-    const data = { ...entry, id };
+    const data = { ...entry, id, updatedAt: entry.timestamp || Date.now() };
     await this.execute("assessment_logs", "add", data);
     return id;
   }
@@ -621,12 +623,26 @@ class IndexedDBService {
     };
   }
 
+  async clearAllData(): Promise<void> {
+    if (!this.db) return;
+    const stores = ["employees", "categories", "subcategories", "skills", "assessments", "departments", "roles", "assessment_logs"];
+    const transaction = this.db.transaction(stores, "readwrite");
+    for (const storeName of stores) {
+      const store = transaction.objectStore(storeName);
+      store.clear();
+    }
+    return new Promise((resolve, reject) => {
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error);
+    });
+  }
+
   // Import data from JSON (Destructive)
   async importData(data: ExportData): Promise<void> {
     // Clear all stores
     if (!this.db) return;
 
-    const stores = ["employees", "categories", "subcategories", "skills", "assessments", "departments", "roles"];
+    const stores = ["employees", "categories", "subcategories", "skills", "assessments", "departments", "roles", "assessment_logs"];
     const transaction = this.db.transaction(stores, "readwrite");
 
     for (const storeName of stores) {
@@ -653,8 +669,11 @@ class IndexedDBService {
     for (const [storeName, items] of Object.entries(mappings)) {
       if (items) {
         for (const item of items) {
-          // Ensure imported items have updatedAt
-          const dataToSave = { ...item, updatedAt: item.updatedAt || Date.now() };
+          // Ensure imported items have updatedAt, using timestamp as fallback for logs
+          const dataToSave = {
+            ...item,
+            updatedAt: item.updatedAt || item.timestamp || Date.now()
+          };
           await this.execute(storeName, "add", dataToSave);
         }
       }
@@ -671,16 +690,19 @@ class IndexedDBService {
         if (!item.id) continue;
         const local = await this.getById(storeName, item.id);
 
+        const itemUpdatedAt = item.updatedAt || item.timestamp;
+        const localUpdatedAt = local?.updatedAt || local?.timestamp;
+
         if (!local) {
-          const dataToSave = { ...item, updatedAt: item.updatedAt || Date.now() };
+          const dataToSave = { ...item, updatedAt: itemUpdatedAt || Date.now() };
           await this.execute(storeName, "add", dataToSave);
           report.added++;
-        } else if (item.updatedAt && (!local.updatedAt || item.updatedAt > local.updatedAt)) {
+        } else if (itemUpdatedAt && (!localUpdatedAt || itemUpdatedAt > localUpdatedAt)) {
           await this.execute(storeName, "put", item);
           report.updated++;
         } else {
           report.skipped++;
-          if (item.updatedAt && local.updatedAt && item.updatedAt < local.updatedAt) {
+          if (itemUpdatedAt && localUpdatedAt && itemUpdatedAt < localUpdatedAt) {
             report.conflicts++;
           }
         }
@@ -704,18 +726,18 @@ class IndexedDBService {
     const diff: MergeDiff = { items: [] };
 
     const stores = [
-      { name: "departments", label: "Abteilung" },
-      { name: "roles", label: "Rolle" },
-      { name: "categories", label: "Kategorie" },
-      { name: "subcategories", label: "Unterkategorie" },
-      { name: "skills", label: "Skill" },
-      { name: "employees", label: "Mitarbeiter" },
-      { name: "assessments", label: "Bewertung" },
-      { name: "assessment_logs", label: "Historie" }
+      { name: "departments", property: "departments", label: "Abteilung" },
+      { name: "roles", property: "roles", label: "Rolle" },
+      { name: "categories", property: "categories", label: "Kategorie" },
+      { name: "subcategories", property: "subcategories", label: "Unterkategorie" },
+      { name: "skills", property: "skills", label: "Skill" },
+      { name: "employees", property: "employees", label: "Mitarbeiter" },
+      { name: "assessments", property: "assessments", label: "Bewertung" },
+      { name: "assessment_logs", property: "history", label: "Historie" }
     ];
 
     for (const store of stores) {
-      const items = (data as any)[store.name];
+      const items = (data as any)[store.property];
       if (!items) continue;
 
       for (const item of items) {
@@ -729,46 +751,64 @@ class IndexedDBService {
           label = `Log ${new Date(item.timestamp).toLocaleString("de-DE")}`;
         }
 
+        const itemUpdatedAt = item.updatedAt || item.timestamp;
+        const localUpdatedAt = local?.updatedAt || local?.timestamp;
+
         if (!local) {
           diff.items.push({
             id: item.id,
             storeName: store.name,
             label: `${store.label}: ${label}`,
             type: 'new',
-            remoteTimestamp: item.updatedAt,
+            remoteTimestamp: itemUpdatedAt,
             remoteData: item
           });
-        } else if (item.updatedAt && local.updatedAt) {
-          if (item.updatedAt > local.updatedAt) {
-            diff.items.push({
-              id: item.id,
-              storeName: store.name,
-              label: `${store.label}: ${label}`,
-              type: 'update',
-              localTimestamp: local.updatedAt,
-              remoteTimestamp: item.updatedAt,
-              localData: local,
-              remoteData: item
-            });
-          } else if (item.updatedAt < local.updatedAt) {
-            diff.items.push({
-              id: item.id,
-              storeName: store.name,
-              label: `${store.label}: ${label}`,
-              type: 'conflict',
-              localTimestamp: local.updatedAt,
-              remoteTimestamp: item.updatedAt,
-              localData: local,
-              remoteData: item
-            });
+        } else {
+          // Compare using either updatedAt or timestamp
+          if (itemUpdatedAt && localUpdatedAt) {
+            if (itemUpdatedAt > localUpdatedAt) {
+              diff.items.push({
+                id: item.id,
+                storeName: store.name,
+                label: `${store.label}: ${label}`,
+                type: 'update',
+                localTimestamp: localUpdatedAt,
+                remoteTimestamp: itemUpdatedAt,
+                localData: local,
+                remoteData: item
+              });
+            } else if (itemUpdatedAt < localUpdatedAt) {
+              diff.items.push({
+                id: item.id,
+                storeName: store.name,
+                label: `${store.label}: ${label}`,
+                type: 'conflict',
+                localTimestamp: localUpdatedAt,
+                remoteTimestamp: itemUpdatedAt,
+                localData: local,
+                remoteData: item
+              });
+            } else {
+              diff.items.push({
+                id: item.id,
+                storeName: store.name,
+                label: `${store.label}: ${label}`,
+                type: 'identical',
+                localTimestamp: localUpdatedAt,
+                remoteTimestamp: itemUpdatedAt,
+                localData: local,
+                remoteData: item
+              });
+            }
           } else {
+            // If timestamps are missing on one side, treat as identical if both exist
             diff.items.push({
               id: item.id,
               storeName: store.name,
               label: `${store.label}: ${label}`,
               type: 'identical',
-              localTimestamp: local.updatedAt,
-              remoteTimestamp: item.updatedAt,
+              localTimestamp: localUpdatedAt,
+              remoteTimestamp: itemUpdatedAt,
               localData: local,
               remoteData: item
             });
@@ -788,7 +828,10 @@ class IndexedDBService {
     for (const itemDiff of diff.items) {
       const fullId = `${itemDiff.storeName}-${itemDiff.id}`;
       if (selectedSet.has(fullId)) {
-        const dataToSave = { ...itemDiff.remoteData, updatedAt: itemDiff.remoteData.updatedAt || Date.now() };
+        const dataToSave = {
+          ...itemDiff.remoteData,
+          updatedAt: itemDiff.remoteData.updatedAt || itemDiff.remoteData.timestamp || Date.now()
+        };
         await this.execute(itemDiff.storeName, "put", dataToSave);
         if (itemDiff.type === 'new') report.added++;
         else report.updated++;
