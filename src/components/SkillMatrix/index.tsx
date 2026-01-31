@@ -41,9 +41,11 @@ export const SkillMatrix: React.FC = () => {
     setTargetLevel,
     getAssessment,
     addEmployee,
+    updateEmployee,
     addSkill,
     addCategory,
     addSubCategory,
+    importData,
   } = useData();
 
   const [legendOpened, setLegendOpened] = useState(false);
@@ -53,6 +55,7 @@ export const SkillMatrix: React.FC = () => {
 
   // Employee Drawer state
   const [employeeDrawerOpened, setEmployeeDrawerOpened] = useState(false);
+  const [editingEmployeeId, setEditingEmployeeId] = useState<string | null>(null);
 
   // Skill Drawer state
   const [skillDrawerOpened, setSkillDrawerOpened] = useState(false);
@@ -199,18 +202,24 @@ export const SkillMatrix: React.FC = () => {
     );
   };
 
-  const handleAddEmployee = async (name: string, department: string) => {
-    await addEmployee({ name, department });
+  const handleEditEmployee = (id: string) => {
+    setEditingEmployeeId(id);
+    setEmployeeDrawerOpened(true);
+  };
+
+  const handleSaveEmployee = async (name: string, department: string, role: string) => {
+    if (editingEmployeeId) {
+      await updateEmployee(editingEmployeeId, { name, department, role });
+    } else {
+      await addEmployee({ name, department, role });
+    }
   };
 
   const handleAddSkill = async (subcategoryId: string, name: string, description: string) => {
     await addSkill({ subCategoryId: subcategoryId, name, description });
   };
 
-  // Empty state check - but allow adding if we have categories
-  if (employees.length === 0 && categories.length === 0) {
-    return <EmptyState />;
-  }
+
 
   return (
     <Box
@@ -222,242 +231,261 @@ export const SkillMatrix: React.FC = () => {
         userSelect: "none",
       }}
     >
-      <Group mb="lg" justify="space-between">
-        <Group gap="sm">
-          <Title order={2}>Skill-Matrix</Title>
-          <Tooltip label="Alle ein-/ausklappen">
-            <ActionIcon
-              variant="light"
-              color="gray"
-              onClick={handleGlobalToggle}
-              size="lg"
-            >
-              <IconLayoutNavbarCollapse size={20} />
-            </ActionIcon>
-          </Tooltip>
-          <Tooltip label="Skill hinzufügen">
-            <ActionIcon
-              variant="light"
-              color="gray"
-              onClick={() => setSkillDrawerOpened(true)}
-              size="lg"
-            >
-              <IconPlus size={20} />
-            </ActionIcon>
-          </Tooltip>
-          <Tooltip label="Mitarbeiter hinzufügen">
-            <ActionIcon
-              variant="light"
-              color="gray"
-              onClick={() => setEmployeeDrawerOpened(true)}
-              size="lg"
-            >
-              <IconUserPlus size={20} />
-            </ActionIcon>
-          </Tooltip>
-          <Popover width={300} position="bottom" withArrow shadow="md">
-            <Popover.Target>
-              <ActionIcon variant="light" color="gray" size="lg" aria-label="Filter">
-                <IconFilter size={20} />
-              </ActionIcon>
-            </Popover.Target>
-            <Popover.Dropdown>
-              <Stack>
-                <MultiSelect
-                  label="Abteilungen"
-                  placeholder="Wähle Abteilungen"
-                  data={departments.map(d => ({ value: d.id!, label: d.name }))}
-                  value={filterDepartments}
-                  onChange={setFilterDepartments}
-                  clearable
-                  searchable
-                />
-                <MultiSelect
-                  label="Rollen / Level"
-                  placeholder="Wähle Rollen"
-                  data={roles.map(r => ({ value: r.id!, label: r.name }))}
-                  value={filterRoles}
-                  onChange={setFilterRoles}
-                  clearable
-                  searchable
-                />
-                <MultiSelect
-                  label="Hauptkategorien"
-                  placeholder="Wähle Kategorien"
-                  data={categories.map(c => ({ value: c.id!, label: c.name }))}
-                  value={filterCategories}
-                  onChange={setFilterCategories}
-                  clearable
-                  searchable
-                />
-              </Stack>
-            </Popover.Dropdown>
-          </Popover>
-        </Group>
-        {focusEmployeeId && (
-          <Button
-            leftSection={<IconX size={16} />}
-            variant="filled"
-            color="red"
-            onClick={() => setFocusEmployeeId(null)}
-          >
-            Fokus beenden
-          </Button>
-        )}
-      </Group>
-
-      {
-        (filterDepartments.length > 0 || filterRoles.length > 0 || filterCategories.length > 0) && (
-          <Group mb="md" gap="xs">
-            {filterDepartments.map((id) => {
-              const item = departments.find((d) => d.id === id);
-              return item ? (
-                <Badge
-                  key={id}
-                  size="lg"
+      {employees.length === 0 && categories.length === 0 ? (
+        <EmptyState
+          onAddEmployee={() => setEmployeeDrawerOpened(true)}
+          onAddSkill={() => setSkillDrawerOpened(true)}
+          onImport={async (file) => {
+            try {
+              const text = await file.text();
+              await importData(text);
+            } catch (error) {
+              console.error("Import failed:", error);
+              alert("Fehler beim Importieren der Datei. Bitte prüfen Sie das Format.");
+            }
+          }}
+        />
+      ) : (
+        <>
+          <Group mb="lg" justify="space-between">
+            <Group gap="sm">
+              <Title order={2}>Skill-Matrix</Title>
+              <Tooltip label="Alle ein-/ausklappen">
+                <ActionIcon
                   variant="light"
-                  color="blue"
-                  rightSection={
-                    <ActionIcon
-                      size="xs"
-                      color="blue"
-                      variant="transparent"
-                      onClick={() =>
-                        setFilterDepartments((prev) => prev.filter((x) => x !== id))
-                      }
-                    >
-                      <IconX size={12} />
-                    </ActionIcon>
-                  }
-                >
-                  {item.name}
-                </Badge>
-              ) : null;
-            })}
-
-            {filterRoles.map((id) => {
-              const item = roles.find((r) => r.id === id);
-              return item ? (
-                <Badge
-                  key={id}
+                  color="gray"
+                  onClick={handleGlobalToggle}
                   size="lg"
-                  variant="light"
-                  color="green"
-                  rightSection={
-                    <ActionIcon
-                      size="xs"
-                      color="green"
-                      variant="transparent"
-                      onClick={() =>
-                        setFilterRoles((prev) => prev.filter((x) => x !== id))
-                      }
-                    >
-                      <IconX size={12} />
-                    </ActionIcon>
-                  }
                 >
-                  {item.name}
-                </Badge>
-              ) : null;
-            })}
-
-            {filterCategories.map((id) => {
-              const item = categories.find((c) => c.id === id);
-              return item ? (
-                <Badge
-                  key={id}
+                  <IconLayoutNavbarCollapse size={20} />
+                </ActionIcon>
+              </Tooltip>
+              <Tooltip label="Skill hinzufügen">
+                <ActionIcon
+                  variant="light"
+                  color="gray"
+                  onClick={() => setSkillDrawerOpened(true)}
                   size="lg"
-                  variant="light"
-                  color="grape"
-                  rightSection={
-                    <ActionIcon
-                      size="xs"
-                      color="grape"
-                      variant="transparent"
-                      onClick={() =>
-                        setFilterCategories((prev) => prev.filter((x) => x !== id))
-                      }
-                    >
-                      <IconX size={12} />
-                    </ActionIcon>
-                  }
                 >
-                  {item.name}
-                </Badge>
-              ) : null;
-            })}
-
-            <Badge
-              size="lg"
-              variant="light"
-              color="gray"
-              style={{ cursor: "pointer" }}
-              onClick={() => {
-                setFilterDepartments([]);
-                setFilterRoles([]);
-                setFilterCategories([]);
-              }}
-            >
-              Alle Filter entfernen
-            </Badge>
+                  <IconPlus size={20} />
+                </ActionIcon>
+              </Tooltip>
+              <Tooltip label="Mitarbeiter hinzufügen">
+                <ActionIcon
+                  variant="light"
+                  color="gray"
+                  onClick={() => setEmployeeDrawerOpened(true)}
+                  size="lg"
+                >
+                  <IconUserPlus size={20} />
+                </ActionIcon>
+              </Tooltip>
+              <Popover width={300} position="bottom" withArrow shadow="md">
+                <Popover.Target>
+                  <ActionIcon variant="light" color="gray" size="lg" aria-label="Filter">
+                    <IconFilter size={20} />
+                  </ActionIcon>
+                </Popover.Target>
+                <Popover.Dropdown>
+                  <Stack>
+                    <MultiSelect
+                      label="Abteilungen"
+                      placeholder="Wähle Abteilungen"
+                      data={departments.map(d => ({ value: d.id!, label: d.name }))}
+                      value={filterDepartments}
+                      onChange={setFilterDepartments}
+                      clearable
+                      searchable
+                    />
+                    <MultiSelect
+                      label="Rollen / Level"
+                      placeholder="Wähle Rollen"
+                      data={roles.map(r => ({ value: r.id!, label: r.name }))}
+                      value={filterRoles}
+                      onChange={setFilterRoles}
+                      clearable
+                      searchable
+                    />
+                    <MultiSelect
+                      label="Hauptkategorien"
+                      placeholder="Wähle Kategorien"
+                      data={categories.map(c => ({ value: c.id!, label: c.name }))}
+                      value={filterCategories}
+                      onChange={setFilterCategories}
+                      clearable
+                      searchable
+                    />
+                  </Stack>
+                </Popover.Dropdown>
+              </Popover>
+            </Group>
+            {focusEmployeeId && (
+              <Button
+                leftSection={<IconX size={16} />}
+                variant="filled"
+                color="red"
+                onClick={() => setFocusEmployeeId(null)}
+              >
+                Fokus beenden
+              </Button>
+            )}
           </Group>
-        )
-      }
 
-      <Card
-        withBorder
-        p={0}
-        style={{
-          flex: 1,
-          display: "flex",
-          flexDirection: "column",
-          overflow: "hidden",
-        }}
-      >
-        <div style={{ overflow: "auto", flex: 1 }}>
-          <div
+          {
+            (filterDepartments.length > 0 || filterRoles.length > 0 || filterCategories.length > 0) && (
+              <Group mb="md" gap="xs">
+                {filterDepartments.map((id) => {
+                  const item = departments.find((d) => d.id === id);
+                  return item ? (
+                    <Badge
+                      key={id}
+                      size="lg"
+                      variant="light"
+                      color="blue"
+                      rightSection={
+                        <ActionIcon
+                          size="xs"
+                          color="blue"
+                          variant="transparent"
+                          onClick={() =>
+                            setFilterDepartments((prev) => prev.filter((x) => x !== id))
+                          }
+                        >
+                          <IconX size={12} />
+                        </ActionIcon>
+                      }
+                    >
+                      {item.name}
+                    </Badge>
+                  ) : null;
+                })}
+
+                {filterRoles.map((id) => {
+                  const item = roles.find((r) => r.id === id);
+                  return item ? (
+                    <Badge
+                      key={id}
+                      size="lg"
+                      variant="light"
+                      color="green"
+                      rightSection={
+                        <ActionIcon
+                          size="xs"
+                          color="green"
+                          variant="transparent"
+                          onClick={() =>
+                            setFilterRoles((prev) => prev.filter((x) => x !== id))
+                          }
+                        >
+                          <IconX size={12} />
+                        </ActionIcon>
+                      }
+                    >
+                      {item.name}
+                    </Badge>
+                  ) : null;
+                })}
+
+                {filterCategories.map((id) => {
+                  const item = categories.find((c) => c.id === id);
+                  return item ? (
+                    <Badge
+                      key={id}
+                      size="lg"
+                      variant="light"
+                      color="grape"
+                      rightSection={
+                        <ActionIcon
+                          size="xs"
+                          color="grape"
+                          variant="transparent"
+                          onClick={() =>
+                            setFilterCategories((prev) => prev.filter((x) => x !== id))
+                          }
+                        >
+                          <IconX size={12} />
+                        </ActionIcon>
+                      }
+                    >
+                      {item.name}
+                    </Badge>
+                  ) : null;
+                })}
+
+                <Badge
+                  size="lg"
+                  variant="light"
+                  color="gray"
+                  style={{ cursor: "pointer" }}
+                  onClick={() => {
+                    setFilterDepartments([]);
+                    setFilterRoles([]);
+                    setFilterCategories([]);
+                  }}
+                >
+                  Alle Filter entfernen
+                </Badge>
+              </Group>
+            )
+          }
+
+          <Card
+            withBorder
+            p={0}
             style={{
-              width: "max-content",
+              flex: 1,
               display: "flex",
               flexDirection: "column",
-              minWidth: "100%",
+              overflow: "hidden",
             }}
           >
-            <MatrixHeader
-              employees={displayedEmployees}
-              focusEmployeeId={focusEmployeeId}
-              hoveredEmployeeId={hoveredEmployeeId}
-              onFocusChange={setFocusEmployeeId}
-              onHoverChange={setHoveredEmployeeId}
-              calculateEmployeeAverage={calculateEmployeeAverage}
-              skills={skills}
-              getAssessment={getAssessment}
-            />
+            <div style={{ overflow: "auto", flex: 1 }}>
+              <div
+                style={{
+                  width: "max-content",
+                  display: "flex",
+                  flexDirection: "column",
+                  minWidth: "100%",
+                }}
+              >
+                <MatrixHeader
+                  employees={displayedEmployees}
+                  focusEmployeeId={focusEmployeeId}
+                  hoveredEmployeeId={hoveredEmployeeId}
+                  onFocusChange={setFocusEmployeeId}
+                  onHoverChange={setHoveredEmployeeId}
+                  calculateEmployeeAverage={calculateEmployeeAverage}
+                  skills={skills}
+                  getAssessment={getAssessment}
+                  onEditEmployee={handleEditEmployee}
+                />
 
-            {displayedCategories.map((cat) => (
-              <MatrixCategoryRow
-                key={cat.id}
-                category={cat}
-                subcategories={subcategories}
-                skills={skills}
-                employees={displayedEmployees}
-                collapsedStates={collapsedStates}
-                hoveredSkillId={hoveredSkillId}
-                hoveredEmployeeId={hoveredEmployeeId}
-                onToggleCategory={toggleItem}
-                onToggleSubcategory={toggleItem}
-                onSkillHover={setHoveredSkillId}
-                onEmployeeHover={setHoveredEmployeeId}
-                calculateAverage={calculateAverage}
-                getAssessment={getAssessment}
-                onBulkSetLevel={bulkSetLevel}
-                onLevelChange={handleLevelChange}
-                onTargetLevelChange={handleTargetLevelChange}
-              />
-            ))}
-          </div>
-        </div>
-      </Card>
+                {displayedCategories.map((cat) => (
+                  <MatrixCategoryRow
+                    key={cat.id}
+                    category={cat}
+                    subcategories={subcategories}
+                    skills={skills}
+                    employees={displayedEmployees}
+                    collapsedStates={collapsedStates}
+                    hoveredSkillId={hoveredSkillId}
+                    hoveredEmployeeId={hoveredEmployeeId}
+                    onToggleCategory={toggleItem}
+                    onToggleSubcategory={toggleItem}
+                    onSkillHover={setHoveredSkillId}
+                    onEmployeeHover={setHoveredEmployeeId}
+                    calculateAverage={calculateAverage}
+                    getAssessment={getAssessment}
+                    onBulkSetLevel={bulkSetLevel}
+                    onLevelChange={handleLevelChange}
+                    onTargetLevelChange={handleTargetLevelChange}
+                  />
+                ))}
+              </div>
+            </div>
+          </Card>
+        </>
+      )}
 
       <MatrixLegend
         opened={legendOpened}
@@ -467,8 +495,27 @@ export const SkillMatrix: React.FC = () => {
       {/* Employee Drawer - same as on Mitarbeiter page */}
       <EmployeeDrawer
         opened={employeeDrawerOpened}
-        onClose={() => setEmployeeDrawerOpened(false)}
-        onSave={handleAddEmployee}
+        onClose={() => {
+          setEmployeeDrawerOpened(false);
+          setEditingEmployeeId(null);
+        }}
+        onSave={handleSaveEmployee}
+        isEditing={!!editingEmployeeId}
+        employeeId={editingEmployeeId}
+        initialData={
+          editingEmployeeId
+            ? (() => {
+              const emp = employees.find((e) => e.id === editingEmployeeId);
+              return emp
+                ? {
+                  name: emp.name,
+                  department: emp.department || "",
+                  role: emp.role || "",
+                }
+                : undefined;
+            })()
+            : undefined
+        }
       />
 
       {/* Skill Quick Add Drawer */}

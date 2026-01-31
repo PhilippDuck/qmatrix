@@ -226,7 +226,7 @@ export const generateQuarterlyReport = (
     const pageCount = (doc as any).internal.getNumberOfPages();
     doc.setFontSize(8);
     doc.setTextColor(150);
-    doc.text(`Q-Track System Report - Seite 1 von ${pageCount}`, pageWidth / 2, doc.internal.pageSize.height - 10, { align: 'center' });
+    doc.text(`SkillGrid System Report - Seite 1 von ${pageCount}`, pageWidth / 2, doc.internal.pageSize.height - 10, { align: 'center' });
 
     doc.save(`Management_Summary_Q${quarter}_${year}.pdf`);
 };

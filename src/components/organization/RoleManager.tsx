@@ -22,7 +22,7 @@ import { RoleIconPicker, getIconByName } from "../shared/RoleIconPicker";
 
 
 export const RoleManager: React.FC = () => {
-    const { roles, skills, employees, addRole, updateRole, deleteRole } = useData();
+    const { roles, skills, employees, categories, subcategories, addRole, updateRole, deleteRole } = useData();
     const [opened, { open, close }] = useDisclosure(false);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [name, setName] = useState("");
@@ -193,6 +193,8 @@ export const RoleManager: React.FC = () => {
                             roles={roles}
                             skills={skills}
                             employees={employees}
+                            categories={categories}
+                            subcategories={subcategories}
                             onRoleClick={(role) => handleOpenEdit(role)}
                         />
                     </Card>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { Badge, Text, HoverCard, Stack, Group, Divider, ThemeIcon, Box, SimpleGrid, Tooltip } from "@mantine/core";
-import { IconBuilding, IconHistory, IconTrendingUp, IconTrendingDown, IconMinus } from "@tabler/icons-react";
+import { Badge, Text, HoverCard, Stack, Group, Divider, ThemeIcon, Box, SimpleGrid, Tooltip, ActionIcon } from "@mantine/core";
+import { IconBuilding, IconHistory, IconTrendingUp, IconTrendingDown, IconMinus, IconPencil } from "@tabler/icons-react";
 import { MATRIX_LAYOUT } from "../../constants/skillLevels";
 import { getScoreColor } from "../../utils/skillCalculations";
 import { Employee, Skill, Assessment, useData, AssessmentLogEntry } from "../../context/DataContext";
@@ -16,14 +16,16 @@ interface MatrixHeaderProps {
   calculateEmployeeAverage: (employeeId: string) => number | null;
   skills: Skill[];
   getAssessment: (empId: string, skillId: string) => Assessment | undefined;
+  onEditEmployee: (employeeId: string) => void;
 }
 
 const EmployeeInfoCard: React.FC<{
   emp: Employee;
   avg: number | null;
   skills: Skill[];
-  getAssessment: (empId: string, skillId: string) => Assessment | undefined
-}> = ({ emp, avg, skills, getAssessment }) => {
+  getAssessment: (empId: string, skillId: string) => Assessment | undefined;
+  onEdit: () => void;
+}> = ({ emp, avg, skills, getAssessment, onEdit }) => {
   const { getHistory, categories, subcategories, roles } = useData();
   const { anonymizeName } = usePrivacy();
   const [history, setHistory] = useState<AssessmentLogEntry[]>([]);
@@ -119,6 +121,9 @@ const EmployeeInfoCard: React.FC<{
             )}
           </Stack>
         </Box>
+        <ActionIcon variant="subtle" color="gray" onClick={onEdit} title="Mitarbeiter bearbeiten">
+          <IconPencil size={16} />
+        </ActionIcon>
       </Group>
 
       <Divider />
@@ -303,6 +308,7 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
   calculateEmployeeAverage,
   skills,
   getAssessment,
+  onEditEmployee,
 }) => {
   const { anonymizeName } = usePrivacy();
   const { cellSize, labelWidth, headerHeight } = MATRIX_LAYOUT;
@@ -398,7 +404,13 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
                 </div>
               </HoverCard.Target>
               <HoverCard.Dropdown>
-                <EmployeeInfoCard emp={emp} avg={avg} skills={skills} getAssessment={getAssessment} />
+                <EmployeeInfoCard
+                  emp={emp}
+                  avg={avg}
+                  skills={skills}
+                  getAssessment={getAssessment}
+                  onEdit={() => onEditEmployee(emp.id!)}
+                />
               </HoverCard.Dropdown>
             </HoverCard>
           );

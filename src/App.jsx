@@ -97,10 +97,11 @@ function AppContent() {
   const [mobileOpened, { toggle: toggleMobile }] = useDisclosure(false);
 
   // Zustand aus IndexedDB laden (Initialisierung)
+  // Zustand aus IndexedDB laden (Initialisierung)
   useEffect(() => {
     const loadSidebarState = async () => {
       try {
-        const saved = localStorage.getItem("sidebar-opened");
+        const saved = localStorage.getItem("skillgrid-sidebar-opened") || localStorage.getItem("sidebar-opened");
         if (saved !== null) {
           setDesktopOpened(JSON.parse(saved));
         }
@@ -111,9 +112,9 @@ function AppContent() {
     loadSidebarState();
   }, []);
 
-  // Zustand speichern
+  // Zustand speichern (Migration enthalten)
   useEffect(() => {
-    localStorage.setItem("sidebar-opened", JSON.stringify(desktopOpened));
+    localStorage.setItem("skillgrid-sidebar-opened", JSON.stringify(desktopOpened));
   }, [desktopOpened]);
 
   const toggleDesktop = () => setDesktopOpened((o) => !o);
@@ -184,7 +185,7 @@ function AppContent() {
                   userSelect: "none",
                 }}
               >
-                {desktopOpened ? "Q-Track" : "QT"}
+                {desktopOpened ? "SkillGrid" : "SG"}
               </Title>
 
               {/* Versions-Badge */}
@@ -330,8 +331,28 @@ function AppContent() {
 }
 
 function App() {
+  // Migration Logic
+  useEffect(() => {
+    try {
+      // Migrate Color Scheme
+      if (!localStorage.getItem("skillgrid-color-scheme") && localStorage.getItem("qtrack-color-scheme")) {
+        localStorage.setItem("skillgrid-color-scheme", localStorage.getItem("qtrack-color-scheme"));
+      }
+      // Migrate Anonymous Mode
+      if (!localStorage.getItem("skillgrid-anonymous-mode") && localStorage.getItem("qtrack-anonymous-mode")) {
+        localStorage.setItem("skillgrid-anonymous-mode", localStorage.getItem("qtrack-anonymous-mode"));
+      }
+      // Migrate Dashboard Tiles
+      if (!localStorage.getItem("skillgrid-dashboard-tiles") && localStorage.getItem("qtrack-dashboard-tiles")) {
+        localStorage.setItem("skillgrid-dashboard-tiles", localStorage.getItem("qtrack-dashboard-tiles"));
+      }
+    } catch (e) {
+      console.error("Migration failed", e);
+    }
+  }, []);
+
   const [colorScheme, setColorScheme] = useLocalStorage({
-    key: "qtrack-color-scheme",
+    key: "skillgrid-color-scheme",
     defaultValue: "light",
   });
 

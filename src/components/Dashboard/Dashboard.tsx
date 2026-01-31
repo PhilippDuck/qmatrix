@@ -62,13 +62,34 @@ interface StatCardProps {
 }
 
 const StatCard: React.FC<StatCardProps> = ({ title, value, subtitle, icon, color, trend }) => {
+
+    const getTooltipContent = (title: string) => {
+        switch (title) {
+            case "Mitarbeiter":
+                return "Anzahl der aktuell erfassten Mitarbeiter im System.";
+            case "Globale Expertise":
+                return "Durchschnittlicher Erfüllungsgrad aller aktiven Skills über alle Mitarbeiter hinweg. Ein Wert von 100% bedeutet, dass im Schnitt das höchste Skill-Level erreicht wurde.";
+            case "Gesamt-XP":
+                return "Summe aller Skill-Punkte (Experience Points) aller Mitarbeiter. Ein Indikator für das gesamte im Unternehmen vorhandene Wissen.";
+            case "Zielerfüllung":
+                return "Prozentsatz der definierten Soll-Ziele (Target Level), die von den Mitarbeitern erreicht oder übertroffen wurden.";
+            default:
+                return null;
+        }
+    };
+
+    const tooltipContent = getTooltipContent(title);
+
     return (
         <Card withBorder radius="md" p="md" style={{ height: '100%' }}>
             <Group justify="space-between" align="flex-start">
                 <Box>
-                    <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                        {title}
-                    </Text>
+                    <Tooltip label={tooltipContent} disabled={!tooltipContent} multiline w={220} withArrow transitionProps={{ duration: 200 }}>
+                        <Text size="xs" c="dimmed" tt="uppercase" fw={700} style={{ cursor: tooltipContent ? 'help' : 'default', width: 'fit-content' }}>
+                            {title}
+                        </Text>
+                    </Tooltip>
+
                     <Text size="xl" fw={700} mt={4}>
                         {value}
                     </Text>
@@ -190,7 +211,7 @@ export const Dashboard: React.FC = () => {
     };
 
     const [visibleTiles, setVisibleTiles] = useLocalStorage<Record<string, boolean>>({
-        key: 'qtrack-dashboard-tiles',
+        key: 'skillgrid-dashboard-tiles',
         defaultValue: {
             stats: true,
             activity: true,
@@ -565,7 +586,9 @@ export const Dashboard: React.FC = () => {
             {visibleTiles.activity && !loadingHistory && (
                 <Card withBorder radius="md" p="md">
                     <Group justify="space-between" mb="xs">
-                        <Text size="xs" c="dimmed" fw={700} tt="uppercase">Aktivitäts-Übersicht</Text>
+                        <Tooltip label="Zusammenfassung der Aktivitäten und Entwicklungen im ausgewählten Zeitraum." withArrow>
+                            <Text size="xs" c="dimmed" fw={700} tt="uppercase" style={{ cursor: 'help' }}>Aktivitäts-Übersicht</Text>
+                        </Tooltip>
                         <HideButton id="activity" />
                     </Group>
                     <Group justify="space-around" wrap="wrap">
@@ -625,10 +648,12 @@ export const Dashboard: React.FC = () => {
                     <Card withBorder radius="md" p="md">
                         <Group justify="space-between" mb="md">
                             <Text fw={700} size="sm">
-                                <Group gap={8}>
-                                    <IconRocket size={16} color="var(--mantine-color-teal-6)" />
-                                    Am meisten verbesserte Skills
-                                </Group>
+                                <Tooltip label="Skills mit dem größten Zuwachs an Erfahrungspunkten (XP) im aktuellen Zeitraum." withArrow>
+                                    <Group gap={8} style={{ cursor: 'help' }}>
+                                        <IconRocket size={16} color="var(--mantine-color-teal-6)" />
+                                        Am meisten verbesserte Skills
+                                    </Group>
+                                </Tooltip>
                             </Text>
                             <Group gap="xs">
                                 <Badge size="xs" variant="light">dieses {periodName}</Badge>
@@ -664,10 +689,12 @@ export const Dashboard: React.FC = () => {
                     <Card withBorder radius="md" p="md">
                         <Group justify="space-between" mb="md">
                             <Text fw={700} size="sm">
-                                <Group gap={8}>
-                                    <IconShieldCheck size={16} color="var(--mantine-color-blue-6)" />
-                                    Höchste Skill-Abdeckung
-                                </Group>
+                                <Tooltip label="Skills, die von den meisten Mitarbeitern auf einem Level von mindestens 50% beherrscht werden." withArrow>
+                                    <Group gap={8} style={{ cursor: 'help' }}>
+                                        <IconShieldCheck size={16} color="var(--mantine-color-blue-6)" />
+                                        Höchste Skill-Abdeckung
+                                    </Group>
+                                </Tooltip>
                             </Text>
                             <Group gap="xs">
                                 <Tooltip label="Mitarbeiter mit ≥50% Level" withArrow>
@@ -713,10 +740,12 @@ export const Dashboard: React.FC = () => {
                     <Card withBorder radius="md" p="md">
                         <Group justify="space-between" mb="md">
                             <Text fw={700} size="sm">
-                                <Group gap={8}>
-                                    <IconAlertTriangle size={16} color="var(--mantine-color-orange-6)" />
-                                    Geringe Skill-Abdeckung
-                                </Group>
+                                <Tooltip label="Kritische Skills, die von weniger als 30% der Belegschaft beherrscht werden (Level ≥ 50%)." withArrow>
+                                    <Group gap={8} style={{ cursor: 'help' }}>
+                                        <IconAlertTriangle size={16} color="var(--mantine-color-orange-6)" />
+                                        Geringe Skill-Abdeckung
+                                    </Group>
+                                </Tooltip>
                             </Text>
                             <Group gap="xs">
                                 <Tooltip label="Skills mit <30% Abdeckung" withArrow>
@@ -762,10 +791,12 @@ export const Dashboard: React.FC = () => {
                     <Card withBorder radius="md" p="md">
                         <Group justify="space-between" mb="md">
                             <Text fw={700} size="sm">
-                                <Group gap={8}>
-                                    <IconChartHistogram size={16} color="var(--mantine-color-violet-6)" />
-                                    Skill-Level Verteilung
-                                </Group>
+                                <Tooltip label="Verteilung der aktuellen Skill-Level über alle Bewertungen hinweg." withArrow>
+                                    <Group gap={8} style={{ cursor: 'help' }}>
+                                        <IconChartHistogram size={16} color="var(--mantine-color-violet-6)" />
+                                        Skill-Level Verteilung
+                                    </Group>
+                                </Tooltip>
                             </Text>
                             <Group gap="xs">
                                 <Text size="xs" c="dimmed">{kpis.totalAssessments} Bewertungen</Text>
@@ -806,10 +837,12 @@ export const Dashboard: React.FC = () => {
                     <Card withBorder radius="md" p="md">
                         <Group justify="space-between" mb="md">
                             <Text fw={700} size="sm">
-                                <Group gap={8}>
-                                    <IconChecklist size={16} color="var(--mantine-color-orange-6)" />
-                                    Offene Lernziele
-                                </Group>
+                                <Tooltip label="Offene Lernziele, bei denen das Ist-Level (noch) unter dem Soll-Level liegt." withArrow>
+                                    <Group gap={8} style={{ cursor: 'help' }}>
+                                        <IconChecklist size={16} color="var(--mantine-color-orange-6)" />
+                                        Offene Lernziele
+                                    </Group>
+                                </Tooltip>
                             </Text>
                             <HideButton id="learningGoals" />
                         </Group>
@@ -837,10 +870,12 @@ export const Dashboard: React.FC = () => {
                     <Card withBorder radius="md" p="md">
                         <Group justify="space-between" mb="md">
                             <Text fw={700} size="sm">
-                                <Group gap={8}>
-                                    <IconBuildingSkyscraper size={16} color="var(--mantine-color-cyan-6)" />
-                                    Abteilungs-Fortschritt
-                                </Group>
+                                <Tooltip label="Anzahl der Verbesserungen (Skill-Level Erhöhungen) pro Abteilung im aktuellen Zeitraum." withArrow>
+                                    <Group gap={8} style={{ cursor: 'help' }}>
+                                        <IconBuildingSkyscraper size={16} color="var(--mantine-color-cyan-6)" />
+                                        Abteilungs-Fortschritt
+                                    </Group>
+                                </Tooltip>
                             </Text>
                             <Group gap="xs">
                                 <Badge size="xs" variant="light">dieses {periodName}</Badge>
@@ -876,10 +911,12 @@ export const Dashboard: React.FC = () => {
                     <Card withBorder radius="md" p="md">
                         <Group justify="space-between" mb="md">
                             <Text fw={700} size="sm">
-                                <Group gap={8}>
-                                    <IconAlertTriangle size={16} color="var(--mantine-color-red-6)" />
-                                    Größte Skill-Gaps
-                                </Group>
+                                <Tooltip label="Größte Differenzen zwischen definiertem Soll-Level und aktuellem Ist-Level." withArrow>
+                                    <Group gap={8} style={{ cursor: 'help' }}>
+                                        <IconAlertTriangle size={16} color="var(--mantine-color-red-6)" />
+                                        Größte Skill-Gaps
+                                    </Group>
+                                </Tooltip>
                             </Text>
                             <HideButton id="skillGaps" />
                         </Group>
@@ -920,10 +957,12 @@ export const Dashboard: React.FC = () => {
                     <Card withBorder radius="md" p="md">
                         <Group justify="space-between" mb="md">
                             <Text fw={700} size="sm">
-                                <Group gap={8}>
-                                    <IconBadge size={16} />
-                                    Rollen-Verteilung
-                                </Group>
+                                <Tooltip label="Anzahl der Mitarbeiter, die der jeweiligen Rolle zugeordnet sind." withArrow>
+                                    <Group gap={8} style={{ cursor: 'help' }}>
+                                        <IconBadge size={16} />
+                                        Rollen-Verteilung
+                                    </Group>
+                                </Tooltip>
                             </Text>
                             <HideButton id="roleDist" />
                         </Group>
@@ -962,10 +1001,12 @@ export const Dashboard: React.FC = () => {
                     <Card withBorder radius="md" p="md" style={{ gridColumn: 'span 2' }}>
                         <Group justify="space-between" mb="md">
                             <Text fw={700} size="sm">
-                                <Group gap={8}>
-                                    <IconTrendingUp size={16} />
-                                    Kategorie-Performance
-                                </Group>
+                                <Tooltip label="Durchschnittlicher Erfüllungsgrad (Level) aller Skills innerhalb einer Kategorie." withArrow>
+                                    <Group gap={8} style={{ cursor: 'help' }}>
+                                        <IconTrendingUp size={16} />
+                                        Kategorie-Performance
+                                    </Group>
+                                </Tooltip>
                             </Text>
                             <HideButton id="catPerformance" />
                         </Group>

@@ -1,5 +1,5 @@
 {
-  "name": "qtrack",
+  "name": "skillgrid",
   "private": true,
   "version": "2.2.0",
   "type": "module",
@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@mantine/core": "^8.3.13",
+    "@mantine/dropzone": "^8.3.13",
     "@mantine/form": "^8.3.13",
     "@mantine/hooks": "^8.3.13",
     "@tabler/icons-react": "^3.36.1",

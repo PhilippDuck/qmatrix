@@ -2,7 +2,7 @@ import React from "react";
 import { Tree, TreeNode } from "react-organizational-chart";
 import { Paper, Text, ThemeIcon, Stack, Box, useMantineColorScheme, Badge, Group, Tooltip, Divider, Avatar } from "@mantine/core";
 import { IconBulb, IconUsers } from "@tabler/icons-react";
-import { EmployeeRole, Skill, Employee } from "../../services/indexeddb";
+import { EmployeeRole, Skill, Employee, Category, SubCategory } from "../../services/indexeddb";
 import { getIconByName } from "../shared/RoleIconPicker";
 import { usePrivacy } from "../../context/PrivacyContext";
 
@@ -10,6 +10,8 @@ interface RoleOrgChartProps {
     roles: EmployeeRole[];
     skills: Skill[];
     employees: Employee[];
+    categories: Category[];
+    subcategories: SubCategory[];
     onRoleClick?: (role: EmployeeRole) => void;
 }
 
@@ -52,9 +54,11 @@ const RoleCard: React.FC<{
     roles: EmployeeRole[];
     skills: Skill[];
     employees: Employee[];
+    categories: Category[];
+    subcategories: SubCategory[];
     isRoot?: boolean;
     onClick?: () => void;
-}> = ({ role, roles, skills, employees, isRoot, onClick }) => {
+}> = ({ role, roles, skills, employees, categories, subcategories, isRoot, onClick }) => {
     const { colorScheme } = useMantineColorScheme();
     const { anonymizeName, anonymizeInitials } = usePrivacy();
     const isDark = colorScheme === 'dark';
@@ -89,9 +93,18 @@ const RoleCard: React.FC<{
                         <>
                             {roleEmployees.length > 0 && <Divider my={4} />}
                             <Text size="xs" c="dimmed">Skills ({allSkills.length}):</Text>
-                            {directSkills.slice(0, 5).map(skill => (
-                                <Text key={skill.id} size="xs">• {skill.name}</Text>
-                            ))}
+                            {directSkills.slice(0, 5).map(skill => {
+                                const sub = subcategories.find(s => s.id === skill.subCategoryId);
+                                const cat = sub ? categories.find(c => c.id === sub.categoryId) : null;
+                                return (
+                                    <Box key={skill.id}>
+                                        <Text size="xs">• {skill.name}</Text>
+                                        <Text size="8px" c="dimmed" style={{ paddingLeft: 10 }}>
+                                            {cat?.name} / {sub?.name}
+                                        </Text>
+                                    </Box>
+                                );
+                            })}
                             {directSkills.length > 5 && (
                                 <Text size="xs" c="dimmed">... +{directSkills.length - 5} weitere</Text>
                             )}
@@ -228,9 +241,11 @@ const RenderTreeNode: React.FC<{
     roles: EmployeeRole[];
     skills: Skill[];
     employees: Employee[];
+    categories: Category[];
+    subcategories: SubCategory[];
     onRoleClick?: (role: EmployeeRole) => void;
     isRoot?: boolean;
-}> = ({ node, roles, skills, employees, onRoleClick, isRoot }) => {
+}> = ({ node, roles, skills, employees, categories, subcategories, onRoleClick, isRoot }) => {
     if (node.children.length === 0) {
         return (
             <TreeNode
@@ -240,6 +255,8 @@ const RenderTreeNode: React.FC<{
                         roles={roles}
                         skills={skills}
                         employees={employees}
+                        categories={categories}
+                        subcategories={subcategories}
                         isRoot={isRoot}
                         onClick={onRoleClick ? () => onRoleClick(node.role) : undefined}
                     />
@@ -256,6 +273,8 @@ const RenderTreeNode: React.FC<{
                     roles={roles}
                     skills={skills}
                     employees={employees}
+                    categories={categories}
+                    subcategories={subcategories}
                     isRoot={isRoot}
                     onClick={onRoleClick ? () => onRoleClick(node.role) : undefined}
                 />
@@ -268,6 +287,8 @@ const RenderTreeNode: React.FC<{
                     roles={roles}
                     skills={skills}
                     employees={employees}
+                    categories={categories}
+                    subcategories={subcategories}
                     onRoleClick={onRoleClick}
                 />
             ))}
@@ -275,7 +296,7 @@ const RenderTreeNode: React.FC<{
     );
 };
 
-export const RoleOrgChart: React.FC<RoleOrgChartProps> = ({ roles, skills, employees, onRoleClick }) => {
+export const RoleOrgChart: React.FC<RoleOrgChartProps> = ({ roles, skills, employees, categories, subcategories, onRoleClick }) => {
     const { colorScheme } = useMantineColorScheme();
     const isDark = colorScheme === 'dark';
     const trees = buildTree(roles);
@@ -332,6 +353,8 @@ export const RoleOrgChart: React.FC<RoleOrgChartProps> = ({ roles, skills, emplo
                                 roles={roles}
                                 skills={skills}
                                 employees={employees}
+                                categories={categories}
+                                subcategories={subcategories}
                                 isRoot
                                 onClick={onRoleClick ? () => onRoleClick(tree.role) : undefined}
                             />
@@ -344,6 +367,8 @@ export const RoleOrgChart: React.FC<RoleOrgChartProps> = ({ roles, skills, emplo
                                 roles={roles}
                                 skills={skills}
                                 employees={employees}
+                                categories={categories}
+                                subcategories={subcategories}
                                 onRoleClick={onRoleClick}
                             />
                         ))}
