@@ -4,6 +4,7 @@ import { Paper, Text, ThemeIcon, Stack, Box, useMantineColorScheme, Badge, Group
 import { IconBulb, IconUsers } from "@tabler/icons-react";
 import { EmployeeRole, Skill, Employee } from "../../services/indexeddb";
 import { getIconByName } from "../shared/RoleIconPicker";
+import { usePrivacy } from "../../context/PrivacyContext";
 
 interface RoleOrgChartProps {
     roles: EmployeeRole[];
@@ -55,6 +56,7 @@ const RoleCard: React.FC<{
     onClick?: () => void;
 }> = ({ role, roles, skills, employees, isRoot, onClick }) => {
     const { colorScheme } = useMantineColorScheme();
+    const { anonymizeName, anonymizeInitials } = usePrivacy();
     const isDark = colorScheme === 'dark';
 
     const directSkills = getDirectSkillsForRole(role.id!, skills);
@@ -75,7 +77,7 @@ const RoleCard: React.FC<{
                         <>
                             <Text size="xs" c="dimmed">Mitarbeiter:</Text>
                             {roleEmployees.slice(0, 5).map(emp => (
-                                <Text key={emp.id} size="xs">• {emp.name}</Text>
+                                <Text key={emp.id} size="xs">• {anonymizeName(emp.name, emp.id)}</Text>
                             ))}
                             {roleEmployees.length > 5 && (
                                 <Text size="xs" c="dimmed">... +{roleEmployees.length - 5} weitere</Text>
@@ -157,9 +159,9 @@ const RoleCard: React.FC<{
                         <Tooltip.Group>
                             <Avatar.Group spacing="xs">
                                 {roleEmployees.slice(0, 3).map(emp => (
-                                    <Tooltip key={emp.id} label={emp.name} withArrow>
+                                    <Tooltip key={emp.id} label={anonymizeName(emp.name, emp.id)} withArrow>
                                         <Avatar size="xs" radius="xl" color="blue">
-                                            {emp.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                                            {anonymizeInitials(emp.name, emp.id)}
                                         </Avatar>
                                     </Tooltip>
                                 ))}

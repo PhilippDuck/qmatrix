@@ -7,6 +7,7 @@ import { InfoTooltip } from "../shared/InfoTooltip";
 import { BulkLevelMenu } from "./BulkLevelMenu";
 import { MatrixSubcategoryRow } from "./MatrixSubcategoryRow";
 import { Employee, Category, SubCategory, Skill, Assessment } from "../../context/DataContext";
+import { usePrivacy } from "../../context/PrivacyContext";
 
 interface MatrixCategoryRowProps {
   category: Category;
@@ -27,6 +28,7 @@ interface MatrixCategoryRowProps {
   onTargetLevelChange: (employeeId: string, skillId: string, targetLevel: number | undefined) => void;
 }
 
+
 export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = ({
   category,
   subcategories,
@@ -45,6 +47,7 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = ({
   onLevelChange,
   onTargetLevelChange,
 }) => {
+  const { anonymizeName } = usePrivacy();
   const { cellSize, labelWidth } = MATRIX_LAYOUT;
   const isCatCollapsed = collapsedStates[category.id!];
 
@@ -111,7 +114,7 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = ({
           return (
             <BulkLevelMenu
               key={emp.id}
-              label={`Alle "${category.name}" setzen für ${emp.name}`}
+              label={`Alle "${category.name}" setzen für ${anonymizeName(emp.name, emp.id)}`}
               onSelectLevel={(level) => onBulkSetLevel(emp.id!, catSkillIds, level)}
             >
               <div

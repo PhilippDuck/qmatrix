@@ -7,6 +7,7 @@ import { InfoTooltip } from "../shared/InfoTooltip";
 import { BulkLevelMenu } from "./BulkLevelMenu";
 import { MatrixSkillRow } from "./MatrixSkillRow";
 import { Employee, SubCategory, Skill, Assessment } from "../../context/DataContext";
+import { usePrivacy } from "../../context/PrivacyContext";
 
 interface MatrixSubcategoryRowProps {
   subcategory: SubCategory;
@@ -21,10 +22,10 @@ interface MatrixSubcategoryRowProps {
   calculateAverage: (skillIds: string[], employeeId?: string) => number | null;
   getAssessment: (employeeId: string, skillId: string) => Assessment | undefined;
   onBulkSetLevel: (employeeId: string, skillIds: string[], level: number) => void;
+
   onLevelChange: (employeeId: string, skillId: string, newLevel: number) => void;
   onTargetLevelChange: (employeeId: string, skillId: string, targetLevel: number | undefined) => void;
 }
-
 export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
   subcategory,
   skills,
@@ -41,6 +42,7 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
   onLevelChange,
   onTargetLevelChange,
 }) => {
+  const { anonymizeName } = usePrivacy();
   const { cellSize, labelWidth } = MATRIX_LAYOUT;
   const subSkillIds = skills.map((s) => s.id!);
   const subAvg = calculateAverage(subSkillIds);
@@ -94,7 +96,7 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
           return (
             <BulkLevelMenu
               key={emp.id}
-              label={`Alle "${subcategory.name}" setzen für ${emp.name}`}
+              label={`Alle "${subcategory.name}" setzen für ${anonymizeName(emp.name, emp.id)}`}
               onSelectLevel={(level) => onBulkSetLevel(emp.id!, subSkillIds, level)}
             >
               <div

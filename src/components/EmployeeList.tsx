@@ -12,11 +12,13 @@ import {
 import { useDisclosure } from "@mantine/hooks";
 import { IconPlus, IconEdit, IconTrash, IconUser } from "@tabler/icons-react";
 import { useData } from "../context/DataContext";
+import { usePrivacy } from "../context/PrivacyContext";
 import { Employee } from "../services/indexeddb";
 import { EmployeeDrawer } from "./shared/EmployeeDrawer";
 
 export const EmployeeList: React.FC = () => {
   const { employees, addEmployee, updateEmployee, deleteEmployee, roles } = useData();
+  const { anonymizeName } = usePrivacy();
 
   const [opened, { open, close }] = useDisclosure(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -114,7 +116,7 @@ export const EmployeeList: React.FC = () => {
                     <Group gap="sm">
                       <IconUser size={16} color="gray" />
                       <Text size="sm" fw={500}>
-                        {employee.name}
+                        {anonymizeName(employee.name, employee.id)}
                       </Text>
                     </Group>
                   </Table.Td>

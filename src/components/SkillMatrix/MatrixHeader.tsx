@@ -5,6 +5,7 @@ import { MATRIX_LAYOUT } from "../../constants/skillLevels";
 import { getScoreColor } from "../../utils/skillCalculations";
 import { Employee, Skill, Assessment, useData, AssessmentLogEntry } from "../../context/DataContext";
 import { getIconByName } from "../shared/RoleIconPicker";
+import { usePrivacy } from "../../context/PrivacyContext";
 
 interface MatrixHeaderProps {
   employees: Employee[];
@@ -24,6 +25,7 @@ const EmployeeInfoCard: React.FC<{
   getAssessment: (empId: string, skillId: string) => Assessment | undefined
 }> = ({ emp, avg, skills, getAssessment }) => {
   const { getHistory, categories, subcategories, roles } = useData();
+  const { anonymizeName } = usePrivacy();
   const [history, setHistory] = useState<AssessmentLogEntry[]>([]);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [loadingHistory, setLoadingHistory] = useState(true);
@@ -94,7 +96,7 @@ const EmployeeInfoCard: React.FC<{
       <Group justify="space-between" align="start" wrap="nowrap">
         <Box>
           <Text fw={700} size="lg">
-            {emp.name}
+            {anonymizeName(emp.name, emp.id)}
           </Text>
           <Stack gap={4} mt={6}>
             {emp.department && (
@@ -302,6 +304,7 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
   skills,
   getAssessment,
 }) => {
+  const { anonymizeName } = usePrivacy();
   const { cellSize, labelWidth, headerHeight } = MATRIX_LAYOUT;
 
   return (
@@ -390,7 +393,7 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
                       color: isFocused ? "var(--mantine-color-blue-filled)" : undefined,
                     }}
                   >
-                    {emp.name}
+                    {anonymizeName(emp.name, emp.id)}
                   </Text>
                 </div>
               </HoverCard.Target>

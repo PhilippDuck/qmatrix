@@ -10,11 +10,19 @@ Eine moderne Skill-Matrix-Anwendung zur Verwaltung und Visualisierung von Mitarb
 ## ✨ Features
 
 ### 📊 Dashboard
-- Globale KPIs auf einen Blick
-- Top Performer Übersicht
-- Skill-Gap Analyse
-- Abteilungs- und Rollen-Statistiken
-- Kategorie-Performance
+- Globale KPIs mit Trend-Vergleich (Quartal/Jahr)
+- Skill-Verbesserungen aggregiert nach Zeitraum
+- Skill-Abdeckung & Risiko-Analyse (Low Coverage)
+- Skill-Level Verteilung Histogramm
+- Zielerfüllung und offene Lernziele
+- Abteilungs-Fortschritt
+- Kategorie-Performance-Metriken
+
+### 🛡️ Datenschutz & Privacy
+- **Anonymous Mode**: Namen können per Klick verschleiert werden
+- Pseudonymisierung für Präsentationen vor abteilungsfremden Personen
+- Lokale Datenspeicherung (IndexedDB) - Daten verlassen nie den Browser
+- Keine Cloud-Anbindung, kein Tracking
 
 ### 🎯 Skill-Matrix
 - Interaktive Matrix-Ansicht aller Mitarbeiter und Skills

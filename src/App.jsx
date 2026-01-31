@@ -32,6 +32,8 @@ import {
   IconSettings,
   IconDashboard,
   IconHeart,
+  IconEye,
+  IconEyeOff,
 } from "@tabler/icons-react";
 
 import { DataProvider, useData } from "./context/DataContext";
@@ -39,6 +41,7 @@ import { UnifiedDataView } from "./components/UnifiedDataView";
 import { SkillMatrix } from "./components/SkillMatrix";
 import { DataManagement } from "./components/DataManagement";
 import { Dashboard } from "./components/Dashboard/Dashboard";
+import { PrivacyProvider, usePrivacy } from "./context/PrivacyContext";
 import "@mantine/core/styles.css";
 
 const theme = createTheme({
@@ -61,6 +64,23 @@ function ColorSchemeToggle() {
         onClick={() => setColorScheme(computedColorScheme === "dark" ? "light" : "dark")}
       >
         {computedColorScheme === "dark" ? <IconSun size={18} /> : <IconMoon size={18} />}
+      </ActionIcon>
+    </Tooltip>
+  );
+}
+
+function AnonymousToggle() {
+  const { anonymousMode, setAnonymousMode } = usePrivacy();
+
+  return (
+    <Tooltip label={anonymousMode ? "Anonymisierung deaktivieren" : "Anonymisierung aktivieren (Namen ausblenden)"}>
+      <ActionIcon
+        variant={anonymousMode ? "filled" : "subtle"}
+        color={anonymousMode ? "blue" : "gray"}
+        size="md"
+        onClick={() => setAnonymousMode(!anonymousMode)}
+      >
+        {anonymousMode ? <IconEyeOff size={18} /> : <IconEye size={18} />}
       </ActionIcon>
     </Tooltip>
   );
@@ -179,7 +199,10 @@ function AppContent() {
               )}
             </Group>
           </Group>
-          <ColorSchemeToggle />
+          <Group gap="xs">
+            <AnonymousToggle />
+            <ColorSchemeToggle />
+          </Group>
         </Group>
       </AppShell.Header>
 
@@ -303,9 +326,11 @@ function App() {
 
   return (
     <MantineProvider theme={theme} defaultColorScheme={colorScheme}>
-      <DataProvider>
-        <AppContent />
-      </DataProvider>
+      <PrivacyProvider>
+        <DataProvider>
+          <AppContent />
+        </DataProvider>
+      </PrivacyProvider>
     </MantineProvider>
   );
 }
