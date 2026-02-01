@@ -1,5 +1,5 @@
 import React from "react";
-import { Badge, Menu, Text, Group, Stack } from "@mantine/core";
+import { Badge, Menu, Text, Group, Stack, Tooltip } from "@mantine/core";
 import { MATRIX_LAYOUT, LEVELS } from "../../constants/skillLevels";
 import { getLevelByValue } from "../../utils/skillCalculations";
 
@@ -13,6 +13,7 @@ interface SkillCellProps {
   onTargetLevelChange: (targetLevel: number | undefined) => void;
   onMouseEnter: () => void;
   onMouseLeave: () => void;
+  hasActiveMeasure?: "pending" | "in_progress";
 }
 
 export const SkillCell: React.FC<SkillCellProps> = ({
@@ -25,6 +26,7 @@ export const SkillCell: React.FC<SkillCellProps> = ({
   onTargetLevelChange,
   onMouseEnter,
   onMouseLeave,
+  hasActiveMeasure,
 }) => {
   const levelObj = getLevelByValue(level);
 
@@ -134,6 +136,31 @@ export const SkillCell: React.FC<SkillCellProps> = ({
                 zIndex: 10,
               }}
             />
+          )}
+
+          {/* Active Measure Indicator (Pulsing Dot) */}
+          {hasActiveMeasure && (
+            <Tooltip
+              label={hasActiveMeasure === "in_progress" ? "Schulung läuft" : "Schulung geplant"}
+              position="left"
+              withArrow
+              withinPortal
+            >
+              <div
+                style={{
+                  position: "absolute",
+                  top: "50%",
+                  left: 2,
+                  transform: "translateY(-50%)",
+                  width: 6,
+                  height: 6,
+                  borderRadius: "50%",
+                  backgroundColor: hasActiveMeasure === "in_progress" ? "var(--mantine-color-blue-filled)" : "var(--mantine-color-gray-5)",
+                  boxShadow: hasActiveMeasure === "in_progress" ? "0 0 4px var(--mantine-color-blue-filled)" : "none",
+                  zIndex: 15,
+                }}
+              />
+            </Tooltip>
           )}
 
         </div>

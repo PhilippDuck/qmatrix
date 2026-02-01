@@ -27,7 +27,7 @@ const EmployeeInfoCard: React.FC<{
   getAssessment: (empId: string, skillId: string) => Assessment | undefined;
   onEdit: () => void;
 }> = ({ emp, avg, skills, getAssessment, onEdit }) => {
-  const { getHistory, categories, subcategories, roles } = useData();
+  const { getHistory, categories, subcategories, roles, qualificationMeasures, qualificationPlans } = useData();
   const { anonymizeName } = usePrivacy();
   const [history, setHistory] = useState<AssessmentLogEntry[]>([]);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -93,6 +93,12 @@ const EmployeeInfoCard: React.FC<{
     .filter(item => item.gap < 0 && item.target > 0)
     .sort((a, b) => a.gap - b.gap)
     .slice(0, 3);
+
+  // Filter active measures for this employee
+  const activeMeasures = qualificationMeasures.filter(m => {
+    const plan = qualificationPlans.find(p => p.id === m.planId && p.employeeId === emp.id);
+    return plan && (m.status === "in_progress" || m.status === "pending");
+  });
 
   return (
     <Stack gap="sm">
@@ -256,6 +262,35 @@ const EmployeeInfoCard: React.FC<{
                     <Text size="xs" c="dimmed">/</Text>
                     <Badge size="xs" variant="light" color="teal">{item.target}%</Badge>
                   </Group>
+                </Group>
+              );
+            })}
+          </Stack>
+        </>
+      )}
+
+      {/* Active Qualification Measures */}
+      {activeMeasures.length > 0 && (
+        <>
+          <Divider />
+          <Text size="xs" c="dimmed" fw={700} tt="uppercase">
+            Aktive Qualifizierung
+          </Text>
+          <Stack gap={8}>
+            {activeMeasures.map(measure => {
+              const skill = skills.find(s => s.id === measure.skillId);
+              const ctx = skill ? resolveContext(skill) : { catName: '-', subName: '-' };
+              return (
+                <Group key={measure.id} justify="space-between" wrap="nowrap">
+                  <Box style={{ flex: 1, overflow: "hidden" }}>
+                    <Text size="xs" fw={500} truncate>{skill?.name || 'Unbekannt'}</Text>
+                    <Text size="10px" c="dimmed" truncate>
+                      {measure.type === "internal" ? "Intern" : "Extern"}: {measure.status === "in_progress" ? "Läuft" : "Geplant"}
+                    </Text>
+                  </Box>
+                  <Badge size="xs" color={measure.status === "in_progress" ? "blue" : "gray"}>
+                    {measure.currentLevel}% → {measure.targetLevel}%
+                  </Badge>
                 </Group>
               );
             })}

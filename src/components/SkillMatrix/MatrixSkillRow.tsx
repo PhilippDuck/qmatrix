@@ -4,7 +4,7 @@ import { IconPencil } from "@tabler/icons-react";
 import { MATRIX_LAYOUT, LEVELS } from "../../constants/skillLevels";
 import { getScoreColor } from "../../utils/skillCalculations";
 import { SkillCell } from "./SkillCell";
-import { Employee, Skill, Assessment } from "../../context/DataContext";
+import { Employee, Skill, Assessment, useData } from "../../context/DataContext";
 
 interface MatrixSkillRowProps {
   skill: Skill;
@@ -37,9 +37,13 @@ export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = ({
   showMaxValues,
   onEditSkill,
 }) => {
+  const { qualificationMeasures, qualificationPlans } = useData();
   const { labelWidth } = MATRIX_LAYOUT;
   const isRowHovered = hoveredSkillId === skill.id;
   const skillAvg = calculateSkillAverage(skill.id!);
+
+  // Pre-filter measures for this skill
+  const skillMeasures = qualificationMeasures.filter(m => m.skillId === skill.id);
 
   // Calculate Max Level for this skill across all employees
   const maxLevelVal = Math.max(...employees.map(e => {
@@ -137,6 +141,16 @@ export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = ({
         }
         const roleTarget = empRole?.requiredSkills?.find(rs => rs.skillId === skill.id!)?.level;
 
+        // Find Active Measure for this employee and skill
+        const measure = skillMeasures.find(m => {
+          const plan = qualificationPlans.find(p => p.id === m.planId && p.employeeId === emp.id);
+          return !!plan;
+        });
+
+        const measureStatus = measure && (measure.status === "in_progress" || measure.status === "pending")
+          ? measure.status
+          : undefined;
+
         return (
           <SkillCell
             key={`${emp.id}-${skill.id}`}
@@ -155,6 +169,7 @@ export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = ({
               onSkillHover(null);
               onEmployeeHover(null);
             }}
+            hasActiveMeasure={measureStatus}
           />
         );
       })}
