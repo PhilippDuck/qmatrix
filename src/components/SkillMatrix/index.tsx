@@ -32,6 +32,7 @@ import { MatrixHeader } from "./MatrixHeader";
 import { MatrixCategoryRow } from "./MatrixCategoryRow";
 import { MatrixLegend } from "./MatrixLegend";
 import { QuickAddDrawer } from "./QuickAddDrawer";
+import { EntityFormDrawer } from "../CategoryManager/EntityFormDrawer";
 
 export const SkillMatrix: React.FC = () => {
   const {
@@ -49,6 +50,9 @@ export const SkillMatrix: React.FC = () => {
     addSkill,
     addCategory,
     addSubCategory,
+    updateSkill,
+    updateCategory,
+    updateSubCategory,
     importData,
   } = useData();
 
@@ -63,6 +67,14 @@ export const SkillMatrix: React.FC = () => {
 
   // Skill Drawer state
   const [skillDrawerOpened, setSkillDrawerOpened] = useState(false);
+
+  // Skill Edit State
+  // Entity Edit State (Skill, Category, Subcategory)
+  const [editEntityId, setEditEntityId] = useState<string | null>(null);
+  const [editEntityType, setEditEntityType] = useState<'skill' | 'category' | 'subcategory'>('skill');
+  const [editEntityName, setEditEntityName] = useState("");
+  const [editEntityDescription, setEditEntityDescription] = useState("");
+  const [editDrawerOpened, setEditDrawerOpened] = useState(false);
 
   // Context Menu State
   const [contextMenuPos, setContextMenuPos] = useState<{ x: number; y: number } | null>(null);
@@ -285,6 +297,70 @@ export const SkillMatrix: React.FC = () => {
 
   const handleAddSkill = async (subcategoryId: string, name: string, description: string) => {
     await addSkill({ subCategoryId: subcategoryId, name, description });
+  };
+
+  const handleEditSkill = (skillId: string) => {
+    const skill = skills.find((s) => s.id === skillId);
+    if (skill) {
+      setEditEntityId(skillId);
+      setEditEntityType('skill');
+      setEditEntityName(skill.name);
+      setEditEntityDescription(skill.description || "");
+      setEditDrawerOpened(true);
+    }
+  };
+
+  const handleEditCategory = (categoryId: string) => {
+    const category = categories.find((c) => c.id === categoryId);
+    if (category) {
+      setEditEntityId(categoryId);
+      setEditEntityType('category');
+      setEditEntityName(category.name);
+      setEditEntityDescription(category.description || "");
+      setEditDrawerOpened(true);
+    }
+  };
+
+  const handleEditSubcategory = (subcategoryId: string) => {
+    const sub = subcategories.find((s) => s.id === subcategoryId);
+    if (sub) {
+      setEditEntityId(subcategoryId);
+      setEditEntityType('subcategory');
+      setEditEntityName(sub.name);
+      setEditEntityDescription(sub.description || "");
+      setEditDrawerOpened(true);
+    }
+  };
+
+  const handleSaveEditedEntity = async () => {
+    if (editEntityId && editEntityName.trim()) {
+      if (editEntityType === 'skill') {
+        const originalSkill = skills.find(s => s.id === editEntityId);
+        if (originalSkill) {
+          await updateSkill(editEntityId, {
+            subCategoryId: originalSkill.subCategoryId,
+            name: editEntityName.trim(),
+            description: editEntityDescription.trim(),
+          });
+        }
+      } else if (editEntityType === 'category') {
+        await updateCategory(editEntityId, {
+          name: editEntityName.trim(),
+          description: editEntityDescription.trim(),
+        });
+      } else if (editEntityType === 'subcategory') {
+        const originalSub = subcategories.find(s => s.id === editEntityId);
+        if (originalSub) {
+          await updateSubCategory(editEntityId, {
+            categoryId: originalSub.categoryId,
+            name: editEntityName.trim(),
+            description: editEntityDescription.trim(),
+          });
+        }
+      }
+      setEditDrawerOpened(false);
+      setEditEntityId(null);
+    }
   };
 
   return (
@@ -600,6 +676,9 @@ export const SkillMatrix: React.FC = () => {
                     onLevelChange={handleLevelChange}
                     onTargetLevelChange={handleTargetLevelChange}
                     showMaxValues={showMaxValues}
+                    onEditSkill={handleEditSkill}
+                    onEditCategory={handleEditCategory}
+                    onEditSubcategory={handleEditSubcategory}
                   />
                 ))}
               </div>
@@ -637,6 +716,27 @@ export const SkillMatrix: React.FC = () => {
             })()
             : undefined
         }
+      />
+
+      <EntityFormDrawer
+        opened={editDrawerOpened}
+        onClose={() => {
+          setEditDrawerOpened(false);
+          setEditEntityId(null);
+        }}
+        formMode={editEntityType}
+        editingId={editEntityId}
+        inputValue={editEntityName}
+        inputDescription={editEntityDescription}
+        selectedDepartmentId={null}
+        selectedRoleIds={[]}
+        onInputChange={setEditEntityName}
+        onDescriptionChange={setEditEntityDescription}
+        onDepartmentChange={() => { }}
+        onRolesChange={() => { }}
+        onSave={handleSaveEditedEntity}
+        departments={departments}
+        roles={roles}
       />
 
       {/* Skill Quick Add Drawer */}

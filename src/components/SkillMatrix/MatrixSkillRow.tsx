@@ -1,7 +1,7 @@
 
 import React from "react";
-import { Text, Group, Stack, Tooltip, Badge } from "@mantine/core";
-import { IconTrophy } from "@tabler/icons-react";
+import { Text, Group, Stack, Tooltip, Badge, HoverCard, ActionIcon, Box } from "@mantine/core";
+import { IconTrophy, IconPencil, IconInfoCircle } from "@tabler/icons-react";
 import { MATRIX_LAYOUT, LEVELS } from "../../constants/skillLevels";
 import { getScoreColor } from "../../utils/skillCalculations";
 import { InfoTooltip } from "../shared/InfoTooltip";
@@ -20,6 +20,7 @@ interface MatrixSkillRowProps {
   onLevelChange: (employeeId: string, skillId: string, newLevel: number) => void;
   onTargetLevelChange: (employeeId: string, skillId: string, targetLevel: number | undefined) => void;
   showMaxValues: boolean;
+  onEditSkill: (skillId: string) => void;
 }
 
 export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = ({
@@ -34,6 +35,7 @@ export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = ({
   onLevelChange,
   onTargetLevelChange,
   showMaxValues,
+  onEditSkill,
 }) => {
   const { labelWidth } = MATRIX_LAYOUT;
   const isRowHovered = hoveredSkillId === skill.id;
@@ -69,13 +71,44 @@ export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = ({
           transition: "background-color 0.15s ease",
         }}
       >
-        <Text size="sm" fw={isRowHovered ? 700 : 400} truncate style={{ flex: 1 }}>
-          {skill.name}
-        </Text>
+        <HoverCard width={280} shadow="md" withArrow openDelay={200}>
+          <HoverCard.Target>
+            <Text
+              size="sm"
+              fw={isRowHovered ? 700 : 400}
+              truncate
+              style={{ flex: 1, cursor: "help" }}
+            >
+              {skill.name}
+            </Text>
+          </HoverCard.Target>
+          <HoverCard.Dropdown>
+            <Stack gap="xs">
+              <Group justify="space-between" align="start">
+                <Text fw={700} size="sm">{skill.name}</Text>
+                <ActionIcon
+                  variant="subtle"
+                  color="blue"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEditSkill(skill.id!);
+                  }}
+                >
+                  <IconPencil size={16} />
+                </ActionIcon>
+              </Group>
+              <Text size="xs" c="dimmed">
+                {skill.description || "Keine Beschreibung verfügbar."}
+              </Text>
+            </Stack>
+          </HoverCard.Dropdown>
+        </HoverCard>
+
         <Group gap={4} align="center">
           {/* Average Text (Kept as text for skill rows per design, or could be badge) */}
-          <Group gap={8}>
-            <InfoTooltip title={skill.name} description={skill.description} />
+          <Group gap={4} align="center">
+            {/* Info Icon Removed */}
             {!showMaxValues ? (
               // Average Display
               <Text style={{ fontSize: "10px" }} c={getScoreColor(skillAvg)}>

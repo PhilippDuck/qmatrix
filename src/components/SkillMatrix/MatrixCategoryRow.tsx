@@ -1,6 +1,6 @@
 import React from "react";
-import { Text, Group, ActionIcon, Badge, Stack, Tooltip } from "@mantine/core";
-import { IconPlus, IconMinus, IconTrophy } from "@tabler/icons-react";
+import { Text, Group, ActionIcon, Badge, Stack, Tooltip, HoverCard } from "@mantine/core";
+import { IconPlus, IconMinus, IconTrophy, IconPencil } from "@tabler/icons-react";
 import { MATRIX_LAYOUT } from "../../constants/skillLevels";
 import { getScoreColor } from "../../utils/skillCalculations";
 import { InfoTooltip } from "../shared/InfoTooltip";
@@ -27,6 +27,9 @@ interface MatrixCategoryRowProps {
   onLevelChange: (employeeId: string, skillId: string, newLevel: number) => void;
   onTargetLevelChange: (employeeId: string, skillId: string, targetLevel: number | undefined) => void;
   showMaxValues: boolean;
+  onEditSkill: (skillId: string) => void;
+  onEditCategory: (categoryId: string) => void;
+  onEditSubcategory: (subcategoryId: string) => void;
 }
 
 
@@ -48,6 +51,9 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = ({
   onLevelChange,
   onTargetLevelChange,
   showMaxValues,
+  onEditSkill,
+  onEditCategory,
+  onEditSubcategory,
 }) => {
   const { anonymizeName } = usePrivacy();
   const isCatCollapsed = collapsedStates[category.id!];
@@ -100,15 +106,39 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = ({
             >
               {isCatCollapsed ? <IconPlus size={14} /> : <IconMinus size={14} />}
             </ActionIcon>
-            <Text
-              fw={700}
-              size="xs"
-              style={{ cursor: "pointer" }}
-              onClick={() => onToggleCategory(category.id!)}
-            >
-              {category.name.toUpperCase()}
-            </Text>
-            <InfoTooltip title={category.name} description={category.description} />
+            <HoverCard width={280} shadow="md" withArrow openDelay={200}>
+              <HoverCard.Target>
+                <Text
+                  fw={700}
+                  size="xs"
+                  style={{ cursor: "help" }}
+                  onClick={() => onToggleCategory(category.id!)}
+                >
+                  {category.name.toUpperCase()}
+                </Text>
+              </HoverCard.Target>
+              <HoverCard.Dropdown>
+                <Stack gap="xs">
+                  <Group justify="space-between" align="start">
+                    <Text fw={700} size="sm">{category.name}</Text>
+                    <ActionIcon
+                      variant="subtle"
+                      color="blue"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEditCategory(category.id!);
+                      }}
+                    >
+                      <IconPencil size={16} />
+                    </ActionIcon>
+                  </Group>
+                  <Text size="xs" c="dimmed">
+                    {category.description || "Keine Beschreibung verfügbar."}
+                  </Text>
+                </Stack>
+              </HoverCard.Dropdown>
+            </HoverCard>
           </Group>
           <Group gap={4} align="center">
             {/* Toggle based on showMaxValues */}
@@ -186,6 +216,8 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = ({
               onLevelChange={onLevelChange}
               onTargetLevelChange={onTargetLevelChange}
               showMaxValues={showMaxValues}
+              onEditSkill={onEditSkill}
+              onEditSubcategory={onEditSubcategory}
             />
           );
         })}

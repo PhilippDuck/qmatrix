@@ -1,6 +1,6 @@
 import React from "react";
-import { Text, Group, ActionIcon, Badge, Stack, Tooltip } from "@mantine/core";
-import { IconPlus, IconMinus, IconTrophy } from "@tabler/icons-react";
+import { Text, Group, ActionIcon, Badge, Stack, Tooltip, HoverCard } from "@mantine/core";
+import { IconPlus, IconMinus, IconTrophy, IconPencil } from "@tabler/icons-react";
 import { MATRIX_LAYOUT } from "../../constants/skillLevels";
 import { getScoreColor } from "../../utils/skillCalculations";
 import { InfoTooltip } from "../shared/InfoTooltip";
@@ -26,6 +26,8 @@ interface MatrixSubcategoryRowProps {
   onLevelChange: (employeeId: string, skillId: string, newLevel: number) => void;
   onTargetLevelChange: (employeeId: string, skillId: string, targetLevel: number | undefined) => void;
   showMaxValues: boolean;
+  onEditSkill: (skillId: string) => void;
+  onEditSubcategory: (subcategoryId: string) => void;
 }
 export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
   subcategory,
@@ -43,6 +45,8 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
   onLevelChange,
   onTargetLevelChange,
   showMaxValues,
+  onEditSkill,
+  onEditSubcategory,
 }) => {
   const { anonymizeName } = usePrivacy();
   const { cellSize, labelWidth } = MATRIX_LAYOUT;
@@ -79,18 +83,39 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
             <ActionIcon size="xs" variant="transparent" onClick={onToggle}>
               {isCollapsed ? <IconPlus size={12} /> : <IconMinus size={12} />}
             </ActionIcon>
-            <Text
-              fw={500}
-              size="xs"
-              style={{ cursor: "pointer" }}
-              onClick={onToggle}
-            >
-              {subcategory.name}
-            </Text>
-            <InfoTooltip
-              title={subcategory.name}
-              description={subcategory.description}
-            />
+            <HoverCard width={280} shadow="md" withArrow openDelay={200}>
+              <HoverCard.Target>
+                <Text
+                  fw={500}
+                  size="xs"
+                  style={{ cursor: "help" }}
+                  onClick={onToggle}
+                >
+                  {subcategory.name}
+                </Text>
+              </HoverCard.Target>
+              <HoverCard.Dropdown>
+                <Stack gap="xs">
+                  <Group justify="space-between" align="start">
+                    <Text fw={700} size="sm">{subcategory.name}</Text>
+                    <ActionIcon
+                      variant="subtle"
+                      color="blue"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEditSubcategory(subcategory.id!);
+                      }}
+                    >
+                      <IconPencil size={16} />
+                    </ActionIcon>
+                  </Group>
+                  <Text size="xs" c="dimmed">
+                    {subcategory.description || "Keine Beschreibung verfügbar."}
+                  </Text>
+                </Stack>
+              </HoverCard.Dropdown>
+            </HoverCard>
           </Group>
           <Group gap={4} align="center">
             {!showMaxValues ? (
@@ -161,6 +186,7 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
             onLevelChange={onLevelChange}
             onTargetLevelChange={onTargetLevelChange}
             showMaxValues={showMaxValues}
+            onEditSkill={onEditSkill}
           />
         ))}
     </div>
