@@ -19,10 +19,25 @@ import {
   MergeReport,
   MergeDiff,
   MergeItemDiff,
+  QualificationPlan,
+  QualificationMeasure,
 } from "../services/indexeddb";
 
 // Re-export types for convenience
-export type { Employee, Category, SubCategory, Skill, Assessment, AssessmentLogEntry, Department, EmployeeRole, ExportData, MergeReport, MergeDiff, MergeItemDiff };
+export type { Employee, Category, SubCategory, Skill, Assessment, AssessmentLogEntry, Department, EmployeeRole, ExportData, MergeReport, MergeDiff, MergeItemDiff, QualificationPlan, QualificationMeasure };
+
+// Helper type for skill gap analysis
+export interface SkillGap {
+  skillId: string;
+  skillName: string;
+  categoryId: string;
+  categoryName: string;
+  subCategoryId: string;
+  subCategoryName: string;
+  currentLevel: number;
+  targetLevel: number;
+  gap: number;
+}
 
 interface DataContextType {
   employees: Employee[];
@@ -32,6 +47,8 @@ interface DataContextType {
   assessments: Assessment[];
   departments: Department[];
   roles: EmployeeRole[];
+  qualificationPlans: QualificationPlan[];
+  qualificationMeasures: QualificationMeasure[];
   projectTitle: string;
   dataHash: string;
   loading: boolean;
@@ -99,6 +116,22 @@ interface DataContextType {
   // Settings
   updateProjectTitle: (title: string) => Promise<void>;
 
+  // Qualification Plan methods
+  addQualificationPlan: (plan: Omit<QualificationPlan, "id" | "createdAt" | "updatedAt">) => Promise<string>;
+  updateQualificationPlan: (id: string, plan: Partial<Omit<QualificationPlan, "id" | "createdAt">>) => Promise<void>;
+  deleteQualificationPlan: (id: string) => Promise<void>;
+  getQualificationPlansForEmployee: (employeeId: string) => QualificationPlan[];
+
+  // Qualification Measure methods
+  addQualificationMeasure: (measure: Omit<QualificationMeasure, "id" | "updatedAt">) => Promise<string>;
+  updateQualificationMeasure: (id: string, measure: Partial<Omit<QualificationMeasure, "id">>) => Promise<void>;
+  deleteQualificationMeasure: (id: string) => Promise<void>;
+  getQualificationMeasuresForPlan: (planId: string) => QualificationMeasure[];
+
+  // Helper methods
+  getSkillGapsForEmployee: (employeeId: string, targetRoleId: string) => SkillGap[];
+  getPotentialMentors: (skillId: string, excludeEmployeeId?: string) => Employee[];
+
   // Data management
   exportData: () => Promise<ExportData>;
   importData: (jsonData: string) => Promise<void>;
@@ -120,6 +153,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [roles, setRoles] = useState<EmployeeRole[]>([]);
+  const [qualificationPlans, setQualificationPlans] = useState<QualificationPlan[]>([]);
+  const [qualificationMeasures, setQualificationMeasures] = useState<QualificationMeasure[]>([]);
   const [projectTitle, setProjectTitle] = useState<string>("");
   const [dataHash, setDataHash] = useState<string>("");
   const [loading, setLoading] = useState(true);
@@ -144,7 +179,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
 
   const refreshAllData = async () => {
     try {
-      const [emps, cats, subcats, sks, asms, depts, rls, settings, hash] = await Promise.all([
+      const [emps, cats, subcats, sks, asms, depts, rls, qPlans, qMeasures, settings, hash] = await Promise.all([
         db.getEmployees(),
         db.getCategories(),
         db.getSubCategories(),
@@ -152,6 +187,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
         db.execute("assessments", "getAll"),
         db.getDepartments(),
         db.getRoles(),
+        db.getQualificationPlans(),
+        db.getQualificationMeasures(),
         db.getSettings(),
         db.getDataHash()
       ]);
@@ -163,6 +200,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
       setAssessments(asms || []);
       setDepartments(depts || []);
       setRoles(rls || []);
+      setQualificationPlans(qPlans || []);
+      setQualificationMeasures(qMeasures || []);
       setProjectTitle(settings?.projectTitle || "");
       setDataHash(hash || "");
     } catch (err) {
@@ -451,6 +490,128 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
     }
   };
 
+  // Qualification Plan methods
+  const addQualificationPlan = async (plan: Omit<QualificationPlan, "id" | "createdAt" | "updatedAt">) => {
+    try {
+      const id = await db.addQualificationPlan(plan);
+      await refreshAllData();
+      return id;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to add qualification plan");
+      throw err;
+    }
+  };
+
+  const updateQualificationPlan = async (id: string, plan: Partial<Omit<QualificationPlan, "id" | "createdAt">>) => {
+    try {
+      await db.updateQualificationPlan(id, plan);
+      await refreshAllData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update qualification plan");
+      throw err;
+    }
+  };
+
+  const deleteQualificationPlan = async (id: string) => {
+    try {
+      await db.deleteQualificationPlan(id);
+      await refreshAllData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete qualification plan");
+      throw err;
+    }
+  };
+
+  const getQualificationPlansForEmployee = (employeeId: string): QualificationPlan[] => {
+    return qualificationPlans.filter((p) => p.employeeId === employeeId);
+  };
+
+  // Qualification Measure methods
+  const addQualificationMeasure = async (measure: Omit<QualificationMeasure, "id" | "updatedAt">) => {
+    try {
+      const id = await db.addQualificationMeasure(measure);
+      await refreshAllData();
+      return id;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to add qualification measure");
+      throw err;
+    }
+  };
+
+  const updateQualificationMeasure = async (id: string, measure: Partial<Omit<QualificationMeasure, "id">>) => {
+    try {
+      await db.updateQualificationMeasure(id, measure);
+      await refreshAllData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update qualification measure");
+      throw err;
+    }
+  };
+
+  const deleteQualificationMeasure = async (id: string) => {
+    try {
+      await db.deleteQualificationMeasure(id);
+      await refreshAllData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete qualification measure");
+      throw err;
+    }
+  };
+
+  const getQualificationMeasuresForPlan = (planId: string): QualificationMeasure[] => {
+    return qualificationMeasures.filter((m) => m.planId === planId);
+  };
+
+  // Helper: Get skill gaps for an employee compared to a target role
+  const getSkillGapsForEmployee = (employeeId: string, targetRoleId: string): SkillGap[] => {
+    const role = roles.find((r) => r.id === targetRoleId);
+    if (!role || !role.requiredSkills) return [];
+
+    const employeeAssessments = assessments.filter((a) => a.employeeId === employeeId);
+    const assessmentMap = new Map(employeeAssessments.map((a) => [a.skillId, a.level]));
+
+    const gaps: SkillGap[] = [];
+
+    for (const req of role.requiredSkills) {
+      const rawLevel = assessmentMap.get(req.skillId) ?? 0;
+      // Treat -1 (not relevant) as 0 for gap calculation
+      const currentLevel = rawLevel < 0 ? 0 : rawLevel;
+      const targetLevel = req.level;
+      const gap = targetLevel - currentLevel;
+
+      if (gap > 0) {
+        const skill = skills.find((s) => s.id === req.skillId);
+        if (skill) {
+          const subCategory = subcategories.find((sc) => sc.id === skill.subCategoryId);
+          const category = subCategory ? categories.find((c) => c.id === subCategory.categoryId) : undefined;
+
+          gaps.push({
+            skillId: req.skillId,
+            skillName: skill.name,
+            categoryId: category?.id || "",
+            categoryName: category?.name || "",
+            subCategoryId: subCategory?.id || "",
+            subCategoryName: subCategory?.name || "",
+            currentLevel,
+            targetLevel,
+            gap,
+          });
+        }
+      }
+    }
+
+    return gaps.sort((a, b) => b.gap - a.gap); // Sort by largest gap first
+  };
+
+  // Helper: Get potential mentors for a skill (employees with 100% level)
+  const getPotentialMentors = (skillId: string, excludeEmployeeId?: string): Employee[] => {
+    const qualifiedAssessments = assessments.filter(
+      (a) => a.skillId === skillId && a.level === 100 && a.employeeId !== excludeEmployeeId
+    );
+    const qualifiedEmployeeIds = new Set(qualifiedAssessments.map((a) => a.employeeId));
+    return employees.filter((e) => qualifiedEmployeeIds.has(e.id!));
+  };
+
   // Data management
   const exportData = async () => {
     try {
@@ -539,6 +700,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
         assessments,
         departments,
         roles,
+        qualificationPlans,
+        qualificationMeasures,
         dataHash,
         loading,
         error,
@@ -571,6 +734,16 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
         updateSkillsForRole,
         projectTitle,
         updateProjectTitle,
+        addQualificationPlan,
+        updateQualificationPlan,
+        deleteQualificationPlan,
+        getQualificationPlansForEmployee,
+        addQualificationMeasure,
+        updateQualificationMeasure,
+        deleteQualificationMeasure,
+        getQualificationMeasuresForPlan,
+        getSkillGapsForEmployee,
+        getPotentialMentors,
         exportData,
         importData,
         mergeData,

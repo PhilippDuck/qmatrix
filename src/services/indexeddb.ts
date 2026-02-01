@@ -1,6 +1,6 @@
 // IndexedDB Service für Qualifizierungsmatrix
 const DB_NAME = "QualificationMatrixDB";
-const DB_VERSION = 9;
+const DB_VERSION = 10;
 
 export interface Employee {
   id?: string;
@@ -75,6 +75,42 @@ export interface AppSettings {
   updatedAt: number;
 }
 
+export interface QualificationPlan {
+  id?: string;
+  employeeId: string;
+  targetRoleId: string;      // Zielrolle (Standard: aktuelle Rolle des MA)
+  status: 'draft' | 'active' | 'completed' | 'archived';
+  createdAt: number;
+  updatedAt: number;
+  notes?: string;
+}
+
+export interface QualificationMeasure {
+  id?: string;
+  planId: string;            // Referenz zum QualificationPlan
+  skillId: string;           // Welcher Skill wird trainiert
+  currentLevel: number;      // Ist-Level bei Erstellung
+  targetLevel: number;       // Soll-Level (aus Rolle)
+  type: 'internal' | 'external';
+
+  // Für interne Schulung
+  mentorId?: string;         // MA mit 100% im Skill
+
+  // Für externe Schulung
+  externalProvider?: string;
+  externalCourse?: string;
+  estimatedCost?: number;
+
+  // Timeline
+  startDate?: number;
+  targetDate?: number;
+  completedDate?: number;
+
+  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
+  notes?: string;
+  updatedAt?: number;
+}
+
 export interface ExportData {
   employees: Employee[];
   categories: Category[];
@@ -85,6 +121,8 @@ export interface ExportData {
   roles: EmployeeRole[];
   settings: AppSettings;
   history: AssessmentLogEntry[];
+  qualificationPlans?: QualificationPlan[];
+  qualificationMeasures?: QualificationMeasure[];
 }
 
 export interface MergeReport {
@@ -238,6 +276,21 @@ class IndexedDBService {
         // Settings Store (v8)
         if (!db.objectStoreNames.contains("settings")) {
           db.createObjectStore("settings", { keyPath: "id" });
+        }
+
+        // Qualification Plans Store (v10)
+        if (!db.objectStoreNames.contains("qualificationPlans")) {
+          const planStore = db.createObjectStore("qualificationPlans", { keyPath: "id" });
+          planStore.createIndex("employeeId", "employeeId", { unique: false });
+          planStore.createIndex("status", "status", { unique: false });
+        }
+
+        // Qualification Measures Store (v10)
+        if (!db.objectStoreNames.contains("qualificationMeasures")) {
+          const measureStore = db.createObjectStore("qualificationMeasures", { keyPath: "id" });
+          measureStore.createIndex("planId", "planId", { unique: false });
+          measureStore.createIndex("skillId", "skillId", { unique: false });
+          measureStore.createIndex("status", "status", { unique: false });
         }
       };
     });
@@ -561,6 +614,75 @@ class IndexedDBService {
     await this.execute("settings", "put", data);
   }
 
+  // Qualification Plans
+  async addQualificationPlan(plan: Omit<QualificationPlan, "id" | "createdAt" | "updatedAt">): Promise<string> {
+    const id = crypto.randomUUID();
+    const now = Date.now();
+    const data = { ...plan, id, createdAt: now, updatedAt: now };
+    await this.execute("qualificationPlans", "add", data);
+    return id;
+  }
+
+  async getQualificationPlans(): Promise<QualificationPlan[]> {
+    return this.execute("qualificationPlans", "getAll");
+  }
+
+  async getQualificationPlansForEmployee(employeeId: string): Promise<QualificationPlan[]> {
+    return this.executeIndex("qualificationPlans", "employeeId", "getAll", employeeId);
+  }
+
+  async getQualificationPlan(id: string): Promise<QualificationPlan | undefined> {
+    return this.execute("qualificationPlans", "get", id);
+  }
+
+  async updateQualificationPlan(id: string, plan: Partial<Omit<QualificationPlan, "id" | "createdAt">>): Promise<void> {
+    const existing = await this.getQualificationPlan(id);
+    if (!existing) throw new Error("Plan not found");
+    const data = { ...existing, ...plan, id, updatedAt: Date.now() };
+    await this.execute("qualificationPlans", "put", data);
+  }
+
+  async deleteQualificationPlan(id: string): Promise<void> {
+    // First delete all measures for this plan
+    const measures = await this.getQualificationMeasuresForPlan(id);
+    for (const measure of measures) {
+      await this.execute("qualificationMeasures", "delete", measure.id);
+    }
+    // Then delete the plan
+    await this.execute("qualificationPlans", "delete", id);
+  }
+
+  // Qualification Measures
+  async addQualificationMeasure(measure: Omit<QualificationMeasure, "id" | "updatedAt">): Promise<string> {
+    const id = crypto.randomUUID();
+    const data = { ...measure, id, updatedAt: Date.now() };
+    await this.execute("qualificationMeasures", "add", data);
+    return id;
+  }
+
+  async getQualificationMeasures(): Promise<QualificationMeasure[]> {
+    return this.execute("qualificationMeasures", "getAll");
+  }
+
+  async getQualificationMeasuresForPlan(planId: string): Promise<QualificationMeasure[]> {
+    return this.executeIndex("qualificationMeasures", "planId", "getAll", planId);
+  }
+
+  async getQualificationMeasure(id: string): Promise<QualificationMeasure | undefined> {
+    return this.execute("qualificationMeasures", "get", id);
+  }
+
+  async updateQualificationMeasure(id: string, measure: Partial<Omit<QualificationMeasure, "id">>): Promise<void> {
+    const existing = await this.getQualificationMeasure(id);
+    if (!existing) throw new Error("Measure not found");
+    const data = { ...existing, ...measure, id, updatedAt: Date.now() };
+    await this.execute("qualificationMeasures", "put", data);
+  }
+
+  async deleteQualificationMeasure(id: string): Promise<void> {
+    await this.execute("qualificationMeasures", "delete", id);
+  }
+
   async setTargetLevel(
     employeeId: string,
     skillId: string,
@@ -687,13 +809,15 @@ class IndexedDBService {
       departments: await this.getDepartments(),
       roles: await this.getRoles(),
       settings: await this.getSettings() || { id: 'default', projectTitle: '', updatedAt: Date.now() },
-      history: await this.execute("assessment_logs", "getAll")
+      history: await this.execute("assessment_logs", "getAll"),
+      qualificationPlans: await this.getQualificationPlans(),
+      qualificationMeasures: await this.getQualificationMeasures()
     };
   }
 
   async clearAllData(): Promise<void> {
     if (!this.db) return;
-    const stores = ["employees", "categories", "subcategories", "skills", "assessments", "departments", "roles", "assessment_logs", "settings"];
+    const stores = ["employees", "categories", "subcategories", "skills", "assessments", "departments", "roles", "assessment_logs", "settings", "qualificationPlans", "qualificationMeasures"];
     const transaction = this.db.transaction(stores, "readwrite");
     for (const storeName of stores) {
       const store = transaction.objectStore(storeName);
@@ -710,7 +834,7 @@ class IndexedDBService {
     // Clear all stores
     if (!this.db) return;
 
-    const stores = ["employees", "categories", "subcategories", "skills", "assessments", "departments", "roles", "assessment_logs", "settings"];
+    const stores = ["employees", "categories", "subcategories", "skills", "assessments", "departments", "roles", "assessment_logs", "settings", "qualificationPlans", "qualificationMeasures"];
     const transaction = this.db.transaction(stores, "readwrite");
 
     for (const storeName of stores) {
@@ -732,7 +856,9 @@ class IndexedDBService {
       departments: data.departments,
       roles: data.roles,
       settings: data.settings ? [data.settings] : [],
-      assessment_logs: data.history
+      assessment_logs: data.history,
+      qualificationPlans: data.qualificationPlans || [],
+      qualificationMeasures: data.qualificationMeasures || []
     };
 
     for (const [storeName, items] of Object.entries(mappings)) {
@@ -785,9 +911,10 @@ class IndexedDBService {
     await mergeStore("skills", data.skills);
     await mergeStore("employees", data.employees);
     await mergeStore("assessments", data.assessments);
-    await mergeStore("assessments", data.assessments);
     await mergeStore("assessment_logs", data.history);
     if (data.settings) await mergeStore("settings", [data.settings]);
+    if (data.qualificationPlans) await mergeStore("qualificationPlans", data.qualificationPlans);
+    if (data.qualificationMeasures) await mergeStore("qualificationMeasures", data.qualificationMeasures);
 
     return report;
   }
@@ -805,7 +932,9 @@ class IndexedDBService {
       { name: "employees", property: "employees", label: "Mitarbeiter" },
       { name: "assessments", property: "assessments", label: "Bewertung" },
       { name: "assessment_logs", property: "history", label: "Historie" },
-      { name: "settings", property: "settings", label: "Einstellungen" }
+      { name: "settings", property: "settings", label: "Einstellungen" },
+      { name: "qualificationPlans", property: "qualificationPlans", label: "Qualifizierungsplan" },
+      { name: "qualificationMeasures", property: "qualificationMeasures", label: "Qualifizierungsmaßnahme" }
     ];
 
     for (const store of stores) {
@@ -828,6 +957,12 @@ class IndexedDBService {
           label = `Log ${new Date(item.timestamp).toLocaleString("de-DE")}`;
         } else if (store.name === "settings") {
           label = `Projekttitel: "${(item as any).projectTitle}"`;
+        } else if (store.name === "qualificationPlans") {
+          const plan = item as QualificationPlan;
+          label = `Plan ${plan.employeeId?.substring(0, 8)}... (${plan.status})`;
+        } else if (store.name === "qualificationMeasures") {
+          const measure = item as QualificationMeasure;
+          label = `Maßnahme ${measure.skillId?.substring(0, 8)}... (${measure.type})`;
         }
 
         const itemUpdatedAt = item.updatedAt || item.timestamp;

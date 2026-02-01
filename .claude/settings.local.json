@@ -6,7 +6,9 @@
       "Bash(npm run build:*)",
       "Bash(find:*)",
       "Bash(timeout 10 npm run dev:*)",
-      "Bash(timeout 8 npm run dev:*)"
+      "Bash(timeout 8 npm run dev:*)",
+      "Bash(npm install:*)",
+      "Bash(npx vite:*)"
     ]
   }
 }

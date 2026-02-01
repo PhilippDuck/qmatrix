@@ -37,6 +37,7 @@ import {
   IconEyeOff,
   IconDeviceFloppy,
   IconEdit,
+  IconCertificate,
 } from "@tabler/icons-react";
 
 import { DataProvider, useData } from "./context/DataContext";
@@ -44,8 +45,10 @@ import { UnifiedDataView } from "./components/UnifiedDataView";
 import { SkillMatrix } from "./components/SkillMatrix";
 import { DataManagement } from "./components/DataManagement";
 import { Dashboard } from "./components/Dashboard/Dashboard";
+import { QualificationPlan } from "./components/QualificationPlan";
 import { PrivacyProvider, usePrivacy } from "./context/PrivacyContext";
 import "@mantine/core/styles.css";
+import "@mantine/dates/styles.css";
 
 const theme = createTheme({
   primaryColor: "blue",
@@ -148,6 +151,7 @@ function AppContent() {
   const navItems = [
     { value: "dashboard", label: "Dashboard", icon: IconDashboard },
     { value: "matrix", label: "Skill-Matrix", icon: IconLayoutGrid },
+    { value: "qualification", label: "Qualifizierung", icon: IconCertificate },
     { value: "data", label: "Stammdaten", icon: IconDatabase },
     { value: "system", label: "System", icon: IconSettings },
   ];
@@ -366,6 +370,7 @@ function AppContent() {
         >
           {activeTab === "dashboard" && <Dashboard />}
           {activeTab === "matrix" && <SkillMatrix />}
+          {activeTab === "qualification" && <QualificationPlan />}
           {activeTab === "data" && <UnifiedDataView />}
           {activeTab === "system" && <DataManagement />}
         </div>

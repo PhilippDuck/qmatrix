@@ -18,10 +18,12 @@
   },
   "dependencies": {
     "@mantine/core": "^8.3.13",
+    "@mantine/dates": "^8.3.13",
     "@mantine/dropzone": "^8.3.13",
     "@mantine/form": "^8.3.13",
     "@mantine/hooks": "^8.3.13",
     "@tabler/icons-react": "^3.36.1",
+    "dayjs": "^1.11.19",
     "jspdf": "^4.0.0",
     "jspdf-autotable": "^5.0.7",
     "lucide-react": "^0.563.0",
