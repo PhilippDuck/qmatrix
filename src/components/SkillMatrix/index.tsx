@@ -91,14 +91,20 @@ export const SkillMatrix: React.FC = () => {
       result = result.filter((e) => e.id === focusEmployeeId);
     }
 
-    // Department filter
+    // Department filter - filterDepartments contains IDs, e.department contains name
     if (filterDepartments.length > 0) {
-      result = result.filter((e) => filterDepartments.includes(e.department || ''));
+      const selectedDeptNames = departments
+        .filter(d => filterDepartments.includes(d.id!))
+        .map(d => d.name);
+      result = result.filter((e) => selectedDeptNames.includes(e.department || ''));
     }
 
-    // Role filter
+    // Role filter - filterRoles contains IDs, e.role contains name
     if (filterRoles.length > 0) {
-      result = result.filter((e) => filterRoles.includes(e.role || ''));
+      const selectedRoleNames = roles
+        .filter(r => filterRoles.includes(r.id!))
+        .map(r => r.name);
+      result = result.filter((e) => selectedRoleNames.includes(e.role || ''));
     }
 
     // Sorting by average score
@@ -122,15 +128,49 @@ export const SkillMatrix: React.FC = () => {
     }
 
     return result;
-  }, [employees, focusEmployeeId, filterDepartments, filterRoles, employeeSort, skills]);
+  }, [employees, focusEmployeeId, filterDepartments, filterRoles, employeeSort, skills, departments, roles]);
 
   const displayedCategories = useMemo(() => {
-    // ... (existing logic) ...
+    let result = categories;
+
+    // Filter by selected categories
     if (filterCategories.length > 0) {
-      return categories.filter((c) => filterCategories.includes(c.id!));
+      result = result.filter((c) => filterCategories.includes(c.id!));
     }
-    return categories;
-  }, [categories, filterCategories]);
+
+    // Sorting by average score
+    if (skillSort) {
+      result = [...result].sort((a, b) => {
+        // Get all skill IDs for each category
+        const getSkillIds = (catId: string) => {
+          const subs = subcategories.filter(s => s.categoryId === catId);
+          const subIds = subs.map(s => s.id);
+          return skills.filter(s => subIds.includes(s.subCategoryId)).map(s => s.id!);
+        };
+
+        // Calculate average for category (inline)
+        const calcCatAvg = (catId: string) => {
+          const catSkillIds = getSkillIds(catId);
+          if (catSkillIds.length === 0) return 0;
+          let total = 0, count = 0;
+          catSkillIds.forEach(sId => {
+            displayedEmployees.forEach(emp => {
+              const assessment = getAssessment(emp.id!, sId);
+              const val = assessment?.level ?? 0;
+              if (val !== -1) { total += val; count++; }
+            });
+          });
+          return count > 0 ? total / count : 0;
+        };
+
+        const avgA = calcCatAvg(a.id!);
+        const avgB = calcCatAvg(b.id!);
+        return skillSort === 'asc' ? avgA - avgB : avgB - avgA;
+      });
+    }
+
+    return result;
+  }, [categories, filterCategories, skillSort, subcategories, skills, displayedEmployees, getAssessment]);
   // ... (unchanged toggle functions) ...
 
   const toggleItem = (id: string) =>
@@ -299,6 +339,24 @@ export const SkillMatrix: React.FC = () => {
                     size="lg"
                   >
                     {employeeSort === 'desc' ? <IconSortDescending size={20} /> : <IconSortAscending size={20} />}
+                  </ActionIcon>
+                </Tooltip>
+                <Tooltip label={
+                  skillSort === null ? "Skills sortieren (aufsteigend)" :
+                    skillSort === 'asc' ? "Skills sortieren (absteigend)" :
+                      "Skills-Sortierung aufheben"
+                }>
+                  <ActionIcon
+                    variant="light"
+                    color={skillSort ? "grape" : "gray"}
+                    onClick={() => {
+                      if (skillSort === null) setSkillSort('asc');
+                      else if (skillSort === 'asc') setSkillSort('desc');
+                      else setSkillSort(null);
+                    }}
+                    size="lg"
+                  >
+                    {skillSort === 'desc' ? <IconSortDescending size={20} /> : <IconSortAscending size={20} />}
                   </ActionIcon>
                 </Tooltip>
                 <Popover width={300} position="bottom" withArrow shadow="md">

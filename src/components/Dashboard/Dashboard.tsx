@@ -46,8 +46,11 @@ import {
 import { useData, AssessmentLogEntry } from "../../context/DataContext";
 import { getScoreColor } from "../../utils/skillCalculations";
 import { getIconByName } from "../shared/RoleIconPicker";
-
-type ComparisonPeriod = "quarter" | "year";
+import {
+    calculateHistoricalXP,
+    getPeriodBoundaries,
+    ComparisonPeriod
+} from "../../utils/dashboardCalculations";
 
 interface StatCardProps {
     title: string;
@@ -126,59 +129,7 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, subtitle, icon, color
             </Group>
         </Card>
     );
-};
-
-// Helper function to calculate XP at a specific point in time
-const calculateHistoricalXP = (
-    currentAssessments: { employeeId: string; skillId: string; level: number }[],
-    historyLogs: AssessmentLogEntry[],
-    beforeTimestamp: number
-): number => {
-    const levelMap = new Map<string, number>();
-    currentAssessments.forEach(a => {
-        levelMap.set(`${a.employeeId}-${a.skillId}`, a.level);
-    });
-
-    const recentLogs = historyLogs
-        .filter(log => log.timestamp > beforeTimestamp)
-        .sort((a, b) => b.timestamp - a.timestamp);
-
-    recentLogs.forEach(log => {
-        const key = `${log.employeeId}-${log.skillId}`;
-        levelMap.set(key, log.previousLevel);
-    });
-
-    return Array.from(levelMap.values()).reduce((sum, level) => sum + level, 0);
-};
-
-// Helper to get period boundaries
-const getPeriodBoundaries = (period: ComparisonPeriod): { currentStart: number; previousStart: number; previousEnd: number } => {
-    const now = new Date();
-
-    if (period === "quarter") {
-        const currentQuarter = Math.floor(now.getMonth() / 3);
-        const currentYear = now.getFullYear();
-        const currentStart = new Date(currentYear, currentQuarter * 3, 1).getTime();
-
-        let prevQuarter = currentQuarter - 1;
-        let prevYear = currentYear;
-        if (prevQuarter < 0) {
-            prevQuarter = 3;
-            prevYear -= 1;
-        }
-        const previousStart = new Date(prevYear, prevQuarter * 3, 1).getTime();
-        const previousEnd = currentStart;
-
-        return { currentStart, previousStart, previousEnd };
-    } else {
-        const currentYear = now.getFullYear();
-        const currentStart = new Date(currentYear, 0, 1).getTime();
-        const previousStart = new Date(currentYear - 1, 0, 1).getTime();
-        const previousEnd = currentStart;
-
-        return { currentStart, previousStart, previousEnd };
-    }
-};
+}
 
 export const Dashboard: React.FC = () => {
     const {
