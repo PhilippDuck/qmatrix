@@ -1,6 +1,6 @@
 import React from "react";
-import { Text, Group, ActionIcon, Badge } from "@mantine/core";
-import { IconPlus, IconMinus } from "@tabler/icons-react";
+import { Text, Group, ActionIcon, Badge, Stack, Tooltip } from "@mantine/core";
+import { IconPlus, IconMinus, IconTrophy } from "@tabler/icons-react";
 import { MATRIX_LAYOUT } from "../../constants/skillLevels";
 import { getScoreColor } from "../../utils/skillCalculations";
 import { InfoTooltip } from "../shared/InfoTooltip";
@@ -26,6 +26,7 @@ interface MatrixCategoryRowProps {
   onBulkSetLevel: (employeeId: string, skillIds: string[], level: number) => void;
   onLevelChange: (employeeId: string, skillId: string, newLevel: number) => void;
   onTargetLevelChange: (employeeId: string, skillId: string, targetLevel: number | undefined) => void;
+  showMaxValues: boolean;
 }
 
 
@@ -46,10 +47,11 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = ({
   onBulkSetLevel,
   onLevelChange,
   onTargetLevelChange,
+  showMaxValues,
 }) => {
   const { anonymizeName } = usePrivacy();
-  const { cellSize, labelWidth } = MATRIX_LAYOUT;
   const isCatCollapsed = collapsedStates[category.id!];
+  const { cellSize, labelWidth } = MATRIX_LAYOUT;
 
   // Get subcategories for this category
   const categorySubcategories = subcategories.filter(
@@ -63,6 +65,9 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = ({
     .map((s) => s.id!);
 
   const catAvg = calculateAverage(catSkillIds);
+
+  // Calculate Max Percentage across all employees (Highest Average)
+  const maxAvg = Math.max(...employees.map(e => calculateAverage(catSkillIds, e.id) || 0), 0);
 
   return (
     <div>
@@ -105,42 +110,60 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = ({
             </Text>
             <InfoTooltip title={category.name} description={category.description} />
           </Group>
-          <Badge size="xs" variant="filled" color={getScoreColor(catAvg)}>
-            {catAvg === null ? "N/A" : `${catAvg}%`}
-          </Badge>
-        </div>
-        {employees.map((emp) => {
-          const avg = calculateAverage(catSkillIds, emp.id);
-          return (
-            <BulkLevelMenu
-              key={emp.id}
-              label={`Alle "${category.name}" setzen für ${anonymizeName(emp.name, emp.id)}`}
-              onSelectLevel={(level) => onBulkSetLevel(emp.id!, catSkillIds, level)}
-            >
-              <div
-                onMouseEnter={() => onEmployeeHover(emp.id!)}
-                onMouseLeave={() => onEmployeeHover(null)}
-                style={{
-                  width: cellSize,
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  backgroundColor:
-                    hoveredEmployeeId === emp.id
-                      ? "var(--mantine-color-default-hover)"
-                      : "transparent",
-                  transition: "background-color 0.15s ease",
-                }}
+          <Group gap={4} align="center">
+            {/* Toggle based on showMaxValues */}
+            {!showMaxValues ? (
+              // Average Bubble
+              <Tooltip label="Durchschnittliche Abdeckung" withArrow>
+                <Badge size="xs" variant="filled" color={getScoreColor(catAvg)}>
+                  {catAvg === null ? "N/A" : `${catAvg}%`}
+                </Badge>
+              </Tooltip>
+            ) : (
+              // Max Percentage Bubble
+              <Tooltip label={`Max. Abdeckung: ${maxAvg}%`} withArrow>
+                <Badge size="xs" variant="filled" color={getScoreColor(maxAvg)} style={{ border: '1px solid currentColor' }}>
+                  {maxAvg}%
+                </Badge>
+              </Tooltip>
+            )}
+          </Group>
+        </div >
+        {
+          employees.map((emp) => {
+            const avg = calculateAverage(catSkillIds, emp.id);
+
+            return (
+              <BulkLevelMenu
+                key={emp.id}
+                label={`Alle "${category.name}" setzen für ${anonymizeName(emp.name, emp.id)}`}
+                onSelectLevel={(level) => onBulkSetLevel(emp.id!, catSkillIds, level)}
               >
-                <Text fw={700} size="xs" c={getScoreColor(avg)}>
-                  {avg === null ? "N/A" : `${avg}%`}
-                </Text>
-              </div>
-            </BulkLevelMenu>
-          );
-        })}
-      </div>
+                <div
+                  onMouseEnter={() => onEmployeeHover(emp.id!)}
+                  onMouseLeave={() => onEmployeeHover(null)}
+                  style={{
+                    width: cellSize,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor:
+                      hoveredEmployeeId === emp.id
+                        ? "var(--mantine-color-default-hover)"
+                        : "transparent",
+                    transition: "background-color 0.15s ease",
+                  }}
+                >
+                  <Text fw={700} size="xs" c={getScoreColor(avg)}>
+                    {avg === null ? "N/A" : `${avg}%`}
+                  </Text>
+                </div>
+              </BulkLevelMenu>
+            );
+          })
+        }
+      </div >
 
       {!isCatCollapsed &&
         categorySubcategories.map((sub) => {
@@ -162,9 +185,10 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = ({
               onBulkSetLevel={onBulkSetLevel}
               onLevelChange={onLevelChange}
               onTargetLevelChange={onTargetLevelChange}
+              showMaxValues={showMaxValues}
             />
           );
         })}
-    </div>
+    </div >
   );
 };

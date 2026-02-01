@@ -17,6 +17,7 @@ interface MatrixHeaderProps {
   skills: Skill[];
   getAssessment: (empId: string, skillId: string) => Assessment | undefined;
   onEditEmployee: (employeeId: string) => void;
+  showMaxValues: boolean;
 }
 
 const EmployeeInfoCard: React.FC<{
@@ -309,6 +310,7 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
   skills,
   getAssessment,
   onEditEmployee,
+  showMaxValues,
 }) => {
   const { anonymizeName } = usePrivacy();
   const { cellSize, labelWidth, headerHeight } = MATRIX_LAYOUT;
@@ -379,14 +381,31 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
                     transition: "background-color 0.15s ease",
                   }}
                 >
-                  <Badge
-                    size="xs"
-                    variant="outline"
-                    color={getScoreColor(avg)}
-                    mb="xs"
-                  >
-                    {avg === null ? "N/A" : `${avg}%`}
-                  </Badge>
+                  {/* Toggle between Total XP and Average based on showMaxValues */}
+                  {showMaxValues ? (
+                    (() => {
+                      const totalXP = skills.reduce((sum, skill) => {
+                        const assessment = getAssessment(emp.id!, skill.id!);
+                        return sum + (assessment?.level || 0);
+                      }, 0);
+                      return (
+                        <Tooltip label={`Gesamt-XP: ${totalXP}`} withArrow>
+                          <Badge size="xs" variant="light" color="blue" mb="xs" mt={8} style={{ cursor: 'help' }}>
+                            {totalXP} XP
+                          </Badge>
+                        </Tooltip>
+                      );
+                    })()
+                  ) : (
+                    <Badge
+                      size="xs"
+                      variant="outline"
+                      color={getScoreColor(avg)}
+                      mb="xs"
+                    >
+                      {avg === null ? "N/A" : `${avg}%`}
+                    </Badge>
+                  )}
                   <Text
                     size="xs"
                     fw={isColumnHovered || isFocused ? 700 : 400}

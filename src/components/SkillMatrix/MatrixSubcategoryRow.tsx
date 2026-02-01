@@ -1,6 +1,6 @@
 import React from "react";
-import { Text, Group, ActionIcon, Badge } from "@mantine/core";
-import { IconPlus, IconMinus } from "@tabler/icons-react";
+import { Text, Group, ActionIcon, Badge, Stack, Tooltip } from "@mantine/core";
+import { IconPlus, IconMinus, IconTrophy } from "@tabler/icons-react";
 import { MATRIX_LAYOUT } from "../../constants/skillLevels";
 import { getScoreColor } from "../../utils/skillCalculations";
 import { InfoTooltip } from "../shared/InfoTooltip";
@@ -25,6 +25,7 @@ interface MatrixSubcategoryRowProps {
 
   onLevelChange: (employeeId: string, skillId: string, newLevel: number) => void;
   onTargetLevelChange: (employeeId: string, skillId: string, targetLevel: number | undefined) => void;
+  showMaxValues: boolean;
 }
 export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
   subcategory,
@@ -41,11 +42,15 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
   onBulkSetLevel,
   onLevelChange,
   onTargetLevelChange,
+  showMaxValues,
 }) => {
   const { anonymizeName } = usePrivacy();
   const { cellSize, labelWidth } = MATRIX_LAYOUT;
   const subSkillIds = skills.map((s) => s.id!);
   const subAvg = calculateAverage(subSkillIds);
+
+  // Calculate Max Percentage across all employees (Highest Average)
+  const maxAvg = Math.max(...employees.map(e => calculateAverage(subSkillIds, e.id) || 0), 0);
 
   return (
     <div>
@@ -87,12 +92,27 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
               description={subcategory.description}
             />
           </Group>
-          <Badge size="xs" variant="light" color={getScoreColor(subAvg)}>
-            {subAvg === null ? "N/A" : `${subAvg}%`}
-          </Badge>
+          <Group gap={4} align="center">
+            {!showMaxValues ? (
+              // Average Bubble
+              <Tooltip label="Durchschnittliche Abdeckung" withArrow>
+                <Badge size="xs" variant="light" color={getScoreColor(subAvg)}>
+                  {subAvg === null ? "N/A" : `${subAvg}%`}
+                </Badge>
+              </Tooltip>
+            ) : (
+              // Max Percentage Bubble
+              <Tooltip label={`Max. Abdeckung: ${maxAvg}%`} withArrow>
+                <Badge size="xs" variant="light" color={getScoreColor(maxAvg)} style={{ border: '1px solid currentColor' }}>
+                  {maxAvg}%
+                </Badge>
+              </Tooltip>
+            )}
+          </Group>
         </div>
         {employees.map((emp) => {
           const avg = calculateAverage(subSkillIds, emp.id);
+
           return (
             <BulkLevelMenu
               key={emp.id}
@@ -140,6 +160,7 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
             }
             onLevelChange={onLevelChange}
             onTargetLevelChange={onTargetLevelChange}
+            showMaxValues={showMaxValues}
           />
         ))}
     </div>

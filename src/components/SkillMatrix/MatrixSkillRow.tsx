@@ -1,6 +1,8 @@
+
 import React from "react";
-import { Text, Group } from "@mantine/core";
-import { MATRIX_LAYOUT } from "../../constants/skillLevels";
+import { Text, Group, Stack, Tooltip, Badge } from "@mantine/core";
+import { IconTrophy } from "@tabler/icons-react";
+import { MATRIX_LAYOUT, LEVELS } from "../../constants/skillLevels";
 import { getScoreColor } from "../../utils/skillCalculations";
 import { InfoTooltip } from "../shared/InfoTooltip";
 import { SkillCell } from "./SkillCell";
@@ -17,6 +19,7 @@ interface MatrixSkillRowProps {
   calculateSkillAverage: (skillId: string) => number | null;
   onLevelChange: (employeeId: string, skillId: string, newLevel: number) => void;
   onTargetLevelChange: (employeeId: string, skillId: string, targetLevel: number | undefined) => void;
+  showMaxValues: boolean;
 }
 
 export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = ({
@@ -30,10 +33,21 @@ export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = ({
   calculateSkillAverage,
   onLevelChange,
   onTargetLevelChange,
+  showMaxValues,
 }) => {
   const { labelWidth } = MATRIX_LAYOUT;
   const isRowHovered = hoveredSkillId === skill.id;
   const skillAvg = calculateSkillAverage(skill.id!);
+
+  // Calculate Max Level for this skill across all employees
+  const maxLevelVal = Math.max(...employees.map(e => {
+    const assessment = getAssessment(e.id!, skill.id!);
+    return assessment ? assessment.level : 0;
+  }), 0);
+
+  const maxLevelObj = LEVELS.find(l => l.value === maxLevelVal);
+  const maxLabel = maxLevelObj ? maxLevelObj.label : "None";
+  const maxColor = maxLevelObj ? maxLevelObj.color : "gray";
 
   return (
     <div style={{ display: "flex" }}>
@@ -58,11 +72,37 @@ export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = ({
         <Text size="sm" fw={isRowHovered ? 700 : 400} truncate style={{ flex: 1 }}>
           {skill.name}
         </Text>
-        <Group gap={8}>
-          <InfoTooltip title={skill.name} description={skill.description} />
-          <Text style={{ fontSize: "10px" }} c={getScoreColor(skillAvg)}>
-            {skillAvg === null ? "N/A" : `${skillAvg}%`}
-          </Text>
+        <Group gap={4} align="center">
+          {/* Average Text (Kept as text for skill rows per design, or could be badge) */}
+          <Group gap={8}>
+            <InfoTooltip title={skill.name} description={skill.description} />
+            {!showMaxValues ? (
+              // Average Display
+              <Text style={{ fontSize: "10px" }} c={getScoreColor(skillAvg)}>
+                {skillAvg === null ? "N/A" : `${skillAvg}%`}
+              </Text>
+            ) : (
+              // Max Value Display
+              maxLevelVal > 0 ? (
+                <Tooltip label={`Höchstes Level: ${maxLabel}`} withArrow>
+                  <Badge size="xs" variant="outline" color={getScoreColor(maxLevelVal)} style={{ padding: '0 4px', height: '16px' }}>
+                    {maxLevelVal}%
+                  </Badge>
+                </Tooltip>
+              ) : (
+                <Text style={{ fontSize: "10px" }} c="dimmed">-</Text>
+              )
+            )}
+          </Group>
+
+          {/* Max Indicator Bubble */}
+          {/* {maxLevelVal > 0 && (
+            <Tooltip label={`Höchstes Level: ${maxLabel}`} withArrow>
+              <Badge size="xs" variant="outline" color={maxColor} style={{ padding: '0 4px', height: '16px' }}>
+                Max: {maxLevelVal}%
+              </Badge>
+            </Tooltip>
+          )} */}
         </Group>
       </div>
       {employees.map((emp) => {
@@ -70,7 +110,7 @@ export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = ({
         const level = assessment?.level ?? 0;
         return (
           <SkillCell
-            key={`${emp.id}-${skill.id}`}
+            key={`${emp.id} -${skill.id} `}
             level={level}
             targetLevel={assessment?.targetLevel}
             isRowHovered={isRowHovered}

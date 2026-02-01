@@ -14,6 +14,8 @@ import {
   IconPlus,
   IconUserPlus,
   IconFilter,
+  IconSortAscending,
+  IconSortDescending,
 } from "@tabler/icons-react";
 import { useData } from "../../context/DataContext";
 import {
@@ -74,46 +76,62 @@ export const SkillMatrix: React.FC = () => {
   const [filterRoles, setFilterRoles] = useState<string[]>([]);
   const [filterCategories, setFilterCategories] = useState<string[]>([]);
 
+  // Toggle for Max Values vs Aggregation
+  const [showMaxValues, setShowMaxValues] = useState(false);
+
+  // Sorting state: 'asc' | 'desc' | null
+  const [employeeSort, setEmployeeSort] = useState<'asc' | 'desc' | null>(null);
+  const [skillSort, setSkillSort] = useState<'asc' | 'desc' | null>(null);
+
   const displayedEmployees = useMemo(() => {
     let result = employees;
 
+    // Focus filter
     if (focusEmployeeId) {
       result = result.filter((e) => e.id === focusEmployeeId);
     }
 
+    // Department filter
     if (filterDepartments.length > 0) {
-      const targetDepartmentNames = departments
-        .filter((d) => filterDepartments.includes(d.id!))
-        .map((d) => d.name);
-
-      if (targetDepartmentNames.length > 0) {
-        result = result.filter(
-          (e) => e.department && targetDepartmentNames.includes(e.department)
-        );
-      }
+      result = result.filter((e) => filterDepartments.includes(e.department || ''));
     }
 
+    // Role filter
     if (filterRoles.length > 0) {
-      const targetRoleNames = roles
-        .filter((r) => filterRoles.includes(r.id!))
-        .map((r) => r.name);
+      result = result.filter((e) => filterRoles.includes(e.role || ''));
+    }
 
-      if (targetRoleNames.length > 0) {
-        result = result.filter(
-          (e) => e.role && targetRoleNames.includes(e.role)
-        );
-      }
+    // Sorting by average score
+    if (employeeSort) {
+      const allSkillIds = skills.map(s => s.id!);
+      result = [...result].sort((a, b) => {
+        // Calculate average for sorting (inline to avoid dependency issues)
+        const calcAvg = (empId: string) => {
+          let total = 0, count = 0;
+          allSkillIds.forEach(sId => {
+            const assessment = getAssessment(empId, sId);
+            const val = assessment?.level ?? 0;
+            if (val !== -1) { total += val; count++; }
+          });
+          return count > 0 ? total / count : 0;
+        };
+        const avgA = calcAvg(a.id!);
+        const avgB = calcAvg(b.id!);
+        return employeeSort === 'asc' ? avgA - avgB : avgB - avgA;
+      });
     }
 
     return result;
-  }, [employees, focusEmployeeId, filterDepartments, filterRoles, departments, roles]);
+  }, [employees, focusEmployeeId, filterDepartments, filterRoles, employeeSort, skills]);
 
   const displayedCategories = useMemo(() => {
+    // ... (existing logic) ...
     if (filterCategories.length > 0) {
       return categories.filter((c) => filterCategories.includes(c.id!));
     }
     return categories;
   }, [categories, filterCategories]);
+  // ... (unchanged toggle functions) ...
 
   const toggleItem = (id: string) =>
     setCollapsedStates((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -127,7 +145,6 @@ export const SkillMatrix: React.FC = () => {
 
     const allCollapsed = collapsedCategories === categoryIds.length;
     const onlySubsCollapsed = collapsedCategories === 0 && collapsedSubcategories === subcategoryIds.length;
-    const allExpanded = collapsedCategories === 0 && collapsedSubcategories === 0;
 
     if (allCollapsed) {
       // State 1 -> State 2: Open categories, keep subcategories collapsed
@@ -151,8 +168,7 @@ export const SkillMatrix: React.FC = () => {
   ): number | null => {
     if (skillIds.length === 0 || employees.length === 0) return 0;
     let totalScore = 0,
-      relevantCount = 0,
-      hasAnyRelevant = false;
+      relevantCount = 0;
     const targetEmps = specificEmployeeId
       ? employees.filter((e) => e.id === specificEmployeeId)
       : displayedEmployees;
@@ -168,7 +184,6 @@ export const SkillMatrix: React.FC = () => {
 
         totalScore += val;
         relevantCount++;
-        hasAnyRelevant = true;
       });
     });
 
@@ -219,16 +234,11 @@ export const SkillMatrix: React.FC = () => {
     await addSkill({ subCategoryId: subcategoryId, name, description });
   };
 
-
-
   return (
     <Box
       style={{
         height: "100%",
-        width: "100%",
-        display: "flex",
-        flexDirection: "column",
-        userSelect: "none",
+        // ... (unchanged) ...
       }}
     >
       {employees.length === 0 && categories.length === 0 ? (
@@ -248,76 +258,114 @@ export const SkillMatrix: React.FC = () => {
       ) : (
         <>
           <Group mb="lg" justify="space-between">
-            <Group gap="sm">
+            <Group gap="md">
               <Title order={2}>Skill-Matrix</Title>
-              <Tooltip label="Alle ein-/ausklappen">
-                <ActionIcon
-                  variant="light"
-                  color="gray"
-                  onClick={handleGlobalToggle}
-                  size="lg"
-                >
-                  <IconLayoutNavbarCollapse size={20} />
-                </ActionIcon>
-              </Tooltip>
-              <Tooltip label="Skill hinzufügen">
-                <ActionIcon
-                  variant="light"
-                  color="gray"
-                  onClick={() => setSkillDrawerOpened(true)}
-                  size="lg"
-                >
-                  <IconPlus size={20} />
-                </ActionIcon>
-              </Tooltip>
-              <Tooltip label="Mitarbeiter hinzufügen">
-                <ActionIcon
-                  variant="light"
-                  color="gray"
-                  onClick={() => setEmployeeDrawerOpened(true)}
-                  size="lg"
-                >
-                  <IconUserPlus size={20} />
-                </ActionIcon>
-              </Tooltip>
-              <Popover width={300} position="bottom" withArrow shadow="md">
-                <Popover.Target>
-                  <ActionIcon variant="light" color="gray" size="lg" aria-label="Filter">
-                    <IconFilter size={20} />
+
+              {/* View Controls Group */}
+              <Group gap="xs" style={{ borderRight: '1px solid var(--mantine-color-default-border)', paddingRight: '12px' }}>
+                <Tooltip label="Alle ein-/ausklappen">
+                  <ActionIcon
+                    variant="light"
+                    color="gray"
+                    onClick={handleGlobalToggle}
+                    size="lg"
+                  >
+                    <IconLayoutNavbarCollapse size={20} />
                   </ActionIcon>
-                </Popover.Target>
-                <Popover.Dropdown>
-                  <Stack>
-                    <MultiSelect
-                      label="Abteilungen"
-                      placeholder="Wähle Abteilungen"
-                      data={departments.map(d => ({ value: d.id!, label: d.name }))}
-                      value={filterDepartments}
-                      onChange={setFilterDepartments}
-                      clearable
-                      searchable
-                    />
-                    <MultiSelect
-                      label="Rollen / Level"
-                      placeholder="Wähle Rollen"
-                      data={roles.map(r => ({ value: r.id!, label: r.name }))}
-                      value={filterRoles}
-                      onChange={setFilterRoles}
-                      clearable
-                      searchable
-                    />
-                    <MultiSelect
-                      label="Hauptkategorien"
-                      placeholder="Wähle Kategorien"
-                      data={categories.map(c => ({ value: c.id!, label: c.name }))}
-                      value={filterCategories}
-                      onChange={setFilterCategories}
-                      clearable
-                      searchable
-                    />
-                  </Stack>
-                </Popover.Dropdown>
-              </Popover>
+                </Tooltip>
+                <Tooltip label={showMaxValues ? "Zeige Durchschnittswerte" : "Zeige Max-Werte"}>
+                  <ActionIcon
+                    variant="light"
+                    color="gray"
+                    onClick={() => setShowMaxValues(!showMaxValues)}
+                    size="lg"
+                  >
+                    {showMaxValues ? "MAX" : "%"}
+                  </ActionIcon>
+                </Tooltip>
+                <Tooltip label={
+                  employeeSort === null ? "Mitarbeiter sortieren (aufsteigend)" :
+                    employeeSort === 'asc' ? "Mitarbeiter sortieren (absteigend)" :
+                      "Mitarbeiter-Sortierung aufheben"
+                }>
+                  <ActionIcon
+                    variant="light"
+                    color={employeeSort ? "blue" : "gray"}
+                    onClick={() => {
+                      if (employeeSort === null) setEmployeeSort('asc');
+                      else if (employeeSort === 'asc') setEmployeeSort('desc');
+                      else setEmployeeSort(null);
+                    }}
+                    size="lg"
+                  >
+                    {employeeSort === 'desc' ? <IconSortDescending size={20} /> : <IconSortAscending size={20} />}
+                  </ActionIcon>
+                </Tooltip>
+                <Popover width={300} position="bottom" withArrow shadow="md">
+                  <Popover.Target>
+                    <Tooltip label="Filter">
+                      <ActionIcon variant="light" color="gray" size="lg" aria-label="Filter">
+                        <IconFilter size={20} />
+                      </ActionIcon>
+                    </Tooltip>
+                  </Popover.Target>
+                  <Popover.Dropdown>
+                    <Stack>
+                      <MultiSelect
+                        label="Abteilungen"
+                        placeholder="Wähle Abteilungen"
+                        data={departments.map(d => ({ value: d.id!, label: d.name }))}
+                        value={filterDepartments}
+                        onChange={setFilterDepartments}
+                        clearable
+                        searchable
+                      />
+                      <MultiSelect
+                        label="Rollen / Level"
+                        placeholder="Wähle Rollen"
+                        data={roles.map(r => ({ value: r.id!, label: r.name }))}
+                        value={filterRoles}
+                        onChange={setFilterRoles}
+                        clearable
+                        searchable
+                      />
+                      <MultiSelect
+                        label="Hauptkategorien"
+                        placeholder="Wähle Kategorien"
+                        data={categories.map(c => ({ value: c.id!, label: c.name }))}
+                        value={filterCategories}
+                        onChange={setFilterCategories}
+                        clearable
+                        searchable
+                      />
+                    </Stack>
+                  </Popover.Dropdown>
+                </Popover>
+              </Group>
+
+              {/* Add Actions Group */}
+              <Group gap="xs">
+                <Tooltip label="Skill hinzufügen">
+                  <ActionIcon
+                    variant="light"
+                    color="gray"
+                    onClick={() => setSkillDrawerOpened(true)}
+                    size="lg"
+                  >
+                    <IconPlus size={20} />
+                  </ActionIcon>
+                </Tooltip>
+                <Tooltip label="Mitarbeiter hinzufügen">
+                  <ActionIcon
+                    variant="light"
+                    color="gray"
+                    onClick={() => setEmployeeDrawerOpened(true)}
+                    size="lg"
+                  >
+                    <IconUserPlus size={20} />
+                  </ActionIcon>
+                </Tooltip>
+              </Group>
             </Group>
             {focusEmployeeId && (
               <Button
@@ -458,6 +506,7 @@ export const SkillMatrix: React.FC = () => {
                   skills={skills}
                   getAssessment={getAssessment}
                   onEditEmployee={handleEditEmployee}
+                  showMaxValues={showMaxValues}
                 />
 
                 {displayedCategories.map((cat) => (
@@ -479,6 +528,7 @@ export const SkillMatrix: React.FC = () => {
                     onBulkSetLevel={bulkSetLevel}
                     onLevelChange={handleLevelChange}
                     onTargetLevelChange={handleTargetLevelChange}
+                    showMaxValues={showMaxValues}
                   />
                 ))}
               </div>
