@@ -40,6 +40,7 @@ import {
   QualificationPlan,
   QualificationMeasure,
 } from "../../context/DataContext";
+import { usePrivacy } from "../../context/PrivacyContext";
 import { SkillGapAnalysis } from "./SkillGapAnalysis";
 import { MeasureCard } from "./MeasureCard";
 import { MeasureForm } from "./MeasureForm";
@@ -82,6 +83,7 @@ export const PlanDetail: React.FC<PlanDetailProps> = ({
     deleteQualificationMeasure,
     setAssessment,
   } = useData();
+  const { anonymizeName } = usePrivacy();
 
   const [activeTab, setActiveTab] = useState<string | null>("measures");
   const [measureDrawerOpened, { open: openMeasureDrawer, close: closeMeasureDrawer }] =
@@ -161,8 +163,8 @@ export const PlanDetail: React.FC<PlanDetailProps> = ({
           await updateQualificationMeasure(measure.id!, { currentLevel: actualLevel });
         }
 
-        // Auto-complete if target reached
-        if (actualLevel >= measure.targetLevel && measure.status !== "completed") {
+        // Auto-complete if target reached and measure is still active
+        if (actualLevel >= measure.targetLevel && (measure.status === "in_progress" || measure.status === "pending")) {
           await updateQualificationMeasure(measure.id!, {
             status: "completed",
             currentLevel: actualLevel,
@@ -192,7 +194,7 @@ export const PlanDetail: React.FC<PlanDetailProps> = ({
             <IconArrowLeft size={20} />
           </ActionIcon>
           <div>
-            <Title order={2}>{employee?.name || "Unbekannt"}</Title>
+            <Title order={2}>{employee ? anonymizeName(employee.name, employee.id) : "Unbekannt"}</Title>
             <Text c="dimmed" size="sm">
               Zielrolle: {role?.name || "Keine"} • Erstellt:{" "}
               {new Date(plan.createdAt).toLocaleDateString("de-DE")}

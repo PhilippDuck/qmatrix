@@ -15,6 +15,7 @@ import {
 import { useHotkeys } from "@mantine/hooks";
 import { IconPlus, IconAlertCircle, IconTarget, IconUser } from "@tabler/icons-react";
 import { useData, QualificationPlan, SkillGap } from "../../context/DataContext";
+import { usePrivacy } from "../../context/PrivacyContext";
 import { SkillGapAnalysis } from "./SkillGapAnalysis";
 
 interface PlanFormProps {
@@ -36,6 +37,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({
     updateEmployee,
     getSkillGapsForEmployee,
   } = useData();
+  const { anonymizeName } = usePrivacy();
 
   const [formData, setFormData] = useState({
     employeeId: "",
@@ -168,7 +170,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({
           leftSection={<IconUser size={16} />}
           data={employees.map((e) => ({
             value: e.id!,
-            label: `${e.name}${e.role ? ` (${e.role})` : ""}`,
+            label: `${anonymizeName(e.name, e.id)}${e.role ? ` (${e.role})` : ""}`,
           }))}
           value={formData.employeeId}
           onChange={(value) =>

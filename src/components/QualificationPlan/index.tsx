@@ -37,6 +37,7 @@ import {
   IconCertificate,
 } from "@tabler/icons-react";
 import { useData, QualificationPlan as QualificationPlanType } from "../../context/DataContext";
+import { usePrivacy } from "../../context/PrivacyContext";
 import { PlanForm } from "./PlanForm";
 import { PlanDetail } from "./PlanDetail";
 
@@ -63,6 +64,7 @@ export const QualificationPlan: React.FC = () => {
     deleteQualificationPlan,
     updateQualificationPlan,
   } = useData();
+  const { anonymizeName } = usePrivacy();
 
   const [activeTab, setActiveTab] = useState<string | null>(() => {
     return localStorage.getItem("qualification-plan-tab") || "overview";
@@ -162,7 +164,7 @@ export const QualificationPlan: React.FC = () => {
                 <IconUser size={18} />
               </ThemeIcon>
               <div>
-                <Text fw={600}>{employee?.name || "Unbekannt"}</Text>
+                <Text fw={600}>{employee ? anonymizeName(employee.name, employee.id) : "Unbekannt"}</Text>
                 <Text size="xs" c="dimmed">
                   Zielrolle: {role?.name || "Keine"}
                 </Text>
@@ -401,7 +403,7 @@ export const QualificationPlan: React.FC = () => {
                   placeholder="Mitarbeiter filtern"
                   clearable
                   leftSection={<IconFilter size={16} />}
-                  data={employees.map((e) => ({ value: e.id!, label: e.name }))}
+                  data={employees.map((e) => ({ value: e.id!, label: anonymizeName(e.name, e.id) }))}
                   value={filterEmployee}
                   onChange={setFilterEmployee}
                   style={{ maxWidth: 200 }}

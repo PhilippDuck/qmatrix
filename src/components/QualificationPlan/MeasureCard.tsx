@@ -25,6 +25,7 @@ import {
   IconPlayerPlay,
 } from "@tabler/icons-react";
 import { QualificationMeasure, Employee, Skill } from "../../context/DataContext";
+import { usePrivacy } from "../../context/PrivacyContext";
 
 interface MeasureCardProps {
   measure: QualificationMeasure;
@@ -57,6 +58,7 @@ export const MeasureCard: React.FC<MeasureCardProps> = ({
   onDelete,
   onStatusChange,
 }) => {
+  const { anonymizeName } = usePrivacy();
   const isInternal = measure.type === "internal";
   const progressPercent = measure.currentLevel > 0
     ? Math.round(((measure.targetLevel - measure.currentLevel) / measure.targetLevel) * 100)
@@ -182,7 +184,7 @@ export const MeasureCard: React.FC<MeasureCardProps> = ({
               Mentor:
             </Text>
             <Text size="xs" fw={500}>
-              {mentor.name}
+              {anonymizeName(mentor.name, mentor.id)}
             </Text>
           </Group>
         )}

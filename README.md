@@ -10,6 +10,11 @@
 *   **Skill-Matrix**: Übersichtliche Matrix-Darstellung von Kompetenzen (Soll/Ist-Vergleich).
 *   **Hierarchische Struktur**: Organisation von Skills in Kategorien und Unterkategorien.
 *   **Rollen & Abteilungen**: Zuweisung von Mitarbeitern zu Rollen und Abteilungen.
+*   **Qualifizierungspläne**:
+    *   Automatische Defizit-Erkennung basierend auf Rollen-Anforderungen.
+    *   Maßnahmenplanung (intern mit Mentor oder externe Schulungen).
+    *   Timeline-Visualisierung mit Meilensteinen.
+    *   Automatische Synchronisation mit der Skill-Matrix.
 *   **Historie**: Automatische Protokollierung von Skill-Veränderungen (Wer, Wann, Was).
 *   **Dashboard**: Visualisierung wichtiger KPIs (Qualifizierungsgrad, Skill-Gaps, Entwicklung).
 *   **Einstellungen**:
@@ -58,4 +63,4 @@ Klicken Sie einfach auf den Titel "SkillGrid" (oder "Projektname eingeben") in d
 Private Nutzung.
 
 ---
-*Version 2.3.0*
+*Version 2.4.0*

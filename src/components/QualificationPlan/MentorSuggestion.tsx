@@ -13,6 +13,8 @@ import {
 import { IconCheck, IconUser, IconStar } from "@tabler/icons-react";
 import { Employee } from "../../context/DataContext";
 
+import { usePrivacy } from "../../context/PrivacyContext";
+
 interface MentorSuggestionProps {
   mentors: Employee[];
   selectedMentorId?: string;
@@ -24,18 +26,11 @@ export const MentorSuggestion: React.FC<MentorSuggestionProps> = ({
   selectedMentorId,
   onSelect,
 }) => {
+  const { anonymizeName, anonymizeInitials } = usePrivacy();
+
   if (mentors.length === 0) {
     return null;
   }
-
-  const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
-  };
 
   return (
     <Stack gap="xs">
@@ -72,11 +67,11 @@ export const MentorSuggestion: React.FC<MentorSuggestionProps> = ({
               <Group justify="space-between">
                 <Group gap="sm">
                   <Avatar size="sm" radius="xl" color="blue">
-                    {getInitials(mentor.name)}
+                    {anonymizeInitials(mentor.name, mentor.id)}
                   </Avatar>
                   <div>
                     <Text size="sm" fw={500}>
-                      {mentor.name}
+                      {anonymizeName(mentor.name, mentor.id)}
                     </Text>
                     {mentor.department && (
                       <Text size="xs" c="dimmed">

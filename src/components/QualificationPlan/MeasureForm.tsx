@@ -29,6 +29,7 @@ import {
   QualificationMeasure,
   SkillGap,
 } from "../../context/DataContext";
+import { usePrivacy } from "../../context/PrivacyContext";
 import { MentorSuggestion } from "./MentorSuggestion";
 
 interface MeasureFormProps {
@@ -54,6 +55,7 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({
     updateQualificationMeasure,
     getPotentialMentors,
   } = useData();
+  const { anonymizeName } = usePrivacy();
 
   const [formData, setFormData] = useState({
     skillId: "",
@@ -140,10 +142,10 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({
           : {}),
         ...(formData.type === "external"
           ? {
-              externalProvider: formData.externalProvider || undefined,
-              externalCourse: formData.externalCourse || undefined,
-              estimatedCost: formData.estimatedCost,
-            }
+            externalProvider: formData.externalProvider || undefined,
+            externalCourse: formData.externalCourse || undefined,
+            estimatedCost: formData.estimatedCost,
+          }
           : {}),
         startDate: formData.startDate ? new Date(formData.startDate).getTime() : undefined,
         targetDate: formData.targetDate ? new Date(formData.targetDate).getTime() : undefined,
@@ -288,7 +290,7 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({
                   leftSection={<IconUser size={16} />}
                   data={potentialMentors.map((m) => ({
                     value: m.id!,
-                    label: m.name,
+                    label: anonymizeName(m.name, m.id),
                   }))}
                   value={formData.mentorId}
                   onChange={(value) =>
