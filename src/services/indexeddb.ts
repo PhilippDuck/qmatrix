@@ -389,6 +389,51 @@ class IndexedDBService {
     await this.execute("skills", "put", data);
   }
 
+  async updateSkillsForRole(roleId: string, skillIds: string[]): Promise<void> {
+    if (!this.db) throw new Error("Database not initialized");
+
+    const transaction = this.db.transaction("skills", "readwrite");
+    const store = transaction.objectStore("skills");
+    const request = store.getAll();
+
+    return new Promise((resolve, reject) => {
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => {
+        const allSkills: Skill[] = request.result;
+        const skillIdsSet = new Set(skillIds);
+
+        allSkills.forEach((skill) => {
+          if (!skill.id) return;
+
+          const currentRoles = new Set(skill.requiredByRoleIds || []);
+          let modified = false;
+
+          if (skillIdsSet.has(skill.id)) {
+            // Should have role
+            if (!currentRoles.has(roleId)) {
+              currentRoles.add(roleId);
+              modified = true;
+            }
+          } else {
+            // Should NOT have role
+            if (currentRoles.has(roleId)) {
+              currentRoles.delete(roleId);
+              modified = true;
+            }
+          }
+
+          if (modified) {
+            const updatedSkill = { ...skill, requiredByRoleIds: Array.from(currentRoles), updatedAt: Date.now() };
+            store.put(updatedSkill);
+          }
+        });
+      };
+
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error);
+    });
+  }
+
   async deleteSkill(id: string): Promise<void> {
     // First, delete all assessments for this skill
     const assessments = await this.getAssessmentsBySkill(id);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
     Title,
     Button,
@@ -10,14 +10,18 @@ import {
     Stack,
     Text,
     Drawer,
+    Avatar,
+    Tooltip,
 } from "@mantine/core";
 import { IconPlus, IconTrash, IconBuilding, IconEdit } from "@tabler/icons-react";
 import { useDisclosure } from "@mantine/hooks";
 import { useData } from "../../context/DataContext";
+import { usePrivacy } from "../../context/PrivacyContext";
 import { Department } from "../../services/indexeddb";
 
 export const DepartmentManager: React.FC = () => {
-    const { departments, addDepartment, deleteDepartment, updateDepartment } = useData();
+    const { departments, employees, addDepartment, deleteDepartment, updateDepartment } = useData();
+    const { anonymizeName, anonymizeInitials } = usePrivacy();
     const [opened, { open, close }] = useDisclosure(false);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [name, setName] = useState("");
@@ -79,6 +83,7 @@ export const DepartmentManager: React.FC = () => {
                     <Table.Thead>
                         <Table.Tr>
                             <Table.Th>Name</Table.Th>
+                            <Table.Th>Mitarbeiter</Table.Th>
                             <Table.Th style={{ width: 100, textAlign: "right" }}>
                                 Aktionen
                             </Table.Th>
@@ -86,39 +91,70 @@ export const DepartmentManager: React.FC = () => {
                     </Table.Thead>
                     <Table.Tbody>
                         {departments.length > 0 ? (
-                            departments.map((dept) => (
-                                <Table.Tr key={dept.id}>
-                                    <Table.Td>
-                                        <Group gap="sm">
-                                            <IconBuilding size={16} color="gray" />
-                                            <Text size="sm" fw={500}>
-                                                {dept.name}
-                                            </Text>
-                                        </Group>
-                                    </Table.Td>
-                                    <Table.Td style={{ textAlign: "right" }}>
-                                        <Group gap={0} justify="flex-end">
-                                            <ActionIcon
-                                                variant="subtle"
-                                                color="blue"
-                                                onClick={() => handleOpenEdit(dept)}
-                                            >
-                                                <IconEdit size={16} />
-                                            </ActionIcon>
-                                            <ActionIcon
-                                                color="red"
-                                                variant="subtle"
-                                                onClick={() => handleDelete(dept.id!, dept.name)}
-                                            >
-                                                <IconTrash size={16} />
-                                            </ActionIcon>
-                                        </Group>
-                                    </Table.Td>
-                                </Table.Tr>
-                            ))
+                            departments.map((dept) => {
+                                const deptEmployees = employees.filter(e => e.department === dept.name);
+
+                                return (
+                                    <Table.Tr key={dept.id}>
+                                        <Table.Td>
+                                            <Group gap="sm">
+                                                <IconBuilding size={16} color="gray" />
+                                                <Text size="sm" fw={500}>
+                                                    {dept.name}
+                                                </Text>
+                                            </Group>
+                                        </Table.Td>
+                                        <Table.Td>
+                                            {deptEmployees.length > 0 ? (
+                                                <Group gap="xs">
+                                                    <Avatar.Group spacing="sm">
+                                                        {deptEmployees.slice(0, 5).map((emp) => (
+                                                            <Tooltip key={emp.id} label={anonymizeName(emp.name, emp.id)} withArrow>
+                                                                <Avatar size="sm" radius="xl" color="blue">
+                                                                    {anonymizeInitials(emp.name, emp.id)}
+                                                                </Avatar>
+                                                            </Tooltip>
+                                                        ))}
+                                                        {deptEmployees.length > 5 && (
+                                                            <Avatar size="sm" radius="xl" color="gray">
+                                                                +{deptEmployees.length - 5}
+                                                            </Avatar>
+                                                        )}
+                                                    </Avatar.Group>
+                                                    <Text size="xs" c="dimmed">
+                                                        ({deptEmployees.length})
+                                                    </Text>
+                                                </Group>
+                                            ) : (
+                                                <Text size="sm" c="dimmed" fs="italic">
+                                                    Keine Mitarbeiter
+                                                </Text>
+                                            )}
+                                        </Table.Td>
+                                        <Table.Td style={{ textAlign: "right" }}>
+                                            <Group gap={0} justify="flex-end">
+                                                <ActionIcon
+                                                    variant="subtle"
+                                                    color="blue"
+                                                    onClick={() => handleOpenEdit(dept)}
+                                                >
+                                                    <IconEdit size={16} />
+                                                </ActionIcon>
+                                                <ActionIcon
+                                                    color="red"
+                                                    variant="subtle"
+                                                    onClick={() => handleDelete(dept.id!, dept.name)}
+                                                >
+                                                    <IconTrash size={16} />
+                                                </ActionIcon>
+                                            </Group>
+                                        </Table.Td>
+                                    </Table.Tr>
+                                );
+                            })
                         ) : (
                             <Table.Tr>
-                                <Table.Td colSpan={2} style={{ textAlign: "center", py: "xl" }}>
+                                <Table.Td colSpan={3} style={{ textAlign: "center", py: "xl" }}>
                                     <Text c="dimmed">Keine Abteilungen angelegt</Text>
                                 </Table.Td>
                             </Table.Tr>

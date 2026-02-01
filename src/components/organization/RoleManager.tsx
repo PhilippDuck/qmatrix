@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
     Title,
     Button,
@@ -12,6 +12,7 @@ import {
     Select,
     Drawer,
     Tabs,
+    MultiSelect,
 } from "@mantine/core";
 import { IconPlus, IconTrash, IconBadge, IconArrowUpRight, IconEdit, IconList, IconHierarchy } from "@tabler/icons-react";
 import { useDisclosure } from "@mantine/hooks";
@@ -22,12 +23,13 @@ import { RoleIconPicker, getIconByName } from "../shared/RoleIconPicker";
 
 
 export const RoleManager: React.FC = () => {
-    const { roles, skills, employees, categories, subcategories, addRole, updateRole, deleteRole } = useData();
+    const { roles, skills, employees, categories, subcategories, addRole, updateRole, deleteRole, updateSkillsForRole } = useData();
     const [opened, { open, close }] = useDisclosure(false);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [name, setName] = useState("");
     const [inheritsFrom, setInheritsFrom] = useState<string | null>(null);
     const [icon, setIcon] = useState<string>("IconUser");
+    const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
     const [loading, setLoading] = useState(false);
 
     const handleOpenAdd = () => {
@@ -35,6 +37,7 @@ export const RoleManager: React.FC = () => {
         setName("");
         setInheritsFrom(null);
         setIcon("IconUser");
+        setSelectedSkills([]);
         open();
     };
 
@@ -43,6 +46,13 @@ export const RoleManager: React.FC = () => {
         setName(role.name);
         setInheritsFrom(role.inheritsFromId || null);
         setIcon(role.icon || "IconUser");
+
+        // Find skills that require this role
+        const roleSkills = skills
+            .filter(s => s.requiredByRoleIds?.includes(role.id!))
+            .map(s => s.id!);
+        setSelectedSkills(roleSkills);
+
         open();
     };
 
@@ -57,15 +67,24 @@ export const RoleManager: React.FC = () => {
                 icon: icon,
             };
 
+            let roleId = editingId;
+
             if (editingId) {
                 await updateRole(editingId, roleData);
             } else {
-                await addRole(roleData);
+                roleId = await addRole(roleData);
             }
+
+            // Update skill associations if we have a valid role ID
+            if (roleId) {
+                await updateSkillsForRole(roleId, selectedSkills);
+            }
+
             close();
             setName("");
             setInheritsFrom(null);
             setEditingId(null);
+            setSelectedSkills([]);
         } catch (error) {
             console.error("Failed to save role:", error);
         } finally {
@@ -87,6 +106,24 @@ export const RoleManager: React.FC = () => {
     const roleOptions = roles
         .filter((r) => !editingId || r.id !== editingId)
         .map((r) => ({ value: r.id!, label: r.name }));
+
+    // Group skills by category for better selection
+    const skillOptions = useMemo(() => {
+        return categories.map(cat => {
+            const catSubIds = subcategories
+                .filter(sc => sc.categoryId === cat.id)
+                .map(sc => sc.id);
+
+            const catSkills = skills.filter(s => catSubIds.includes(s.subCategoryId));
+
+            if (catSkills.length === 0) return null;
+
+            return {
+                group: cat.name,
+                items: catSkills.map(s => ({ value: s.id!, label: s.name }))
+            };
+        }).filter(Boolean) as { group: string; items: { value: string; label: string }[] }[];
+    }, [categories, subcategories, skills]);
 
     return (
         <Stack gap="lg" style={{ height: '100%' }}>
@@ -114,6 +151,7 @@ export const RoleManager: React.FC = () => {
                                 <Table.Tr>
                                     <Table.Th>Bezeichnung</Table.Th>
                                     <Table.Th>Erbt von</Table.Th>
+                                    <Table.Th>Skills</Table.Th>
                                     <Table.Th style={{ width: 100, textAlign: "right" }}>
                                         Aktionen
                                     </Table.Th>
@@ -125,6 +163,8 @@ export const RoleManager: React.FC = () => {
                                         const parentRole = roles.find(
                                             (r) => r.id === role.inheritsFromId
                                         );
+                                        const skillCount = skills.filter(s => s.requiredByRoleIds?.includes(role.id!)).length;
+
                                         return (
                                             <Table.Tr key={role.id}>
                                                 <Table.Td>
@@ -154,6 +194,11 @@ export const RoleManager: React.FC = () => {
                                                         </Text>
                                                     )}
                                                 </Table.Td>
+                                                <Table.Td>
+                                                    <Text size="sm" c={skillCount > 0 ? undefined : "dimmed"}>
+                                                        {skillCount} Skills zugeordnet
+                                                    </Text>
+                                                </Table.Td>
                                                 <Table.Td style={{ textAlign: "right" }}>
                                                     <Group gap={0} justify="flex-end">
                                                         <ActionIcon
@@ -177,7 +222,7 @@ export const RoleManager: React.FC = () => {
                                     })
                                 ) : (
                                     <Table.Tr>
-                                        <Table.Td colSpan={3} style={{ textAlign: "center", py: "xl" }}>
+                                        <Table.Td colSpan={4} style={{ textAlign: "center", py: "xl" }}>
                                             <Text c="dimmed">Keine Rollen angelegt</Text>
                                         </Table.Td>
                                     </Table.Tr>
@@ -207,6 +252,7 @@ export const RoleManager: React.FC = () => {
                 position="right"
                 title={editingId ? "Rolle bearbeiten" : "Neue Rolle"}
                 overlayProps={{ backgroundOpacity: 0.5, blur: 4 }}
+                size="md"
             >
                 <Stack>
                     <TextInput
@@ -227,6 +273,20 @@ export const RoleManager: React.FC = () => {
                         searchable
                         description="Wähle eine Rolle, von der alle Fähigkeiten geerbt werden sollen."
                     />
+
+                    <MultiSelect
+                        label="Benötigte Skills"
+                        placeholder="Skills auswählen..."
+                        data={skillOptions}
+                        value={selectedSkills}
+                        onChange={setSelectedSkills}
+                        searchable
+                        clearable
+                        hidePickedOptions
+                        maxDropdownHeight={300}
+                        nothingFoundMessage="Keine Skills gefunden"
+                    />
+
                     <Stack gap={4}>
                         <Text size="sm" fw={500}>Icon</Text>
                         <RoleIconPicker value={icon} onChange={setIcon} />

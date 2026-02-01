@@ -94,6 +94,7 @@ interface DataContextType {
   addRole: (role: Omit<EmployeeRole, "id">) => Promise<string>;
   updateRole: (id: string, role: Omit<EmployeeRole, "id">) => Promise<void>;
   deleteRole: (id: string) => Promise<void>;
+  updateSkillsForRole: (roleId: string, skillIds: string[]) => Promise<void>;
 
   // Settings
   updateProjectTitle: (title: string) => Promise<void>;
@@ -429,6 +430,16 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
     }
   };
 
+  const updateSkillsForRole = async (roleId: string, skillIds: string[]) => {
+    try {
+      await db.updateSkillsForRole(roleId, skillIds);
+      await refreshAllData(); // Refresh to propagate changes to UI
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update role skills");
+      throw err;
+    }
+  };
+
   const updateProjectTitle = async (title: string) => {
     console.log("Updating project title to:", title);
     try {
@@ -557,6 +568,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
         addRole,
         updateRole,
         deleteRole,
+        updateSkillsForRole,
         projectTitle,
         updateProjectTitle,
         exportData,

@@ -17,7 +17,7 @@ import { Employee } from "../services/indexeddb";
 import { EmployeeDrawer } from "./shared/EmployeeDrawer";
 
 export const EmployeeList: React.FC = () => {
-  const { employees, addEmployee, updateEmployee, deleteEmployee, roles } = useData();
+  const { employees, addEmployee, updateEmployee, deleteEmployee, roles, departments } = useData();
   const { anonymizeName } = usePrivacy();
 
   const [opened, { open, close }] = useDisclosure(false);
@@ -25,6 +25,7 @@ export const EmployeeList: React.FC = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [initialData, setInitialData] = useState({ name: "", department: "", role: "" });
   const [filterRole, setFilterRole] = useState<string | null>(null);
+  const [filterDepartment, setFilterDepartment] = useState<string | null>(null);
 
   const handleOpenNew = () => {
     setInitialData({ name: "", department: "", role: "" });
@@ -64,6 +65,7 @@ export const EmployeeList: React.FC = () => {
 
   const filteredEmployees = employees.filter((emp) => {
     if (filterRole && emp.role !== filterRole) return false;
+    if (filterDepartment && emp.department !== filterDepartment) return false;
     return true;
   });
 
@@ -88,6 +90,15 @@ export const EmployeeList: React.FC = () => {
             data={roles.map(r => r.name)}
             value={filterRole}
             onChange={setFilterRole}
+            clearable
+            style={{ width: 250 }}
+          />
+          <Select
+            label="Filter nach Abteilung"
+            placeholder="Alle Abteilungen"
+            data={departments.map(d => d.name)}
+            value={filterDepartment}
+            onChange={setFilterDepartment}
             clearable
             style={{ width: 250 }}
           />
