@@ -190,7 +190,7 @@ export const SkillCell: React.FC<SkillCellProps> = ({
                 </Badge>
               ))}
             </Group>
-            {roleTargetLevel !== undefined && (
+            {roleTargetLevel !== undefined && roleTargetLevel > 0 && (
               <Text size="xs" c="dimmed" mt={4} style={{ fontSize: '10px' }}>
                 * Rolle fordert: <Text span fw={700}>{roleTargetLevel}%</Text>
               </Text>

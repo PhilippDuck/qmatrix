@@ -19,7 +19,7 @@ import {
 } from "@tabler/icons-react";
 import { useData } from "../../context/DataContext";
 import { CreateContextMenu } from "../shared/CreateContextMenu";
-import { useHotkeys } from "@mantine/hooks";
+import { useHotkeys, useLocalStorage } from "@mantine/hooks";
 import {
   Popover,
   Stack,
@@ -97,16 +97,34 @@ export const SkillMatrix: React.FC = () => {
   }, [collapsedStates]);
 
   // Filters
-  const [filterDepartments, setFilterDepartments] = useState<string[]>([]);
-  const [filterRoles, setFilterRoles] = useState<string[]>([]);
-  const [filterCategories, setFilterCategories] = useState<string[]>([]);
+  const [filterDepartments, setFilterDepartments] = useLocalStorage<string[]>({
+    key: 'skill-matrix-filter-departments',
+    defaultValue: [],
+  });
+  const [filterRoles, setFilterRoles] = useLocalStorage<string[]>({
+    key: 'skill-matrix-filter-roles',
+    defaultValue: [],
+  });
+  const [filterCategories, setFilterCategories] = useLocalStorage<string[]>({
+    key: 'skill-matrix-filter-categories',
+    defaultValue: [],
+  });
 
   // Toggle for Max Values vs Aggregation
-  const [showMaxValues, setShowMaxValues] = useState(false);
+  const [showMaxValues, setShowMaxValues] = useLocalStorage<boolean>({
+    key: 'skill-matrix-show-max-values',
+    defaultValue: false,
+  });
 
   // Sorting state: 'asc' | 'desc' | null
-  const [employeeSort, setEmployeeSort] = useState<'asc' | 'desc' | null>(null);
-  const [skillSort, setSkillSort] = useState<'asc' | 'desc' | null>(null);
+  const [employeeSort, setEmployeeSort] = useLocalStorage<'asc' | 'desc' | null>({
+    key: 'skill-matrix-sort-employee',
+    defaultValue: null,
+  });
+  const [skillSort, setSkillSort] = useLocalStorage<'asc' | 'desc' | null>({
+    key: 'skill-matrix-sort-skill',
+    defaultValue: null,
+  });
 
   const displayedEmployees = useMemo(() => {
     let result = employees;
@@ -132,28 +150,44 @@ export const SkillMatrix: React.FC = () => {
       result = result.filter((e) => selectedRoleNames.includes(e.role || ''));
     }
 
-    // Sorting by average score
+    // Sorting
     if (employeeSort) {
       const allSkillIds = skills.map(s => s.id!);
       result = [...result].sort((a, b) => {
-        // Calculate average for sorting (inline to avoid dependency issues)
-        const calcAvg = (empId: string) => {
-          let total = 0, count = 0;
-          allSkillIds.forEach(sId => {
-            const assessment = getAssessment(empId, sId);
-            const val = assessment?.level ?? 0;
-            if (val !== -1) { total += val; count++; }
-          });
-          return count > 0 ? total / count : 0;
-        };
-        const avgA = calcAvg(a.id!);
-        const avgB = calcAvg(b.id!);
-        return employeeSort === 'asc' ? avgA - avgB : avgB - avgA;
+        if (showMaxValues) {
+          // Sort by Total XP
+          const calcXP = (empId: string) => {
+            let total = 0;
+            allSkillIds.forEach(sId => {
+              const assessment = getAssessment(empId, sId);
+              const val = assessment?.level ?? 0;
+              if (val > 0) total += val;
+            });
+            return total;
+          };
+          const valA = calcXP(a.id!);
+          const valB = calcXP(b.id!);
+          return employeeSort === 'asc' ? valA - valB : valB - valA;
+        } else {
+          // Sort by Average
+          const calcAvg = (empId: string) => {
+            let total = 0, count = 0;
+            allSkillIds.forEach(sId => {
+              const assessment = getAssessment(empId, sId);
+              const val = assessment?.level ?? 0;
+              if (val !== -1) { total += val; count++; }
+            });
+            return count > 0 ? total / count : 0;
+          };
+          const avgA = calcAvg(a.id!);
+          const avgB = calcAvg(b.id!);
+          return employeeSort === 'asc' ? avgA - avgB : avgB - avgA;
+        }
       });
     }
 
     return result;
-  }, [employees, focusEmployeeId, filterDepartments, filterRoles, employeeSort, skills, departments, roles]);
+  }, [employees, focusEmployeeId, filterDepartments, filterRoles, employeeSort, skills, departments, roles, showMaxValues, getAssessment]);
 
   const displayedCategories = useMemo(() => {
     let result = categories;
@@ -163,7 +197,7 @@ export const SkillMatrix: React.FC = () => {
       result = result.filter((c) => filterCategories.includes(c.id!));
     }
 
-    // Sorting by average score
+    // Sorting
     if (skillSort) {
       result = [...result].sort((a, b) => {
         // Get all skill IDs for each category
@@ -173,29 +207,56 @@ export const SkillMatrix: React.FC = () => {
           return skills.filter(s => subIds.includes(s.subCategoryId)).map(s => s.id!);
         };
 
-        // Calculate average for category (inline)
-        const calcCatAvg = (catId: string) => {
-          const catSkillIds = getSkillIds(catId);
-          if (catSkillIds.length === 0) return 0;
-          let total = 0, count = 0;
-          catSkillIds.forEach(sId => {
-            displayedEmployees.forEach(emp => {
-              const assessment = getAssessment(emp.id!, sId);
-              const val = assessment?.level ?? 0;
-              if (val !== -1) { total += val; count++; }
-            });
-          });
-          return count > 0 ? total / count : 0;
-        };
+        if (showMaxValues) {
+          // Sort by "Max Average" (Best employee in this category)
+          const calcMaxAvg = (catId: string) => {
+            const catSkillIds = getSkillIds(catId);
+            if (catSkillIds.length === 0) return 0;
 
-        const avgA = calcCatAvg(a.id!);
-        const avgB = calcCatAvg(b.id!);
-        return skillSort === 'asc' ? avgA - avgB : avgB - avgA;
+            // Find max avg among all displayed employees
+            let maxAvg = 0;
+            displayedEmployees.forEach(emp => {
+              let total = 0, count = 0;
+              catSkillIds.forEach(sId => {
+                const assessment = getAssessment(emp.id!, sId);
+                const val = assessment?.level ?? 0;
+                if (val !== -1) { total += val; count++; }
+              });
+              const avg = count > 0 ? total / count : 0;
+              if (avg > maxAvg) maxAvg = avg;
+            });
+            return maxAvg;
+          };
+
+          const valA = calcMaxAvg(a.id!);
+          const valB = calcMaxAvg(b.id!);
+          return skillSort === 'asc' ? valA - valB : valB - valA;
+
+        } else {
+          // Sort by "Overall Average"
+          const calcCatAvg = (catId: string) => {
+            const catSkillIds = getSkillIds(catId);
+            if (catSkillIds.length === 0) return 0;
+            let total = 0, count = 0;
+            catSkillIds.forEach(sId => {
+              displayedEmployees.forEach(emp => {
+                const assessment = getAssessment(emp.id!, sId);
+                const val = assessment?.level ?? 0;
+                if (val !== -1) { total += val; count++; }
+              });
+            });
+            return count > 0 ? total / count : 0;
+          };
+
+          const avgA = calcCatAvg(a.id!);
+          const avgB = calcCatAvg(b.id!);
+          return skillSort === 'asc' ? avgA - avgB : avgB - avgA;
+        }
       });
     }
 
     return result;
-  }, [categories, filterCategories, skillSort, subcategories, skills, displayedEmployees, getAssessment]);
+  }, [categories, filterCategories, skillSort, subcategories, skills, displayedEmployees, getAssessment, showMaxValues]);
   // ... (unchanged toggle functions) ...
 
   const toggleItem = (id: string) =>

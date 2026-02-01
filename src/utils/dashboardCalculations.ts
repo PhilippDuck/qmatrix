@@ -26,7 +26,7 @@ export const calculateHistoricalXP = (
         levelMap.set(key, log.previousLevel);
     });
 
-    return Array.from(levelMap.values()).reduce((sum, level) => sum + level, 0);
+    return Array.from(levelMap.values()).reduce((sum, level) => sum + (level > 0 ? level : 0), 0);
 };
 
 export type ComparisonPeriod = "quarter" | "year";

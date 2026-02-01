@@ -328,7 +328,7 @@ export const RoleManager: React.FC = () => {
                         {/* Skill Value Editor List */}
                         {/* Skill Value Editor List */}
                         {requiredSkills.length > 0 ? (
-                            <Paper withBorder p="xs" bg="var(--mantine-color-gray-0)">
+                            <Paper withBorder p="xs" bg="var(--mantine-color-default)">
                                 <Stack gap="xs">
                                     <ScrollArea.Autosize mah={600} type="always">
                                         <Stack gap="sm" pb="xl">

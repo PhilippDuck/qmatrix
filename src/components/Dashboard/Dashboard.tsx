@@ -214,7 +214,7 @@ export const Dashboard: React.FC = () => {
         const activeSkillIds = new Set(assessments.filter(a => a.level > 0).map(a => a.skillId));
         const activeSkillCount = activeSkillIds.size;
 
-        const totalXP = assessments.reduce((sum, a) => sum + a.level, 0);
+        const totalXP = assessments.reduce((sum, a) => sum + (a.level > 0 ? a.level : 0), 0);
 
         const assessmentsWithTargets = assessments.filter(a => a.targetLevel && a.targetLevel > 0);
         const achievedTargets = assessmentsWithTargets.filter(a => a.level >= (a.targetLevel || 0));

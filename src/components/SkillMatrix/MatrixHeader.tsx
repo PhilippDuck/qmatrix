@@ -386,7 +386,8 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
                     (() => {
                       const totalXP = skills.reduce((sum, skill) => {
                         const assessment = getAssessment(emp.id!, skill.id!);
-                        return sum + (assessment?.level || 0);
+                        const val = assessment?.level;
+                        return sum + (val && val > 0 ? val : 0);
                       }, 0);
                       return (
                         <Tooltip label={`Gesamt-XP: ${totalXP}`} withArrow>

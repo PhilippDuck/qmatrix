@@ -92,7 +92,10 @@ function AnonymousToggle() {
 function AppContent() {
   const { loading, exportData, projectTitle, updateProjectTitle } = useData();
   const computedColorScheme = useComputedColorScheme("light");
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const [activeTab, setActiveTab] = useLocalStorage({
+    key: 'skillgrid-active-tab',
+    defaultValue: 'dashboard',
+  });
 
   // Title edit state
   const [isEditingTitle, setIsEditingTitle] = useState(false);
