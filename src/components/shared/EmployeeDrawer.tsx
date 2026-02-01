@@ -8,8 +8,9 @@ import {
   Text,
   Divider,
   Tabs,
-  Select,
+  Autocomplete,
 } from "@mantine/core";
+import { useHotkeys } from "@mantine/hooks";
 import { IconPlus, IconHistory, IconUser } from "@tabler/icons-react";
 import { HistoryTimeline } from "./HistoryTimeline";
 import { useData } from "../../context/DataContext";
@@ -52,7 +53,20 @@ export const EmployeeDrawer: React.FC<EmployeeDrawerProps> = ({
 
     setLoading(true);
     try {
-      await onSave(formData.name.trim(), formData.department.trim(), formData.role.trim());
+      const trimmedDept = formData.department.trim();
+      const trimmedRole = formData.role.trim();
+
+      // Check and create Department if new
+      if (trimmedDept && !departments.some(d => d.name === trimmedDept)) {
+        await addDepartment(trimmedDept);
+      }
+
+      // Check and create Role if new
+      if (trimmedRole && !roles.some(r => r.name === trimmedRole)) {
+        await addRole({ name: trimmedRole });
+      }
+
+      await onSave(formData.name.trim(), trimmedDept, trimmedRole);
       onClose();
     } catch (error) {
       console.error("Fehler beim Speichern:", error);
@@ -67,6 +81,13 @@ export const EmployeeDrawer: React.FC<EmployeeDrawerProps> = ({
     }
   };
 
+  useHotkeys([["mod+Enter", (event) => {
+    event.preventDefault();
+    handleSave();
+  }]], ['INPUT', 'TEXTAREA', 'SELECT']);
+
+  // Removed manual onCreate handlers as we now handle creation on save via Autocomplete
+  /*
   const handleCreateDepartment = async (query: string) => {
     await addDepartment(query);
     setFormData({ ...formData, department: query });
@@ -74,10 +95,11 @@ export const EmployeeDrawer: React.FC<EmployeeDrawerProps> = ({
   };
 
   const handleCreateRole = async (query: string) => {
-    await addRole(query);
+    await addRole({ name: query }); // Fixed type error here just in case, but unused now
     setFormData({ ...formData, role: query });
     return { value: query, label: query };
   };
+  */
 
   return (
     <Drawer
@@ -117,32 +139,22 @@ export const EmployeeDrawer: React.FC<EmployeeDrawerProps> = ({
                 required
               />
 
-              <Select
+              <Autocomplete
                 label="Abteilung / Team"
-                placeholder="Wähle eine Abteilung"
+                placeholder="Wähle eine Abteilung oder erstelle neu"
                 data={departments.map((d) => d.name)}
                 value={formData.department}
                 onChange={(value) =>
                   setFormData({ ...formData, department: value || "" })
                 }
-                clearable
-                searchable
-                creatable
-                getCreateLabel={(query) => `+ ${query} erstellen`}
-                onCreate={handleCreateDepartment}
               />
 
-              <Select
+              <Autocomplete
                 label="Rolle / Qualifikations-Level"
-                placeholder="Wähle eine Rolle"
+                placeholder="Wähle eine Rolle oder erstelle neu"
                 data={roles.map(r => r.name)}
                 value={formData.role}
                 onChange={(value) => setFormData({ ...formData, role: value || "" })}
-                clearable
-                searchable
-                creatable
-                getCreateLabel={(query) => `+ ${query} erstellen`}
-                onCreate={handleCreateRole}
               />
 
               <Group justify="flex-end" mt="xl">
@@ -180,32 +192,22 @@ export const EmployeeDrawer: React.FC<EmployeeDrawerProps> = ({
             required
           />
 
-          <Select
+          <Autocomplete
             label="Abteilung / Team"
-            placeholder="Wähle eine Abteilung"
+            placeholder="Wähle eine Abteilung oder erstelle neu"
             data={departments.map((d) => d.name)}
             value={formData.department}
             onChange={(value) =>
               setFormData({ ...formData, department: value || "" })
             }
-            clearable
-            searchable
-            creatable
-            getCreateLabel={(query) => `+ ${query} erstellen`}
-            onCreate={handleCreateDepartment}
           />
 
-          <Select
+          <Autocomplete
             label="Rolle / Qualifikations-Level"
-            placeholder="Wähle eine Rolle"
+            placeholder="Wähle eine Rolle oder erstelle neu"
             data={roles.map(r => r.name)}
             value={formData.role}
             onChange={(value) => setFormData({ ...formData, role: value || "" })}
-            clearable
-            searchable
-            creatable
-            getCreateLabel={(query) => `+ ${query} erstellen`}
-            onCreate={handleCreateRole}
           />
 
           <Group justify="flex-end" mt="xl">

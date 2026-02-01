@@ -4,11 +4,11 @@ import { describe, it, expect } from 'vitest';
  * Utility function that replicates the filter logic from SkillMatrix
  * for testing purposes.
  */
-export const filterEmployeesByDepartment = (
-    employees: { id: string; name: string; department?: string }[],
+export const filterEmployeesByDepartment = <T extends { id: string; name: string; department?: string }>(
+    employees: T[],
     departments: { id: string; name: string }[],
     filterDepartmentIds: string[]
-): typeof employees => {
+): T[] => {
     if (filterDepartmentIds.length === 0) return employees;
 
     const selectedDeptNames = departments
@@ -18,11 +18,11 @@ export const filterEmployeesByDepartment = (
     return employees.filter(e => selectedDeptNames.includes(e.department || ''));
 };
 
-export const filterEmployeesByRole = (
-    employees: { id: string; name: string; role?: string }[],
+export const filterEmployeesByRole = <T extends { id: string; name: string; role?: string }>(
+    employees: T[],
     roles: { id: string; name: string }[],
     filterRoleIds: string[]
-): typeof employees => {
+): T[] => {
     if (filterRoleIds.length === 0) return employees;
 
     const selectedRoleNames = roles

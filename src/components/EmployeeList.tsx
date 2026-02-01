@@ -9,7 +9,7 @@ import {
   Text,
   Select,
 } from "@mantine/core";
-import { useDisclosure } from "@mantine/hooks";
+import { useDisclosure, useHotkeys } from "@mantine/hooks";
 import { IconPlus, IconEdit, IconTrash, IconUser } from "@tabler/icons-react";
 import { useData } from "../context/DataContext";
 import { usePrivacy } from "../context/PrivacyContext";
@@ -44,6 +44,11 @@ export const EmployeeList: React.FC = () => {
     setEditingId(employee.id!);
     open();
   };
+
+  useHotkeys([["alt+N", (event) => {
+    event.preventDefault();
+    handleOpenNew();
+  }]], ['INPUT', 'TEXTAREA', 'SELECT']);
 
   const handleSave = async (name: string, department: string, role: string) => {
     if (isEditing && editingId) {

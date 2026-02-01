@@ -8,9 +8,10 @@ import {
   Button,
   Text,
   Select,
-  ActionIcon,
   Tooltip,
+  ActionIcon,
 } from "@mantine/core";
+import { useHotkeys } from "@mantine/hooks";
 import { IconPlus, IconX } from "@tabler/icons-react";
 import { Category, SubCategory } from "../../context/DataContext";
 
@@ -139,6 +140,11 @@ export const QuickAddDrawer: React.FC<QuickAddDrawerProps> = ({
       setLoading(false);
     }
   };
+
+  useHotkeys([["mod+Enter", (event) => {
+    event.preventDefault();
+    handleSave();
+  }]], ['INPUT', 'TEXTAREA', 'SELECT']);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {

@@ -18,11 +18,13 @@ import {
   IconSortDescending,
 } from "@tabler/icons-react";
 import { useData } from "../../context/DataContext";
+import { CreateContextMenu } from "../shared/CreateContextMenu";
+import { useHotkeys } from "@mantine/hooks";
 import {
   Popover,
   Stack,
-  MultiSelect,
   Badge,
+  MultiSelect,
 } from "@mantine/core";
 import { EmployeeDrawer } from "../shared/EmployeeDrawer";
 import { EmptyState } from "./EmptyState";
@@ -61,6 +63,17 @@ export const SkillMatrix: React.FC = () => {
 
   // Skill Drawer state
   const [skillDrawerOpened, setSkillDrawerOpened] = useState(false);
+
+  // Context Menu State
+  const [contextMenuPos, setContextMenuPos] = useState<{ x: number; y: number } | null>(null);
+
+  useHotkeys([
+    ['alt+N', (event) => {
+      event.preventDefault();
+      // Center position
+      setContextMenuPos({ x: window.innerWidth / 2 - 100, y: window.innerHeight / 2 });
+    }]
+  ], ['INPUT', 'TEXTAREA', 'SELECT']);
 
   const [collapsedStates, setCollapsedStates] = useState<Record<string, boolean>>(() => {
     const saved = localStorage.getItem("skill-matrix-collapsed");
@@ -641,6 +654,21 @@ export const SkillMatrix: React.FC = () => {
         }}
         onAddSubCategory={async (categoryId, name) => {
           return await addSubCategory({ categoryId, name });
+        }}
+      />
+
+      <CreateContextMenu
+        opened={!!contextMenuPos}
+        onClose={() => setContextMenuPos(null)}
+        x={contextMenuPos?.x || 0}
+        y={contextMenuPos?.y || 0}
+        onSelect={(type: 'employee' | 'skill') => {
+          setContextMenuPos(null);
+          if (type === 'employee') {
+            setEmployeeDrawerOpened(true);
+          } else if (type === 'skill') {
+            setSkillDrawerOpened(true);
+          }
         }}
       />
     </Box >

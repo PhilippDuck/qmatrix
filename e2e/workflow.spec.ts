@@ -97,11 +97,11 @@ test.describe('Complete Workflow Test', () => {
         // Skip Selects for now to ensure basic creation works (they are optional)
         /*
         // Select Department "Entwicklung"
-        const deptSelect = empDrawer.locator('input[placeholder="Wähle eine Abteilung"]');
+        const deptSelect = empDrawer.locator('input[placeholder="Wähle eine Abteilung oder erstelle neu"]');
         if (await deptSelect.isVisible()) {
             await deptSelect.click();
             await page.waitForTimeout(200);
-            await page.locator('.mantine-Select-option').filter({ hasText: deptName }).click();
+            await page.locator('.mantine-Autocomplete-option, .mantine-Select-option').filter({ hasText: deptName }).click();
         }
         */
 

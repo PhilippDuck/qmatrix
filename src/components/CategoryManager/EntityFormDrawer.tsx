@@ -11,6 +11,7 @@ import {
   Select,
   MultiSelect,
 } from "@mantine/core";
+import { useHotkeys } from "@mantine/hooks";
 import { Department, EmployeeRole } from "../../services/indexeddb";
 
 export type FormMode = "category" | "subcategory" | "skill";
@@ -60,6 +61,10 @@ export const EntityFormDrawer: React.FC<EntityFormDrawerProps> = ({
   departments,
   roles,
 }) => {
+  useHotkeys([
+    ["mod+Enter", (event) => { event.preventDefault(); onSave(); }]
+  ], ['INPUT', 'TEXTAREA', 'SELECT']);
+
   return (
     <Drawer
       opened={opened}
