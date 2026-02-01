@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
 import { Text, Group, ActionIcon, Badge, Stack, Tooltip, HoverCard } from "@mantine/core";
-import { IconPlus, IconMinus, IconTrophy, IconPencil } from "@tabler/icons-react";
+import { IconPlus, IconMinus, IconTrophy, IconPencil, IconInfoCircle } from "@tabler/icons-react";
 import { MATRIX_LAYOUT } from "../../constants/skillLevels";
 import { getScoreColor } from "../../utils/skillCalculations";
 import { InfoTooltip } from "../shared/InfoTooltip";
@@ -14,6 +14,7 @@ interface MatrixCategoryRowProps {
   subcategories: SubCategory[];
   skills: Skill[];
   employees: Employee[];
+  roles: { id?: string; name: string; requiredSkills?: { skillId: string; level: number }[] }[];
   collapsedStates: Record<string, boolean>;
   hoveredSkillId: string | null;
   hoveredEmployeeId: string | null;
@@ -38,6 +39,7 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = ({
   subcategories,
   skills,
   employees,
+  roles,
   collapsedStates,
   hoveredSkillId,
   hoveredEmployeeId,
@@ -58,6 +60,7 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = ({
   const { anonymizeName } = usePrivacy();
   const isCatCollapsed = collapsedStates[category.id!];
   const { cellSize, labelWidth } = MATRIX_LAYOUT;
+  const [isLabelHovered, setIsLabelHovered] = useState(false);
 
   // Get subcategories for this category
   const categorySubcategories = subcategories.filter(
@@ -97,6 +100,8 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = ({
             alignItems: "center",
             justifyContent: "space-between",
           }}
+          onMouseEnter={() => setIsLabelHovered(true)}
+          onMouseLeave={() => setIsLabelHovered(false)}
         >
           <Group gap="xs">
             <ActionIcon
@@ -106,16 +111,19 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = ({
             >
               {isCatCollapsed ? <IconPlus size={14} /> : <IconMinus size={14} />}
             </ActionIcon>
+            <Text
+              fw={700}
+              size="xs"
+              style={{ cursor: "pointer" }}
+              onClick={() => onToggleCategory(category.id!)}
+            >
+              {category.name.toUpperCase()}
+            </Text>
             <HoverCard width={280} shadow="md" withArrow openDelay={200}>
               <HoverCard.Target>
-                <Text
-                  fw={700}
-                  size="xs"
-                  style={{ cursor: "help" }}
-                  onClick={() => onToggleCategory(category.id!)}
-                >
-                  {category.name.toUpperCase()}
-                </Text>
+                <div style={{ cursor: "help", display: "flex", alignItems: "center", opacity: isLabelHovered ? 1 : 0, transition: "opacity 0.2s" }}>
+                  <IconInfoCircle size={15} style={{ color: "var(--mantine-color-dimmed)" }} />
+                </div>
               </HoverCard.Target>
               <HoverCard.Dropdown>
                 <Stack gap="xs">
@@ -204,6 +212,7 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = ({
               subcategory={sub}
               skills={subSkills}
               employees={employees}
+              roles={roles}
               isCollapsed={collapsedStates[sub.id!]}
               hoveredSkillId={hoveredSkillId}
               hoveredEmployeeId={hoveredEmployeeId}

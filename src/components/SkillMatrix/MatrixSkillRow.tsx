@@ -1,16 +1,15 @@
-
 import React from "react";
-import { Text, Group, Stack, Tooltip, Badge, HoverCard, ActionIcon, Box } from "@mantine/core";
-import { IconTrophy, IconPencil, IconInfoCircle } from "@tabler/icons-react";
+import { Text, Group, Stack, Tooltip, Badge, HoverCard, ActionIcon } from "@mantine/core";
+import { IconPencil } from "@tabler/icons-react";
 import { MATRIX_LAYOUT, LEVELS } from "../../constants/skillLevels";
 import { getScoreColor } from "../../utils/skillCalculations";
-import { InfoTooltip } from "../shared/InfoTooltip";
 import { SkillCell } from "./SkillCell";
 import { Employee, Skill, Assessment } from "../../context/DataContext";
 
 interface MatrixSkillRowProps {
   skill: Skill;
   employees: Employee[];
+  roles: { id?: string; name: string; requiredSkills?: { skillId: string; level: number }[] }[];
   hoveredSkillId: string | null;
   hoveredEmployeeId: string | null;
   onSkillHover: (skillId: string | null) => void;
@@ -26,6 +25,7 @@ interface MatrixSkillRowProps {
 export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = ({
   skill,
   employees,
+  roles,
   hoveredSkillId,
   hoveredEmployeeId,
   onSkillHover,
@@ -49,7 +49,6 @@ export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = ({
 
   const maxLevelObj = LEVELS.find(l => l.value === maxLevelVal);
   const maxLabel = maxLevelObj ? maxLevelObj.label : "None";
-  const maxColor = maxLevelObj ? maxLevelObj.color : "gray";
 
   return (
     <div style={{ display: "flex" }}>
@@ -106,9 +105,7 @@ export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = ({
         </HoverCard>
 
         <Group gap={4} align="center">
-          {/* Average Text (Kept as text for skill rows per design, or could be badge) */}
           <Group gap={4} align="center">
-            {/* Info Icon Removed */}
             {!showMaxValues ? (
               // Average Display
               <Text style={{ fontSize: "10px" }} c={getScoreColor(skillAvg)}>
@@ -127,25 +124,25 @@ export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = ({
               )
             )}
           </Group>
-
-          {/* Max Indicator Bubble */}
-          {/* {maxLevelVal > 0 && (
-            <Tooltip label={`Höchstes Level: ${maxLabel}`} withArrow>
-              <Badge size="xs" variant="outline" color={maxColor} style={{ padding: '0 4px', height: '16px' }}>
-                Max: {maxLevelVal}%
-              </Badge>
-            </Tooltip>
-          )} */}
         </Group>
       </div>
       {employees.map((emp) => {
         const assessment = getAssessment(emp.id!, skill.id!);
         const level = assessment?.level ?? 0;
+
+        // Find Role Target
+        let empRole = roles.find(r => r.id === emp.role);
+        if (!empRole && emp.role) {
+          empRole = roles.find(r => r.name === emp.role);
+        }
+        const roleTarget = empRole?.requiredSkills?.find(rs => rs.skillId === skill.id!)?.level;
+
         return (
           <SkillCell
-            key={`${emp.id} -${skill.id} `}
+            key={`${emp.id}-${skill.id}`}
             level={level}
             targetLevel={assessment?.targetLevel}
+            roleTargetLevel={roleTarget}
             isRowHovered={isRowHovered}
             isColumnHovered={hoveredEmployeeId === emp.id}
             onLevelChange={(newLevel) => onLevelChange(emp.id!, skill.id!, newLevel)}

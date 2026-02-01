@@ -677,6 +677,7 @@ export const SkillMatrix: React.FC = () => {
                     onTargetLevelChange={handleTargetLevelChange}
                     showMaxValues={showMaxValues}
                     onEditSkill={handleEditSkill}
+                    roles={roles}
                     onEditCategory={handleEditCategory}
                     onEditSubcategory={handleEditSubcategory}
                   />

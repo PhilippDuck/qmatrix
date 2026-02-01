@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
 import { Text, Group, ActionIcon, Badge, Stack, Tooltip, HoverCard } from "@mantine/core";
-import { IconPlus, IconMinus, IconTrophy, IconPencil } from "@tabler/icons-react";
+import { IconPlus, IconMinus, IconTrophy, IconPencil, IconInfoCircle } from "@tabler/icons-react";
 import { MATRIX_LAYOUT } from "../../constants/skillLevels";
 import { getScoreColor } from "../../utils/skillCalculations";
 import { InfoTooltip } from "../shared/InfoTooltip";
@@ -13,6 +13,7 @@ interface MatrixSubcategoryRowProps {
   subcategory: SubCategory;
   skills: Skill[];
   employees: Employee[];
+  roles: { id?: string; name: string; requiredSkills?: { skillId: string; level: number }[] }[];
   isCollapsed: boolean;
   hoveredSkillId: string | null;
   hoveredEmployeeId: string | null;
@@ -33,6 +34,7 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
   subcategory,
   skills,
   employees,
+  roles,
   isCollapsed,
   hoveredSkillId,
   hoveredEmployeeId,
@@ -52,6 +54,7 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
   const { cellSize, labelWidth } = MATRIX_LAYOUT;
   const subSkillIds = skills.map((s) => s.id!);
   const subAvg = calculateAverage(subSkillIds);
+  const [isLabelHovered, setIsLabelHovered] = useState(false);
 
   // Calculate Max Percentage across all employees (Highest Average)
   const maxAvg = Math.max(...employees.map(e => calculateAverage(subSkillIds, e.id) || 0), 0);
@@ -78,21 +81,26 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
             alignItems: "center",
             justifyContent: "space-between",
           }}
+          onMouseEnter={() => setIsLabelHovered(true)}
+          onMouseLeave={() => setIsLabelHovered(false)}
         >
           <Group gap="xs">
             <ActionIcon size="xs" variant="transparent" onClick={onToggle}>
               {isCollapsed ? <IconPlus size={12} /> : <IconMinus size={12} />}
             </ActionIcon>
+            <Text
+              fw={500}
+              size="xs"
+              style={{ cursor: "pointer" }}
+              onClick={onToggle}
+            >
+              {subcategory.name}
+            </Text>
             <HoverCard width={280} shadow="md" withArrow openDelay={200}>
               <HoverCard.Target>
-                <Text
-                  fw={500}
-                  size="xs"
-                  style={{ cursor: "help" }}
-                  onClick={onToggle}
-                >
-                  {subcategory.name}
-                </Text>
+                <div style={{ cursor: "help", display: "flex", alignItems: "center", opacity: isLabelHovered ? 1 : 0, transition: "opacity 0.2s" }}>
+                  <IconInfoCircle size={15} style={{ color: "var(--mantine-color-dimmed)" }} />
+                </div>
               </HoverCard.Target>
               <HoverCard.Dropdown>
                 <Stack gap="xs">
@@ -175,6 +183,7 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
             key={skill.id}
             skill={skill}
             employees={employees}
+            roles={roles}
             hoveredSkillId={hoveredSkillId}
             hoveredEmployeeId={hoveredEmployeeId}
             onSkillHover={onSkillHover}

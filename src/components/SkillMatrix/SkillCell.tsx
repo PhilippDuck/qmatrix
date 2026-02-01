@@ -6,6 +6,7 @@ import { getLevelByValue } from "../../utils/skillCalculations";
 interface SkillCellProps {
   level: number;
   targetLevel?: number;
+  roleTargetLevel?: number;
   isRowHovered: boolean;
   isColumnHovered: boolean;
   onLevelChange: (newLevel: number) => void;
@@ -17,6 +18,7 @@ interface SkillCellProps {
 export const SkillCell: React.FC<SkillCellProps> = ({
   level,
   targetLevel,
+  roleTargetLevel,
   isRowHovered,
   isColumnHovered,
   onLevelChange,
@@ -30,6 +32,11 @@ export const SkillCell: React.FC<SkillCellProps> = ({
   const hasTarget = targetLevel !== undefined && targetLevel > 0;
   const isBelowTarget = hasTarget && level !== -1 && level < targetLevel;
   const isAtOrAboveTarget = hasTarget && level !== -1 && level >= targetLevel;
+
+  // Check if below role target
+  const hasRoleTarget = roleTargetLevel !== undefined && roleTargetLevel > 0;
+  const isBelowRoleTarget = hasRoleTarget && level !== -1 && level < roleTargetLevel;
+  const isAtOrAboveRoleTarget = hasRoleTarget && level !== -1 && level >= roleTargetLevel;
 
   return (
     <Menu shadow="md" width="auto" position="bottom" withArrow>
@@ -67,7 +74,7 @@ export const SkillCell: React.FC<SkillCellProps> = ({
           >
             {levelObj?.label}
           </Badge>
-          {/* Subtle indicator when below target */}
+          {/* Individual Target: Below (Orange) */}
           {isBelowTarget && (
             <div
               style={{
@@ -81,7 +88,7 @@ export const SkillCell: React.FC<SkillCellProps> = ({
               }}
             />
           )}
-          {/* Subtle indicator when at/above target */}
+          {/* Individual Target: Met/Above (Green) */}
           {isAtOrAboveTarget && (
             <div
               style={{
@@ -95,6 +102,40 @@ export const SkillCell: React.FC<SkillCellProps> = ({
               }}
             />
           )}
+
+          {/* Role Target: Below (Orange) */}
+          {isBelowRoleTarget && (
+            <div
+              title={`Rolle fordert: ${roleTargetLevel}% (Defizit)`}
+              style={{
+                position: "absolute",
+                top: 2,
+                right: 2,
+                width: 0,
+                height: 0,
+                borderLeft: "6px solid transparent",
+                borderTop: "6px solid var(--mantine-color-orange-filled)",
+                zIndex: 10,
+              }}
+            />
+          )}
+          {/* Role Target: Met/Above (Green) */}
+          {isAtOrAboveRoleTarget && (
+            <div
+              title={`Rolle fordert: ${roleTargetLevel}% (Erreicht)`}
+              style={{
+                position: "absolute",
+                top: 2,
+                right: 2,
+                width: 0,
+                height: 0,
+                borderLeft: "6px solid transparent",
+                borderTop: "6px solid var(--mantine-color-green-filled)",
+                zIndex: 10,
+              }}
+            />
+          )}
+
         </div>
       </Menu.Target>
       <Menu.Dropdown p="sm">
@@ -149,6 +190,11 @@ export const SkillCell: React.FC<SkillCellProps> = ({
                 </Badge>
               ))}
             </Group>
+            {roleTargetLevel !== undefined && (
+              <Text size="xs" c="dimmed" mt={4} style={{ fontSize: '10px' }}>
+                * Rolle fordert: <Text span fw={700}>{roleTargetLevel}%</Text>
+              </Text>
+            )}
           </div>
         </Stack>
       </Menu.Dropdown>
