@@ -473,6 +473,7 @@ export const PlanDetail: React.FC<PlanDetailProps> = ({
         employeeId={plan.employeeId}
         skillGaps={skillGaps}
         editingMeasure={editingMeasure}
+        onDelete={handleDeleteMeasure}
       />
     </Box>
   );

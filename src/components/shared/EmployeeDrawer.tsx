@@ -19,6 +19,7 @@ interface EmployeeDrawerProps {
   opened: boolean;
   onClose: () => void;
   onSave: (name: string, department: string, role: string) => Promise<void>;
+  onDelete?: (id: string) => Promise<void>;
   initialData?: { name: string; department: string; role?: string };
   isEditing?: boolean;
   employeeId?: string | null;
@@ -28,6 +29,7 @@ export const EmployeeDrawer: React.FC<EmployeeDrawerProps> = ({
   opened,
   onClose,
   onSave,
+  onDelete,
   initialData,
   isEditing = false,
   employeeId,
@@ -72,6 +74,22 @@ export const EmployeeDrawer: React.FC<EmployeeDrawerProps> = ({
       console.error("Fehler beim Speichern:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!employeeId || !onDelete) return;
+
+    if (window.confirm("Sind Sie sicher, dass Sie diesen Mitarbeiter löschen möchten?")) {
+      setLoading(true);
+      try {
+        await onDelete(employeeId);
+        onClose();
+      } catch (error) {
+        console.error("Fehler beim Löschen:", error);
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -157,17 +175,24 @@ export const EmployeeDrawer: React.FC<EmployeeDrawerProps> = ({
                 onChange={(value) => setFormData({ ...formData, role: value || "" })}
               />
 
-              <Group justify="flex-end" mt="xl">
-                <Button variant="subtle" color="gray" onClick={onClose}>
-                  Abbrechen
-                </Button>
-                <Button
-                  onClick={handleSave}
-                  loading={loading}
-                  leftSection={<IconPlus size={16} />}
-                >
-                  Aktualisieren
-                </Button>
+              <Group justify="space-between" mt="xl">
+                {onDelete && (
+                  <Button variant="light" color="red" onClick={handleDelete} loading={loading}>
+                    Löschen
+                  </Button>
+                )}
+                <Group>
+                  <Button variant="subtle" color="gray" onClick={onClose}>
+                    Abbrechen
+                  </Button>
+                  <Button
+                    onClick={handleSave}
+                    loading={loading}
+                    leftSection={<IconPlus size={16} />}
+                  >
+                    Aktualisieren
+                  </Button>
+                </Group>
               </Group>
             </Stack>
           </Tabs.Panel>

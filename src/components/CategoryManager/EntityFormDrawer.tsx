@@ -33,6 +33,8 @@ interface EntityFormDrawerProps {
   onRolesChange?: (values: string[]) => void;
 
   onSave: () => void;
+  onDelete?: () => void; // Optional delete callback
+  parentContext?: string; // e.g. "Kategorie: Development"
 
   departments: Department[];
   roles: EmployeeRole[];
@@ -58,6 +60,8 @@ export const EntityFormDrawer: React.FC<EntityFormDrawerProps> = ({
   onDepartmentChange,
   onRolesChange,
   onSave,
+  onDelete,
+  parentContext,
   departments,
   roles,
 }) => {
@@ -79,6 +83,21 @@ export const EntityFormDrawer: React.FC<EntityFormDrawerProps> = ({
       }
     >
       <Stack gap="md">
+        {parentContext && (
+          <div
+            style={{
+              backgroundColor: "var(--mantine-color-blue-light)",
+              padding: "8px 12px",
+              borderRadius: "4px",
+              border: "1px solid var(--mantine-color-blue-2)",
+            }}
+          >
+            <Text size="sm" c="blue.8" fw={500}>
+              Zuordnung: {parentContext}
+            </Text>
+          </div>
+        )}
+
         <Divider
           label={`Eingabe für ${MODE_LABELS[formMode]}`}
           labelPosition="center"
@@ -128,13 +147,22 @@ export const EntityFormDrawer: React.FC<EntityFormDrawerProps> = ({
           </>
         )}
 
-        <Group justify="flex-end" mt="xl">
-          <Button variant="subtle" color="gray" onClick={onClose}>
-            Abbrechen
-          </Button>
-          <Button onClick={onSave} color="blue">
-            Speichern
-          </Button>
+        <Group justify="space-between" mt="xl">
+          {editingId && onDelete ? (
+            <Button variant="light" color="red" onClick={onDelete}>
+              Löschen
+            </Button>
+          ) : (
+            <div /> // Spacer if no delete button
+          )}
+          <Group gap="sm">
+            <Button variant="subtle" color="gray" onClick={onClose}>
+              Abbrechen
+            </Button>
+            <Button onClick={onSave} color="blue">
+              Speichern
+            </Button>
+          </Group>
         </Group>
       </Stack>
     </Drawer>

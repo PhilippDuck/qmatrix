@@ -181,13 +181,29 @@ export const DepartmentManager: React.FC = () => {
                             if (e.key === 'Enter') handleSave();
                         }}
                     />
-                    <Group justify="flex-end" mt="md">
-                        <Button variant="default" onClick={close}>
-                            Abbrechen
-                        </Button>
-                        <Button onClick={handleSave} loading={loading}>
-                            Speichern
-                        </Button>
+                    <Group justify="space-between" mt="md">
+                        {editingId ? (
+                            <Button
+                                color="red"
+                                variant="light"
+                                onClick={() => {
+                                    handleDelete(editingId, name);
+                                    close();
+                                }}
+                            >
+                                Löschen
+                            </Button>
+                        ) : (
+                            <div />
+                        )}
+                        <Group>
+                            <Button variant="default" onClick={close}>
+                                Abbrechen
+                            </Button>
+                            <Button onClick={handleSave} loading={loading}>
+                                Speichern
+                            </Button>
+                        </Group>
                     </Group>
                 </Stack>
             </Drawer>

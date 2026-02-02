@@ -39,6 +39,7 @@ interface MeasureFormProps {
   employeeId: string;
   skillGaps: SkillGap[];
   editingMeasure?: QualificationMeasure | null;
+  onDelete?: (measureId: string) => Promise<void>;
 }
 
 export const MeasureForm: React.FC<MeasureFormProps> = ({
@@ -48,6 +49,7 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({
   employeeId,
   skillGaps,
   editingMeasure,
+  onDelete,
 }) => {
   const {
     skills,
@@ -162,6 +164,13 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({
       console.error("Fehler beim Speichern:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (editingMeasure && onDelete) {
+      await onDelete(editingMeasure.id!);
+      onClose();
     }
   };
 
@@ -362,7 +371,7 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({
           <DateInput
             label="Startdatum"
             placeholder="Startdatum wählen"
-            value={formData.startDate}
+            value={formData.startDate || null}
             onChange={(value) =>
               setFormData({ ...formData, startDate: value || undefined })
             }
@@ -372,12 +381,12 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({
           <DateInput
             label="Zieldatum"
             placeholder="Zieldatum wählen"
-            value={formData.targetDate}
+            value={formData.targetDate || null}
             onChange={(value) =>
               setFormData({ ...formData, targetDate: value || undefined })
             }
             clearable
-            minDate={formData.startDate}
+            minDate={formData.startDate || undefined}
           />
         </Group>
 
@@ -391,18 +400,27 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({
           minRows={3}
         />
 
-        <Group justify="flex-end" mt="xl">
-          <Button variant="subtle" color="gray" onClick={onClose}>
-            Abbrechen
-          </Button>
-          <Button
-            onClick={handleSave}
-            loading={loading}
-            disabled={!formData.skillId}
-            leftSection={<IconPlus size={16} />}
-          >
-            {isEditing ? "Aktualisieren" : "Maßnahme hinzufügen"}
-          </Button>
+        <Group justify="space-between" mt="xl">
+          {isEditing && onDelete ? (
+            <Button variant="light" color="red" onClick={handleDelete}>
+              Löschen
+            </Button>
+          ) : (
+            <div />
+          )}
+          <Group>
+            <Button variant="subtle" color="gray" onClick={onClose}>
+              Abbrechen
+            </Button>
+            <Button
+              onClick={handleSave}
+              loading={loading}
+              disabled={!formData.skillId}
+              leftSection={<IconPlus size={16} />}
+            >
+              {isEditing ? "Aktualisieren" : "Maßnahme hinzufügen"}
+            </Button>
+          </Group>
         </Group>
       </Stack>
     </Drawer>

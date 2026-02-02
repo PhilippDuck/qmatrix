@@ -55,6 +55,10 @@ export const SkillMatrix: React.FC = () => {
     updateSkill,
     updateCategory,
     updateSubCategory,
+    deleteCategory,
+    deleteSubCategory,
+    deleteSkill,
+    deleteEmployee,
     importData,
   } = useData();
 
@@ -493,6 +497,64 @@ export const SkillMatrix: React.FC = () => {
     setEditParentId(null);
   };
 
+  const handleDeleteEntity = async () => {
+    if (!editEntityId) return;
+
+    if (window.confirm("Sind Sie sicher, dass Sie diesen Eintrag löschen möchten?")) {
+      if (editEntityType === 'category') {
+        await deleteCategory(editEntityId);
+      } else if (editEntityType === 'subcategory') {
+        await deleteSubCategory(editEntityId);
+      } else if (editEntityType === 'skill') {
+        await deleteSkill(editEntityId);
+      }
+      setEditDrawerOpened(false);
+      setEditEntityId(null);
+      setEditParentId(null);
+    }
+  };
+
+  const parentContext = useMemo(() => {
+    if (editEntityType === 'category') return undefined; // Categories are top-level
+
+    if (editEntityType === 'subcategory') {
+      // If creating, we have editParentId (categoryId)
+      if (editParentId) {
+        const cat = categories.find(c => c.id === editParentId);
+        return cat ? `Kategorie: ${cat.name}` : undefined;
+      }
+      // If editing, we have editEntityId. Find parent category.
+      if (editEntityId) {
+        const sub = subcategories.find(s => s.id === editEntityId);
+        if (sub) {
+          const cat = categories.find(c => c.id === sub.categoryId);
+          return cat ? `Kategorie: ${cat.name}` : undefined;
+        }
+      }
+    }
+
+    if (editEntityType === 'skill') {
+      // If creating, we have editParentId (subCategoryId)
+      if (editParentId) {
+        const sub = subcategories.find(s => s.id === editParentId);
+        if (sub) {
+          const cat = categories.find(c => c.id === sub.categoryId);
+          return sub ? `Unterkategorie: ${sub.name} (in ${cat?.name})` : undefined;
+        }
+      }
+      // If editing
+      if (editEntityId) {
+        const skill = skills.find(s => s.id === editEntityId);
+        if (skill) {
+          const sub = subcategories.find(s => s.id === skill.subCategoryId);
+          const cat = sub ? categories.find(c => c.id === sub.categoryId) : undefined;
+          return sub ? `Unterkategorie: ${sub.name} ${cat ? `(in ${cat.name})` : ''}` : undefined;
+        }
+      }
+    }
+    return undefined;
+  }, [editEntityType, editEntityId, editParentId, categories, subcategories, skills]);
+
   return (
     <Box
       style={{
@@ -894,6 +956,7 @@ export const SkillMatrix: React.FC = () => {
             })()
             : undefined
         }
+        onDelete={deleteEmployee}
       />
 
       <EntityFormDrawer
@@ -914,6 +977,8 @@ export const SkillMatrix: React.FC = () => {
         onDepartmentChange={setEditDepartmentId}
         onRolesChange={setEditRoleIds}
         onSave={handleSaveEditedEntity}
+        onDelete={handleDeleteEntity}
+        parentContext={parentContext}
         departments={departments}
         roles={roles}
       />
