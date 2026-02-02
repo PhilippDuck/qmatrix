@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Badge, Text, HoverCard, Stack, Group, Divider, ThemeIcon, Box, SimpleGrid, Tooltip, ActionIcon } from "@mantine/core";
-import { IconBuilding, IconHistory, IconTrendingUp, IconTrendingDown, IconMinus, IconPencil } from "@tabler/icons-react";
+import { IconBuilding, IconHistory, IconTrendingUp, IconTrendingDown, IconMinus, IconPencil, IconPlus } from "@tabler/icons-react";
 import { MATRIX_LAYOUT } from "../../constants/skillLevels";
 import { getScoreColor } from "../../utils/skillCalculations";
 import { Employee, Skill, Assessment, useData, AssessmentLogEntry } from "../../context/DataContext";
@@ -18,6 +18,8 @@ interface MatrixHeaderProps {
   getAssessment: (empId: string, skillId: string) => Assessment | undefined;
   onEditEmployee: (employeeId: string) => void;
   showMaxValues: boolean;
+  isEditMode: boolean;
+  onAddEmployee: () => void;
 }
 
 const EmployeeInfoCard: React.FC<{
@@ -346,6 +348,8 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
   getAssessment,
   onEditEmployee,
   showMaxValues,
+  isEditMode,
+  onAddEmployee,
 }) => {
   const { anonymizeName } = usePrivacy();
   const { cellSize, labelWidth, headerHeight } = MATRIX_LAYOUT;
@@ -470,6 +474,26 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
             </HoverCard>
           );
         })}
+        {/* Add Employee Button Column */}
+        {isEditMode && (
+          <div
+            style={{
+              width: cellSize,
+              height: headerHeight,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              borderBottom: "2px solid var(--mantine-color-default-border)",
+              borderRight: "1px solid var(--mantine-color-default-border)",
+            }}
+          >
+            <Tooltip label="Mitarbeiter hinzufügen">
+              <ActionIcon variant="light" color="blue" onClick={onAddEmployee} size="lg">
+                <IconPlus size={20} />
+              </ActionIcon>
+            </Tooltip>
+          </div>
+        )}
       </div>
     </div>
   );

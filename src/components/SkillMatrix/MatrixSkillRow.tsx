@@ -20,6 +20,7 @@ interface MatrixSkillRowProps {
   onTargetLevelChange: (employeeId: string, skillId: string, targetLevel: number | undefined) => void;
   showMaxValues: boolean;
   onEditSkill: (skillId: string) => void;
+  isEditMode: boolean;
 }
 
 export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = ({
@@ -36,9 +37,10 @@ export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = ({
   onTargetLevelChange,
   showMaxValues,
   onEditSkill,
+  isEditMode,
 }) => {
   const { qualificationMeasures, qualificationPlans } = useData();
-  const { labelWidth } = MATRIX_LAYOUT;
+  const { labelWidth, cellSize } = MATRIX_LAYOUT;
   const isRowHovered = hoveredSkillId === skill.id;
   const skillAvg = calculateSkillAverage(skill.id!);
 
@@ -173,6 +175,17 @@ export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = ({
           />
         );
       })}
+      {/* Empty Placeholder for Add Employee Column */}
+      {isEditMode && (
+        <div
+          style={{
+            width: cellSize,
+            borderBottom: "1px solid var(--mantine-color-default-border)",
+            borderRight: "1px solid var(--mantine-color-default-border)",
+            backgroundColor: "transparent",
+          }}
+        />
+      )}
     </div>
   );
 };

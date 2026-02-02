@@ -31,6 +31,9 @@ interface MatrixCategoryRowProps {
   onEditSkill: (skillId: string) => void;
   onEditCategory: (categoryId: string) => void;
   onEditSubcategory: (subcategoryId: string) => void;
+  isEditMode: boolean;
+  onAddSubcategory: () => void;
+  onAddSkill: (subCategoryId: string) => void;
 }
 
 
@@ -56,6 +59,9 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = ({
   onEditSkill,
   onEditCategory,
   onEditSubcategory,
+  isEditMode,
+  onAddSubcategory,
+  onAddSkill,
 }) => {
   const { anonymizeName } = usePrivacy();
   const isCatCollapsed = collapsedStates[category.id!];
@@ -201,35 +207,88 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = ({
             );
           })
         }
+        {/* Empty Placeholder for Add Employee Column */}
+        {isEditMode && (
+          <div
+            style={{
+              width: cellSize,
+              borderBottom: "1px solid var(--mantine-color-default-border)",
+              borderRight: "1px solid var(--mantine-color-default-border)",
+              backgroundColor: "transparent",
+            }}
+          />
+        )}
       </div >
 
-      {!isCatCollapsed &&
-        categorySubcategories.map((sub) => {
-          const subSkills = skills.filter((s) => s.subCategoryId === sub.id);
-          return (
-            <MatrixSubcategoryRow
-              key={sub.id}
-              subcategory={sub}
-              skills={subSkills}
-              employees={employees}
-              roles={roles}
-              isCollapsed={collapsedStates[sub.id!]}
-              hoveredSkillId={hoveredSkillId}
-              hoveredEmployeeId={hoveredEmployeeId}
-              onToggle={() => onToggleSubcategory(sub.id!)}
-              onSkillHover={onSkillHover}
-              onEmployeeHover={onEmployeeHover}
-              calculateAverage={calculateAverage}
-              getAssessment={getAssessment}
-              onBulkSetLevel={onBulkSetLevel}
-              onLevelChange={onLevelChange}
-              onTargetLevelChange={onTargetLevelChange}
-              showMaxValues={showMaxValues}
-              onEditSkill={onEditSkill}
-              onEditSubcategory={onEditSubcategory}
-            />
-          );
-        })}
+      {!isCatCollapsed && (
+        <>
+          {categorySubcategories.map((sub) => {
+            const subSkills = skills.filter((s) => s.subCategoryId === sub.id);
+            return (
+              <MatrixSubcategoryRow
+                key={sub.id}
+                subcategory={sub}
+                skills={subSkills}
+                employees={employees}
+                roles={roles}
+                isCollapsed={collapsedStates[sub.id!]}
+                hoveredSkillId={hoveredSkillId}
+                hoveredEmployeeId={hoveredEmployeeId}
+                onToggle={() => onToggleSubcategory(sub.id!)}
+                onSkillHover={onSkillHover}
+                onEmployeeHover={onEmployeeHover}
+                calculateAverage={calculateAverage}
+                getAssessment={getAssessment}
+                onBulkSetLevel={onBulkSetLevel}
+                onLevelChange={onLevelChange}
+                onTargetLevelChange={onTargetLevelChange}
+                showMaxValues={showMaxValues}
+                onEditSkill={onEditSkill}
+                onEditSubcategory={onEditSubcategory}
+                isEditMode={isEditMode}
+                onAddSkill={onAddSkill}
+              />
+            );
+          })}
+          {isEditMode && (
+            <div
+              style={{
+                display: "flex",
+                borderBottom: "1px solid var(--mantine-color-default-border)",
+                backgroundColor: "var(--mantine-color-body)",
+              }}
+            >
+              <div
+                style={{
+                  width: labelWidth,
+                  padding: "4px 12px 4px 24px",
+                  position: "sticky",
+                  left: 0,
+                  zIndex: 10,
+                  backgroundColor: "var(--mantine-color-body)",
+                  borderRight: "1px solid var(--mantine-color-default-border)",
+                }}
+              >
+                <ActionIcon
+                  variant="subtle"
+                  size="sm"
+                  color="blue"
+                  onClick={onAddSubcategory}
+                  style={{ width: "100%", justifyContent: "flex-start" }}
+                >
+                  <IconPlus size={14} style={{ marginRight: 8 }} />
+                  <span style={{ fontSize: "12px" }}>Unterkategorie hinzufügen</span>
+                </ActionIcon>
+
+              </div>
+              {/* Empty Space for Employee Columns */}
+              <div style={{ flex: 1 }} />
+              {/* Empty Space for Add Employee Column */}
+              <div style={{ width: cellSize }} />
+            </div>
+          )}
+        </>
+      )}
     </div >
   );
 };

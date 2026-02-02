@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect } from "react";
+import { MATRIX_LAYOUT } from "../../constants/skillLevels";
 import {
   Box,
   Group,
@@ -16,6 +17,7 @@ import {
   IconFilter,
   IconSortAscending,
   IconSortDescending,
+  IconEdit,
 } from "@tabler/icons-react";
 import { useData } from "../../context/DataContext";
 import { CreateContextMenu } from "../shared/CreateContextMenu";
@@ -60,6 +62,7 @@ export const SkillMatrix: React.FC = () => {
   const [focusEmployeeId, setFocusEmployeeId] = useState<string | null>(null);
   const [hoveredSkillId, setHoveredSkillId] = useState<string | null>(null);
   const [hoveredEmployeeId, setHoveredEmployeeId] = useState<string | null>(null);
+  const [isEditMode, setIsEditMode] = useState(false);
 
   // Employee Drawer state
   const [employeeDrawerOpened, setEmployeeDrawerOpened] = useState(false);
@@ -71,9 +74,12 @@ export const SkillMatrix: React.FC = () => {
   // Skill Edit State
   // Entity Edit State (Skill, Category, Subcategory)
   const [editEntityId, setEditEntityId] = useState<string | null>(null);
+  const [editParentId, setEditParentId] = useState<string | null>(null); // For creating new items
   const [editEntityType, setEditEntityType] = useState<'skill' | 'category' | 'subcategory'>('skill');
   const [editEntityName, setEditEntityName] = useState("");
   const [editEntityDescription, setEditEntityDescription] = useState("");
+  const [editDepartmentId, setEditDepartmentId] = useState<string | null>(null);
+  const [editRoleIds, setEditRoleIds] = useState<string[]>([]);
   const [editDrawerOpened, setEditDrawerOpened] = useState(false);
 
   // Context Menu State
@@ -360,6 +366,35 @@ export const SkillMatrix: React.FC = () => {
     await addSkill({ subCategoryId: subcategoryId, name, description });
   };
 
+  const handleAddCategory = () => {
+    setEditEntityId(null);
+    setEditEntityType('category');
+    setEditEntityName("");
+    setEditEntityDescription("");
+    setEditParentId(null);
+    setEditDrawerOpened(true);
+  };
+
+  const handleAddSubCategory = (categoryId: string) => {
+    setEditEntityId(null);
+    setEditEntityType('subcategory');
+    setEditEntityName("");
+    setEditEntityDescription("");
+    setEditParentId(categoryId);
+    setEditDrawerOpened(true);
+  };
+
+  const handleOpenAddSkill = (subCategoryId: string) => {
+    setEditEntityId(null);
+    setEditEntityType('skill');
+    setEditEntityName("");
+    setEditEntityDescription("");
+    setEditParentId(subCategoryId);
+    setEditDepartmentId(null);
+    setEditRoleIds([]);
+    setEditDrawerOpened(true);
+  };
+
   const handleEditSkill = (skillId: string) => {
     const skill = skills.find((s) => s.id === skillId);
     if (skill) {
@@ -367,6 +402,8 @@ export const SkillMatrix: React.FC = () => {
       setEditEntityType('skill');
       setEditEntityName(skill.name);
       setEditEntityDescription(skill.description || "");
+      setEditDepartmentId(skill.departmentId || null);
+      setEditRoleIds(skill.requiredByRoleIds || []);
       setEditDrawerOpened(true);
     }
   };
@@ -394,7 +431,10 @@ export const SkillMatrix: React.FC = () => {
   };
 
   const handleSaveEditedEntity = async () => {
-    if (editEntityId && editEntityName.trim()) {
+    if (!editEntityName.trim()) return;
+
+    if (editEntityId) {
+      // UPDATE Mode
       if (editEntityType === 'skill') {
         const originalSkill = skills.find(s => s.id === editEntityId);
         if (originalSkill) {
@@ -402,7 +442,13 @@ export const SkillMatrix: React.FC = () => {
             subCategoryId: originalSkill.subCategoryId,
             name: editEntityName.trim(),
             description: editEntityDescription.trim(),
+            departmentId: editDepartmentId || undefined,
+            requiredByRoleIds: editRoleIds,
           });
+          // Also invoke helper if role relation needs explicit update or just relying on skill update is enough? 
+          // DataContext updateSkillsForRole handles the inverse "Role -> Skills". 
+          // Here we are updating "Skill -> Roles". 
+          // If the DB logic relies on 'requiredByRoleIds' on the skill object, then we are good.
         }
       } else if (editEntityType === 'category') {
         await updateCategory(editEntityId, {
@@ -419,9 +465,32 @@ export const SkillMatrix: React.FC = () => {
           });
         }
       }
-      setEditDrawerOpened(false);
-      setEditEntityId(null);
+    } else {
+      // CREATE Mode
+      if (editEntityType === 'category') {
+        await addCategory({
+          name: editEntityName.trim(),
+          description: editEntityDescription.trim(),
+        });
+      } else if (editEntityType === 'subcategory' && editParentId) {
+        await addSubCategory({
+          categoryId: editParentId,
+          name: editEntityName.trim(),
+          description: editEntityDescription.trim(),
+        });
+      } else if (editEntityType === 'skill' && editParentId) {
+        await addSkill({
+          subCategoryId: editParentId,
+          name: editEntityName.trim(),
+          description: editEntityDescription.trim(),
+          departmentId: editDepartmentId || undefined,
+          requiredByRoleIds: editRoleIds,
+        });
+      }
     }
+    setEditDrawerOpened(false);
+    setEditEntityId(null);
+    setEditParentId(null);
   };
 
   return (
@@ -461,6 +530,17 @@ export const SkillMatrix: React.FC = () => {
                     size="lg"
                   >
                     <IconLayoutNavbarCollapse size={20} />
+                  </ActionIcon>
+                </Tooltip>
+
+                <Tooltip label={isEditMode ? "Bearbeitungsmodus beenden" : "Bearbeitungsmodus aktivieren"}>
+                  <ActionIcon
+                    variant={isEditMode ? "filled" : "light"}
+                    color={isEditMode ? "blue" : "gray"}
+                    onClick={() => setIsEditMode(!isEditMode)}
+                    size="lg"
+                  >
+                    <IconEdit size={20} />
                   </ActionIcon>
                 </Tooltip>
                 <Tooltip label={showMaxValues ? "Zeige Durchschnittswerte" : "Zeige Max-Werte"}>
@@ -715,6 +795,8 @@ export const SkillMatrix: React.FC = () => {
                   getAssessment={getAssessment}
                   onEditEmployee={handleEditEmployee}
                   showMaxValues={showMaxValues}
+                  isEditMode={isEditMode}
+                  onAddEmployee={() => setEmployeeDrawerOpened(true)}
                 />
 
                 {displayedCategories.map((cat) => (
@@ -741,8 +823,42 @@ export const SkillMatrix: React.FC = () => {
                     roles={roles}
                     onEditCategory={handleEditCategory}
                     onEditSubcategory={handleEditSubcategory}
+                    isEditMode={isEditMode}
+                    onAddSubcategory={() => handleAddSubCategory(cat.id!)}
+                    onAddSkill={(subId) => handleOpenAddSkill(subId)}
                   />
                 ))}
+
+                {isEditMode && (
+                  <div style={{ display: "flex", borderBottom: "1px solid var(--mantine-color-default-border)", backgroundColor: "var(--mantine-color-body)" }}>
+                    <div
+                      style={{
+                        width: MATRIX_LAYOUT.labelWidth,
+                        padding: "8px 12px",
+                        position: "sticky",
+                        left: 0,
+                        zIndex: 10,
+                        backgroundColor: "var(--mantine-color-body)",
+                        borderRight: "1px solid var(--mantine-color-default-border)",
+                      }}
+                    >
+                      <Button
+                        variant="subtle"
+                        size="xs"
+                        leftSection={<IconPlus size={16} />}
+                        onClick={handleAddCategory}
+                        fullWidth
+                        justify="flex-start"
+                      >
+                        Kategorie hinzufügen
+                      </Button>
+                    </div>
+                    {/* Horizontal spacer for employees - just flex 1 to fill width */}
+                    <div style={{ flex: 1 }} />
+                    {/* Spacer for "Add Employee" column from header */}
+                    <div style={{ width: MATRIX_LAYOUT.cellSize, borderLeft: "1px solid var(--mantine-color-default-border)" }} />
+                  </div>
+                )}
               </div>
             </div>
           </Card>
@@ -785,17 +901,18 @@ export const SkillMatrix: React.FC = () => {
         onClose={() => {
           setEditDrawerOpened(false);
           setEditEntityId(null);
+          setEditParentId(null);
         }}
         formMode={editEntityType}
         editingId={editEntityId}
         inputValue={editEntityName}
         inputDescription={editEntityDescription}
-        selectedDepartmentId={null}
-        selectedRoleIds={[]}
+        selectedDepartmentId={editDepartmentId}
+        selectedRoleIds={editRoleIds}
         onInputChange={setEditEntityName}
         onDescriptionChange={setEditEntityDescription}
-        onDepartmentChange={() => { }}
-        onRolesChange={() => { }}
+        onDepartmentChange={setEditDepartmentId}
+        onRolesChange={setEditRoleIds}
         onSave={handleSaveEditedEntity}
         departments={departments}
         roles={roles}

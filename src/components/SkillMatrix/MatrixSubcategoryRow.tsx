@@ -29,6 +29,8 @@ interface MatrixSubcategoryRowProps {
   showMaxValues: boolean;
   onEditSkill: (skillId: string) => void;
   onEditSubcategory: (subcategoryId: string) => void;
+  isEditMode: boolean;
+  onAddSkill: (subCategoryId: string) => void;
 }
 export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
   subcategory,
@@ -49,6 +51,8 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
   showMaxValues,
   onEditSkill,
   onEditSubcategory,
+  isEditMode,
+  onAddSkill,
 }) => {
   const { anonymizeName } = usePrivacy();
   const { cellSize, labelWidth } = MATRIX_LAYOUT;
@@ -175,29 +179,80 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
             </BulkLevelMenu>
           );
         })}
+        {/* Empty Placeholder for Add Employee Column */}
+        {isEditMode && (
+          <div
+            style={{
+              width: cellSize,
+              borderBottom: "1px solid var(--mantine-color-default-border)",
+              borderRight: "1px solid var(--mantine-color-default-border)",
+              backgroundColor: "transparent",
+            }}
+          />
+        )}
       </div>
 
-      {!isCollapsed &&
-        skills.map((skill) => (
-          <MatrixSkillRow
-            key={skill.id}
-            skill={skill}
-            employees={employees}
-            roles={roles}
-            hoveredSkillId={hoveredSkillId}
-            hoveredEmployeeId={hoveredEmployeeId}
-            onSkillHover={onSkillHover}
-            onEmployeeHover={onEmployeeHover}
-            getAssessment={getAssessment}
-            calculateSkillAverage={(skillId) =>
-              calculateAverage([skillId]) ?? null
-            }
-            onLevelChange={onLevelChange}
-            onTargetLevelChange={onTargetLevelChange}
-            showMaxValues={showMaxValues}
-            onEditSkill={onEditSkill}
-          />
-        ))}
+      {!isCollapsed && (
+        <>
+          {skills.map((skill) => (
+            <MatrixSkillRow
+              key={skill.id}
+              skill={skill}
+              employees={employees}
+              roles={roles}
+              hoveredSkillId={hoveredSkillId}
+              hoveredEmployeeId={hoveredEmployeeId}
+              onSkillHover={onSkillHover}
+              onEmployeeHover={onEmployeeHover}
+              getAssessment={getAssessment}
+              calculateSkillAverage={(skillId) =>
+                calculateAverage([skillId]) ?? null
+              }
+              onLevelChange={onLevelChange}
+              onTargetLevelChange={onTargetLevelChange}
+              showMaxValues={showMaxValues}
+              onEditSkill={onEditSkill}
+              isEditMode={isEditMode}
+            />
+          ))}
+          {isEditMode && (
+            <div
+              style={{
+                display: "flex",
+                borderBottom: "1px solid var(--mantine-color-default-border)",
+                backgroundColor: "var(--mantine-color-body)",
+              }}
+            >
+              <div
+                style={{
+                  width: labelWidth,
+                  padding: "4px 12px 4px 44px",
+                  position: "sticky",
+                  left: 0,
+                  zIndex: 5,
+                  backgroundColor: "var(--mantine-color-body)",
+                  borderRight: "1px solid var(--mantine-color-default-border)",
+                }}
+              >
+                <ActionIcon
+                  variant="subtle"
+                  size="sm"
+                  color="blue"
+                  onClick={() => onAddSkill(subcategory.id!)}
+                  style={{ width: "100%", justifyContent: "flex-start" }}
+                >
+                  <IconPlus size={14} style={{ marginRight: 8 }} />
+                  <span style={{ fontSize: "12px" }}>Skill hinzufügen</span>
+                </ActionIcon>
+              </div>
+              {/* Empty Space for Employee Columns */}
+              <div style={{ flex: 1 }} />
+              {/* Empty Space for Add Employee Column */}
+              <div style={{ width: cellSize }} />
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 };
