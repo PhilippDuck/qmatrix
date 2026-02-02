@@ -67,7 +67,10 @@ export const QualificationPlan: React.FC = () => {
   const { anonymizeName } = usePrivacy();
 
   const [activeTab, setActiveTab] = useState<string | null>(() => {
-    return localStorage.getItem("qualification-plan-tab") || "overview";
+    const saved = localStorage.getItem("qualification-plan-tab");
+    // Prevent restoring "detail" state since we don't persist selectedPlanId
+    if (saved === "detail" || !saved) return "overview";
+    return saved;
   });
 
   const [drawerOpened, { open: openDrawer, close: closeDrawer }] = useDisclosure(false);
@@ -78,7 +81,7 @@ export const QualificationPlan: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
-    if (activeTab) {
+    if (activeTab && activeTab !== "detail") {
       localStorage.setItem("qualification-plan-tab", activeTab);
     }
   }, [activeTab]);

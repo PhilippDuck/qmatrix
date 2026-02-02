@@ -2,6 +2,8 @@
 
 **SkillGrid** (ehemals Q-Track) ist eine lokale Webanwendung zur Verwaltung von Mitarbeiter-Skills, Qualifizierungsniveaus und Abteilungsstrukturen. Die Anwendung läuft vollständig im Browser (Offline-First) und speichert alle Daten lokal via IndexedDB.
 
+[Live Demo](https://skill-grid.netlify.app/)
+
 ![SkillGrid Screenshot](./screenshot.png)
 
 ## Funktionen

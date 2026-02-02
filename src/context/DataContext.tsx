@@ -19,12 +19,17 @@ import {
   MergeReport,
   MergeDiff,
   MergeItemDiff,
-  QualificationPlan,
+  QualificationPlan as DBQualificationPlan,
   QualificationMeasure,
 } from "../services/indexeddb";
 
 // Re-export types for convenience
-export type { Employee, Category, SubCategory, Skill, Assessment, AssessmentLogEntry, Department, EmployeeRole, ExportData, MergeReport, MergeDiff, MergeItemDiff, QualificationPlan, QualificationMeasure };
+export type { Employee, Category, SubCategory, Skill, Assessment, AssessmentLogEntry, Department, EmployeeRole, ExportData, MergeReport, MergeDiff, MergeItemDiff, QualificationMeasure };
+
+// Redefine QualificationPlan locally to make targetRoleId optional
+export interface QualificationPlan extends Omit<DBQualificationPlan, 'targetRoleId'> {
+  targetRoleId?: string; // Made optional
+}
 
 // Helper type for skill gap analysis
 export interface SkillGap {
@@ -129,7 +134,7 @@ interface DataContextType {
   getQualificationMeasuresForPlan: (planId: string) => QualificationMeasure[];
 
   // Helper methods
-  getSkillGapsForEmployee: (employeeId: string, targetRoleId: string) => SkillGap[];
+  getSkillGapsForEmployee: (employeeId: string, targetRoleId?: string | null) => SkillGap[];
   getPotentialMentors: (skillId: string, excludeEmployeeId?: string) => Employee[];
 
   // Data management
@@ -493,7 +498,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
   // Qualification Plan methods
   const addQualificationPlan = async (plan: Omit<QualificationPlan, "id" | "createdAt" | "updatedAt">) => {
     try {
-      const id = await db.addQualificationPlan(plan);
+      const id = await db.addQualificationPlan(plan as any);
       await refreshAllData();
       return id;
     } catch (err) {
@@ -563,30 +568,50 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
   };
 
   // Helper: Get skill gaps for an employee compared to a target role
-  const getSkillGapsForEmployee = (employeeId: string, targetRoleId: string): SkillGap[] => {
-    const role = roles.find((r) => r.id === targetRoleId);
-    if (!role || !role.requiredSkills) return [];
-
+  // Helper: Get skill gaps for an employee compared to a target role (optional) and individual targets
+  const getSkillGapsForEmployee = (employeeId: string, targetRoleId?: string | null): SkillGap[] => {
     const employeeAssessments = assessments.filter((a) => a.employeeId === employeeId);
     const assessmentMap = new Map(employeeAssessments.map((a) => [a.skillId, a.level]));
+    const assessmentTargetMap = new Map(employeeAssessments.map((a) => [a.skillId, a.targetLevel || 0]));
+
+    // Map to store the required target level for each skill
+    const requiredTargets = new Map<string, number>();
+
+    // 1. Add individual targets from assessments
+    assessmentTargetMap.forEach((target, skillId) => {
+      if (target > 0) {
+        requiredTargets.set(skillId, target);
+      }
+    });
+
+    // 2. If a target role is specified, merge role requirements
+    if (targetRoleId) {
+      const role = roles.find((r) => r.id === targetRoleId);
+      if (role && role.requiredSkills) {
+        role.requiredSkills.forEach((req) => {
+          const currentTarget = requiredTargets.get(req.skillId) || 0;
+          // Take the maximum of individual target and role target
+          requiredTargets.set(req.skillId, Math.max(currentTarget, req.level));
+        });
+      }
+    }
 
     const gaps: SkillGap[] = [];
 
-    for (const req of role.requiredSkills) {
-      const rawLevel = assessmentMap.get(req.skillId) ?? 0;
+    requiredTargets.forEach((targetLevel, skillId) => {
+      const rawLevel = assessmentMap.get(skillId) ?? 0;
       // Treat -1 (not relevant) as 0 for gap calculation
       const currentLevel = rawLevel < 0 ? 0 : rawLevel;
-      const targetLevel = req.level;
       const gap = targetLevel - currentLevel;
 
       if (gap > 0) {
-        const skill = skills.find((s) => s.id === req.skillId);
+        const skill = skills.find((s) => s.id === skillId);
         if (skill) {
           const subCategory = subcategories.find((sc) => sc.id === skill.subCategoryId);
           const category = subCategory ? categories.find((c) => c.id === subCategory.categoryId) : undefined;
 
           gaps.push({
-            skillId: req.skillId,
+            skillId: skillId,
             skillName: skill.name,
             categoryId: category?.id || "",
             categoryName: category?.name || "",
@@ -598,7 +623,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
           });
         }
       }
-    }
+    });
 
     return gaps.sort((a, b) => b.gap - a.gap); // Sort by largest gap first
   };

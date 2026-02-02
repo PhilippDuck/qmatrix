@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Drawer,
   Stack,
@@ -11,6 +11,7 @@ import {
   Alert,
   Badge,
   Box,
+  Checkbox,
 } from "@mantine/core";
 import { useHotkeys } from "@mantine/hooks";
 import { IconPlus, IconAlertCircle, IconTarget, IconUser } from "@tabler/icons-react";
@@ -32,6 +33,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({
   const {
     employees,
     roles,
+    qualificationPlans,
     addQualificationPlan,
     updateQualificationPlan,
     updateEmployee,
@@ -47,6 +49,41 @@ export const PlanForm: React.FC<PlanFormProps> = ({
   });
   const [loading, setLoading] = useState(false);
   const [skillGaps, setSkillGaps] = useState<SkillGap[]>([]);
+  const [filterDeficits, setFilterDeficits] = useState(true);
+
+  const employeeOptions = useMemo(() => {
+    // Get IDs of employees who already have an active or draft plan
+    // Exclude the current plan if we are editing
+    const employeesWithActivePlans = new Set(
+      qualificationPlans
+        .filter((p) => (p.status === "active" || p.status === "draft") && (!editingPlan || p.id !== editingPlan.id))
+        .map((p) => p.employeeId)
+    );
+
+    const options = employees.map((e) => {
+      // Find role id by name (since employee.role stores name string)
+      const role = roles.find((r) => r.name === e.role);
+      const gaps = getSkillGapsForEmployee(e.id!, role?.id || null);
+      return {
+        ...e,
+        gapCount: gaps.length,
+        hasActivePlan: employeesWithActivePlans.has(e.id!),
+      };
+    });
+
+    // Filter out employees with active plans
+    let filtered = options.filter((e) => !e.hasActivePlan);
+
+    if (filterDeficits) {
+      filtered = filtered.filter((e) => e.gapCount > 0);
+    }
+    return filtered;
+  }, [employees, roles, getSkillGapsForEmployee, filterDeficits, qualificationPlans, editingPlan]);
+
+  const selectData = employeeOptions.map((e) => ({
+    value: e.id!,
+    label: `${anonymizeName(e.name, e.id)}${e.role ? ` (${e.role})` : ""} • ${e.gapCount} Defizit${e.gapCount !== 1 ? "e" : ""}`,
+  }));
 
   // Reset form when opened or editing plan changes
   useEffect(() => {
@@ -54,7 +91,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({
       if (editingPlan) {
         setFormData({
           employeeId: editingPlan.employeeId,
-          targetRoleId: editingPlan.targetRoleId,
+          targetRoleId: editingPlan.targetRoleId || "",
           status: editingPlan.status,
           notes: editingPlan.notes || "",
         });
@@ -70,9 +107,10 @@ export const PlanForm: React.FC<PlanFormProps> = ({
   }, [opened, editingPlan]);
 
   // Update skill gaps when employee or target role changes
+  // Update skill gaps when employee or target role changes
   useEffect(() => {
-    if (formData.employeeId && formData.targetRoleId) {
-      const gaps = getSkillGapsForEmployee(formData.employeeId, formData.targetRoleId);
+    if (formData.employeeId) {
+      const gaps = getSkillGapsForEmployee(formData.employeeId, formData.targetRoleId || null);
       setSkillGaps(gaps);
     } else {
       setSkillGaps([]);
@@ -93,20 +131,20 @@ export const PlanForm: React.FC<PlanFormProps> = ({
   }, [formData.employeeId, employees, roles, editingPlan]);
 
   const handleSave = async () => {
-    if (!formData.employeeId || !formData.targetRoleId) return;
+    if (!formData.employeeId) return;
 
     setLoading(true);
     try {
-      const targetRole = roles.find((r) => r.id === formData.targetRoleId);
+      const targetRole = formData.targetRoleId ? roles.find((r) => r.id === formData.targetRoleId) : undefined;
 
       if (editingPlan) {
         await updateQualificationPlan(editingPlan.id!, {
-          targetRoleId: formData.targetRoleId,
+          targetRoleId: formData.targetRoleId || undefined,
           status: formData.status,
           notes: formData.notes || undefined,
         });
       } else {
-        // Update employee's role to the target role
+        // Update employee's role ONLY if a target role works selected
         const employee = employees.find((e) => e.id === formData.employeeId);
         if (employee && targetRole) {
           await updateEmployee(formData.employeeId, {
@@ -118,7 +156,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({
 
         await addQualificationPlan({
           employeeId: formData.employeeId,
-          targetRoleId: formData.targetRoleId,
+          targetRoleId: formData.targetRoleId || undefined,
           status: formData.status,
           notes: formData.notes || undefined,
         });
@@ -168,10 +206,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({
           label="Mitarbeiter"
           placeholder="Mitarbeiter auswählen"
           leftSection={<IconUser size={16} />}
-          data={employees.map((e) => ({
-            value: e.id!,
-            label: `${anonymizeName(e.name, e.id)}${e.role ? ` (${e.role})` : ""}`,
-          }))}
+          data={selectData}
           value={formData.employeeId}
           onChange={(value) =>
             setFormData({ ...formData, employeeId: value || "" })
@@ -180,10 +215,17 @@ export const PlanForm: React.FC<PlanFormProps> = ({
           required
           disabled={isEditing}
         />
+        <Checkbox
+          label="Nur Mitarbeiter mit aktuellen Defiziten anzeigen"
+          checked={filterDeficits}
+          onChange={(event) => setFilterDeficits(event.currentTarget.checked)}
+          mb="sm"
+          size="xs"
+        />
 
         <Select
-          label="Zielrolle"
-          placeholder="Zielrolle auswählen"
+          label="Zielrolle (Optional)"
+          placeholder="Keine Zielrolle (Individuelle Entwicklung)"
           leftSection={<IconTarget size={16} />}
           data={roles.map((r) => ({ value: r.id!, label: r.name }))}
           value={formData.targetRoleId}
@@ -191,11 +233,11 @@ export const PlanForm: React.FC<PlanFormProps> = ({
             setFormData({ ...formData, targetRoleId: value || "" })
           }
           searchable
-          required
+          clearable
           description={
             selectedEmployee?.role
               ? `Aktuelle Rolle: ${selectedEmployee.role}`
-              : undefined
+              : "Wählen Sie eine Zielrolle oder lassen Sie das Feld leer für individuelle Ziele."
           }
         />
 
@@ -226,7 +268,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({
           minRows={3}
         />
 
-        {formData.employeeId && formData.targetRoleId && (
+        {formData.employeeId && (
           <>
             <Divider
               label={
@@ -244,9 +286,11 @@ export const PlanForm: React.FC<PlanFormProps> = ({
 
             {skillGaps.length === 0 ? (
               <Alert color="green" icon={<IconAlertCircle size={16} />}>
-                {roles.find(r => r.id === formData.targetRoleId)?.requiredSkills?.length
-                  ? "Keine Skill-Defizite gefunden! Der Mitarbeiter erfüllt bereits alle Anforderungen der Zielrolle."
-                  : "Diese Rolle hat keine Skill-Anforderungen definiert. Bitte definieren Sie zuerst Skill-Anforderungen unter Stammdaten > Rollen & Level."}
+                {formData.targetRoleId
+                  ? (roles.find(r => r.id === formData.targetRoleId)?.requiredSkills?.length
+                    ? "Keine Skill-Defizite gefunden! Der Mitarbeiter erfüllt bereits alle Anforderungen der Zielrolle."
+                    : "Diese Rolle hat keine Skill-Anforderungen definiert.")
+                  : "Keine Defizite gefunden. (Basierend auf individuell festgelegten Soll-Werten)"}
               </Alert>
             ) : (
               <Box style={{ maxHeight: 400, overflowY: "auto" }}>
@@ -267,7 +311,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({
           <Button
             onClick={handleSave}
             loading={loading}
-            disabled={!formData.employeeId || !formData.targetRoleId}
+            disabled={!formData.employeeId}
             leftSection={<IconPlus size={16} />}
           >
             {isEditing ? "Aktualisieren" : "Plan erstellen"}

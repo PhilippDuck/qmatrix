@@ -10,6 +10,7 @@ import {
   Progress,
   ThemeIcon,
   Tooltip,
+  Button,
 } from "@mantine/core";
 import {
   IconDotsVertical,
@@ -26,6 +27,7 @@ import {
 } from "@tabler/icons-react";
 import { QualificationMeasure, Employee, Skill } from "../../context/DataContext";
 import { usePrivacy } from "../../context/PrivacyContext";
+import { LEVELS } from "../../constants/skillLevels";
 
 interface MeasureCardProps {
   measure: QualificationMeasure;
@@ -34,6 +36,7 @@ interface MeasureCardProps {
   onEdit: () => void;
   onDelete: () => void;
   onStatusChange: (status: QualificationMeasure["status"]) => void;
+  onUpdateProgress: (level: number) => void;
 }
 
 const statusLabels: Record<QualificationMeasure["status"], string> = {
@@ -56,13 +59,23 @@ export const MeasureCard: React.FC<MeasureCardProps> = ({
   mentor,
   onEdit,
   onDelete,
+
   onStatusChange,
+  onUpdateProgress,
 }) => {
   const { anonymizeName } = usePrivacy();
+  const [localLevel, setLocalLevel] = React.useState(measure.currentLevel);
+
+  React.useEffect(() => {
+    setLocalLevel(measure.currentLevel);
+  }, [measure.currentLevel]);
+
+  const handleLevelUpdate = (newLevel: number) => {
+    setLocalLevel(newLevel);
+    onUpdateProgress(newLevel);
+  };
+
   const isInternal = measure.type === "internal";
-  const progressPercent = measure.currentLevel > 0
-    ? Math.round(((measure.targetLevel - measure.currentLevel) / measure.targetLevel) * 100)
-    : 100;
 
   const formatDate = (timestamp?: number) => {
     if (!timestamp) return "-";
@@ -71,6 +84,10 @@ export const MeasureCard: React.FC<MeasureCardProps> = ({
       month: "2-digit",
       year: "numeric",
     });
+  };
+
+  const getLevelColor = (levelValue: number) => {
+    return LEVELS.find(l => l.value === levelValue)?.color || "gray";
   };
 
   return (
@@ -160,7 +177,7 @@ export const MeasureCard: React.FC<MeasureCardProps> = ({
             </Text>
             <Group gap={4}>
               <Badge size="xs" color="gray" variant="light">
-                {measure.currentLevel}%
+                {localLevel}%
               </Badge>
               <IconArrowRight size={10} />
               <Badge size="xs" color="blue" variant="light">
@@ -169,11 +186,35 @@ export const MeasureCard: React.FC<MeasureCardProps> = ({
             </Group>
           </Group>
           <Progress
-            value={measure.status === "completed" ? 100 : (measure.currentLevel / measure.targetLevel) * 100}
+            value={measure.status === "completed" ? 100 : (localLevel / measure.targetLevel) * 100}
             color={measure.status === "completed" ? "green" : "blue"}
             size="sm"
             radius="xl"
           />
+          <Group gap={4} mt="xs" grow>
+            {LEVELS.filter(l => l.value >= 0).map(level => {
+              const isSelected = localLevel === level.value;
+              const isDisabled = level.value > measure.targetLevel;
+              return (
+                <Button
+                  key={level.value}
+                  size="compact-xs"
+                  p={0}
+                  variant={isSelected ? "filled" : "default"}
+                  color={level.color}
+                  disabled={isDisabled}
+                  onClick={() => handleLevelUpdate(level.value)}
+                  style={{
+                    opacity: isDisabled ? 0.3 : 1,
+                    borderColor: isSelected ? undefined : `var(--mantine-color-${level.color}-4)`,
+                    color: isSelected ? undefined : `var(--mantine-color-${level.color}-7)`,
+                  }}
+                >
+                  {level.value}%
+                </Button>
+              );
+            })}
+          </Group>
         </div>
 
         {/* Mentor or External Info */}

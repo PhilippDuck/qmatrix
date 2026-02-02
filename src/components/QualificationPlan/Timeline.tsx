@@ -145,8 +145,8 @@ export const Timeline: React.FC<TimelineProps> = ({ measures, skills }) => {
                             ? "green"
                             : measure.targetDate < Date.now() &&
                               measure.status !== "cancelled"
-                            ? "red"
-                            : "gray"
+                              ? "red"
+                              : "gray"
                         }
                         leftSection={<IconCalendar size={10} />}
                       >

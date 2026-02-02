@@ -56,6 +56,7 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({
     addQualificationMeasure,
     updateQualificationMeasure,
     getPotentialMentors,
+    getQualificationMeasuresForPlan,
   } = useData();
   const { anonymizeName } = usePrivacy();
 
@@ -81,6 +82,20 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({
   const potentialMentors = formData.skillId
     ? getPotentialMentors(formData.skillId, employeeId)
     : [];
+
+  // Filter skills: Remove those that already have a measure in this plan
+  // unless it's the measure currently being edited.
+  const existingMeasures = getQualificationMeasuresForPlan(planId);
+  const existingSkillIds = new Set(existingMeasures.map((m) => m.skillId));
+
+  const availableSkillGaps = skillGaps.filter((gap) => {
+    // If we are editing, current skill is allowed
+    if (editingMeasure && gap.skillId === editingMeasure.skillId) {
+      return true;
+    }
+    // Otherwise, exclude if already present
+    return !existingSkillIds.has(gap.skillId);
+  });
 
   // Reset form when opened or editing measure changes
   useEffect(() => {
@@ -188,9 +203,9 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({
   );
 
   const isEditing = !!editingMeasure;
-  const skillOptions = skillGaps.map((gap) => ({
+  const skillOptions = availableSkillGaps.map((gap) => ({
     value: gap.skillId,
-    label: `${gap.skillName} (${gap.currentLevel}% → ${gap.targetLevel}%)`,
+    label: `${gap.categoryName} > ${gap.subCategoryName} > ${gap.skillName} (${gap.currentLevel}% → ${gap.targetLevel}%)`,
   }));
 
   return (

@@ -136,6 +136,8 @@ export const SkillMatrix: React.FC = () => {
     defaultValue: null,
   });
 
+  const [filtersOpened, setFiltersOpened] = useState(false);
+
   const displayedEmployees = useMemo(() => {
     let result = employees;
 
@@ -577,8 +579,8 @@ export const SkillMatrix: React.FC = () => {
           }}
         />
       ) : (
-        <>
-          <Group mb="lg" justify="space-between">
+        <Stack gap="md" h="100%" style={{ overflow: "hidden" }}>
+          <Group justify="space-between" align="start">
             <Group gap="md">
               <Title order={2}>Skill-Matrix</Title>
 
@@ -651,10 +653,23 @@ export const SkillMatrix: React.FC = () => {
                     {skillSort === 'desc' ? <IconSortDescending size={20} /> : <IconSortAscending size={20} />}
                   </ActionIcon>
                 </Tooltip>
-                <Popover width={300} position="bottom" withArrow shadow="md">
+                <Popover
+                  width={300}
+                  position="bottom"
+                  withArrow
+                  shadow="md"
+                  opened={filtersOpened}
+                  onChange={setFiltersOpened}
+                >
                   <Popover.Target>
                     <Tooltip label="Filter">
-                      <ActionIcon variant="light" color="gray" size="lg" aria-label="Filter">
+                      <ActionIcon
+                        variant={filtersOpened || filterDepartments.length > 0 || filterRoles.length > 0 ? "filled" : "light"}
+                        color={filtersOpened || filterDepartments.length > 0 || filterRoles.length > 0 ? "blue" : "gray"}
+                        size="lg"
+                        aria-label="Filter"
+                        onClick={() => setFiltersOpened((o) => !o)}
+                      >
                         <IconFilter size={20} />
                       </ActionIcon>
                     </Tooltip>
@@ -662,6 +677,7 @@ export const SkillMatrix: React.FC = () => {
                   <Popover.Dropdown>
                     <Stack>
                       <MultiSelect
+                        comboboxProps={{ withinPortal: false }}
                         label="Abteilungen"
                         placeholder="Wähle Abteilungen"
                         data={departments.map(d => ({ value: d.id!, label: d.name }))}
@@ -671,6 +687,7 @@ export const SkillMatrix: React.FC = () => {
                         searchable
                       />
                       <MultiSelect
+                        comboboxProps={{ withinPortal: false }}
                         label="Rollen / Level"
                         placeholder="Wähle Rollen"
                         data={roles.map(r => ({ value: r.id!, label: r.name }))}
@@ -680,6 +697,7 @@ export const SkillMatrix: React.FC = () => {
                         searchable
                       />
                       <MultiSelect
+                        comboboxProps={{ withinPortal: false }}
                         label="Hauptkategorien"
                         placeholder="Wähle Kategorien"
                         data={categories.map(c => ({ value: c.id!, label: c.name }))}
@@ -827,6 +845,7 @@ export const SkillMatrix: React.FC = () => {
             )
           }
 
+
           <Card
             withBorder
             p={0}
@@ -846,20 +865,29 @@ export const SkillMatrix: React.FC = () => {
                   minWidth: "100%",
                 }}
               >
-                <MatrixHeader
-                  employees={displayedEmployees}
-                  focusEmployeeId={focusEmployeeId}
-                  hoveredEmployeeId={hoveredEmployeeId}
-                  onFocusChange={setFocusEmployeeId}
-                  onHoverChange={setHoveredEmployeeId}
-                  calculateEmployeeAverage={calculateEmployeeAverage}
-                  skills={skills}
-                  getAssessment={getAssessment}
-                  onEditEmployee={handleEditEmployee}
-                  showMaxValues={showMaxValues}
-                  isEditMode={isEditMode}
-                  onAddEmployee={() => setEmployeeDrawerOpened(true)}
-                />
+                <div
+                  style={{
+                    position: "sticky",
+                    top: 0,
+                    zIndex: 20,
+                    backgroundColor: "var(--mantine-color-body)",
+                  }}
+                >
+                  <MatrixHeader
+                    employees={displayedEmployees}
+                    focusEmployeeId={focusEmployeeId}
+                    hoveredEmployeeId={hoveredEmployeeId}
+                    onFocusChange={setFocusEmployeeId}
+                    onHoverChange={setHoveredEmployeeId}
+                    calculateEmployeeAverage={calculateEmployeeAverage}
+                    skills={skills}
+                    getAssessment={getAssessment}
+                    onEditEmployee={handleEditEmployee}
+                    showMaxValues={showMaxValues}
+                    isEditMode={isEditMode}
+                    onAddEmployee={() => setEmployeeDrawerOpened(true)}
+                  />
+                </div>
 
                 {displayedCategories.map((cat) => (
                   <MatrixCategoryRow
@@ -924,7 +952,7 @@ export const SkillMatrix: React.FC = () => {
               </div>
             </div>
           </Card>
-        </>
+        </Stack>
       )}
 
       <MatrixLegend

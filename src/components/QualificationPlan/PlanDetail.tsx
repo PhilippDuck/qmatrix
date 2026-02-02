@@ -433,6 +433,9 @@ export const PlanDetail: React.FC<PlanDetailProps> = ({
                       onStatusChange={(status) =>
                         handleMeasureStatusChange(measure.id!, status)
                       }
+                      onUpdateProgress={(level) =>
+                        setAssessment(plan.employeeId, measure.skillId, level as any)
+                      }
                     />
                   ))}
                 </SimpleGrid>
