@@ -46,6 +46,7 @@ import { SkillMatrix } from "./components/SkillMatrix";
 import { DataManagement } from "./components/DataManagement";
 import { Dashboard } from "./components/Dashboard/Dashboard";
 import { QualificationPlan } from "./components/QualificationPlan";
+import { WelcomeModal } from "./components/WelcomeModal";
 import { PrivacyProvider, usePrivacy } from "./context/PrivacyContext";
 import "@mantine/core/styles.css";
 import "@mantine/dates/styles.css";
@@ -375,6 +376,7 @@ function AppContent() {
           {activeTab === "system" && <DataManagement />}
         </div>
       </AppShell.Main>
+      <WelcomeModal />
     </AppShell >
   );
 }
