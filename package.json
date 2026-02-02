@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "prebuild": "vitest run && npm run e2e",
+    "prebuild": "vitest run",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",

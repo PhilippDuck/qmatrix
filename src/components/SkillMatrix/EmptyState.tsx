@@ -1,6 +1,6 @@
 import React, { useRef } from "react";
-import { Box, Card, Stack, Text, Title, Button, Group, useMantineTheme, rem } from "@mantine/core";
-import { IconDatabaseOff, IconUpload, IconUserPlus, IconBulb, IconX } from "@tabler/icons-react";
+import { Box, Stack, Text, Title, Button, Group, useMantineTheme, rem, Center, Anchor, Card } from "@mantine/core";
+import { IconRocket, IconUpload, IconUserPlus, IconBulb, IconX, IconPackageImport } from "@tabler/icons-react";
 import { Dropzone, MIME_TYPES, FileRejection } from "@mantine/dropzone";
 
 interface EmptyStateProps {
@@ -34,94 +34,103 @@ export const EmptyState: React.FC<EmptyStateProps> = ({ onAddEmployee, onAddSkil
           flexDirection: "column",
           justifyContent: "center",
           alignItems: "center",
-          borderStyle: "dashed",
-          backgroundColor: "var(--mantine-color-body)",
         }}
+        p="xl"
       >
-        <Stack align="center" gap="xl" style={{ maxWidth: 500 }}>
-          <Stack align="center" gap="xs">
-            <IconDatabaseOff
-              size={64}
-              style={{ color: "var(--mantine-color-dimmed)" }}
-              stroke={1.5}
-            />
-            <Text fw={700} size="xl" ta="center">
-              Willkommen bei SkillGrid
-            </Text>
-            <Text size="md" c="dimmed" ta="center">
-              Aktuell sind keine Daten vorhanden. Du kannst direkt loslegen oder ein Backup wiederherstellen.
-            </Text>
-          </Stack>
-
-          <Group>
-            <Button
-              leftSection={<IconUserPlus size={20} />}
-              size="md"
-              onClick={onAddEmployee}
-            >
-              Mitarbeiter anlegen
-            </Button>
-            <Button
-              leftSection={<IconBulb size={20} />}
-              variant="light"
-              size="md"
-              onClick={onAddSkill}
-            >
-              Skill erstellen
-            </Button>
-          </Group>
-
-          <Box w="100%">
-            <Text size="sm" fw={500} mb="xs" ta="center" c="dimmed">
-              Oder Backup wiederherstellen
-            </Text>
-            <Dropzone
-              openRef={openRef}
-              onDrop={handleDrop}
-              onReject={(files: FileRejection[]) => console.log('rejected files', files)}
-              maxSize={5 * 1024 ** 2}
-              accept={[MIME_TYPES.json]}
-              radius="md"
-              styles={{
-                root: {
-                  borderColor: 'var(--mantine-color-dimmed)',
-                  borderStyle: 'dashed',
-                  borderWidth: 1,
-                  backgroundColor: 'var(--mantine-color-body)',
-                  '&:hover': {
-                    backgroundColor: 'var(--mantine-color-gray-0)',
-                  },
-                }
+        <Stack align="center" gap="xl" style={{ maxWidth: 550 }}>
+            <Center
+              style={{
+                width: rem(80),
+                height: rem(80),
+                borderRadius: '50%',
+                backgroundColor: 'var(--mantine-color-primary-light)',
+                color: 'var(--mantine-color-primary-filled)',
               }}
             >
-              <Group justify="center" gap="xl" style={{ minHeight: rem(80), pointerEvents: 'none' }}>
-                <Dropzone.Accept>
-                  <IconUpload
-                    style={{ width: rem(40), height: rem(40), color: 'var(--mantine-color-blue-6)' }}
-                    stroke={1.5}
-                  />
-                </Dropzone.Accept>
-                <Dropzone.Reject>
-                  <IconX
-                    style={{ width: rem(40), height: rem(40), color: 'var(--mantine-color-red-6)' }}
-                    stroke={1.5}
-                  />
-                </Dropzone.Reject>
-                <Dropzone.Idle>
-                  <IconUpload
-                    style={{ width: rem(40), height: rem(40), color: 'var(--mantine-color-dimmed)' }}
-                    stroke={1.5}
-                  />
-                </Dropzone.Idle>
+              <IconRocket size={48} stroke={1.5} />
+            </Center>
+            
+            <Stack align="center" gap={0}>
+                <Title order={3} ta="center">Herzlich willkommen</Title>
+                <Text size="md" c="dimmed" ta="center" maw={400}>
+                    Ihre Skill-Matrix ist noch leer. Fügen Sie Mitarbeiter und Skills hinzu, um zu beginnen.
+                </Text>
+            </Stack>
 
-                <div style={{ textAlign: 'center' }}>
-                  <Text size="sm" inline>
-                    Backup-Datei hierher ziehen oder klicken
-                  </Text>
-                </div>
-              </Group>
-            </Dropzone>
-          </Box>
+            <Group>
+              <Button
+                leftSection={<IconUserPlus size={20} />}
+                size="md"
+                onClick={onAddEmployee}
+              >
+                Ersten Mitarbeiter anlegen
+              </Button>
+              <Button
+                leftSection={<IconBulb size={20} />}
+                variant="default"
+                size="md"
+                onClick={onAddSkill}
+              >
+                Ersten Skill erstellen
+              </Button>
+            </Group>
+            
+            <Box w="100%" mt="lg">
+                <Dropzone
+                    openRef={openRef}
+                    onDrop={handleDrop}
+                    onReject={(files: FileRejection[]) => console.log('rejected files', files)}
+                    maxSize={5 * 1024 ** 2}
+                    accept={[MIME_TYPES.json]}
+                    radius="md"
+                     styles={(theme) => ({
+                        root: {
+                          border: `1px dashed ${theme.colors.gray[4]}`,
+                          backgroundColor: theme.colorScheme === 'dark' ? theme.colors.dark[8] : theme.colors.gray[0],
+                          transition: 'background-color 150ms ease, border-color 150ms ease',
+                          '&:hover': {
+                            backgroundColor: theme.colorScheme === 'dark' ? theme.colors.dark[7] : theme.colors.gray[1],
+                          },
+                          '&[data-accept]': {
+                            backgroundColor: theme.colors.blue[0],
+                            borderColor: theme.colors.blue[6],
+                          },
+                          '&[data-reject]': {
+                            backgroundColor: theme.colors.red[0],
+                            borderColor: theme.colors.red[6],
+                          }
+                        },
+                     })}
+                >
+                    <Stack align="center" gap="xs" style={{ minHeight: rem(100), justifyContent: 'center', pointerEvents: 'none' }}>
+                         <Dropzone.Accept>
+                            <IconUpload
+                              style={{ width: rem(40), height: rem(40), color: 'var(--mantine-color-blue-6)' }}
+                              stroke={1.5}
+                            />
+                          </Dropzone.Accept>
+                          <Dropzone.Reject>
+                            <IconX
+                              style={{ width: rem(40), height: rem(40), color: 'var(--mantine-color-red-6)' }}
+                              stroke={1.5}
+                            />
+                          </Dropzone.Reject>
+                          <Dropzone.Idle>
+                            <IconPackageImport
+                              style={{ width: rem(40), height: rem(40), color: 'var(--mantine-color-dimmed)' }}
+                              stroke={1.5}
+                            />
+                          </Dropzone.Idle>
+
+                        <Text size="sm" c="dimmed" inline>
+                            Daten aus einem <Anchor component="button" type="button" onClick={(e) => { e.stopPropagation(); openRef.current?.()}} style={{pointerEvents: 'all'}}>Backup wiederherstellen</Anchor>
+                        </Text>
+                         <Text size="xs" c="dimmed">
+                            JSON-Datei hierher ziehen
+                          </Text>
+                    </Stack>
+                </Dropzone>
+            </Box>
         </Stack>
       </Card>
     </Box>
