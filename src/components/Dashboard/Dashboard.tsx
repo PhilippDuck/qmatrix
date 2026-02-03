@@ -201,7 +201,8 @@ export const Dashboard: React.FC = () => {
 
         // Current period metrics
         const employeeAverages = employees.map(emp => {
-            const empAssessments = assessments.filter(a => a.employeeId === emp.id && a.level > 0);
+            // Include 0, but exclude -1 (N/A)
+            const empAssessments = assessments.filter(a => a.employeeId === emp.id && a.level >= 0);
             if (empAssessments.length === 0) return null;
             const avg = empAssessments.reduce((sum, a) => sum + a.level, 0) / empAssessments.length;
             return { employee: emp, avg };

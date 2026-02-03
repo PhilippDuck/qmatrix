@@ -39,6 +39,7 @@ export const CategoryManager: React.FC = () => {
   const [inputDescription, setInputDescription] = useState("");
   const [selectedDepartmentId, setSelectedDepartmentId] = useState<string | null>(null);
   const [selectedRoleIds, setSelectedRoleIds] = useState<string[]>([]);
+  const [selectedSubCategoryIds, setSelectedSubCategoryIds] = useState<string[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const openForm = (
@@ -55,6 +56,7 @@ export const CategoryManager: React.FC = () => {
     setInputDescription(initialDescription);
     setSelectedDepartmentId(initialDeptId);
     setSelectedRoleIds(initialRoleIds);
+    setSelectedSubCategoryIds([]); // Reset
     open();
   };
 
@@ -93,15 +95,26 @@ export const CategoryManager: React.FC = () => {
           requiredByRoleIds: selectedRoleIds.length > 0 ? selectedRoleIds : undefined,
         };
 
-        editingId
-          ? await updateSkill(editingId, skillData)
-          : await addSkill(skillData);
+        if (editingId) {
+          await updateSkill(editingId, skillData);
+        } else {
+          // Add to current selected subcategory
+          await addSkill({ ...skillData, subCategoryId: selectedSubCategory });
+
+          // Add to other selected subcategories
+          if (selectedSubCategoryIds.length > 0) {
+            await Promise.all(selectedSubCategoryIds.map(subCatId =>
+              addSkill({ ...skillData, subCategoryId: subCatId })
+            ));
+          }
+        }
       }
 
       setInputValue("");
       setInputDescription("");
       setSelectedDepartmentId(null);
       setSelectedRoleIds([]);
+      setSelectedSubCategoryIds([]);
       close();
     } catch (error) {
       console.error("Fehler beim Speichern:", error);
@@ -109,9 +122,28 @@ export const CategoryManager: React.FC = () => {
   };
 
 
+  const handleDelete = async () => {
+    if (!editingId) return;
+
+    if (window.confirm("Sind Sie sicher, dass Sie diesen Eintrag löschen möchten?")) {
+      try {
+        if (formMode === "category") {
+          await deleteCategory(editingId);
+        } else if (formMode === "subcategory") {
+          await deleteSubCategory(editingId);
+        } else if (formMode === "skill") {
+          await deleteSkill(editingId);
+        }
+        close();
+        // Reset selection if needed, though state management above usually handles this 
+        // by checking if selected ID still exists in lists.
+      } catch (error) {
+        console.error("Fehler beim Löschen:", error);
+      }
+    }
+  };
 
   const [activeTab, setActiveTab] = useState<string | null>("list");
-
 
   // ... (keep existing helper consts)
   const subCatsInCategory = selectedCategory
@@ -121,19 +153,44 @@ export const CategoryManager: React.FC = () => {
     ? getSkillsBySubCategory(selectedSubCategory)
     : [];
 
+  // Prepare options for subcategory multi-select (Grouped)
+  const groupedSubcategories: Record<string, any[]> = {};
+
+  (subcategories || []).forEach(sc => {
+    if (!sc.id || sc.id === selectedSubCategory) return;
+    const parentCat = (categories || []).find(c => c.id === sc.categoryId);
+    const groupName = parentCat?.name || "Andere";
+
+    if (!groupedSubcategories[groupName]) {
+      groupedSubcategories[groupName] = [];
+    }
+    groupedSubcategories[groupName].push({
+      value: sc.id,
+      label: sc.name
+    });
+  });
+
+  const subcategoryOptions = Object.entries(groupedSubcategories)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([group, items]) => ({
+      group,
+      items: items.sort((a: any, b: any) => a.label.localeCompare(b.label))
+    }));
+
   return (
     <Box style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column" }}>
       <Title order={2} mb="lg">
         Kategorien & Skills
       </Title>
 
+      {/* ... tabs ... */}
+
       <Tabs value={activeTab} onChange={setActiveTab} style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+        {/* ... Tabs List ... */}
         <Tabs.List mb="md">
           <Tabs.Tab value="list" leftSection={<IconList size={16} />}>Liste</Tabs.Tab>
           <Tabs.Tab value="chart" leftSection={<IconHierarchy size={16} />}>Organigramm</Tabs.Tab>
         </Tabs.List>
-
-
 
         <Tabs.Panel value="list" style={{ flex: 1, overflow: "hidden" }}>
           <Group
@@ -200,8 +257,6 @@ export const CategoryManager: React.FC = () => {
                 openForm("subcategory", sub.id!, sub.name, sub.description || "");
               }}
               onEditSkill={(skill) => {
-                // We need to find the subcategory for this skill to set context if needed? 
-                // openForm sets state, but maybe we should ensure selectedSubCategory is set too?
                 setSelectedSubCategory(skill.subCategoryId);
                 openForm(
                   "skill",
@@ -235,14 +290,19 @@ export const CategoryManager: React.FC = () => {
         inputDescription={inputDescription}
         selectedDepartmentId={selectedDepartmentId}
         selectedRoleIds={selectedRoleIds}
+        selectedSubCategoryIds={selectedSubCategoryIds}
         onInputChange={setInputValue}
         onDescriptionChange={setInputDescription}
         onDepartmentChange={setSelectedDepartmentId}
         onRolesChange={setSelectedRoleIds}
+        onSubcategoriesChange={setSelectedSubCategoryIds}
         onSave={handleSave}
+        onDelete={handleDelete}
         departments={departments}
         roles={roles}
+        subcategories={subcategoryOptions}
       />
+
     </Box>
   );
 };

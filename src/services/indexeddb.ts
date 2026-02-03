@@ -91,7 +91,7 @@ export interface QualificationMeasure {
   skillId: string;           // Welcher Skill wird trainiert
   currentLevel: number;      // Ist-Level bei Erstellung
   targetLevel: number;       // Soll-Level (aus Rolle)
-  type: 'internal' | 'external';
+  type: 'internal' | 'external' | 'self_learning';
 
   // Für interne Schulung
   mentorId?: string;         // MA mit 100% im Skill

@@ -47,6 +47,7 @@ import { DataManagement } from "./components/DataManagement";
 import { Dashboard } from "./components/Dashboard/Dashboard";
 import { QualificationPlan } from "./components/QualificationPlan";
 import { WelcomeModal } from "./components/WelcomeModal";
+import { ChangelogModal } from "./components/ChangelogModal";
 import { PrivacyProvider, usePrivacy } from "./context/PrivacyContext";
 import "@mantine/core/styles.css";
 import "@mantine/dates/styles.css";
@@ -55,8 +56,8 @@ const theme = createTheme({
   primaryColor: "blue",
 });
 
-// Definiere die Versionsnummer an zentraler Stelle
-const APP_VERSION = "v2.4.1";
+import packageJson from "../package.json";
+const APP_VERSION = `v${packageJson.version}`;
 
 function ColorSchemeToggle() {
   const { setColorScheme } = useMantineColorScheme();
@@ -104,6 +105,9 @@ function AppContent() {
   // Title edit state
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [tempTitle, setTempTitle] = useState("");
+
+  // Changelog modal state
+  const [changelogOpened, { open: openChangelog, close: closeChangelog }] = useDisclosure(false);
 
   const handleTitleSave = () => {
     if (tempTitle !== projectTitle) {
@@ -210,14 +214,18 @@ function AppContent() {
 
               {/* Versions-Badge */}
               {desktopOpened && (
-                <Badge
-                  variant="subtle"
-                  color="gray"
-                  size="xs"
-                  styles={{ root: { textTransform: "none", opacity: 0.7 } }}
-                >
-                  {APP_VERSION}
-                </Badge>
+                <Tooltip label="Changelog anzeigen">
+                  <Badge
+                    variant="subtle"
+                    color="gray"
+                    size="xs"
+                    onClick={openChangelog}
+                    style={{ cursor: "pointer" }}
+                    styles={{ root: { textTransform: "none", opacity: 0.7 } }}
+                  >
+                    {APP_VERSION}
+                  </Badge>
+                </Tooltip>
               )}
             </Group>
           </Group>
@@ -377,6 +385,7 @@ function AppContent() {
         </div>
       </AppShell.Main>
       <WelcomeModal />
+      <ChangelogModal opened={changelogOpened} onClose={closeChangelog} />
     </AppShell >
   );
 }

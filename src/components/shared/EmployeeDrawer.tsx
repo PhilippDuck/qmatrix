@@ -34,7 +34,7 @@ export const EmployeeDrawer: React.FC<EmployeeDrawerProps> = ({
   isEditing = false,
   employeeId,
 }) => {
-  const { departments, roles, addDepartment, addRole } = useData();
+  const { employees, departments, roles, addDepartment, addRole } = useData();
   const [formData, setFormData] = useState({ name: "", department: "", role: "" });
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<string | null>("details");
@@ -55,8 +55,23 @@ export const EmployeeDrawer: React.FC<EmployeeDrawerProps> = ({
 
     setLoading(true);
     try {
+      const trimmedName = formData.name.trim();
       const trimmedDept = formData.department.trim();
       const trimmedRole = formData.role.trim();
+
+
+
+      // Check duplications
+      const isDuplicate = employees.some(e =>
+        e.name.toLowerCase() === trimmedName.toLowerCase() &&
+        e.id !== employeeId
+      );
+
+      if (isDuplicate) {
+        alert("Ein Mitarbeiter mit diesem Namen existiert bereits.");
+        return;
+      }
+
 
       // Check and create Department if new
       if (trimmedDept && !departments.some(d => d.name === trimmedDept)) {

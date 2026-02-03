@@ -14,6 +14,8 @@ import {
   Alert,
   Badge,
   Paper,
+  Slider,
+  Box,
 } from "@mantine/core";
 import { DateInput } from "@mantine/dates";
 import { useHotkeys } from "@mantine/hooks";
@@ -23,6 +25,7 @@ import {
   IconSchool,
   IconAlertCircle,
   IconUser,
+  IconBook,
 } from "@tabler/icons-react";
 import {
   useData,
@@ -62,7 +65,7 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({
 
   const [formData, setFormData] = useState({
     skillId: "",
-    type: "internal" as "internal" | "external",
+    type: "internal" as "internal" | "external" | "self_learning",
     mentorId: "",
     externalProvider: "",
     externalCourse: "",
@@ -70,32 +73,23 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({
     startDate: undefined as Date | undefined,
     targetDate: undefined as Date | undefined,
     notes: "",
+    measureTargetLevel: 100, // Default to 100, will be updated on skill selection
   });
   const [loading, setLoading] = useState(false);
 
-  // Get current and target level from skill gaps
+  // Get current and role target level from skill gaps
   const selectedGap = skillGaps.find((g) => g.skillId === formData.skillId);
   const currentLevel = selectedGap?.currentLevel ?? 0;
-  const targetLevel = selectedGap?.targetLevel ?? 100;
+  // Role target remains the reference, but measure target can be different
+  const roleTargetLevel = selectedGap?.targetLevel ?? 100;
 
   // Get potential mentors for selected skill
   const potentialMentors = formData.skillId
     ? getPotentialMentors(formData.skillId, employeeId)
     : [];
 
-  // Filter skills: Remove those that already have a measure in this plan
-  // unless it's the measure currently being edited.
-  const existingMeasures = getQualificationMeasuresForPlan(planId);
-  const existingSkillIds = new Set(existingMeasures.map((m) => m.skillId));
-
-  const availableSkillGaps = skillGaps.filter((gap) => {
-    // If we are editing, current skill is allowed
-    if (editingMeasure && gap.skillId === editingMeasure.skillId) {
-      return true;
-    }
-    // Otherwise, exclude if already present
-    return !existingSkillIds.has(gap.skillId);
-  });
+  // Skill Gaps are available even if they already have measures (allowing multiple steps)
+  const availableSkillGaps = skillGaps;
 
   // Reset form when opened or editing measure changes
   useEffect(() => {
@@ -115,6 +109,7 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({
             ? new Date(editingMeasure.targetDate)
             : undefined,
           notes: editingMeasure.notes || "",
+          measureTargetLevel: editingMeasure.targetLevel,
         });
       } else {
         setFormData({
@@ -127,20 +122,32 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({
           startDate: undefined,
           targetDate: undefined,
           notes: "",
+          measureTargetLevel: 100,
         });
       }
     }
   }, [opened, editingMeasure]);
 
+  // When skill is selected (and not editing), set initial target level to role target
+  useEffect(() => {
+    if (formData.skillId && !editingMeasure && selectedGap) {
+      setFormData(prev => ({
+        ...prev,
+        measureTargetLevel: selectedGap.targetLevel
+      }));
+    }
+  }, [formData.skillId, editingMeasure, selectedGap]);
+
   // Auto-select mentor type based on availability
   useEffect(() => {
-    if (formData.skillId && !editingMeasure) {
+    if (formData.skillId && !editingMeasure && formData.type === 'internal') {
       const mentors = getPotentialMentors(formData.skillId, employeeId);
       if (mentors.length === 0) {
-        setFormData((prev) => ({ ...prev, type: "external", mentorId: "" }));
+        // If no internal mentors, default to something else, maybe self_learning or external
+        // setFormData((prev) => ({ ...prev, type: "external", mentorId: "" }));
       }
     }
-  }, [formData.skillId, employeeId, getPotentialMentors, editingMeasure]);
+  }, [formData.skillId, employeeId, getPotentialMentors, editingMeasure, formData.type]);
 
   const handleSave = async () => {
     if (!formData.skillId) return;
@@ -151,7 +158,7 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({
         planId,
         skillId: formData.skillId,
         currentLevel,
-        targetLevel,
+        targetLevel: formData.measureTargetLevel, // Use User defined target
         type: formData.type,
         status: editingMeasure?.status || "pending",
         ...(formData.type === "internal" && formData.mentorId
@@ -208,6 +215,14 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({
     label: `${gap.categoryName} > ${gap.subCategoryName} > ${gap.skillName} (${gap.currentLevel}% → ${gap.targetLevel}%)`,
   }));
 
+  const levelMarks = [
+    { value: 0, label: '0%' },
+    { value: 25, label: '25%' },
+    { value: 50, label: '50%' },
+    { value: 75, label: '75%' },
+    { value: 100, label: '100%' },
+  ];
+
   return (
     <Drawer
       opened={opened}
@@ -244,27 +259,41 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({
 
         {selectedGap && (
           <Paper p="sm" radius="sm" withBorder>
-            <Group justify="space-between">
-              <Text size="sm" c="dimmed">
-                Level-Ziel:
-              </Text>
-              <Group gap="xs">
-                <Badge color="gray" variant="light">
-                  {currentLevel}%
-                </Badge>
-                <Text size="sm">→</Text>
-                <Badge color="blue" variant="light">
-                  {targetLevel}%
-                </Badge>
-                <Badge color="red" variant="outline" size="sm">
-                  +{targetLevel - currentLevel}%
-                </Badge>
+            <Stack gap="xs">
+              <Group justify="space-between">
+                <Text size="sm" c="dimmed">
+                  Aktuelles Skill-Gap:
+                </Text>
+                <Group gap="xs">
+                  <Badge color="gray" variant="light">
+                    {currentLevel}%
+                  </Badge>
+                  <Text size="sm">→</Text>
+                  <Badge color="blue" variant="light">
+                    {roleTargetLevel}%
+                  </Badge>
+                </Group>
               </Group>
-            </Group>
+
+              <Divider my="xs" />
+
+              <Text size="sm" fw={500}>Ziel dieser Maßnahme</Text>
+              <Box px="xs" pb="xl">
+                <Slider
+                  value={formData.measureTargetLevel}
+                  onChange={(val) => setFormData({ ...formData, measureTargetLevel: val })}
+                  marks={levelMarks}
+                  step={25}
+                  min={0}
+                  max={100}
+                  label={(val) => `${val}%`}
+                />
+              </Box>
+            </Stack>
           </Paper>
         )}
 
-        <Divider label="Schulungsart" labelPosition="center" />
+        <Divider label="Maßnahmen-Typ" labelPosition="center" />
 
         <SegmentedControl
           fullWidth
@@ -272,7 +301,7 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({
           onChange={(value) =>
             setFormData({
               ...formData,
-              type: value as "internal" | "external",
+              type: value as "internal" | "external" | "self_learning",
               mentorId: "",
             })
           }
@@ -282,17 +311,25 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({
               label: (
                 <Group gap="xs" justify="center">
                   <IconUsers size={16} />
-                  <Text size="sm">Interne Schulung</Text>
+                  <Text size="sm">Intern</Text>
                 </Group>
               ),
-              disabled: potentialMentors.length === 0 && formData.skillId !== "",
             },
             {
               value: "external",
               label: (
                 <Group gap="xs" justify="center">
                   <IconSchool size={16} />
-                  <Text size="sm">Externe Schulung</Text>
+                  <Text size="sm">Extern</Text>
+                </Group>
+              ),
+            },
+            {
+              value: "self_learning",
+              label: (
+                <Group gap="xs" justify="center">
+                  <IconBook size={16} />
+                  <Text size="sm">Selbstst.</Text>
                 </Group>
               ),
             },
@@ -302,9 +339,8 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({
         {formData.type === "internal" && (
           <>
             {potentialMentors.length === 0 && formData.skillId ? (
-              <Alert color="yellow" icon={<IconAlertCircle size={16} />}>
-                Kein Mitarbeiter mit 100% Level in diesem Skill verfügbar. Bitte
-                wählen Sie eine externe Schulung.
+              <Alert color="yellow" icon={<IconAlertCircle size={16} title="Warnung" />}>
+                Kein Mitarbeiter mit 100% Level in diesem Skill verfügbar. Ggf. externe Schulung oder Selbststudium wählen.
               </Alert>
             ) : (
               <>
@@ -380,6 +416,13 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({
           </>
         )}
 
+        {/* Self Learning fields (mostly just timeline and notes, no specific extra fields) */}
+        {formData.type === "self_learning" && (
+          <Alert variant="light" color="blue" title="Selbststudium / Erfahrung">
+            Planen Sie hier Zeit für eigenständiges Lernen oder das Sammeln von praktischer Erfahrung im Projekt ein.
+          </Alert>
+        )}
+
         <Divider label="Zeitplanung" labelPosition="center" />
 
         <Group grow>
@@ -407,7 +450,7 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({
 
         <Textarea
           label="Notizen"
-          placeholder="Optionale Notizen zur Maßnahme..."
+          placeholder="Optionale Notizen, Lernziele oder Links..."
           value={formData.notes}
           onChange={(e) =>
             setFormData({ ...formData, notes: e.currentTarget.value })

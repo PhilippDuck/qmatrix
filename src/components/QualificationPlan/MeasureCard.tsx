@@ -24,6 +24,7 @@ import {
   IconCalendar,
   IconClock,
   IconPlayerPlay,
+  IconBook,
 } from "@tabler/icons-react";
 import { QualificationMeasure, Employee, Skill } from "../../context/DataContext";
 import { usePrivacy } from "../../context/PrivacyContext";
@@ -76,6 +77,7 @@ export const MeasureCard: React.FC<MeasureCardProps> = ({
   };
 
   const isInternal = measure.type === "internal";
+  const isSelfLearning = measure.type === "self_learning";
 
   const formatDate = (timestamp?: number) => {
     if (!timestamp) return "-";
@@ -99,16 +101,16 @@ export const MeasureCard: React.FC<MeasureCardProps> = ({
               variant="light"
               size="lg"
               radius="md"
-              color={isInternal ? "teal" : "violet"}
+              color={isInternal ? "teal" : isSelfLearning ? "orange" : "violet"}
             >
-              {isInternal ? <IconUsers size={18} /> : <IconSchool size={18} />}
+              {isInternal ? <IconUsers size={18} /> : isSelfLearning ? <IconBook size={18} /> : <IconSchool size={18} />}
             </ThemeIcon>
             <div>
               <Text fw={600} size="sm">
                 {skill?.name || "Unbekannter Skill"}
               </Text>
               <Text size="xs" c="dimmed">
-                {isInternal ? "Interne Schulung" : "Externe Schulung"}
+                {isInternal ? "Interne Schulung" : isSelfLearning ? "Selbststudium / Erfahrung" : "Externe Schulung"}
               </Text>
             </div>
           </Group>

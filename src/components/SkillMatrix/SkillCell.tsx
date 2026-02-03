@@ -158,7 +158,6 @@ export const SkillCell: React.FC<SkillCellProps> = ({
                   height: 6,
                   borderRadius: "50%",
                   backgroundColor: hasActiveMeasure === "in_progress" ? "var(--mantine-color-blue-filled)" : "var(--mantine-color-gray-5)",
-                  boxShadow: hasActiveMeasure === "in_progress" ? "0 0 4px var(--mantine-color-blue-filled)" : "none",
                   zIndex: 15,
                 }}
               />

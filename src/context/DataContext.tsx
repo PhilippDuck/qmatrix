@@ -584,16 +584,49 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
       }
     });
 
-    // 2. If a target role is specified, merge role requirements
+    // 2. If a target role is specified, merge role requirements (including inherited ones)
     if (targetRoleId) {
-      const role = roles.find((r) => r.id === targetRoleId);
-      if (role && role.requiredSkills) {
-        role.requiredSkills.forEach((req) => {
-          const currentTarget = requiredTargets.get(req.skillId) || 0;
-          // Take the maximum of individual target and role target
-          requiredTargets.set(req.skillId, Math.max(currentTarget, req.level));
-        });
+      // Find start role (support ID or Name for legacy)
+      let currentRole = roles.find((r) => r.id === targetRoleId);
+      if (!currentRole) {
+        currentRole = roles.find((r) => r.name === targetRoleId);
       }
+
+      // Traverse inheritance chain up
+      // We collect requirements such that child overrides parent (first come first served in traversal)
+      const roleRequirements = new Map<string, number>();
+      const visitedRoles = new Set<string>();
+
+      while (currentRole) {
+        if (visitedRoles.has(currentRole.id!)) {
+          console.warn("Circular dependency in role inheritance:", currentRole.name);
+          break;
+        }
+        visitedRoles.add(currentRole.id!);
+
+        if (currentRole.requiredSkills) {
+          currentRole.requiredSkills.forEach((req) => {
+            // Only add if not already defined by a child role
+            if (!roleRequirements.has(req.skillId)) {
+              roleRequirements.set(req.skillId, req.level);
+            }
+          });
+        }
+
+        // Move to parent
+        if (currentRole.inheritsFromId) {
+          currentRole = roles.find((r) => r.id === currentRole!.inheritsFromId);
+        } else {
+          currentRole = undefined;
+        }
+      }
+
+      // Merge role requirements into final requirements
+      roleRequirements.forEach((level, skillId) => {
+        const currentTarget = requiredTargets.get(skillId) || 0;
+        // Take the maximum of individual target and role target
+        requiredTargets.set(skillId, Math.max(currentTarget, level));
+      });
     }
 
     const gaps: SkillGap[] = [];

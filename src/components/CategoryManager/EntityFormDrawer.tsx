@@ -26,18 +26,21 @@ interface EntityFormDrawerProps {
   inputDescription: string;
   selectedDepartmentId?: string | null;
   selectedRoleIds?: string[];
+  selectedSubCategoryIds?: string[]; // For assigning skill to multiple subcategories
 
   onInputChange: (value: string) => void;
   onDescriptionChange: (value: string) => void;
   onDepartmentChange?: (value: string | null) => void;
   onRolesChange?: (values: string[]) => void;
+  onSubcategoriesChange?: (values: string[]) => void; // New callback
 
   onSave: () => void;
-  onDelete?: () => void; // Optional delete callback
-  parentContext?: string; // e.g. "Kategorie: Development"
+  onDelete?: () => void;
+  parentContext?: string;
 
   departments: Department[];
   roles: EmployeeRole[];
+  subcategories?: any[]; // Allow grouped or flat data
 }
 
 const MODE_LABELS: Record<FormMode, string> = {
@@ -55,15 +58,18 @@ export const EntityFormDrawer: React.FC<EntityFormDrawerProps> = ({
   inputDescription,
   selectedDepartmentId,
   selectedRoleIds,
+  selectedSubCategoryIds,
   onInputChange,
   onDescriptionChange,
   onDepartmentChange,
   onRolesChange,
+  onSubcategoriesChange,
   onSave,
   onDelete,
   parentContext,
   departments,
   roles,
+  subcategories = [],
 }) => {
   useHotkeys([
     ["mod+Enter", (event) => { event.preventDefault(); onSave(); }]
@@ -144,6 +150,20 @@ export const EntityFormDrawer: React.FC<EntityFormDrawerProps> = ({
               searchable
               clearable
             />
+
+            {!editingId && onSubcategoriesChange && (
+              <MultiSelect
+                label="Auch anderen Kategorien hinzufügen (Kopie)"
+                placeholder="Wähle weitere Unterkategorien"
+                description="Der Skill wird auch in den gewählten Unterkategorien erstellt."
+                data={subcategories}
+                value={selectedSubCategoryIds || []}
+                onChange={(vals) => onSubcategoriesChange && onSubcategoriesChange(vals)}
+                searchable
+                clearable
+                mt="md"
+              />
+            )}
           </>
         )}
 

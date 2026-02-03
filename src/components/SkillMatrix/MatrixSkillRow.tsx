@@ -133,12 +133,13 @@ export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = ({
         </Group>
       </div>
       {employees.map((emp) => {
-        const assessment = getAssessment(emp.id!, skill.id!);
-        const level = assessment?.level ?? 0;
-
         // Find Role Target (recursive)
         // Note: emp.role is the ID of the role
         const roleTarget = getRoleTargetForSkill(emp.role, skill.id!, roles as any);
+
+        const assessment = getAssessment(emp.id!, skill.id!);
+        // Default to -1 (N/A) if no assessment exists, unless a role target is set, then 0
+        const level = assessment?.level ?? (roleTarget && roleTarget > 0 ? 0 : -1);
 
         // Find Active Measure for this employee and skill
         const measure = skillMeasures.find(m => {

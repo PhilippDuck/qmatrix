@@ -9,6 +9,7 @@ import {
   ActionIcon,
   Tooltip,
 } from "@mantine/core";
+import { getRoleTargetForSkill } from "../../utils/skillCalculations";
 import {
   IconLayoutNavbarCollapse,
   IconX,
@@ -168,31 +169,33 @@ export const SkillMatrix: React.FC = () => {
       result = [...result].sort((a, b) => {
         if (showMaxValues) {
           // Sort by Total XP
-          const calcXP = (empId: string) => {
+          const calcXP = (empId: string, empRole: string | undefined) => {
             let total = 0;
             allSkillIds.forEach(sId => {
               const assessment = getAssessment(empId, sId);
-              const val = assessment?.level ?? 0;
+              const roleTarget = getRoleTargetForSkill(empRole, sId, roles as any);
+              const val = assessment?.level ?? (roleTarget && roleTarget > 0 ? 0 : -1);
               if (val > 0) total += val;
             });
             return total;
           };
-          const valA = calcXP(a.id!);
-          const valB = calcXP(b.id!);
+          const valA = calcXP(a.id!, a.role);
+          const valB = calcXP(b.id!, b.role);
           return employeeSort === 'asc' ? valA - valB : valB - valA;
         } else {
           // Sort by Average
-          const calcAvg = (empId: string) => {
+          const calcAvg = (empId: string, empRole: string | undefined) => {
             let total = 0, count = 0;
             allSkillIds.forEach(sId => {
               const assessment = getAssessment(empId, sId);
-              const val = assessment?.level ?? 0;
+              const roleTarget = getRoleTargetForSkill(empRole, sId, roles as any);
+              const val = assessment?.level ?? (roleTarget && roleTarget > 0 ? 0 : -1);
               if (val !== -1) { total += val; count++; }
             });
             return count > 0 ? total / count : 0;
           };
-          const avgA = calcAvg(a.id!);
-          const avgB = calcAvg(b.id!);
+          const avgA = calcAvg(a.id!, a.role);
+          const avgB = calcAvg(b.id!, b.role);
           return employeeSort === 'asc' ? avgA - avgB : avgB - avgA;
         }
       });
@@ -231,7 +234,8 @@ export const SkillMatrix: React.FC = () => {
               let total = 0, count = 0;
               catSkillIds.forEach(sId => {
                 const assessment = getAssessment(emp.id!, sId);
-                const val = assessment?.level ?? 0;
+                const roleTarget = getRoleTargetForSkill(emp.role, sId, roles as any);
+                const val = assessment?.level ?? (roleTarget && roleTarget > 0 ? 0 : -1);
                 if (val !== -1) { total += val; count++; }
               });
               const avg = count > 0 ? total / count : 0;
@@ -253,7 +257,9 @@ export const SkillMatrix: React.FC = () => {
             catSkillIds.forEach(sId => {
               displayedEmployees.forEach(emp => {
                 const assessment = getAssessment(emp.id!, sId);
-                const val = assessment?.level ?? 0;
+                const roleTarget = getRoleTargetForSkill(emp.role, sId, roles as any);
+                const val = assessment?.level ?? (roleTarget && roleTarget > 0 ? 0 : -1);
+
                 if (val !== -1) { total += val; count++; }
               });
             });
@@ -314,8 +320,12 @@ export const SkillMatrix: React.FC = () => {
     skillIds.forEach((sId) => {
       targetEmps.forEach((emp) => {
         const assessment = getAssessment(emp.id!, sId);
-        // If assessment exists, use its level, otherwise treat as 0
-        const val = assessment?.level ?? 0;
+
+        // Logic sync with MatrixSkillRow:
+        // Default to -1 (N/A) if no assessment exists, unless a role target is set, then 0
+        // We need to fetch role target here to be accurate
+        const roleTarget = getRoleTargetForSkill(emp.role, sId, roles as any);
+        const val = assessment?.level ?? (roleTarget && roleTarget > 0 ? 0 : -1);
 
         // Ignore N/A (-1)
         if (val === -1) return;
