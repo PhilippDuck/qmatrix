@@ -9,6 +9,6 @@
 
 ## Bugs
 
-- [ ] Vererbte Soll werden nicht in Matrix angezeigt
-- [ ] Doppelter Datendownload bei Export und Schnellspeichern
-- [ ] Exportierter Name Anpassen, Speichern unter Dialog
+- [x] Vererbte Soll werden nicht in Matrix angezeigt
+- [x] Doppelter Datendownload bei Export und Schnellspeichern
+- [x] Exportierter Name Anpassen, Speichern unter Dialog

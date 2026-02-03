@@ -79,6 +79,7 @@ export const SkillCell: React.FC<SkillCellProps> = ({
           {/* Individual Target: Below (Orange) */}
           {isBelowTarget && (
             <div
+              title={`Individuelles Ziel: ${targetLevel}% (Defizit)`}
               style={{
                 position: "absolute",
                 bottom: 2,
@@ -93,6 +94,7 @@ export const SkillCell: React.FC<SkillCellProps> = ({
           {/* Individual Target: Met/Above (Green) */}
           {isAtOrAboveTarget && (
             <div
+              title={`Individuelles Ziel: ${targetLevel}% (Erreicht)`}
               style={{
                 position: "absolute",
                 bottom: 2,

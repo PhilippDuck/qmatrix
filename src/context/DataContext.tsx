@@ -650,8 +650,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
       const now = new Date();
       const dateStr = now.toISOString().split("T")[0];
       const timeStr = now.toLocaleTimeString("de-DE").replace(/:/g, "-");
-      a.download = `qtrack_backup_${dateStr}_${timeStr}.json`;
-      a.click();
+      const safeTitle = (projectTitle || "SkillGrid").replace(/[^a-z0-9]/gi, '_');
+      a.download = `${safeTitle}_Backup_${dateStr}_${timeStr}.json`;
       a.click();
       URL.revokeObjectURL(url);
       return data;

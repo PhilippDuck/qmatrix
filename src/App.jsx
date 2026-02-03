@@ -56,7 +56,7 @@ const theme = createTheme({
 });
 
 // Definiere die Versionsnummer an zentraler Stelle
-const APP_VERSION = "v2.4.0";
+const APP_VERSION = "v2.4.1";
 
 function ColorSchemeToggle() {
   const { setColorScheme } = useMantineColorScheme();

@@ -2,7 +2,7 @@ import React from "react";
 import { Text, Group, Stack, Tooltip, Badge, HoverCard, ActionIcon } from "@mantine/core";
 import { IconPencil } from "@tabler/icons-react";
 import { MATRIX_LAYOUT, LEVELS } from "../../constants/skillLevels";
-import { getScoreColor } from "../../utils/skillCalculations";
+import { getScoreColor, getRoleTargetForSkill } from "../../utils/skillCalculations";
 import { SkillCell } from "./SkillCell";
 import { Employee, Skill, Assessment, useData } from "../../context/DataContext";
 
@@ -136,12 +136,9 @@ export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = ({
         const assessment = getAssessment(emp.id!, skill.id!);
         const level = assessment?.level ?? 0;
 
-        // Find Role Target
-        let empRole = roles.find(r => r.id === emp.role);
-        if (!empRole && emp.role) {
-          empRole = roles.find(r => r.name === emp.role);
-        }
-        const roleTarget = empRole?.requiredSkills?.find(rs => rs.skillId === skill.id!)?.level;
+        // Find Role Target (recursive)
+        // Note: emp.role is the ID of the role
+        const roleTarget = getRoleTargetForSkill(emp.role, skill.id!, roles as any);
 
         // Find Active Measure for this employee and skill
         const measure = skillMeasures.find(m => {
