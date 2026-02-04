@@ -11,6 +11,7 @@
 - [ ] Matrix: Gruppieren nach abteilung oder nach Rolle
 - [ ] Mitarbeiter "deaktivieren" (nicht mehr sichtbar, und nicht Auswertung)
 - [x] Organigramm Skills Kacheln nicht so breit
+- [ ] Drag and drop skill organigramm
 
 ## Bugs
 
