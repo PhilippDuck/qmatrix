@@ -8,6 +8,8 @@ import {
   Button,
   ActionIcon,
   Tooltip,
+  Text,
+  useMantineColorScheme,
 } from "@mantine/core";
 import { getRoleTargetForSkill } from "../../utils/skillCalculations";
 import {
@@ -19,8 +21,15 @@ import {
   IconSortAscending,
   IconSortDescending,
   IconEdit,
+  IconUsersGroup,
+  IconBuilding,
+  IconUserCircle,
+  IconSum,
+  IconPercentage,
+  IconEye,
+  IconEyeOff,
 } from "@tabler/icons-react";
-import { useData } from "../../context/DataContext";
+import { useData, Employee } from "../../context/DataContext";
 import { CreateContextMenu } from "../shared/CreateContextMenu";
 import { useHotkeys, useLocalStorage } from "@mantine/hooks";
 import {
@@ -36,6 +45,9 @@ import { MatrixCategoryRow } from "./MatrixCategoryRow";
 import { MatrixLegend } from "./MatrixLegend";
 import { QuickAddDrawer } from "./QuickAddDrawer";
 import { EntityFormDrawer } from "../CategoryManager/EntityFormDrawer";
+
+import { SegmentedControl } from "@mantine/core";
+import { MatrixColumn } from "./types";
 
 export const SkillMatrix: React.FC = () => {
   const {
@@ -135,6 +147,12 @@ export const SkillMatrix: React.FC = () => {
   const [skillSort, setSkillSort] = useLocalStorage<'asc' | 'desc' | null>({
     key: 'skill-matrix-sort-skill',
     defaultValue: null,
+  });
+
+  // State to toggle employee visibility in grouped mode
+  const [hideEmployees, setHideEmployees] = useLocalStorage<boolean>({
+    key: 'skill-matrix-hide-employees',
+    defaultValue: false,
   });
 
   const [filtersOpened, setFiltersOpened] = useState(false);
@@ -275,7 +293,124 @@ export const SkillMatrix: React.FC = () => {
 
     return result;
   }, [categories, filterCategories, skillSort, subcategories, skills, displayedEmployees, getAssessment, showMaxValues]);
-  // ... (unchanged toggle functions) ...
+
+  const [groupingMode, setGroupingMode] = useLocalStorage<'none' | 'department' | 'role'>({
+    key: 'skill-matrix-grouping',
+    defaultValue: 'none',
+  });
+
+  const { colorScheme } = useMantineColorScheme();
+
+  const matrixColumns = useMemo<MatrixColumn[]>(() => {
+    // Define simple darker colors for dark mode context or translucent ones
+    const isDark = colorScheme === 'dark';
+
+    if (groupingMode === 'none') {
+      const cols: MatrixColumn[] = displayedEmployees.map(e => ({ type: 'employee', id: e.id!, employee: e }));
+      // No summary column needed for "No Grouping" view as aggregated values are in row headers
+      return cols;
+    }
+
+    const groups = new Map<string, Employee[]>();
+    const noGroup: Employee[] = [];
+
+    displayedEmployees.forEach(e => {
+      const key = groupingMode === 'department' ? e.department : e.role;
+      if (key) {
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key)!.push(e);
+      } else {
+        noGroup.push(e);
+      }
+    });
+
+    const sortedKeys = Array.from(groups.keys()).sort();
+    const columns: MatrixColumn[] = [];
+
+    // Define colors for groups (rotating pastel colors)
+    // In dark mode, we use very low opacity colors to just tint the background
+    const backgroundColors = [
+      isDark ? 'rgba(34, 139, 230, 0.15)' : 'var(--mantine-color-blue-0)',
+      isDark ? 'rgba(64, 192, 87, 0.15)' : 'var(--mantine-color-green-0)',
+      isDark ? 'rgba(121, 80, 242, 0.15)' : 'var(--mantine-color-violet-0)',
+      isDark ? 'rgba(253, 126, 20, 0.15)' : 'var(--mantine-color-orange-0)',
+      isDark ? 'rgba(18, 184, 134, 0.15)' : 'var(--mantine-color-teal-0)',
+      isDark ? 'rgba(224, 49, 140, 0.15)' : 'var(--mantine-color-pink-0)',
+      isDark ? 'rgba(250, 204, 21, 0.15)' : 'var(--mantine-color-yellow-0)',
+      isDark ? 'rgba(21, 170, 191, 0.15)' : 'var(--mantine-color-cyan-0)',
+    ];
+
+    // Handle "No Group" (Sonstige)
+    if (noGroup.length > 0) {
+      const key = 'Sonstige';
+      const bgColor = isDark ? 'rgba(255, 255, 255, 0.05)' : 'var(--mantine-color-gray-0)';
+
+      // Employees
+      if (!hideEmployees) {
+        noGroup.forEach(e => columns.push({
+          type: 'employee',
+          id: e.id!,
+          employee: e,
+          groupId: key,
+          backgroundColor: bgColor
+        }));
+      }
+
+      // Summary
+      columns.push({
+        type: 'group-summary',
+        id: `summary-${key}`,
+        label: `Ø ${key}`,
+        employeeIds: noGroup.map(e => e.id!),
+        groupId: key,
+        backgroundColor: bgColor
+      });
+    }
+
+    let colorIndex = 0;
+    sortedKeys.forEach(key => {
+      const groupEmps = groups.get(key)!;
+      const bgColor = backgroundColors[colorIndex % backgroundColors.length];
+      colorIndex++;
+
+      // Employees
+      if (!hideEmployees) {
+        groupEmps.forEach(e => columns.push({
+          type: 'employee',
+          id: e.id!,
+          employee: e,
+          groupId: key,
+          backgroundColor: bgColor
+        }));
+      }
+
+      // Summaries
+      columns.push({
+        type: 'group-summary',
+        id: `summary-${key}`,
+        label: `Ø ${key}`,
+        employeeIds: groupEmps.map(e => e.id!),
+        groupId: key,
+        backgroundColor: bgColor
+      });
+    });
+
+    return columns;
+  }, [displayedEmployees, groupingMode, colorScheme, hideEmployees]);
+
+  const nextGroupingMode = () => {
+    const modes: ('none' | 'department' | 'role')[] = ['none', 'department', 'role'];
+    const currentIndex = modes.indexOf(groupingMode);
+    setGroupingMode(modes[(currentIndex + 1) % modes.length]);
+  };
+
+  const getGroupingLabel = (mode: 'none' | 'department' | 'role') => {
+    switch (mode) {
+      case 'none': return 'Keine Gruppierung';
+      case 'department': return 'Nach Abteilung';
+      case 'role': return 'Nach Rolle';
+    }
+  };
 
   const toggleItem = (id: string) =>
     setCollapsedStates((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -596,6 +731,43 @@ export const SkillMatrix: React.FC = () => {
 
               {/* View Controls Group */}
               <Group gap="xs" style={{ borderRight: '1px solid var(--mantine-color-default-border)', paddingRight: '12px' }}>
+                <Tooltip label={`Gruppierung: ${getGroupingLabel(groupingMode)}`}>
+                  <ActionIcon
+                    variant={groupingMode === "none" ? "light" : "filled"}
+                    color={groupingMode === "none" ? "gray" : "blue"}
+                    onClick={nextGroupingMode}
+                    size="lg"
+                  >
+                    {groupingMode === 'none' ? <IconUsersGroup size={20} /> :
+                      groupingMode === 'department' ? <IconBuilding size={20} /> :
+                        <IconUserCircle size={20} />}
+                  </ActionIcon>
+                </Tooltip>
+
+                {groupingMode !== 'none' && (
+                  <Tooltip label={hideEmployees ? "Mitarbeiter einblenden" : "Mitarbeiter ausblenden"}>
+                    <ActionIcon
+                      variant={hideEmployees ? "filled" : "light"}
+                      color={hideEmployees ? "blue" : "gray"}
+                      onClick={() => setHideEmployees(!hideEmployees)}
+                      size="lg"
+                    >
+                      {hideEmployees ? <IconEyeOff size={20} /> : <IconEye size={20} />}
+                    </ActionIcon>
+                  </Tooltip>
+                )}
+
+                <Tooltip label={showMaxValues ? "Zeige Durchschnittswerte" : "Zeige Max-Werte"}>
+                  <ActionIcon
+                    variant="light"
+                    color="gray"
+                    onClick={() => setShowMaxValues(!showMaxValues)}
+                    size="lg"
+                  >
+                    {showMaxValues ? <IconSum size={20} /> : <IconPercentage size={20} />}
+                  </ActionIcon>
+                </Tooltip>
+
                 <Tooltip label="Alle ein-/ausklappen">
                   <ActionIcon
                     variant="light"
@@ -606,34 +778,17 @@ export const SkillMatrix: React.FC = () => {
                     <IconLayoutNavbarCollapse size={20} />
                   </ActionIcon>
                 </Tooltip>
+              </Group>
 
-                <Tooltip label={isEditMode ? "Bearbeitungsmodus beenden" : "Bearbeitungsmodus aktivieren"}>
-                  <ActionIcon
-                    variant={isEditMode ? "filled" : "light"}
-                    color={isEditMode ? "blue" : "gray"}
-                    onClick={() => setIsEditMode(!isEditMode)}
-                    size="lg"
-                  >
-                    <IconEdit size={20} />
-                  </ActionIcon>
-                </Tooltip>
-                <Tooltip label={showMaxValues ? "Zeige Durchschnittswerte" : "Zeige Max-Werte"}>
-                  <ActionIcon
-                    variant="light"
-                    color="gray"
-                    onClick={() => setShowMaxValues(!showMaxValues)}
-                    size="lg"
-                  >
-                    {showMaxValues ? "MAX" : "%"}
-                  </ActionIcon>
-                </Tooltip>
+              {/* Sort & Filter Group */}
+              <Group gap="xs">
                 <Tooltip label={
                   employeeSort === null ? "Mitarbeiter sortieren (aufsteigend)" :
                     employeeSort === 'asc' ? "Mitarbeiter sortieren (absteigend)" :
                       "Mitarbeiter-Sortierung aufheben"
                 }>
                   <ActionIcon
-                    variant="light"
+                    variant={employeeSort ? "filled" : "light"}
                     color={employeeSort ? "blue" : "gray"}
                     onClick={() => {
                       if (employeeSort === null) setEmployeeSort('asc');
@@ -651,7 +806,7 @@ export const SkillMatrix: React.FC = () => {
                       "Skills-Sortierung aufheben"
                 }>
                   <ActionIcon
-                    variant="light"
+                    variant={skillSort ? "filled" : "light"}
                     color={skillSort ? "grape" : "gray"}
                     onClick={() => {
                       if (skillSort === null) setSkillSort('asc');
@@ -663,6 +818,7 @@ export const SkillMatrix: React.FC = () => {
                     {skillSort === 'desc' ? <IconSortDescending size={20} /> : <IconSortAscending size={20} />}
                   </ActionIcon>
                 </Tooltip>
+
                 <Popover
                   width={300}
                   position="bottom"
@@ -674,8 +830,8 @@ export const SkillMatrix: React.FC = () => {
                   <Popover.Target>
                     <Tooltip label="Filter">
                       <ActionIcon
-                        variant={filtersOpened || filterDepartments.length > 0 || filterRoles.length > 0 ? "filled" : "light"}
-                        color={filtersOpened || filterDepartments.length > 0 || filterRoles.length > 0 ? "blue" : "gray"}
+                        variant={filtersOpened || filterDepartments.length > 0 || filterRoles.length > 0 || filterCategories.length > 0 ? "filled" : "light"}
+                        color={filtersOpened || filterDepartments.length > 0 || filterRoles.length > 0 || filterCategories.length > 0 ? "blue" : "gray"}
                         size="lg"
                         aria-label="Filter"
                         onClick={() => setFiltersOpened((o) => !o)}
@@ -719,6 +875,20 @@ export const SkillMatrix: React.FC = () => {
                     </Stack>
                   </Popover.Dropdown>
                 </Popover>
+              </Group>
+
+              {/* Global Actions Group */}
+              <Group gap="xs" style={{ borderLeft: '1px solid var(--mantine-color-default-border)', paddingLeft: '12px' }}>
+                <Tooltip label={isEditMode ? "Bearbeitungsmodus beenden" : "Bearbeitungsmodus aktivieren"}>
+                  <ActionIcon
+                    variant={isEditMode ? "filled" : "light"}
+                    color={isEditMode ? "blue" : "gray"}
+                    onClick={() => setIsEditMode(!isEditMode)}
+                    size="lg"
+                  >
+                    <IconEdit size={20} />
+                  </ActionIcon>
+                </Tooltip>
               </Group>
 
               {/* Add Actions Group */}
@@ -884,6 +1054,7 @@ export const SkillMatrix: React.FC = () => {
                   }}
                 >
                   <MatrixHeader
+                    columns={matrixColumns}
                     employees={displayedEmployees}
                     focusEmployeeId={focusEmployeeId}
                     hoveredEmployeeId={hoveredEmployeeId}
@@ -906,6 +1077,7 @@ export const SkillMatrix: React.FC = () => {
                     subcategories={subcategories}
                     skills={skills}
                     employees={displayedEmployees}
+                    columns={matrixColumns}
                     collapsedStates={collapsedStates}
                     hoveredSkillId={hoveredSkillId}
                     hoveredEmployeeId={hoveredEmployeeId}

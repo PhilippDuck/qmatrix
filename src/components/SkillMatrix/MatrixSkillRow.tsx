@@ -6,7 +6,10 @@ import { getScoreColor, getRoleTargetForSkill } from "../../utils/skillCalculati
 import { SkillCell } from "./SkillCell";
 import { Employee, Skill, Assessment, useData } from "../../context/DataContext";
 
+import { MatrixColumn } from "./types";
+
 interface MatrixSkillRowProps {
+  columns: MatrixColumn[];
   skill: Skill;
   employees: Employee[];
   roles: { id?: string; name: string; requiredSkills?: { skillId: string; level: number }[] }[];
@@ -24,6 +27,7 @@ interface MatrixSkillRowProps {
 }
 
 export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = ({
+  columns,
   skill,
   employees,
   roles,
@@ -132,7 +136,51 @@ export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = ({
           </Group>
         </Group>
       </div>
-      {employees.map((emp) => {
+      {columns.map((col) => {
+        if (col.type === 'group-summary') {
+          // Calculate average for this skill in this group
+          const validScores = col.employeeIds.map(eId => {
+            const emp = employees.find(e => e.id === eId);
+            const roleTarget = getRoleTargetForSkill(emp?.role, skill.id!, roles as any);
+            const asm = getAssessment(eId, skill.id!);
+            return asm?.level ?? (roleTarget && roleTarget > 0 ? 0 : -1);
+          }).filter(v => v !== -1);
+
+          const sum = validScores.reduce<number>((a, b) => a + b, 0);
+          const avg = validScores.length > 0 ? Math.round(sum / validScores.length) : 0;
+          const max = validScores.length > 0 ? Math.max(...validScores) : 0;
+
+          return (
+            <div
+              key={col.id}
+              style={{
+                width: cellSize,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: col.backgroundColor || (isRowHovered ? "var(--mantine-color-default-hover)" : "var(--mantine-color-body)"),
+                borderRight: col.type === 'group-summary' ? "2px solid var(--mantine-color-default-border)" : undefined,
+                borderBottom: "1px solid var(--mantine-color-default-border)",
+              }}
+            >
+              {showMaxValues ? (
+                max > 0 ? (
+                  <Badge size="xs" variant="outline" color={getScoreColor(max)} style={{ padding: '0 4px', height: '16px' }}>
+                    {max}%
+                  </Badge>
+                ) : (
+                  <Text size="xs" c="dimmed">-</Text>
+                )
+              ) : (
+                <Text size="xs" fw={500} c={getScoreColor(avg)}>
+                  {avg === 0 ? "-" : `${avg}%`}
+                </Text>
+              )}
+            </div>
+          );
+        }
+
+        const emp = col.employee;
         // Find Role Target (recursive)
         // Note: emp.role is the ID of the role
         const roleTarget = getRoleTargetForSkill(emp.role, skill.id!, roles as any);
@@ -170,6 +218,7 @@ export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = ({
               onEmployeeHover(null);
             }}
             hasActiveMeasure={measureStatus}
+            backgroundColor={col.backgroundColor}
           />
         );
       })}

@@ -323,6 +323,22 @@ class IndexedDBService {
       await this.deleteAssessment(id, assessment.skillId);
     }
 
+    // Delete all history (assessment logs) for this employee
+    const logs = await this.getAssessmentLogs(id);
+    for (const log of logs) {
+      if (log.id) {
+        await this.execute("assessment_logs", "delete", log.id);
+      }
+    }
+
+    // Delete all qualification plans for this employee (cascades to measures)
+    const plans = await this.getQualificationPlansForEmployee(id);
+    for (const plan of plans) {
+      if (plan.id) {
+        await this.deleteQualificationPlan(plan.id);
+      }
+    }
+
     // Then delete the employee
     await this.execute("employees", "delete", id);
   }

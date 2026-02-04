@@ -2,14 +2,17 @@ import React, { useState } from "react";
 import { Text, Group, ActionIcon, Badge, Stack, Tooltip, HoverCard } from "@mantine/core";
 import { IconPlus, IconMinus, IconTrophy, IconPencil, IconInfoCircle } from "@tabler/icons-react";
 import { MATRIX_LAYOUT } from "../../constants/skillLevels";
-import { getScoreColor } from "../../utils/skillCalculations";
+import { getScoreColor, getRoleTargetForSkill } from "../../utils/skillCalculations";
 import { InfoTooltip } from "../shared/InfoTooltip";
 import { BulkLevelMenu } from "./BulkLevelMenu";
 import { MatrixSkillRow } from "./MatrixSkillRow";
 import { Employee, SubCategory, Skill, Assessment } from "../../context/DataContext";
 import { usePrivacy } from "../../context/PrivacyContext";
 
+import { MatrixColumn } from "./types";
+
 interface MatrixSubcategoryRowProps {
+  columns: MatrixColumn[];
   subcategory: SubCategory;
   skills: Skill[];
   employees: Employee[];
@@ -33,6 +36,7 @@ interface MatrixSubcategoryRowProps {
   onAddSkill: (subCategoryId: string) => void;
 }
 export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
+  columns,
   subcategory,
   skills,
   employees,
@@ -147,7 +151,73 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
             )}
           </Group>
         </div>
-        {employees.map((emp) => {
+        {columns.map((col) => {
+          if (col.type === 'group-summary') {
+            // Calculate summary for this group
+            let totalScore = 0;
+            let count = 0;
+            col.employeeIds.forEach(eId => {
+              const emp = employees.find(e => e.id === eId);
+              subSkillIds.forEach(sId => {
+                const roleTarget = getRoleTargetForSkill(emp?.role, sId, roles as any);
+                const asm = getAssessment(eId, sId);
+                const level = asm?.level ?? (roleTarget && roleTarget > 0 ? 0 : -1);
+                if (level > -1) {
+                  totalScore += level;
+                  count++;
+                }
+              });
+            });
+            const avg = count > 0 ? Math.round(totalScore / count) : 0;
+
+            // Calculate Max Average for this group
+            // We need to calculate averages for each employee in this group for this subcategory
+            const empAvgs = col.employeeIds.map(eId => {
+              const emp = employees.find(e => e.id === eId);
+              // Reuse logic - calculate average for this employee for these skills
+              let eTotal = 0;
+              let eCount = 0;
+              subSkillIds.forEach(sId => {
+                const roleTarget = getRoleTargetForSkill(emp?.role, sId, roles as any);
+                const asm = getAssessment(eId, sId);
+                const level = asm?.level ?? (roleTarget && roleTarget > 0 ? 0 : -1);
+                if (level > -1) {
+                  eTotal += level;
+                  eCount++;
+                }
+              });
+              return eCount > 0 ? Math.round(eTotal / eCount) : 0;
+            });
+            const maxAvg = empAvgs.length > 0 ? Math.max(...empAvgs) : 0;
+
+            return (
+              <div
+                key={col.id}
+                style={{
+                  width: cellSize,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  backgroundColor: col.backgroundColor || "var(--mantine-color-default-hover)",
+                  borderRight: col.type === 'group-summary' ? "2px solid var(--mantine-color-default-border)" : undefined,
+                }}
+              >
+                {showMaxValues ? (
+                  maxAvg > 0 ? (
+                    <Badge size="xs" variant="light" color={getScoreColor(maxAvg)} style={{ border: '1px solid currentColor' }}>
+                      {maxAvg}%
+                    </Badge>
+                  ) : <Text size="xs" c="dimmed">-</Text>
+                ) : (
+                  <Text size="xs" fw={500} c={getScoreColor(avg)}>
+                    {avg === 0 ? "-" : `${avg}%`}
+                  </Text>
+                )}
+              </div>
+            );
+          }
+
+          const emp = col.employee;
           const avg = calculateAverage(subSkillIds, emp.id);
 
           return (
@@ -165,10 +235,7 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  backgroundColor:
-                    hoveredEmployeeId === emp.id
-                      ? "var(--mantine-color-default-hover)"
-                      : "transparent",
+                  backgroundColor: col.backgroundColor || (hoveredEmployeeId === emp.id ? "var(--mantine-color-default-hover)" : "transparent"),
                   transition: "background-color 0.15s ease",
                 }}
               >
@@ -198,6 +265,7 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
             <MatrixSkillRow
               key={skill.id}
               skill={skill}
+              columns={columns}
               employees={employees}
               roles={roles}
               hoveredSkillId={hoveredSkillId}

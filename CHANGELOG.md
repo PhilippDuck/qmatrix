@@ -1,5 +1,23 @@
 # Changelog
 
+
+## [2.5.0] - 2026-02-04
+
+### Added
+- **Toolbar Reorganization:** Grouped toolbar icons into logical sections (View, Sort/Filter, Actions) for better usability.
+- **Visibility Toggle:** Added a new "Eye" icon toggle to show/hide individual employee columns when grouping by Department or Role.
+- **Max Value View:** When "Show Max Values" is enabled, group summary columns now display the maximum value (Skill Level or Category Average) found in the group, instead of the group average.
+
+### Changed
+- **Styling:** Updated the grouping button to match the style of other toolbar icons (removed text label, used standard icon size).
+- **Aggregation Logic:** 
+    - "Average" view continues to show the arithmetic mean of the group.
+    - "Max" view now consistently shows peak values to identify top performers or maximum capacity within a group.
+- **Persistence:** "View" settings (like hidden employees) are now saved in local storage.
+
+### Fixed
+- Restored "Sort" and "Edit" buttons that were temporarily missing from the toolbar during refactoring.
+
 ## [2.4.2] - 2026-02-03
 
 ### Neue Funktionen & Verbesserungen

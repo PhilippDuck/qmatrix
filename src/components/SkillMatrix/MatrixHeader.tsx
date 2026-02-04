@@ -7,7 +7,10 @@ import { Employee, Skill, Assessment, useData, AssessmentLogEntry } from "../../
 import { getIconByName } from "../shared/RoleIconPicker";
 import { usePrivacy } from "../../context/PrivacyContext";
 
+import { MatrixColumn } from "./types";
+
 interface MatrixHeaderProps {
+  columns: MatrixColumn[];
   employees: Employee[];
   focusEmployeeId: string | null;
   hoveredEmployeeId: string | null;
@@ -338,6 +341,7 @@ const EmployeeInfoCard: React.FC<{
 }
 
 export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
+  columns,
   employees,
   focusEmployeeId,
   hoveredEmployeeId,
@@ -385,7 +389,42 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
         Struktur / Team
       </div>
       <div style={{ display: "flex", backgroundColor: "var(--mantine-color-body)" }}>
-        {employees.map((emp) => {
+        {columns.map((col) => {
+          if (col.type === 'group-summary') {
+            return (
+              <div
+                key={col.id}
+                style={{
+                  width: cellSize,
+                  height: headerHeight,
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "flex-end",
+                  paddingBottom: "12px",
+                  borderBottom: "2px solid var(--mantine-color-default-border)",
+                  borderRight: "2px solid var(--mantine-color-default-border)", // Thicker border for separator
+                  backgroundColor: col.backgroundColor || "var(--mantine-color-body)",
+                }}
+              >
+                <Text
+                  size="xs"
+                  fw={700}
+                  c="dimmed"
+                  style={{
+                    writingMode: "vertical-rl",
+                    transform: "rotate(180deg)",
+                    height: "80px",
+                    cursor: "default",
+                  }}
+                >
+                  {col.label}
+                </Text>
+              </div>
+            );
+          }
+
+          const emp = col.employee;
           const avg = calculateEmployeeAverage(emp.id!);
           const isColumnHovered = hoveredEmployeeId === emp.id;
           const isFocused = focusEmployeeId === emp.id;
@@ -413,9 +452,9 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
                     paddingBottom: "12px",
                     borderBottom: "2px solid var(--mantine-color-default-border)",
                     borderRight: "1px solid var(--mantine-color-default-border)",
-                    backgroundColor: isColumnHovered
+                    backgroundColor: col.backgroundColor || (isColumnHovered
                       ? "var(--mantine-color-default-hover)"
-                      : "transparent",
+                      : "transparent"),
                     position: "relative",
                     transition: "background-color 0.15s ease",
                   }}

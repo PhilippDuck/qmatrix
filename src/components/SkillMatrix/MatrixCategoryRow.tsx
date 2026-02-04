@@ -2,14 +2,17 @@ import React, { useState } from "react";
 import { Text, Group, ActionIcon, Badge, Stack, Tooltip, HoverCard } from "@mantine/core";
 import { IconPlus, IconMinus, IconTrophy, IconPencil, IconInfoCircle } from "@tabler/icons-react";
 import { MATRIX_LAYOUT } from "../../constants/skillLevels";
-import { getScoreColor } from "../../utils/skillCalculations";
+import { getScoreColor, getRoleTargetForSkill } from "../../utils/skillCalculations";
 import { InfoTooltip } from "../shared/InfoTooltip";
 import { BulkLevelMenu } from "./BulkLevelMenu";
 import { MatrixSubcategoryRow } from "./MatrixSubcategoryRow";
 import { Employee, Category, SubCategory, Skill, Assessment } from "../../context/DataContext";
 import { usePrivacy } from "../../context/PrivacyContext";
 
+import { MatrixColumn } from "./types";
+
 interface MatrixCategoryRowProps {
+  columns: MatrixColumn[];
   category: Category;
   subcategories: SubCategory[];
   skills: Skill[];
@@ -38,6 +41,7 @@ interface MatrixCategoryRowProps {
 
 
 export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = ({
+  columns,
   category,
   subcategories,
   skills,
@@ -174,7 +178,78 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = ({
           </Group>
         </div >
         {
-          employees.map((emp) => {
+          columns.map((col) => {
+            const cellStyle: React.CSSProperties = {
+              width: cellSize,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: col.backgroundColor || (col.type === 'employee' && hoveredEmployeeId === col.id ? "var(--mantine-color-default-hover)" : "transparent"),
+              borderRight: col.type === 'group-summary' ? "2px solid var(--mantine-color-default-border)" : undefined,
+              transition: "background-color 0.15s ease",
+            };
+            // Override hover if not grouped/colored
+            if (!col.backgroundColor && col.type === 'employee' && hoveredEmployeeId === col.id) {
+              cellStyle.backgroundColor = "var(--mantine-color-default-hover)";
+            }
+
+            if (col.type === 'group-summary') {
+              // Calculate summary for this group
+              let totalScore = 0;
+              let count = 0;
+              col.employeeIds.forEach(eId => {
+                const emp = employees.find(e => e.id === eId);
+                catSkillIds.forEach(sId => {
+                  const roleTarget = getRoleTargetForSkill(emp?.role, sId, roles as any);
+                  const asm = getAssessment(eId, sId);
+                  const level = asm?.level ?? (roleTarget && roleTarget > 0 ? 0 : -1);
+                  if (level > -1) {
+                    totalScore += level;
+                    count++;
+                  }
+                });
+              });
+              const avg = count > 0 ? Math.round(totalScore / count) : 0;
+
+              // Calculate Max Average for this group
+              const empAvgs = col.employeeIds.map(eId => {
+                const emp = employees.find(e => e.id === eId);
+                let eTotal = 0;
+                let eCount = 0;
+                catSkillIds.forEach(sId => {
+                  const roleTarget = getRoleTargetForSkill(emp?.role, sId, roles as any);
+                  const asm = getAssessment(eId, sId);
+                  const level = asm?.level ?? (roleTarget && roleTarget > 0 ? 0 : -1);
+                  if (level > -1) {
+                    eTotal += level;
+                    eCount++;
+                  }
+                });
+                return eCount > 0 ? Math.round(eTotal / eCount) : 0;
+              });
+              const maxAvg = empAvgs.length > 0 ? Math.max(...empAvgs) : 0;
+
+              return (
+                <div
+                  key={col.id}
+                  style={cellStyle}
+                >
+                  {showMaxValues ? (
+                    maxAvg > 0 ? (
+                      <Badge size="xs" variant="filled" color={getScoreColor(maxAvg)} style={{ border: '1px solid currentColor' }}>
+                        {maxAvg}%
+                      </Badge>
+                    ) : <Text fw={700} size="xs" c="dimmed">-</Text>
+                  ) : (
+                    <Text fw={700} size="xs" c={getScoreColor(avg)}>
+                      {avg === 0 ? "-" : `${avg}%`}
+                    </Text>
+                  )}
+                </div>
+              );
+            }
+
+            const emp = col.employee;
             const avg = calculateAverage(catSkillIds, emp.id);
 
             return (
@@ -187,16 +262,8 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = ({
                   onMouseEnter={() => onEmployeeHover(emp.id!)}
                   onMouseLeave={() => onEmployeeHover(null)}
                   style={{
-                    width: cellSize,
+                    ...cellStyle,
                     cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    backgroundColor:
-                      hoveredEmployeeId === emp.id
-                        ? "var(--mantine-color-default-hover)"
-                        : "transparent",
-                    transition: "background-color 0.15s ease",
                   }}
                 >
                   <Text fw={700} size="xs" c={getScoreColor(avg)}>
@@ -227,6 +294,7 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = ({
             return (
               <MatrixSubcategoryRow
                 key={sub.id}
+                columns={columns}
                 subcategory={sub}
                 skills={subSkills}
                 employees={employees}

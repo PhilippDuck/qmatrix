@@ -4,11 +4,10 @@
 
 - [ ] Matrix, abspeichern von "Views" verschiedener Filteransicht
 - [ ] Matrix: Rollenicon hinter Name
-- [ ] Matrix: Gruppieren nach abteilung oder nach Rolle
+- [x] Matrix: Gruppieren nach abteilung oder nach Rolle (inkl. aggregierte Werte)
 - [ ] Mitarbeiter "deaktivieren" (nicht mehr sichtbar, und nicht Auswertung)
 - [ ] Drag and drop skill organigramm
 - [ ] Qualifizierungsplan - Maßnahmenkachel nur skill name aber keine kategore/Subkategorie
-- [ ] Mitarbeiter wird gelöscht, auch seine Qualifizungen löschen?
 - [ ] Dashboard überarbeiten?
 - [ ] Struktur Hauptkategorie/Unterkategorie/Skill aufbrechen. auch keine untergategorie möglich oder beliebig viele unterkategorien?
 
@@ -24,7 +23,7 @@
 
 ## Bugs
 
-- [ ] löscht sich Historie wenn Mitarbeiter gelöscht wird? (assesmentlogs)
+
 
 ### Abgeschlossen
 
@@ -33,3 +32,4 @@
 - [x] Doppelter Datendownload bei Export und Schnellspeichern
 - [x] Exportierter Name Anpassen, Speichern unter Dialog
 - [x] Name nicht doppelt vergeben
+- [x] Historie (Assessmentlogs) und Qualifizierungspläne werden gelöscht wenn Mitarbeiter gelöscht wird

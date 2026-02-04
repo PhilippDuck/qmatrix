@@ -14,6 +14,7 @@ interface SkillCellProps {
   onMouseEnter: () => void;
   onMouseLeave: () => void;
   hasActiveMeasure?: "pending" | "in_progress";
+  backgroundColor?: string;
 }
 
 export const SkillCell: React.FC<SkillCellProps> = ({
@@ -27,6 +28,7 @@ export const SkillCell: React.FC<SkillCellProps> = ({
   onMouseEnter,
   onMouseLeave,
   hasActiveMeasure,
+  backgroundColor,
 }) => {
   const levelObj = getLevelByValue(level);
 
@@ -54,10 +56,11 @@ export const SkillCell: React.FC<SkillCellProps> = ({
             justifyContent: "center",
             borderBottom: "1px solid var(--mantine-color-default-border)",
             borderRight: "1px solid var(--mantine-color-default-border)",
-            backgroundColor:
+            backgroundColor: backgroundColor || (
               isRowHovered || isColumnHovered
                 ? "var(--mantine-color-default-hover)"
-                : "transparent",
+                : "transparent"
+            ),
             transition: "background-color 0.15s ease",
             position: "relative",
             cursor: "pointer",
