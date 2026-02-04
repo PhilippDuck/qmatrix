@@ -8,11 +8,12 @@
 - [x] neuer Mitarbeiter, standartmäßig N/A bei rollen verteilung n/a zu 0%
 - [x] kein blauer schatten beim blauen indikator in Matrix "Maßnahme aktiv"s
 - [ ] Matrix: Rollenicon hinter Name
-- [ ] Matrix: Gruppieren nach abteilung oder nach Rolle 
+- [ ] Matrix: Gruppieren nach abteilung oder nach Rolle
 - [ ] Mitarbeiter "deaktivieren" (nicht mehr sichtbar, und nicht Auswertung)
-
+- [x] Organigramm Skills Kacheln nicht so breit
 
 ## Bugs
+
 - [x] Dashboard globale expertiese nicht korrekt? prüfen
 - [x] Vererbte Soll werden nicht in Matrix angezeigt
 - [x] Doppelter Datendownload bei Export und Schnellspeichern
