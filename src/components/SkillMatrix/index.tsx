@@ -28,8 +28,11 @@ import {
   IconPercentage,
   IconEye,
   IconEyeOff,
+  IconDeviceFloppy,
 } from "@tabler/icons-react";
-import { useData, Employee } from "../../context/DataContext";
+import { useData, Employee, SavedView } from "../../context/DataContext";
+import { ViewTabs } from "./ViewTabs";
+import { SaveViewModal } from "./SaveViewModal";
 import { CreateContextMenu } from "../shared/CreateContextMenu";
 import { useHotkeys, useLocalStorage } from "@mantine/hooks";
 import {
@@ -57,6 +60,10 @@ export const SkillMatrix: React.FC = () => {
     skills,
     departments, // Get departments
     roles,       // Get roles
+    savedViews,
+    addSavedView,
+    updateSavedView,
+    deleteSavedView,
     setAssessment,
     setTargetLevel,
     getAssessment,
@@ -149,6 +156,12 @@ export const SkillMatrix: React.FC = () => {
     defaultValue: null,
   });
 
+  // Grouping mode
+  const [groupingMode, setGroupingMode] = useLocalStorage<'none' | 'department' | 'role'>({
+    key: 'skill-matrix-grouping-mode',
+    defaultValue: 'none',
+  });
+
   // State to toggle employee visibility in grouped mode
   const [hideEmployees, setHideEmployees] = useLocalStorage<boolean>({
     key: 'skill-matrix-hide-employees',
@@ -156,6 +169,138 @@ export const SkillMatrix: React.FC = () => {
   });
 
   const [filtersOpened, setFiltersOpened] = useState(false);
+
+  // Saved View State
+  const [activeViewId, setActiveViewId] = useLocalStorage<string | null>({
+    key: 'skill-matrix-active-view-id',
+    defaultValue: null,
+  });
+  const [saveViewModalOpened, setSaveViewModalOpened] = useState(false);
+
+  // Apply a Saved View
+  const handleSelectView = (view: SavedView) => {
+    setActiveViewId(view.id!);
+
+    // Apply filters
+    setFilterDepartments(view.config.filters.departments);
+    setFilterRoles(view.config.filters.roles);
+    setFilterCategories(view.config.filters.categories);
+
+    // Apply grouping
+    setGroupingMode(view.config.groupingMode);
+
+    // Apply settings
+    setShowMaxValues(view.config.settings.showMaxValues);
+    setHideEmployees(view.config.settings.hideEmployees);
+
+    // Apply sort
+    setEmployeeSort(view.config.sort.employee);
+    setSkillSort(view.config.sort.skill);
+
+    // Apply collapsed states
+    if (view.config.collapsedStates) {
+      setCollapsedStates(view.config.collapsedStates);
+    }
+  };
+
+  const handleSaveView = async (name: string) => {
+    // Construct the view object
+    const newView: Omit<SavedView, "id" | "updatedAt"> = {
+      name: name,
+      config: {
+        filters: {
+          departments: filterDepartments,
+          roles: filterRoles,
+          categories: filterCategories,
+        },
+        groupingMode: groupingMode,
+        settings: {
+          showMaxValues: showMaxValues,
+          hideEmployees: hideEmployees,
+        },
+        sort: {
+          employee: employeeSort,
+          skill: skillSort,
+        },
+        collapsedStates: collapsedStates,
+      },
+    };
+
+    try {
+      const id = await addSavedView(newView);
+      setActiveViewId(id);
+    } catch (error) {
+      console.error("Failed to save view:", error);
+    }
+  };
+
+  // Check if current settings differ from active view
+  const isViewDirty = useMemo(() => {
+    if (!activeViewId) return false;
+    const activeView = savedViews?.find(v => v.id === activeViewId);
+    if (!activeView) return false;
+
+    const config = activeView.config;
+    return (
+      JSON.stringify(config.filters.departments) !== JSON.stringify(filterDepartments) ||
+      JSON.stringify(config.filters.roles) !== JSON.stringify(filterRoles) ||
+      JSON.stringify(config.filters.categories) !== JSON.stringify(filterCategories) ||
+      config.groupingMode !== groupingMode ||
+      config.settings.showMaxValues !== showMaxValues ||
+      config.settings.hideEmployees !== hideEmployees ||
+      config.sort.employee !== employeeSort ||
+      config.sort.skill !== skillSort ||
+      JSON.stringify(config.collapsedStates || {}) !== JSON.stringify(collapsedStates)
+    );
+  }, [activeViewId, savedViews, filterDepartments, filterRoles, filterCategories, groupingMode, showMaxValues, hideEmployees, employeeSort, skillSort, collapsedStates]);
+
+  // Update the current active view with current settings
+  const handleUpdateCurrentView = async () => {
+    if (!activeViewId) return;
+    const activeView = savedViews?.find(v => v.id === activeViewId);
+    if (!activeView) return;
+
+    try {
+      await updateSavedView(activeViewId, {
+        name: activeView.name,
+        config: {
+          filters: {
+            departments: filterDepartments,
+            roles: filterRoles,
+            categories: filterCategories,
+          },
+          groupingMode: groupingMode,
+          settings: {
+            showMaxValues: showMaxValues,
+            hideEmployees: hideEmployees,
+          },
+          sort: {
+            employee: employeeSort,
+            skill: skillSort,
+          },
+          collapsedStates: collapsedStates,
+        },
+      });
+    } catch (error) {
+      console.error("Failed to update view:", error);
+    }
+  };
+
+  const handleClearView = () => {
+    setActiveViewId(null);
+    // Optionally reset filters to defaults? 
+    // Or just "deselect" the pill. 
+    // User requested "different views for different purposes".
+    // "Default" button usually means "Reset everything".
+    setFilterDepartments([]);
+    setFilterRoles([]);
+    setFilterCategories([]);
+    setGroupingMode("none");
+    setShowMaxValues(false);
+    setHideEmployees(false);
+    setEmployeeSort(null);
+    setSkillSort(null);
+  };
 
   const displayedEmployees = useMemo(() => {
     let result = employees;
@@ -291,13 +436,9 @@ export const SkillMatrix: React.FC = () => {
       });
     }
 
+
     return result;
   }, [categories, filterCategories, skillSort, subcategories, skills, displayedEmployees, getAssessment, showMaxValues]);
-
-  const [groupingMode, setGroupingMode] = useLocalStorage<'none' | 'department' | 'role'>({
-    key: 'skill-matrix-grouping',
-    defaultValue: 'none',
-  });
 
   const { colorScheme } = useMantineColorScheme();
 
@@ -725,12 +866,12 @@ export const SkillMatrix: React.FC = () => {
         />
       ) : (
         <Stack gap="md" h="100%" style={{ overflow: "hidden" }}>
-          <Group justify="space-between" align="start">
-            <Group gap="md">
+          <Group justify="space-between" align="center">
+            <Group gap="md" align="center">
               <Title order={2}>Skill-Matrix</Title>
 
               {/* View Controls Group */}
-              <Group gap="xs" style={{ borderRight: '1px solid var(--mantine-color-default-border)', paddingRight: '12px' }}>
+              <Group gap="xs" style={{ borderLeft: '1px solid var(--mantine-color-default-border)', paddingLeft: '12px' }}>
                 <Tooltip label={`Gruppierung: ${getGroupingLabel(groupingMode)}`}>
                   <ActionIcon
                     variant={groupingMode === "none" ? "light" : "filled"}
@@ -879,6 +1020,7 @@ export const SkillMatrix: React.FC = () => {
 
               {/* Global Actions Group */}
               <Group gap="xs" style={{ borderLeft: '1px solid var(--mantine-color-default-border)', paddingLeft: '12px' }}>
+
                 <Tooltip label={isEditMode ? "Bearbeitungsmodus beenden" : "Bearbeitungsmodus aktivieren"}>
                   <ActionIcon
                     variant={isEditMode ? "filled" : "light"}
@@ -914,6 +1056,19 @@ export const SkillMatrix: React.FC = () => {
                   </ActionIcon>
                 </Tooltip>
               </Group>
+
+              {/* Saved Views Tabs */}
+              <ViewTabs
+                savedViews={savedViews || []}
+                activeViewId={activeViewId}
+                isViewDirty={isViewDirty}
+                onSelectView={handleSelectView}
+                onDeleteView={deleteSavedView}
+                onUpdateViewName={(id, name) => updateSavedView(id, { ...savedViews.find(v => v.id === id)!, name })}
+                onSaveCurrentView={handleUpdateCurrentView}
+                onClearView={handleClearView}
+                onCreateNewView={() => setSaveViewModalOpened(true)}
+              />
             </Group>
             {focusEmployeeId && (
               <Button
@@ -1135,7 +1290,8 @@ export const SkillMatrix: React.FC = () => {
             </div>
           </Card>
         </Stack>
-      )}
+      )
+      }
 
       <MatrixLegend
         opened={legendOpened}
@@ -1224,6 +1380,11 @@ export const SkillMatrix: React.FC = () => {
             setSkillDrawerOpened(true);
           }
         }}
+      />
+      <SaveViewModal
+        opened={saveViewModalOpened}
+        onClose={() => setSaveViewModalOpened(false)}
+        onSave={handleSaveView}
       />
     </Box >
   );

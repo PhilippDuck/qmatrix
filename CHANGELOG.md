@@ -1,22 +1,40 @@
 # Changelog
 
 
+## [2.6.0] - 2026-02-04
+
+### Neue Funktionen
+- **Gespeicherte Ansichten**: Neue Funktion zum Speichern und Wiederherstellen von Matrix-Konfigurationen (Filter, Gruppierung, Sortierung, eingeklappte Kategorien).
+  - Ansichten werden als Tabs über der Matrix angezeigt
+  - "Neue Ansicht +" Button zum Erstellen neuer Ansichten
+  - Kontextmenü zum Umbenennen, Löschen und Speichern von Änderungen
+  - Änderungsindikator (*) zeigt ungespeicherte Änderungen an
+  - Aktive Ansicht bleibt nach Seitenwechsel erhalten (LocalStorage)
+
+### Geändert
+- **Toolbar**: Separates Speicher-Icon entfernt, da "Neue Ansicht +" Button diese Funktion übernimmt.
+
+### Behobene Fehler
+- **Daten-Management**: Fehler behoben, bei dem gespeicherte Ansichten nicht exportiert, importiert oder beim Merge berücksichtigt wurden.
+
+---
+
 ## [2.5.0] - 2026-02-04
 
-### Added
-- **Toolbar Reorganization:** Grouped toolbar icons into logical sections (View, Sort/Filter, Actions) for better usability.
-- **Visibility Toggle:** Added a new "Eye" icon toggle to show/hide individual employee columns when grouping by Department or Role.
-- **Max Value View:** When "Show Max Values" is enabled, group summary columns now display the maximum value (Skill Level or Category Average) found in the group, instead of the group average.
+### Neue Funktionen
+- **Toolbar-Reorganisation:** Toolbar-Icons wurden in logische Gruppen unterteilt (Ansicht, Sortierung/Filter, Aktionen) für bessere Übersichtlichkeit.
+- **Mitarbeiter-Sichtbarkeit:** Neues "Auge"-Icon zum Ein-/Ausblenden einzelner Mitarbeiterspalten bei Gruppierung nach Abteilung oder Rolle.
+- **Maximalwerte-Ansicht:** Bei aktivierter "Maximalwerte anzeigen"-Option zeigen Gruppenspalten nun den höchsten Wert (Skill-Level oder Kategorie-Durchschnitt) der Gruppe statt des Durchschnitts.
 
-### Changed
-- **Styling:** Updated the grouping button to match the style of other toolbar icons (removed text label, used standard icon size).
-- **Aggregation Logic:** 
-    - "Average" view continues to show the arithmetic mean of the group.
-    - "Max" view now consistently shows peak values to identify top performers or maximum capacity within a group.
-- **Persistence:** "View" settings (like hidden employees) are now saved in local storage.
+### Geändert
+- **Styling:** Gruppierungs-Button an das Styling der anderen Toolbar-Icons angepasst (Text-Label entfernt, Standard-Icon-Größe verwendet).
+- **Aggregationslogik:** 
+    - "Durchschnitt"-Ansicht zeigt weiterhin den arithmetischen Mittelwert der Gruppe.
+    - "Maximum"-Ansicht zeigt nun konsistent die Spitzenwerte zur Identifikation von Top-Performern oder maximaler Kapazität.
+- **Persistenz:** Ansichtseinstellungen (wie ausgeblendete Mitarbeiter) werden nun im LocalStorage gespeichert.
 
-### Fixed
-- Restored "Sort" and "Edit" buttons that were temporarily missing from the toolbar during refactoring.
+### Behoben
+- Wiederherstellung der "Sortieren"- und "Bearbeiten"-Buttons, die während der Refaktorisierung temporär fehlten.
 
 ## [2.4.2] - 2026-02-03
 

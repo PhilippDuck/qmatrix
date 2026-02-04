@@ -2,7 +2,7 @@
 
 ## Verbesserungen
 
-- [ ] Matrix, abspeichern von "Views" verschiedener Filteransicht
+- [x] Matrix, abspeichern von "Views" verschiedener Filteransicht
 - [ ] Matrix: Rollenicon hinter Name
 - [x] Matrix: Gruppieren nach abteilung oder nach Rolle (inkl. aggregierte Werte)
 - [ ] Mitarbeiter "deaktivieren" (nicht mehr sichtbar, und nicht Auswertung)

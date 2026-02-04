@@ -1,6 +1,6 @@
 // IndexedDB Service für Qualifizierungsmatrix
 const DB_NAME = "QualificationMatrixDB";
-const DB_VERSION = 10;
+const DB_VERSION = 11;
 
 export interface Employee {
   id?: string;
@@ -111,6 +111,29 @@ export interface QualificationMeasure {
   updatedAt?: number;
 }
 
+export interface SavedView {
+  id?: string;
+  name: string;
+  config: {
+    filters: {
+      departments: string[];
+      roles: string[];
+      categories: string[];
+    };
+    groupingMode: 'none' | 'department' | 'role';
+    settings: {
+      showMaxValues: boolean;
+      hideEmployees: boolean;
+    };
+    sort: {
+      employee: 'asc' | 'desc' | null;
+      skill: 'asc' | 'desc' | null;
+    };
+    collapsedStates: Record<string, boolean>;
+  };
+  updatedAt?: number;
+}
+
 export interface ExportData {
   employees: Employee[];
   categories: Category[];
@@ -123,6 +146,7 @@ export interface ExportData {
   history: AssessmentLogEntry[];
   qualificationPlans?: QualificationPlan[];
   qualificationMeasures?: QualificationMeasure[];
+  savedViews?: SavedView[];
 }
 
 export interface MergeReport {
@@ -291,6 +315,12 @@ class IndexedDBService {
           measureStore.createIndex("planId", "planId", { unique: false });
           measureStore.createIndex("skillId", "skillId", { unique: false });
           measureStore.createIndex("status", "status", { unique: false });
+        }
+
+        // Saved Views Store (v11)
+        if (!db.objectStoreNames.contains("savedViews")) {
+          const viewStore = db.createObjectStore("savedViews", { keyPath: "id" });
+          viewStore.createIndex("name", "name", { unique: false });
         }
       };
     });
@@ -699,6 +729,27 @@ class IndexedDBService {
     await this.execute("qualificationMeasures", "delete", id);
   }
 
+  // Saved Views
+  async addSavedView(view: Omit<SavedView, "id" | "updatedAt">): Promise<string> {
+    const id = crypto.randomUUID();
+    const data = { ...view, id, updatedAt: Date.now() };
+    await this.execute("savedViews", "add", data);
+    return id;
+  }
+
+  async getSavedViews(): Promise<SavedView[]> {
+    return this.execute("savedViews", "getAll");
+  }
+
+  async updateSavedView(id: string, view: Omit<SavedView, "id" | "updatedAt">): Promise<void> {
+    const data = { ...view, id, updatedAt: Date.now() };
+    await this.execute("savedViews", "put", data);
+  }
+
+  async deleteSavedView(id: string): Promise<void> {
+    await this.execute("savedViews", "delete", id);
+  }
+
   async setTargetLevel(
     employeeId: string,
     skillId: string,
@@ -827,13 +878,14 @@ class IndexedDBService {
       settings: await this.getSettings() || { id: 'default', projectTitle: '', updatedAt: Date.now() },
       history: await this.execute("assessment_logs", "getAll"),
       qualificationPlans: await this.getQualificationPlans(),
-      qualificationMeasures: await this.getQualificationMeasures()
+      qualificationMeasures: await this.getQualificationMeasures(),
+      savedViews: await this.getSavedViews()
     };
   }
 
   async clearAllData(): Promise<void> {
     if (!this.db) return;
-    const stores = ["employees", "categories", "subcategories", "skills", "assessments", "departments", "roles", "assessment_logs", "settings", "qualificationPlans", "qualificationMeasures"];
+    const stores = ["employees", "categories", "subcategories", "skills", "assessments", "departments", "roles", "assessment_logs", "settings", "qualificationPlans", "qualificationMeasures", "savedViews"];
     const transaction = this.db.transaction(stores, "readwrite");
     for (const storeName of stores) {
       const store = transaction.objectStore(storeName);
@@ -874,7 +926,8 @@ class IndexedDBService {
       settings: data.settings ? [data.settings] : [],
       assessment_logs: data.history,
       qualificationPlans: data.qualificationPlans || [],
-      qualificationMeasures: data.qualificationMeasures || []
+      qualificationMeasures: data.qualificationMeasures || [],
+      savedViews: data.savedViews || []
     };
 
     for (const [storeName, items] of Object.entries(mappings)) {
@@ -931,6 +984,7 @@ class IndexedDBService {
     if (data.settings) await mergeStore("settings", [data.settings]);
     if (data.qualificationPlans) await mergeStore("qualificationPlans", data.qualificationPlans);
     if (data.qualificationMeasures) await mergeStore("qualificationMeasures", data.qualificationMeasures);
+    if (data.savedViews) await mergeStore("savedViews", data.savedViews);
 
     return report;
   }
@@ -950,7 +1004,8 @@ class IndexedDBService {
       { name: "assessment_logs", property: "history", label: "Historie" },
       { name: "settings", property: "settings", label: "Einstellungen" },
       { name: "qualificationPlans", property: "qualificationPlans", label: "Qualifizierungsplan" },
-      { name: "qualificationMeasures", property: "qualificationMeasures", label: "Qualifizierungsmaßnahme" }
+      { name: "qualificationMeasures", property: "qualificationMeasures", label: "Qualifizierungsmaßnahme" },
+      { name: "savedViews", property: "savedViews", label: "Gespeicherte Ansicht" }
     ];
 
     for (const store of stores) {

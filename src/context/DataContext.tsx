@@ -21,10 +21,11 @@ import {
   MergeItemDiff,
   QualificationPlan as DBQualificationPlan,
   QualificationMeasure,
+  SavedView,
 } from "../services/indexeddb";
 
 // Re-export types for convenience
-export type { Employee, Category, SubCategory, Skill, Assessment, AssessmentLogEntry, Department, EmployeeRole, ExportData, MergeReport, MergeDiff, MergeItemDiff, QualificationMeasure };
+export type { Employee, Category, SubCategory, Skill, Assessment, AssessmentLogEntry, Department, EmployeeRole, ExportData, MergeReport, MergeDiff, MergeItemDiff, QualificationMeasure, SavedView };
 
 // Redefine QualificationPlan locally to make targetRoleId optional
 export interface QualificationPlan extends Omit<DBQualificationPlan, 'targetRoleId'> {
@@ -54,6 +55,7 @@ interface DataContextType {
   roles: EmployeeRole[];
   qualificationPlans: QualificationPlan[];
   qualificationMeasures: QualificationMeasure[];
+  savedViews: SavedView[];
   projectTitle: string;
   dataHash: string;
   loading: boolean;
@@ -133,6 +135,11 @@ interface DataContextType {
   deleteQualificationMeasure: (id: string) => Promise<void>;
   getQualificationMeasuresForPlan: (planId: string) => QualificationMeasure[];
 
+  // Saved View methods
+  addSavedView: (view: Omit<SavedView, "id" | "updatedAt">) => Promise<string>;
+  updateSavedView: (id: string, view: Omit<SavedView, "id" | "updatedAt">) => Promise<void>;
+  deleteSavedView: (id: string) => Promise<void>;
+
   // Helper methods
   getSkillGapsForEmployee: (employeeId: string, targetRoleId?: string | null) => SkillGap[];
   getPotentialMentors: (skillId: string, excludeEmployeeId?: string) => Employee[];
@@ -160,6 +167,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
   const [roles, setRoles] = useState<EmployeeRole[]>([]);
   const [qualificationPlans, setQualificationPlans] = useState<QualificationPlan[]>([]);
   const [qualificationMeasures, setQualificationMeasures] = useState<QualificationMeasure[]>([]);
+  const [savedViews, setSavedViews] = useState<SavedView[]>([]);
   const [projectTitle, setProjectTitle] = useState<string>("");
   const [dataHash, setDataHash] = useState<string>("");
   const [loading, setLoading] = useState(true);
@@ -184,7 +192,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
 
   const refreshAllData = async () => {
     try {
-      const [emps, cats, subcats, sks, asms, depts, rls, qPlans, qMeasures, settings, hash] = await Promise.all([
+      const [emps, cats, subcats, sks, asms, depts, rls, qPlans, qMeasures, settings, views, hash] = await Promise.all([
         db.getEmployees(),
         db.getCategories(),
         db.getSubCategories(),
@@ -195,6 +203,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
         db.getQualificationPlans(),
         db.getQualificationMeasures(),
         db.getSettings(),
+        db.getSavedViews(),
         db.getDataHash()
       ]);
 
@@ -207,6 +216,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
       setRoles(rls || []);
       setQualificationPlans(qPlans || []);
       setQualificationMeasures(qMeasures || []);
+      setSavedViews(views || []);
       setProjectTitle(settings?.projectTitle || "");
       setDataHash(hash || "");
     } catch (err) {
@@ -670,10 +680,47 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
     return employees.filter((e) => qualifiedEmployeeIds.has(e.id!));
   };
 
+  // Saved View Methods
+  const addSavedView = async (view: Omit<SavedView, "id" | "updatedAt">) => {
+    try {
+      const id = await db.addSavedView(view);
+      await refreshAllData();
+      return id;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to add saved view");
+      throw err;
+    }
+  };
+
+  const updateSavedView = async (id: string, view: Omit<SavedView, "id" | "updatedAt">) => {
+    try {
+      await db.updateSavedView(id, view);
+      await refreshAllData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update saved view");
+      throw err;
+    }
+  };
+
+  const deleteSavedView = async (id: string) => {
+    try {
+      await db.deleteSavedView(id);
+      await refreshAllData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete saved view");
+      throw err;
+    }
+  };
+
   // Data management
   const exportData = async () => {
     try {
-      const data = await db.exportData();
+      const dbData = await db.exportData();
+      const data: ExportData = {
+        ...dbData,
+        savedViews: savedViews,
+      };
+
       const blob = new Blob([JSON.stringify(data, null, 2)], {
         type: "application/json",
       });
@@ -687,6 +734,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
       a.download = `${safeTitle}_Backup_${dateStr}_${timeStr}.json`;
       a.click();
       URL.revokeObjectURL(url);
+
       return data;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to export data");
@@ -760,6 +808,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
         roles,
         qualificationPlans,
         qualificationMeasures,
+        savedViews,
+        projectTitle,
         dataHash,
         loading,
         error,
@@ -790,7 +840,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
         updateRole,
         deleteRole,
         updateSkillsForRole,
-        projectTitle,
+
         updateProjectTitle,
         addQualificationPlan,
         updateQualificationPlan,
@@ -800,6 +850,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
         updateQualificationMeasure,
         deleteQualificationMeasure,
         getQualificationMeasuresForPlan,
+        addSavedView,
+        updateSavedView,
+        deleteSavedView,
         getSkillGapsForEmployee,
         getPotentialMentors,
         exportData,
