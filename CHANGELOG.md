@@ -1,6 +1,18 @@
 # Changelog
 
 
+## [2.6.5] - 2026-02-05
+
+### Neue Funktionen
+- **Organigramm-Editor**: Einführung einer Clipboard-Funktion (Ausschneiden, Kopieren, Einfügen) im Skill-Organigramm.
+  - **Kontextmenü**: Über das 3-Punkte-Menü an jeder Karte erreichbar.
+  - **Ausschneiden & Verschieben**: Skills können nun einfach zwischen Unterkategorien verschoben werden.
+  - **Kopieren**: Skills und ganze Unterkategorien können dupliziert werden.
+  - **Deep Copy**: Beim Kopieren einer Unterkategorie werden alle enthaltenen Skills automatisch mitkopiert.
+  - **Visuelles Feedback**: Farbliche Indikatoren zeigen den aktuellen Clipboard-Status an (Ausschneiden vs. Kopieren).
+
+---
+
 ## [2.6.4] - 2026-02-05
 
 ### Refactoring & Code Quality

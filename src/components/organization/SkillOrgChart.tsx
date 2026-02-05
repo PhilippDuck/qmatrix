@@ -12,6 +12,7 @@ import {
   ThemeIcon,
   ActionIcon,
   Divider,
+  Menu,
 } from "@mantine/core";
 import {
   IconTags,
@@ -20,6 +21,11 @@ import {
   IconPlus,
   IconUserShield,
   IconSitemap,
+  IconDotsVertical,
+  IconCopy,
+  IconScissors,
+  IconClipboard,
+  IconPencil,
 } from "@tabler/icons-react";
 import {
   Skill,
@@ -31,6 +37,13 @@ import {
 // ----------------------------------------------------------------------------
 // Types
 // ----------------------------------------------------------------------------
+
+export interface ClipboardItem {
+  type: "skill" | "subcategory";
+  id: string;
+  data: any; // Skill or SubCategory object
+  mode: "cut" | "copy";
+}
 
 interface HierarchyNode {
   type: "root" | "category" | "subcategory" | "skill";
@@ -55,6 +68,11 @@ interface SkillOrgChartProps {
   onAddCategory?: () => void;
   onAddSubCategory?: (categoryId: string) => void;
   onAddSkill?: (subcategoryId: string) => void;
+  // Clipboard Props
+  clipboardItem?: ClipboardItem | null;
+  onCopy?: (item: ClipboardItem) => void;
+  onCut?: (item: ClipboardItem) => void;
+  onPaste?: (targetId: string, targetType: "category" | "subcategory") => void;
 }
 
 // ----------------------------------------------------------------------------
@@ -65,7 +83,11 @@ const NodeCard: React.FC<{
   node: HierarchyNode;
   roles: EmployeeRole[];
   onClick?: () => void;
-}> = ({ node, roles, onClick }) => {
+  clipboardItem?: ClipboardItem | null;
+  onCopy?: (item: ClipboardItem) => void;
+  onCut?: (item: ClipboardItem) => void;
+  onPaste?: (targetId: string, targetType: "category" | "subcategory") => void;
+}> = ({ node, roles, onClick, clipboardItem, onCopy, onCut, onPaste }) => {
   const { colorScheme } = useMantineColorScheme();
   const isDark = colorScheme === "dark";
 
@@ -128,9 +150,23 @@ const NodeCard: React.FC<{
   const relatedRoles =
     node.type === "skill" && node.data
       ? (roles || []).filter((r) =>
-          (node.data as Skill).requiredByRoleIds?.includes(r.id!),
-        )
+        (node.data as Skill).requiredByRoleIds?.includes(r.id!),
+      )
       : [];
+
+  // Check if this node is currently in clipboard (cut mode)
+  const isCut =
+    clipboardItem?.mode === "cut" &&
+    clipboardItem.type === node.type &&
+    clipboardItem.id === node.id;
+
+  // Check if paste is valid here
+  // Paste Skill -> into SubCategory
+  // Paste SubCategory -> into Category
+  const canPaste =
+    clipboardItem &&
+    ((clipboardItem.type === "skill" && node.type === "subcategory") ||
+      (clipboardItem.type === "subcategory" && node.type === "category"));
 
   // Construct Tooltip Label
   const tooltipLabel = (
@@ -165,72 +201,152 @@ const NodeCard: React.FC<{
     </Stack>
   );
 
-  return (
-    <Tooltip
-      label={tooltipLabel}
-      multiline
-      withArrow
-      maw={300}
-      disabled={node.type === "root" && !node.description}
-      transitionProps={{ transition: "pop", duration: 200 }}
+  const mainContent = (
+    <Paper
+      withBorder
+      p="xs"
+      shadow="sm"
+      style={{
+        width: cardWidth,
+        cursor: node.type === "root" ? "default" : "pointer",
+        display: "inline-block",
+        backgroundColor: isDark ? "var(--mantine-color-dark-6)" : "white",
+        borderColor: isDark
+          ? "var(--mantine-color-dark-4)"
+          : "var(--mantine-color-gray-4)",
+        transition: "transform 0.2s, box-shadow 0.2s, opacity 0.2s",
+        opacity: isCut ? 0.5 : 1,
+      }}
+      onMouseEnter={(e) => {
+        if (node.type !== "root") {
+          e.currentTarget.style.transform = "translateY(-2px)";
+          e.currentTarget.style.boxShadow = "var(--mantine-shadow-md)";
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (node.type !== "root") {
+          e.currentTarget.style.transform = "translateY(0)";
+          e.currentTarget.style.boxShadow = "var(--mantine-shadow-sm)";
+        }
+      }}
     >
-      <Paper
-        withBorder
-        p="xs"
-        shadow="sm"
-        onClick={(e) => {
-          e.stopPropagation();
-          onClick && onClick();
-        }}
-        style={{
-          width: cardWidth,
-          cursor: node.type === "root" ? "default" : "pointer",
-          display: "inline-block",
-          backgroundColor: isDark ? "var(--mantine-color-dark-6)" : "white",
-          borderColor: isDark
-            ? "var(--mantine-color-dark-4)"
-            : "var(--mantine-color-gray-4)",
-          transition: "transform 0.2s, box-shadow 0.2s",
-        }}
-        onMouseEnter={(e) => {
-          if (node.type !== "root") {
-            e.currentTarget.style.transform = "translateY(-2px)";
-            e.currentTarget.style.boxShadow = "var(--mantine-shadow-md)";
-          }
-        }}
-        onMouseLeave={(e) => {
-          if (node.type !== "root") {
-            e.currentTarget.style.transform = "translateY(0)";
-            e.currentTarget.style.boxShadow = "var(--mantine-shadow-sm)";
-          }
-        }}
-      >
-        <Stack gap={6} align="center">
+      <Stack gap={6} align="center">
+        <Group gap={4} wrap="nowrap" style={{ width: '100%', justifyContent: 'center', position: 'relative' }}>
           <ThemeIcon variant="light" color={color} size="lg" radius="md">
             <IconComponent size={20} />
           </ThemeIcon>
 
-          <Text fw={600} size={labelSize} style={{ lineHeight: 1.2 }}>
-            {node.name || "Untitled"}
-          </Text>
+          {/* Menu Action Icon - absolute positioned or just next to it? Let's try absolute if possible, or just click to open menu? 
+              User requested Context Menu. We can wrap the whole card in Menu Target if we want left click to open menu, 
+              or use right click. For mobile/touch friendliness, a 3-dots icon is often better or just left click logic.
+              
+              Current logic: Left click calls onClick (Edit). 
+              Let's add 3-dots for Menu.
+          */}
+        </Group>
 
-          {node.children.length > 0 && !node.children[0].isAddNode ? (
-            <Badge variant="outline" color="gray" size="xs">
-              {node.children.filter((c) => !c.isAddNode).length} items
-            </Badge>
-          ) : null}
+        <Text fw={600} size={labelSize} style={{ lineHeight: 1.2 }}>
+          {node.name || "Untitled"}
+        </Text>
 
-          {relatedRoles.length > 0 && (
-            <Group gap={4}>
-              <IconUserShield size={12} color="var(--mantine-color-orange-5)" />
-              <Text size="xs" c="dimmed">
-                {relatedRoles.length}
-              </Text>
-            </Group>
-          )}
-        </Stack>
-      </Paper>
-    </Tooltip>
+        {node.children.length > 0 && !node.children[0].isAddNode ? (
+          <Badge variant="outline" color="gray" size="xs">
+            {node.children.filter((c) => !c.isAddNode).length} items
+          </Badge>
+        ) : null}
+
+        {relatedRoles.length > 0 && (
+          <Group gap={4}>
+            <IconUserShield size={12} color="var(--mantine-color-orange-5)" />
+            <Text size="xs" c="dimmed">
+              {relatedRoles.length}
+            </Text>
+          </Group>
+        )}
+      </Stack>
+    </Paper>
+  );
+
+  // If root, just return card (no menu usually needed for root unless we want to paste categories into root?)
+  // Requirement says: Paste SubCategory -> into Category. Paste Skill -> into SubCategory.
+  // It doesn't mention moving Categories themselves.
+  if (node.type === "root") return mainContent;
+
+  return (
+    <Menu shadow="md" width={200} withArrow position="bottom">
+      <Menu.Target>
+        {/* We wrap the Tooltip here so hovering still works, but clicking opens menu? 
+            Or standard behavior: Click = Edit, Right Click = Menu?
+            Simple solution: Add 3-dots icon to the card top-right. 
+            Better: Wrapper div.
+        */}
+        <Box style={{ display: 'inline-block', position: 'relative' }}>
+          <Tooltip
+            label={tooltipLabel}
+            multiline
+            withArrow
+            maw={300}
+            transitionProps={{ transition: "pop", duration: 200 }}
+          >
+            {mainContent}
+          </Tooltip>
+
+          <ActionIcon
+            variant="transparent"
+            size="sm"
+            color="gray"
+            style={{ position: 'absolute', top: 2, right: 2, zIndex: 10 }}
+            onClick={(e) => {
+              // Open menu triggers automatically on Menu.Target click, but we want to prevent bubbling to Card onClick
+              // e.stopPropagation(); -> Actually Menu.Target propagates click. 
+              // This is tricky with Menu.Target wrapping the whole thing.
+              // Let's use a custom Target.
+            }}
+          >
+            <IconDotsVertical size={14} />
+          </ActionIcon>
+        </Box>
+      </Menu.Target>
+
+      <Menu.Dropdown>
+        <Menu.Label>Aktionen</Menu.Label>
+        <Menu.Item leftSection={<IconPencil size={14} />} onClick={() => onClick && onClick()}>
+          Bearbeiten
+        </Menu.Item>
+
+        {/* Copy/Cut/Paste */}
+        {(node.type === 'skill' || node.type === 'subcategory') && (
+          <>
+            <Menu.Divider />
+            <Menu.Item
+              leftSection={<IconScissors size={14} />}
+              onClick={() => onCut && onCut({ type: node.type as any, id: node.id, data: node.data, mode: 'cut' })}
+            >
+              Ausschneiden
+            </Menu.Item>
+            <Menu.Item
+              leftSection={<IconCopy size={14} />}
+              onClick={() => onCopy && onCopy({ type: node.type as any, id: node.id, data: node.data, mode: 'copy' })}
+            >
+              Kopieren
+            </Menu.Item>
+          </>
+        )}
+
+        {canPaste && (
+          <>
+            <Menu.Divider />
+            <Menu.Item
+              leftSection={<IconClipboard size={14} />}
+              color="blue"
+              onClick={() => onPaste && onPaste(node.id, node.type as any)}
+            >
+              Einfügen ({clipboardItem.type === 'skill' ? 'Skill' : 'Bereich'})
+            </Menu.Item>
+          </>
+        )}
+      </Menu.Dropdown>
+    </Menu>
   );
 };
 
@@ -242,11 +358,23 @@ const RenderTreeNode: React.FC<{
   node: HierarchyNode;
   roles: EmployeeRole[];
   onNodeClick: (node: HierarchyNode) => void;
-}> = ({ node, roles, onNodeClick }) => {
+  clipboardItem?: ClipboardItem | null;
+  onCopy?: (item: ClipboardItem) => void;
+  onCut?: (item: ClipboardItem) => void;
+  onPaste?: (targetId: string, targetType: "category" | "subcategory") => void;
+}> = ({ node, roles, onNodeClick, clipboardItem, onCopy, onCut, onPaste }) => {
   return (
     <TreeNode
       label={
-        <NodeCard node={node} roles={roles} onClick={() => onNodeClick(node)} />
+        <NodeCard
+          node={node}
+          roles={roles}
+          onClick={() => onNodeClick(node)}
+          clipboardItem={clipboardItem}
+          onCopy={onCopy}
+          onCut={onCut}
+          onPaste={onPaste}
+        />
       }
     >
       {node.children.map((child) => (
@@ -255,6 +383,10 @@ const RenderTreeNode: React.FC<{
           node={child}
           roles={roles}
           onNodeClick={onNodeClick}
+          clipboardItem={clipboardItem}
+          onCopy={onCopy}
+          onCut={onCut}
+          onPaste={onPaste}
         />
       ))}
     </TreeNode>
@@ -277,6 +409,10 @@ const SkillOrgChart: React.FC<SkillOrgChartProps> = ({
   onAddCategory,
   onAddSubCategory,
   onAddSkill,
+  clipboardItem,
+  onCopy,
+  onCut,
+  onPaste,
 }) => {
   const { colorScheme } = useMantineColorScheme();
   const isDark = colorScheme === "dark";
@@ -302,7 +438,7 @@ const SkillOrgChart: React.FC<SkillOrgChartProps> = ({
   }, []);
 
   const trees = useMemo<HierarchyNode[]>(() => {
-    const categoryNodes = categories.map((cat) => {
+    const categoryNodes: HierarchyNode[] = categories.map((cat) => {
       const catSubcategories = subcategories.filter(
         (sc) => sc.categoryId === cat.id,
       );
@@ -462,6 +598,10 @@ const SkillOrgChart: React.FC<SkillOrgChartProps> = ({
                 node={tree}
                 roles={roles}
                 onClick={() => handleNodeClick(tree)}
+                clipboardItem={clipboardItem}
+                onCopy={onCopy}
+                onCut={onCut}
+                onPaste={onPaste}
               />
             }
           >
@@ -471,6 +611,10 @@ const SkillOrgChart: React.FC<SkillOrgChartProps> = ({
                 node={child}
                 roles={roles}
                 onNodeClick={handleNodeClick}
+                clipboardItem={clipboardItem}
+                onCopy={onCopy}
+                onCut={onCut}
+                onPaste={onPaste}
               />
             ))}
           </Tree>

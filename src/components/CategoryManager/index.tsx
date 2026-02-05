@@ -1,13 +1,13 @@
 import React, { useState } from "react";
-import { Box, Group, Title, Tabs, SegmentedControl, Text } from "@mantine/core";
+import { Box, Group, Title, Tabs, Badge, ActionIcon, Tooltip, Text } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
-import { IconList, IconHierarchy } from "@tabler/icons-react";
+import { IconList, IconHierarchy, IconClipboardOff } from "@tabler/icons-react";
 import { useData } from "../../context/DataContext";
 import { CategoryColumn } from "./CategoryColumn";
 import { SubcategoryColumn } from "./SubcategoryColumn";
 import { SkillColumn } from "./SkillColumn";
 import { EntityFormDrawer, FormMode } from "./EntityFormDrawer";
-import SkillOrgChart from "../organization/SkillOrgChart";
+import SkillOrgChart, { ClipboardItem } from "../organization/SkillOrgChart";
 
 export const CategoryManager: React.FC = () => {
   const {
@@ -41,6 +41,9 @@ export const CategoryManager: React.FC = () => {
   const [selectedRoleIds, setSelectedRoleIds] = useState<string[]>([]);
   const [selectedSubCategoryIds, setSelectedSubCategoryIds] = useState<string[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
+
+  // Clipboard State
+  const [clipboardItem, setClipboardItem] = useState<ClipboardItem | null>(null);
 
   const openForm = (
     mode: FormMode,
@@ -177,11 +180,84 @@ export const CategoryManager: React.FC = () => {
       items: items.sort((a: any, b: any) => a.label.localeCompare(b.label))
     }));
 
+  const handlePaste = async (targetId: string, targetType: "category" | "subcategory") => {
+    if (!clipboardItem) return;
+
+    try {
+      if (clipboardItem.mode === "cut") {
+        // Validation: Don't paste into same parent
+        if (clipboardItem.type === "skill" && targetType === "subcategory") {
+          if (clipboardItem.data.subCategoryId === targetId) return;
+          await updateSkill(clipboardItem.id, { ...clipboardItem.data, subCategoryId: targetId });
+        } else if (clipboardItem.type === "subcategory" && targetType === "category") {
+          if (clipboardItem.data.categoryId === targetId) return;
+          await updateSubCategory(clipboardItem.id, { ...clipboardItem.data, categoryId: targetId });
+        }
+      } else {
+        // Copy Mode
+        if (clipboardItem.type === "skill" && targetType === "subcategory") {
+          const { id, ...skillData } = clipboardItem.data;
+          await addSkill({
+            ...skillData,
+            subCategoryId: targetId,
+            name: skillData.name,
+          });
+        } else if (clipboardItem.type === "subcategory" && targetType === "category") {
+          // Deep Copy: Copy Subcategory AND its skills
+          const { id, ...subData } = clipboardItem.data;
+          const newSubName = subData.name;
+
+          const newSubId = await addSubCategory({
+            ...subData,
+            categoryId: targetId,
+            name: newSubName,
+          });
+
+          // Copy children skills
+          const skillsToCopy = getSkillsBySubCategory(clipboardItem.id);
+          await Promise.all(skillsToCopy.map(s => {
+            const { id: sId, ...sData } = s;
+            return addSkill({
+              ...sData,
+              subCategoryId: newSubId,
+            });
+          }));
+        }
+      }
+      setClipboardItem(null); // Clear clipboard after paste
+    } catch (e) {
+      console.error("Paste failed:", e);
+    }
+  };
+
   return (
     <Box style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column" }}>
-      <Title order={2} mb="lg">
-        Kategorien & Skills
-      </Title>
+      <Group justify="space-between" mb="lg">
+        <Title order={2}>
+          Kategorien & Skills
+        </Title>
+
+        {/* Sticky Clipboard Indicator */}
+        {clipboardItem && (
+          <Group
+            gap="xs"
+            bg="var(--mantine-color-blue-light)"
+            px="sm"
+            py={4}
+            style={{ borderRadius: 'var(--mantine-radius-md)', border: '1px solid var(--mantine-color-blue-3)' }}
+          >
+            <Text size="sm" fw={500} c="blue">
+              {clipboardItem.mode === 'cut' ? 'Ausschneiden:' : 'Kopieren:'}
+              <span style={{ fontWeight: 700, marginLeft: 4 }}>{clipboardItem.data.name}</span>
+            </Text>
+            <Tooltip label="Zwischenablage leeren">
+              <ActionIcon variant="subtle" color="gray" size="sm" onClick={() => setClipboardItem(null)}>
+                <IconClipboardOff size={14} />
+              </ActionIcon>
+            </Tooltip>
+          </Group>
+        )}
+      </Group>
 
       {/* ... tabs ... */}
 
@@ -276,6 +352,11 @@ export const CategoryManager: React.FC = () => {
                 setSelectedSubCategory(subCatId);
                 openForm("skill");
               }}
+              // Clipboard Props
+              clipboardItem={clipboardItem}
+              onCopy={setClipboardItem}
+              onCut={setClipboardItem}
+              onPaste={handlePaste}
             />
           </Box>
         </Tabs.Panel>
@@ -306,3 +387,4 @@ export const CategoryManager: React.FC = () => {
     </Box>
   );
 };
+
