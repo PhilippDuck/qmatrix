@@ -73,3 +73,26 @@ export const getRoleTargetForSkill = (
 
   return undefined;
 };
+
+/**
+ * Ermittelt das maximale Soll-Level für einen Skill basierend auf mehreren Rollen.
+ * Für jeden Mitarbeiter, der mehrere Rollen hat, wird das Maximum über alle Rollen berechnet.
+ */
+export const getMaxRoleTargetForSkill = (
+  roleNames: string[] | undefined | null,
+  skillId: string,
+  allRoles: EmployeeRole[]
+): number | undefined => {
+  if (!roleNames || roleNames.length === 0) return undefined;
+
+  let maxTarget: number | undefined = undefined;
+
+  for (const roleName of roleNames) {
+    const target = getRoleTargetForSkill(roleName, skillId, allRoles);
+    if (target !== undefined) {
+      maxTarget = maxTarget === undefined ? target : Math.max(maxTarget, target);
+    }
+  }
+
+  return maxTarget;
+};

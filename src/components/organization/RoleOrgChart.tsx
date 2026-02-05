@@ -67,8 +67,8 @@ const RoleCard: React.FC<{
     const allSkills = getSkillsForRole(role.id!, roles, skills);
     const inheritedSkillCount = allSkills.length - directSkills.length;
 
-    // Find employees with this role
-    const roleEmployees = employees.filter(emp => emp.role === role.name);
+    // Find employees with this role (employees can have multiple roles)
+    const roleEmployees = employees.filter(emp => emp.roles?.includes(role.name));
 
     return (
         <Tooltip

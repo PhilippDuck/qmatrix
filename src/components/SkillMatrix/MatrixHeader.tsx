@@ -119,17 +119,19 @@ const EmployeeInfoCard: React.FC<{
                 <Text size="xs" c="dimmed">{emp.department}</Text>
               </Group>
             )}
-            {emp.role && (
-              (() => {
-                const role = roles.find(r => r.name === emp.role);
-                const RoleIcon = getIconByName(role?.icon);
-                return (
-                  <Group gap={6}>
-                    <RoleIcon size={12} color="gray" />
-                    <Text size="xs" c="dimmed">{emp.role}</Text>
-                  </Group>
-                );
-              })()
+            {emp.roles && emp.roles.length > 0 && (
+              <Stack gap={2}>
+                {emp.roles.map((roleName, idx) => {
+                  const role = roles.find(r => r.name === roleName);
+                  const RoleIcon = getIconByName(role?.icon);
+                  return (
+                    <Group key={idx} gap={6}>
+                      <RoleIcon size={12} color="gray" />
+                      <Text size="xs" c="dimmed">{roleName}</Text>
+                    </Group>
+                  );
+                })}
+              </Stack>
             )}
           </Stack>
         </Box>
@@ -356,6 +358,7 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
   onAddEmployee,
 }) => {
   const { anonymizeName } = usePrivacy();
+  const { roles } = useData();
   const { cellSize, labelWidth, headerHeight } = MATRIX_LAYOUT;
 
   return (
@@ -485,20 +488,46 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
                       {avg === null ? "N/A" : `${avg}%`}
                     </Badge>
                   )}
-                  <Text
-                    size="xs"
-                    fw={isColumnHovered || isFocused ? 700 : 400}
+                  <div
                     onClick={() => onFocusChange(isFocused ? null : emp.id!)}
                     style={{
                       writingMode: "vertical-rl",
                       transform: "rotate(180deg)",
                       height: "80px",
                       cursor: "pointer",
-                      color: isFocused ? "var(--mantine-color-blue-filled)" : undefined,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "4px",
                     }}
                   >
-                    {anonymizeName(emp.name, emp.id)}
-                  </Text>
+                    <Text
+                      size="xs"
+                      fw={isColumnHovered || isFocused ? 700 : 400}
+                      style={{
+                        color: isFocused ? "var(--mantine-color-blue-filled)" : undefined,
+                      }}
+                    >
+                      {anonymizeName(emp.name, emp.id)}
+                    </Text>
+                    {emp.roles && emp.roles.length > 0 && (
+                      <Group gap={2} wrap="nowrap" style={{ flexShrink: 0 }}>
+                        {emp.roles.slice(0, 3).map((roleName, idx) => {
+                          const role = roles.find(r => r.name === roleName);
+                          const RoleIcon = getIconByName(role?.icon);
+                          return (
+                            <Tooltip key={idx} label={roleName} withArrow position="top">
+                              <ThemeIcon size={14} variant="light" color="gray" radius="xl">
+                                <RoleIcon size={10} />
+                              </ThemeIcon>
+                            </Tooltip>
+                          );
+                        })}
+                        {emp.roles.length > 3 && (
+                          <Text size="8px" c="dimmed">+{emp.roles.length - 3}</Text>
+                        )}
+                      </Group>
+                    )}
+                  </div>
                 </div>
               </HoverCard.Target>
               <HoverCard.Dropdown>

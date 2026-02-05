@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Text, Group, ActionIcon, Badge, Stack, Tooltip, HoverCard } from "@mantine/core";
 import { IconPlus, IconMinus, IconTrophy, IconPencil, IconInfoCircle } from "@tabler/icons-react";
 import { MATRIX_LAYOUT } from "../../constants/skillLevels";
-import { getScoreColor, getRoleTargetForSkill } from "../../utils/skillCalculations";
+import { getScoreColor, getMaxRoleTargetForSkill } from "../../utils/skillCalculations";
 import { InfoTooltip } from "../shared/InfoTooltip";
 import { BulkLevelMenu } from "./BulkLevelMenu";
 import { MatrixSkillRow } from "./MatrixSkillRow";
@@ -26,7 +26,6 @@ interface MatrixSubcategoryRowProps {
   calculateAverage: (skillIds: string[], employeeId?: string) => number | null;
   getAssessment: (employeeId: string, skillId: string) => Assessment | undefined;
   onBulkSetLevel: (employeeId: string, skillIds: string[], level: number) => void;
-
   onLevelChange: (employeeId: string, skillId: string, newLevel: number) => void;
   onTargetLevelChange: (employeeId: string, skillId: string, targetLevel: number | undefined) => void;
   showMaxValues: boolean;
@@ -34,6 +33,7 @@ interface MatrixSubcategoryRowProps {
   onEditSubcategory: (subcategoryId: string) => void;
   isEditMode: boolean;
   onAddSkill: (subCategoryId: string) => void;
+  skillSort: 'asc' | 'desc' | null;
 }
 export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
   columns,
@@ -57,12 +57,25 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
   onEditSubcategory,
   isEditMode,
   onAddSkill,
+  skillSort,
 }) => {
   const { anonymizeName } = usePrivacy();
   const { cellSize, labelWidth } = MATRIX_LAYOUT;
   const subSkillIds = skills.map((s) => s.id!);
   const subAvg = calculateAverage(subSkillIds);
   const [isLabelHovered, setIsLabelHovered] = useState(false);
+
+  // Sort skills
+  const sortedSkills = [...skills].sort((a, b) => {
+    if (skillSort) {
+      // Sort by average value
+      const avgA = calculateAverage([a.id!]) || 0;
+      const avgB = calculateAverage([b.id!]) || 0;
+      return skillSort === 'asc' ? avgA - avgB : avgB - avgA;
+    }
+    // Default: alphabetical
+    return a.name.localeCompare(b.name, 'de');
+  });
 
   // Calculate Max Percentage across all employees (Highest Average)
   const maxAvg = Math.max(...employees.map(e => calculateAverage(subSkillIds, e.id) || 0), 0);
@@ -159,7 +172,7 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
             col.employeeIds.forEach(eId => {
               const emp = employees.find(e => e.id === eId);
               subSkillIds.forEach(sId => {
-                const roleTarget = getRoleTargetForSkill(emp?.role, sId, roles as any);
+                const roleTarget = getMaxRoleTargetForSkill(emp?.roles, sId, roles as any);
                 const asm = getAssessment(eId, sId);
                 const level = asm?.level ?? (roleTarget && roleTarget > 0 ? 0 : -1);
                 if (level > -1) {
@@ -178,7 +191,7 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
               let eTotal = 0;
               let eCount = 0;
               subSkillIds.forEach(sId => {
-                const roleTarget = getRoleTargetForSkill(emp?.role, sId, roles as any);
+                const roleTarget = getMaxRoleTargetForSkill(emp?.roles, sId, roles as any);
                 const asm = getAssessment(eId, sId);
                 const level = asm?.level ?? (roleTarget && roleTarget > 0 ? 0 : -1);
                 if (level > -1) {
@@ -261,7 +274,7 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
 
       {!isCollapsed && (
         <>
-          {skills.map((skill) => (
+          {sortedSkills.map((skill) => (
             <MatrixSkillRow
               key={skill.id}
               skill={skill}

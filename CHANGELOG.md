@@ -1,6 +1,23 @@
 # Changelog
 
 
+## [2.6.1] - 2026-02-05
+
+### Neue Funktionen
+- **Mehrfachrollen**: Mitarbeiter können nun mehrere Rollen gleichzeitig innehaben. Die höchste Skill-Anforderung aller Rollen wird als Soll-Wert verwendet.
+- **Rollen-Icons**: In der Matrix werden hinter den Mitarbeiternamen kleine Icons der zugewiesenen Rollen angezeigt (max. 3, mit Tooltip).
+- **Verbesserte Sortierung**: Kategorien, Unterkategorien und Skills werden standardmäßig alphabetisch sortiert. Bei aktiver Wert-Sortierung werden auch Skills innerhalb ihrer Gruppen sortiert.
+- **Speichern mit Enter**: Im Drawer für Kategorien/Unterkategorien/Skills kann nun mit Enter gespeichert werden.
+
+### Geändert
+- **Toolbar-Styling**: Die Farben der Icon-Buttons in der Matrix-Toolbar sind nun dezenter (light statt filled).
+
+### Behobene Fehler
+- **Ansicht löschen**: Beim Löschen der aktiven Ansicht wird nun automatisch zur Standardansicht gewechselt.
+- **Aggregation ohne Skills**: Kategorien und Unterkategorien ohne Skills zeigen nun "N/A" statt "0%" an.
+
+---
+
 ## [2.6.0] - 2026-02-04
 
 ### Neue Funktionen

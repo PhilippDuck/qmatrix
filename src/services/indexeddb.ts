@@ -6,7 +6,7 @@ export interface Employee {
   id?: string;
   name: string;
   department?: string;
-  role?: string;
+  roles?: string[];  // Multiple roles per employee
   updatedAt?: number;
 }
 

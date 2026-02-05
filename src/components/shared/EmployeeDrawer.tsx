@@ -9,6 +9,7 @@ import {
   Divider,
   Tabs,
   Autocomplete,
+  MultiSelect,
 } from "@mantine/core";
 import { useHotkeys } from "@mantine/hooks";
 import { IconPlus, IconHistory, IconUser } from "@tabler/icons-react";
@@ -18,9 +19,9 @@ import { useData } from "../../context/DataContext";
 interface EmployeeDrawerProps {
   opened: boolean;
   onClose: () => void;
-  onSave: (name: string, department: string, role: string) => Promise<void>;
+  onSave: (name: string, department: string, roles: string[]) => Promise<void>;
   onDelete?: (id: string) => Promise<void>;
-  initialData?: { name: string; department: string; role?: string };
+  initialData?: { name: string; department: string; roles?: string[] };
   isEditing?: boolean;
   employeeId?: string | null;
 }
@@ -35,7 +36,7 @@ export const EmployeeDrawer: React.FC<EmployeeDrawerProps> = ({
   employeeId,
 }) => {
   const { employees, departments, roles, addDepartment, addRole } = useData();
-  const [formData, setFormData] = useState({ name: "", department: "", role: "" });
+  const [formData, setFormData] = useState({ name: "", department: "", roles: [] as string[] });
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<string | null>("details");
 
@@ -44,7 +45,7 @@ export const EmployeeDrawer: React.FC<EmployeeDrawerProps> = ({
       setFormData({
         name: initialData?.name || "",
         department: initialData?.department || "",
-        role: initialData?.role || "",
+        roles: initialData?.roles || [],
       });
       setActiveTab("details");
     }
@@ -57,9 +58,7 @@ export const EmployeeDrawer: React.FC<EmployeeDrawerProps> = ({
     try {
       const trimmedName = formData.name.trim();
       const trimmedDept = formData.department.trim();
-      const trimmedRole = formData.role.trim();
-
-
+      const trimmedRoles = formData.roles.map(r => r.trim()).filter(r => r.length > 0);
 
       // Check duplications
       const isDuplicate = employees.some(e =>
@@ -72,18 +71,19 @@ export const EmployeeDrawer: React.FC<EmployeeDrawerProps> = ({
         return;
       }
 
-
       // Check and create Department if new
       if (trimmedDept && !departments.some(d => d.name === trimmedDept)) {
         await addDepartment(trimmedDept);
       }
 
-      // Check and create Role if new
-      if (trimmedRole && !roles.some(r => r.name === trimmedRole)) {
-        await addRole({ name: trimmedRole });
+      // Check and create Roles if new
+      for (const roleName of trimmedRoles) {
+        if (!roles.some(r => r.name === roleName)) {
+          await addRole({ name: roleName });
+        }
       }
 
-      await onSave(formData.name.trim(), trimmedDept, trimmedRole);
+      await onSave(formData.name.trim(), trimmedDept, trimmedRoles);
       onClose();
     } catch (error) {
       console.error("Fehler beim Speichern:", error);
@@ -182,12 +182,20 @@ export const EmployeeDrawer: React.FC<EmployeeDrawerProps> = ({
                 }
               />
 
-              <Autocomplete
-                label="Rolle / Qualifikations-Level"
-                placeholder="Wähle eine Rolle oder erstelle neu"
+              <MultiSelect
+                label="Rollen / Qualifikations-Level"
+                placeholder="Wähle Rollen oder erstelle neu"
                 data={roles.map(r => r.name)}
-                value={formData.role}
-                onChange={(value) => setFormData({ ...formData, role: value || "" })}
+                value={formData.roles}
+                onChange={(value) => setFormData({ ...formData, roles: value })}
+                searchable
+                clearable
+                creatable
+                getCreateLabel={(query) => `+ "${query}" erstellen`}
+                onCreate={(query) => {
+                  setFormData({ ...formData, roles: [...formData.roles, query] });
+                  return query;
+                }}
               />
 
               <Group justify="space-between" mt="xl">
@@ -242,12 +250,20 @@ export const EmployeeDrawer: React.FC<EmployeeDrawerProps> = ({
             }
           />
 
-          <Autocomplete
-            label="Rolle / Qualifikations-Level"
-            placeholder="Wähle eine Rolle oder erstelle neu"
+          <MultiSelect
+            label="Rollen / Qualifikations-Level"
+            placeholder="Wähle Rollen oder erstelle neu"
             data={roles.map(r => r.name)}
-            value={formData.role}
-            onChange={(value) => setFormData({ ...formData, role: value || "" })}
+            value={formData.roles}
+            onChange={(value) => setFormData({ ...formData, roles: value })}
+            searchable
+            clearable
+            creatable
+            getCreateLabel={(query) => `+ "${query}" erstellen`}
+            onCreate={(query) => {
+              setFormData({ ...formData, roles: [...formData.roles, query] });
+              return query;
+            }}
           />
 
           <Group justify="flex-end" mt="xl">

@@ -2,15 +2,14 @@
 
 ## Verbesserungen
 
-- [ ] Farben der iconbuttons in Matrix nicht so intensiv
-- [ ] Matrix: Rollenicon hinter Name
-      Werte
+- [x] Farben der iconbuttons in Matrix nicht so intensiv
+- [x] Matrix: Rollenicon hinter Name
 - [ ] Mitarbeiter "deaktivieren" (nicht mehr sichtbar, und nicht Auswertung)
 - [ ] Drag and drop skill organigramm
 - [ ] Qualifizierungsplan - Maßnahmenkachel nur skill name aber keine kategore/Subkategorie
 - [ ] Dashboard überarbeiten?
 - [ ] Struktur Hauptkategorie/Unterkategorie/Skill aufbrechen. auch keine untergategorie möglich oder beliebig viele unterkategorien?
-- [ ] Ein Nutzer soll mehrer Rollen einnehmen können
+- [x] Ein Nutzer soll mehrer Rollen einnehmen können
 - [ ] Alle vererbten skills sollen vom solllevel
 - [ ] Maßnahmen Daten CHeck von überschneidung
 - [ ] Inline bearbeitung
@@ -29,10 +28,10 @@
 
 ## Bugs
 
-- [ ] Wenn neuer nutzer angelegt wird und es gibt Haupt/Unterkategorien ohne skills wird die aggregation 0% verwirt etwas
-- [ ] Wenn ich die ansicht lösche in der ich mich befinde, muss ich auf die standartansicht geworfen werden
-- [ ] Drawer mit ENwer speichern (zb Skill)
-- [ ] Sortierung der Matrix Einträge
+- [x] Wenn neuer nutzer angelegt wird und es gibt Haupt/Unterkategorien ohne skills wird die aggregation 0% verwirt etwas
+- [x] Wenn ich die ansicht lösche in der ich mich befinde, muss ich auf die standartansicht geworfen werden
+- [x] Drawer mit Enter speichern (zb Skill)
+- [x] Sortierung der Matrix Einträge
 
 ### Abgeschlossen
 

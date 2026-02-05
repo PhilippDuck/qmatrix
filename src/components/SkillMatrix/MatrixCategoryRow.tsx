@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Text, Group, ActionIcon, Badge, Stack, Tooltip, HoverCard } from "@mantine/core";
 import { IconPlus, IconMinus, IconTrophy, IconPencil, IconInfoCircle } from "@tabler/icons-react";
 import { MATRIX_LAYOUT } from "../../constants/skillLevels";
-import { getScoreColor, getRoleTargetForSkill } from "../../utils/skillCalculations";
+import { getScoreColor, getMaxRoleTargetForSkill } from "../../utils/skillCalculations";
 import { InfoTooltip } from "../shared/InfoTooltip";
 import { BulkLevelMenu } from "./BulkLevelMenu";
 import { MatrixSubcategoryRow } from "./MatrixSubcategoryRow";
@@ -37,6 +37,7 @@ interface MatrixCategoryRowProps {
   isEditMode: boolean;
   onAddSubcategory: () => void;
   onAddSkill: (subCategoryId: string) => void;
+  skillSort: 'asc' | 'desc' | null;
 }
 
 
@@ -66,16 +67,27 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = ({
   isEditMode,
   onAddSubcategory,
   onAddSkill,
+  skillSort,
 }) => {
   const { anonymizeName } = usePrivacy();
   const isCatCollapsed = collapsedStates[category.id!];
   const { cellSize, labelWidth } = MATRIX_LAYOUT;
   const [isLabelHovered, setIsLabelHovered] = useState(false);
 
-  // Get subcategories for this category
-  const categorySubcategories = subcategories.filter(
+  // Get subcategories for this category and sort them
+  const categorySubcategories = [...subcategories.filter(
     (s) => s.categoryId === category.id
-  );
+  )].sort((a, b) => {
+    if (skillSort) {
+      // Sort by value
+      const getSubSkillIds = (subId: string) => skills.filter(s => s.subCategoryId === subId).map(s => s.id!);
+      const avgA = calculateAverage(getSubSkillIds(a.id!)) || 0;
+      const avgB = calculateAverage(getSubSkillIds(b.id!)) || 0;
+      return skillSort === 'asc' ? avgA - avgB : avgB - avgA;
+    }
+    // Default: alphabetical
+    return a.name.localeCompare(b.name, 'de');
+  });
   const subIds = categorySubcategories.map((s) => s.id);
 
   // Get all skills for this category
@@ -200,7 +212,7 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = ({
               col.employeeIds.forEach(eId => {
                 const emp = employees.find(e => e.id === eId);
                 catSkillIds.forEach(sId => {
-                  const roleTarget = getRoleTargetForSkill(emp?.role, sId, roles as any);
+                  const roleTarget = getMaxRoleTargetForSkill(emp?.roles, sId, roles as any);
                   const asm = getAssessment(eId, sId);
                   const level = asm?.level ?? (roleTarget && roleTarget > 0 ? 0 : -1);
                   if (level > -1) {
@@ -217,7 +229,7 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = ({
                 let eTotal = 0;
                 let eCount = 0;
                 catSkillIds.forEach(sId => {
-                  const roleTarget = getRoleTargetForSkill(emp?.role, sId, roles as any);
+                  const roleTarget = getMaxRoleTargetForSkill(emp?.roles, sId, roles as any);
                   const asm = getAssessment(eId, sId);
                   const level = asm?.level ?? (roleTarget && roleTarget > 0 ? 0 : -1);
                   if (level > -1) {
@@ -315,6 +327,7 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = ({
                 onEditSubcategory={onEditSubcategory}
                 isEditMode={isEditMode}
                 onAddSkill={onAddSkill}
+                skillSort={skillSort}
               />
             );
           })}

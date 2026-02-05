@@ -114,6 +114,12 @@ export const EntityFormDrawer: React.FC<EntityFormDrawerProps> = ({
           placeholder="Bezeichnung eingeben..."
           value={inputValue}
           onChange={(e) => onInputChange(e.currentTarget.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && inputValue.trim()) {
+              e.preventDefault();
+              onSave();
+            }
+          }}
           data-autofocus
           required
         />

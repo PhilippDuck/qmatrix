@@ -11,7 +11,7 @@ import {
   Text,
   useMantineColorScheme,
 } from "@mantine/core";
-import { getRoleTargetForSkill } from "../../utils/skillCalculations";
+import { getMaxRoleTargetForSkill } from "../../utils/skillCalculations";
 import {
   IconLayoutNavbarCollapse,
   IconX,
@@ -288,8 +288,8 @@ export const SkillMatrix: React.FC = () => {
 
   const handleClearView = () => {
     setActiveViewId(null);
-    // Optionally reset filters to defaults? 
-    // Or just "deselect" the pill. 
+    // Optionally reset filters to defaults?
+    // Or just "deselect" the pill.
     // User requested "different views for different purposes".
     // "Default" button usually means "Reset everything".
     setFilterDepartments([]);
@@ -300,6 +300,14 @@ export const SkillMatrix: React.FC = () => {
     setHideEmployees(false);
     setEmployeeSort(null);
     setSkillSort(null);
+  };
+
+  const handleDeleteView = async (id: string) => {
+    // If deleting the active view, switch to default view first
+    if (activeViewId === id) {
+      handleClearView();
+    }
+    await deleteSavedView(id);
   };
 
   const displayedEmployees = useMemo(() => {
@@ -318,12 +326,14 @@ export const SkillMatrix: React.FC = () => {
       result = result.filter((e) => selectedDeptNames.includes(e.department || ''));
     }
 
-    // Role filter - filterRoles contains IDs, e.role contains name
+    // Role filter - filterRoles contains IDs, e.roles contains names
     if (filterRoles.length > 0) {
       const selectedRoleNames = roles
         .filter(r => filterRoles.includes(r.id!))
         .map(r => r.name);
-      result = result.filter((e) => selectedRoleNames.includes(e.role || ''));
+      result = result.filter((e) =>
+        e.roles && e.roles.some(role => selectedRoleNames.includes(role))
+      );
     }
 
     // Sorting
@@ -332,33 +342,33 @@ export const SkillMatrix: React.FC = () => {
       result = [...result].sort((a, b) => {
         if (showMaxValues) {
           // Sort by Total XP
-          const calcXP = (empId: string, empRole: string | undefined) => {
+          const calcXP = (empId: string, empRoles: string[] | undefined) => {
             let total = 0;
             allSkillIds.forEach(sId => {
               const assessment = getAssessment(empId, sId);
-              const roleTarget = getRoleTargetForSkill(empRole, sId, roles as any);
+              const roleTarget = getMaxRoleTargetForSkill(empRoles, sId, roles as any);
               const val = assessment?.level ?? (roleTarget && roleTarget > 0 ? 0 : -1);
               if (val > 0) total += val;
             });
             return total;
           };
-          const valA = calcXP(a.id!, a.role);
-          const valB = calcXP(b.id!, b.role);
+          const valA = calcXP(a.id!, a.roles);
+          const valB = calcXP(b.id!, b.roles);
           return employeeSort === 'asc' ? valA - valB : valB - valA;
         } else {
           // Sort by Average
-          const calcAvg = (empId: string, empRole: string | undefined) => {
+          const calcAvg = (empId: string, empRoles: string[] | undefined) => {
             let total = 0, count = 0;
             allSkillIds.forEach(sId => {
               const assessment = getAssessment(empId, sId);
-              const roleTarget = getRoleTargetForSkill(empRole, sId, roles as any);
+              const roleTarget = getMaxRoleTargetForSkill(empRoles, sId, roles as any);
               const val = assessment?.level ?? (roleTarget && roleTarget > 0 ? 0 : -1);
               if (val !== -1) { total += val; count++; }
             });
             return count > 0 ? total / count : 0;
           };
-          const avgA = calcAvg(a.id!, a.role);
-          const avgB = calcAvg(b.id!, b.role);
+          const avgA = calcAvg(a.id!, a.roles);
+          const avgB = calcAvg(b.id!, b.roles);
           return employeeSort === 'asc' ? avgA - avgB : avgB - avgA;
         }
       });
@@ -368,7 +378,7 @@ export const SkillMatrix: React.FC = () => {
   }, [employees, focusEmployeeId, filterDepartments, filterRoles, employeeSort, skills, departments, roles, showMaxValues, getAssessment]);
 
   const displayedCategories = useMemo(() => {
-    let result = categories;
+    let result = [...categories];
 
     // Filter by selected categories
     if (filterCategories.length > 0) {
@@ -377,7 +387,8 @@ export const SkillMatrix: React.FC = () => {
 
     // Sorting
     if (skillSort) {
-      result = [...result].sort((a, b) => {
+      // Sort by value (average or max)
+      result = result.sort((a, b) => {
         // Get all skill IDs for each category
         const getSkillIds = (catId: string) => {
           const subs = subcategories.filter(s => s.categoryId === catId);
@@ -397,7 +408,7 @@ export const SkillMatrix: React.FC = () => {
               let total = 0, count = 0;
               catSkillIds.forEach(sId => {
                 const assessment = getAssessment(emp.id!, sId);
-                const roleTarget = getRoleTargetForSkill(emp.role, sId, roles as any);
+                const roleTarget = getMaxRoleTargetForSkill(emp.roles, sId, roles as any);
                 const val = assessment?.level ?? (roleTarget && roleTarget > 0 ? 0 : -1);
                 if (val !== -1) { total += val; count++; }
               });
@@ -420,7 +431,7 @@ export const SkillMatrix: React.FC = () => {
             catSkillIds.forEach(sId => {
               displayedEmployees.forEach(emp => {
                 const assessment = getAssessment(emp.id!, sId);
-                const roleTarget = getRoleTargetForSkill(emp.role, sId, roles as any);
+                const roleTarget = getMaxRoleTargetForSkill(emp.roles, sId, roles as any);
                 const val = assessment?.level ?? (roleTarget && roleTarget > 0 ? 0 : -1);
 
                 if (val !== -1) { total += val; count++; }
@@ -434,8 +445,10 @@ export const SkillMatrix: React.FC = () => {
           return skillSort === 'asc' ? avgA - avgB : avgB - avgA;
         }
       });
+    } else {
+      // Default: alphabetical sorting
+      result = result.sort((a, b) => a.name.localeCompare(b.name, 'de'));
     }
-
 
     return result;
   }, [categories, filterCategories, skillSort, subcategories, skills, displayedEmployees, getAssessment, showMaxValues]);
@@ -456,12 +469,24 @@ export const SkillMatrix: React.FC = () => {
     const noGroup: Employee[] = [];
 
     displayedEmployees.forEach(e => {
-      const key = groupingMode === 'department' ? e.department : e.role;
-      if (key) {
-        if (!groups.has(key)) groups.set(key, []);
-        groups.get(key)!.push(e);
+      if (groupingMode === 'department') {
+        const key = e.department;
+        if (key) {
+          if (!groups.has(key)) groups.set(key, []);
+          groups.get(key)!.push(e);
+        } else {
+          noGroup.push(e);
+        }
       } else {
-        noGroup.push(e);
+        // Grouping by role - employee appears only in their first/primary role
+        const employeeRoles = e.roles || [];
+        if (employeeRoles.length > 0) {
+          const primaryRole = employeeRoles[0]; // Use first role as primary
+          if (!groups.has(primaryRole)) groups.set(primaryRole, []);
+          groups.get(primaryRole)!.push(e);
+        } else {
+          noGroup.push(e);
+        }
       }
     });
 
@@ -586,7 +611,9 @@ export const SkillMatrix: React.FC = () => {
     skillIds: string[],
     specificEmployeeId?: string
   ): number | null => {
-    if (skillIds.length === 0 || employees.length === 0) return 0;
+    // Return null (N/A) if no skills - prevents confusing 0% display
+    if (skillIds.length === 0) return null;
+    if (employees.length === 0) return 0;
     let totalScore = 0,
       relevantCount = 0;
     const targetEmps = specificEmployeeId
@@ -600,7 +627,7 @@ export const SkillMatrix: React.FC = () => {
         // Logic sync with MatrixSkillRow:
         // Default to -1 (N/A) if no assessment exists, unless a role target is set, then 0
         // We need to fetch role target here to be accurate
-        const roleTarget = getRoleTargetForSkill(emp.role, sId, roles as any);
+        const roleTarget = getMaxRoleTargetForSkill(emp.roles, sId, roles as any);
         const val = assessment?.level ?? (roleTarget && roleTarget > 0 ? 0 : -1);
 
         // Ignore N/A (-1)
@@ -646,11 +673,11 @@ export const SkillMatrix: React.FC = () => {
     setEmployeeDrawerOpened(true);
   };
 
-  const handleSaveEmployee = async (name: string, department: string, role: string) => {
+  const handleSaveEmployee = async (name: string, department: string, roles: string[]) => {
     if (editingEmployeeId) {
-      await updateEmployee(editingEmployeeId, { name, department, role });
+      await updateEmployee(editingEmployeeId, { name, department, roles });
     } else {
-      await addEmployee({ name, department, role });
+      await addEmployee({ name, department, roles });
     }
   };
 
@@ -874,7 +901,7 @@ export const SkillMatrix: React.FC = () => {
               <Group gap="xs" style={{ borderLeft: '1px solid var(--mantine-color-default-border)', paddingLeft: '12px' }}>
                 <Tooltip label={`Gruppierung: ${getGroupingLabel(groupingMode)}`}>
                   <ActionIcon
-                    variant={groupingMode === "none" ? "light" : "filled"}
+                    variant="light"
                     color={groupingMode === "none" ? "gray" : "blue"}
                     onClick={nextGroupingMode}
                     size="lg"
@@ -888,7 +915,7 @@ export const SkillMatrix: React.FC = () => {
                 {groupingMode !== 'none' && (
                   <Tooltip label={hideEmployees ? "Mitarbeiter einblenden" : "Mitarbeiter ausblenden"}>
                     <ActionIcon
-                      variant={hideEmployees ? "filled" : "light"}
+                      variant="light"
                       color={hideEmployees ? "blue" : "gray"}
                       onClick={() => setHideEmployees(!hideEmployees)}
                       size="lg"
@@ -929,7 +956,7 @@ export const SkillMatrix: React.FC = () => {
                       "Mitarbeiter-Sortierung aufheben"
                 }>
                   <ActionIcon
-                    variant={employeeSort ? "filled" : "light"}
+                    variant="light"
                     color={employeeSort ? "blue" : "gray"}
                     onClick={() => {
                       if (employeeSort === null) setEmployeeSort('asc');
@@ -947,8 +974,8 @@ export const SkillMatrix: React.FC = () => {
                       "Skills-Sortierung aufheben"
                 }>
                   <ActionIcon
-                    variant={skillSort ? "filled" : "light"}
-                    color={skillSort ? "grape" : "gray"}
+                    variant="light"
+                    color={skillSort ? "violet" : "gray"}
                     onClick={() => {
                       if (skillSort === null) setSkillSort('asc');
                       else if (skillSort === 'asc') setSkillSort('desc');
@@ -971,7 +998,7 @@ export const SkillMatrix: React.FC = () => {
                   <Popover.Target>
                     <Tooltip label="Filter">
                       <ActionIcon
-                        variant={filtersOpened || filterDepartments.length > 0 || filterRoles.length > 0 || filterCategories.length > 0 ? "filled" : "light"}
+                        variant="light"
                         color={filtersOpened || filterDepartments.length > 0 || filterRoles.length > 0 || filterCategories.length > 0 ? "blue" : "gray"}
                         size="lg"
                         aria-label="Filter"
@@ -1023,7 +1050,7 @@ export const SkillMatrix: React.FC = () => {
 
                 <Tooltip label={isEditMode ? "Bearbeitungsmodus beenden" : "Bearbeitungsmodus aktivieren"}>
                   <ActionIcon
-                    variant={isEditMode ? "filled" : "light"}
+                    variant="light"
                     color={isEditMode ? "blue" : "gray"}
                     onClick={() => setIsEditMode(!isEditMode)}
                     size="lg"
@@ -1063,7 +1090,7 @@ export const SkillMatrix: React.FC = () => {
                 activeViewId={activeViewId}
                 isViewDirty={isViewDirty}
                 onSelectView={handleSelectView}
-                onDeleteView={deleteSavedView}
+                onDeleteView={handleDeleteView}
                 onUpdateViewName={(id, name) => updateSavedView(id, { ...savedViews.find(v => v.id === id)!, name })}
                 onSaveCurrentView={handleUpdateCurrentView}
                 onClearView={handleClearView}
@@ -1253,6 +1280,7 @@ export const SkillMatrix: React.FC = () => {
                     isEditMode={isEditMode}
                     onAddSubcategory={() => handleAddSubCategory(cat.id!)}
                     onAddSkill={(subId) => handleOpenAddSkill(subId)}
+                    skillSort={skillSort}
                   />
                 ))}
 
@@ -1316,7 +1344,7 @@ export const SkillMatrix: React.FC = () => {
                 ? {
                   name: emp.name,
                   department: emp.department || "",
-                  role: emp.role || "",
+                  roles: emp.roles || [],
                 }
                 : undefined;
             })()

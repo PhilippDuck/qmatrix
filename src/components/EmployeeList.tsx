@@ -23,12 +23,12 @@ export const EmployeeList: React.FC = () => {
   const [opened, { open, close }] = useDisclosure(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [initialData, setInitialData] = useState({ name: "", department: "", role: "" });
+  const [initialData, setInitialData] = useState({ name: "", department: "", roles: [] as string[] });
   const [filterRole, setFilterRole] = useState<string | null>(null);
   const [filterDepartment, setFilterDepartment] = useState<string | null>(null);
 
   const handleOpenNew = () => {
-    setInitialData({ name: "", department: "", role: "" });
+    setInitialData({ name: "", department: "", roles: [] });
     setIsEditing(false);
     setEditingId(null);
     open();
@@ -38,7 +38,7 @@ export const EmployeeList: React.FC = () => {
     setInitialData({
       name: employee.name,
       department: employee.department || "",
-      role: employee.role || ""
+      roles: employee.roles || []
     });
     setIsEditing(true);
     setEditingId(employee.id!);
@@ -50,11 +50,11 @@ export const EmployeeList: React.FC = () => {
     handleOpenNew();
   }]], ['INPUT', 'TEXTAREA', 'SELECT']);
 
-  const handleSave = async (name: string, department: string, role: string) => {
+  const handleSave = async (name: string, department: string, roles: string[]) => {
     if (isEditing && editingId) {
-      await updateEmployee(editingId, { name, department, role });
+      await updateEmployee(editingId, { name, department, roles });
     } else {
-      await addEmployee({ name, department, role });
+      await addEmployee({ name, department, roles });
     }
   };
 
@@ -69,7 +69,7 @@ export const EmployeeList: React.FC = () => {
   };
 
   const filteredEmployees = employees.filter((emp) => {
-    if (filterRole && emp.role !== filterRole) return false;
+    if (filterRole && (!emp.roles || !emp.roles.includes(filterRole))) return false;
     if (filterDepartment && emp.department !== filterDepartment) return false;
     return true;
   });
@@ -116,7 +116,7 @@ export const EmployeeList: React.FC = () => {
             <Table.Tr>
               <Table.Th style={{ paddingLeft: "20px" }}>Name</Table.Th>
               <Table.Th>Abteilung</Table.Th>
-              <Table.Th>Rolle</Table.Th>
+              <Table.Th>Rollen</Table.Th>
               <Table.Th
                 style={{ width: 120, textAlign: "right", paddingRight: "20px" }}
               >
@@ -147,9 +147,9 @@ export const EmployeeList: React.FC = () => {
                   <Table.Td>
                     <Text
                       size="sm"
-                      c={employee.role ? "inherit" : "dimmed"}
+                      c={employee.roles && employee.roles.length > 0 ? "inherit" : "dimmed"}
                     >
-                      {employee.role || "-"}
+                      {employee.roles && employee.roles.length > 0 ? employee.roles.join(", ") : "-"}
                     </Text>
                   </Table.Td>
                   <Table.Td style={{ paddingRight: "20px" }}>

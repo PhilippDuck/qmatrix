@@ -18,7 +18,7 @@ export const filterEmployeesByDepartment = <T extends { id: string; name: string
     return employees.filter(e => selectedDeptNames.includes(e.department || ''));
 };
 
-export const filterEmployeesByRole = <T extends { id: string; name: string; role?: string }>(
+export const filterEmployeesByRole = <T extends { id: string; name: string; roles?: string[] }>(
     employees: T[],
     roles: { id: string; name: string }[],
     filterRoleIds: string[]
@@ -29,15 +29,17 @@ export const filterEmployeesByRole = <T extends { id: string; name: string; role
         .filter(r => filterRoleIds.includes(r.id))
         .map(r => r.name);
 
-    return employees.filter(e => selectedRoleNames.includes(e.role || ''));
+    return employees.filter(e =>
+        e.roles && e.roles.some(role => selectedRoleNames.includes(role))
+    );
 };
 
 describe('Employee Filter Functions', () => {
     const mockEmployees = [
-        { id: 'emp1', name: 'Max Mustermann', department: 'Produktion', role: 'Entwickler' },
-        { id: 'emp2', name: 'Erika Musterfrau', department: 'Entwicklung', role: 'Teamleiter' },
-        { id: 'emp3', name: 'Hans Schmidt', department: 'Produktion', role: 'Entwickler' },
-        { id: 'emp4', name: 'Anna Müller', department: 'Vertrieb', role: 'Manager' },
+        { id: 'emp1', name: 'Max Mustermann', department: 'Produktion', roles: ['Entwickler'] },
+        { id: 'emp2', name: 'Erika Musterfrau', department: 'Entwicklung', roles: ['Teamleiter'] },
+        { id: 'emp3', name: 'Hans Schmidt', department: 'Produktion', roles: ['Entwickler'] },
+        { id: 'emp4', name: 'Anna Müller', department: 'Vertrieb', roles: ['Manager'] },
     ];
 
     const mockDepartments = [
@@ -123,20 +125,30 @@ describe('Employee Filter Functions', () => {
         it('filters by single role ID correctly', () => {
             const result = filterEmployeesByRole(mockEmployees, mockRoles, ['role-1']);
             expect(result).toHaveLength(2);
-            expect(result.every(e => e.role === 'Entwickler')).toBe(true);
+            expect(result.every(e => e.roles?.includes('Entwickler'))).toBe(true);
         });
 
         it('filters by multiple role IDs correctly', () => {
             const result = filterEmployeesByRole(mockEmployees, mockRoles, ['role-2', 'role-3']);
             expect(result).toHaveLength(2);
-            expect(result.some(e => e.role === 'Teamleiter')).toBe(true);
-            expect(result.some(e => e.role === 'Manager')).toBe(true);
+            expect(result.some(e => e.roles?.includes('Teamleiter'))).toBe(true);
+            expect(result.some(e => e.roles?.includes('Manager'))).toBe(true);
         });
 
         it('correctly maps role IDs to names (regression test)', () => {
             const result = filterEmployeesByRole(mockEmployees, mockRoles, ['role-1']);
             expect(result).toHaveLength(2);
-            expect(result[0].role).toBe('Entwickler');
+            expect(result[0].roles).toContain('Entwickler');
+        });
+
+        it('finds employees with multiple roles', () => {
+            const employeesWithMultipleRoles = [
+                ...mockEmployees,
+                { id: 'emp5', name: 'Multi Role User', department: 'Entwicklung', roles: ['Entwickler', 'Teamleiter'] },
+            ];
+            const result = filterEmployeesByRole(employeesWithMultipleRoles, mockRoles, ['role-1']);
+            expect(result).toHaveLength(3); // emp1, emp3, and emp5
+            expect(result.find(e => e.id === 'emp5')).toBeDefined();
         });
     });
 
@@ -146,7 +158,7 @@ describe('Employee Filter Functions', () => {
             result = filterEmployeesByRole(result, mockRoles, ['role-1']);
 
             expect(result).toHaveLength(2);
-            expect(result.every(e => e.department === 'Produktion' && e.role === 'Entwickler')).toBe(true);
+            expect(result.every(e => e.department === 'Produktion' && e.roles?.includes('Entwickler'))).toBe(true);
         });
 
         it('returns empty when filters have no overlap', () => {

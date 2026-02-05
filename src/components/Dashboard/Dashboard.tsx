@@ -346,9 +346,9 @@ export const Dashboard: React.FC = () => {
             return { department: dept, employeeCount: deptEmployees.length, avgScore };
         }).sort((a, b) => b.avgScore - a.avgScore);
 
-        // Role distribution
+        // Role distribution (employees can have multiple roles)
         const roleDistribution = roles.map(role => {
-            const count = employees.filter(e => e.role === role.name).length;
+            const count = employees.filter(e => e.roles?.includes(role.name)).length;
             return { role, count };
         }).filter(r => r.count > 0).sort((a, b) => b.count - a.count);
 

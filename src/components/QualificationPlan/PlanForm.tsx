@@ -61,12 +61,28 @@ export const PlanForm: React.FC<PlanFormProps> = ({
     );
 
     const options = employees.map((e) => {
-      // Find role id by name (since employee.role stores name string)
-      const role = roles.find((r) => r.name === e.role);
-      const gaps = getSkillGapsForEmployee(e.id!, role?.id || null);
+      // Calculate gaps considering all employee roles
+      // For employees with multiple roles, we combine requirements from all roles
+      let allGaps: ReturnType<typeof getSkillGapsForEmployee> = [];
+      if (e.roles && e.roles.length > 0) {
+        e.roles.forEach(roleName => {
+          const role = roles.find((r) => r.name === roleName);
+          if (role) {
+            const roleGaps = getSkillGapsForEmployee(e.id!, role.id || null);
+            // Merge gaps, avoiding duplicates by skillId
+            roleGaps.forEach(gap => {
+              if (!allGaps.some(g => g.skillId === gap.skillId)) {
+                allGaps.push(gap);
+              }
+            });
+          }
+        });
+      } else {
+        allGaps = getSkillGapsForEmployee(e.id!, null);
+      }
       return {
         ...e,
-        gapCount: gaps.length,
+        gapCount: allGaps.length,
         hasActivePlan: employeesWithActivePlans.has(e.id!),
       };
     });
@@ -82,7 +98,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({
 
   const selectData = employeeOptions.map((e) => ({
     value: e.id!,
-    label: `${anonymizeName(e.name, e.id)}${e.role ? ` (${e.role})` : ""} • ${e.gapCount} Defizit${e.gapCount !== 1 ? "e" : ""}`,
+    label: `${anonymizeName(e.name, e.id)}${e.roles && e.roles.length > 0 ? ` (${e.roles.join(", ")})` : ""} • ${e.gapCount} Defizit${e.gapCount !== 1 ? "e" : ""}`,
   }));
 
   // Reset form when opened or editing plan changes
@@ -117,12 +133,13 @@ export const PlanForm: React.FC<PlanFormProps> = ({
     }
   }, [formData.employeeId, formData.targetRoleId, getSkillGapsForEmployee]);
 
-  // Auto-select employee's current role when employee is selected
+  // Auto-select employee's first role when employee is selected
   useEffect(() => {
     if (formData.employeeId && !editingPlan) {
       const employee = employees.find((e) => e.id === formData.employeeId);
-      if (employee?.role) {
-        const role = roles.find((r) => r.name === employee.role);
+      if (employee?.roles && employee.roles.length > 0) {
+        // Use the first role as default target role
+        const role = roles.find((r) => r.name === employee.roles![0]);
         if (role) {
           setFormData((prev) => ({ ...prev, targetRoleId: role.id! }));
         }
@@ -235,8 +252,8 @@ export const PlanForm: React.FC<PlanFormProps> = ({
           searchable
           clearable
           description={
-            selectedEmployee?.role
-              ? `Aktuelle Rolle: ${selectedEmployee.role}`
+            selectedEmployee?.roles && selectedEmployee.roles.length > 0
+              ? `Aktuelle Rollen: ${selectedEmployee.roles.join(", ")}`
               : "Wählen Sie eine Zielrolle oder lassen Sie das Feld leer für individuelle Ziele."
           }
         />

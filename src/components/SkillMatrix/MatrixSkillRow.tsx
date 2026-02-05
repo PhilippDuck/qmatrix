@@ -2,7 +2,7 @@ import React from "react";
 import { Text, Group, Stack, Tooltip, Badge, HoverCard, ActionIcon } from "@mantine/core";
 import { IconPencil } from "@tabler/icons-react";
 import { MATRIX_LAYOUT, LEVELS } from "../../constants/skillLevels";
-import { getScoreColor, getRoleTargetForSkill } from "../../utils/skillCalculations";
+import { getScoreColor, getMaxRoleTargetForSkill } from "../../utils/skillCalculations";
 import { SkillCell } from "./SkillCell";
 import { Employee, Skill, Assessment, useData } from "../../context/DataContext";
 
@@ -141,7 +141,7 @@ export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = ({
           // Calculate average for this skill in this group
           const validScores = col.employeeIds.map(eId => {
             const emp = employees.find(e => e.id === eId);
-            const roleTarget = getRoleTargetForSkill(emp?.role, skill.id!, roles as any);
+            const roleTarget = getMaxRoleTargetForSkill(emp?.roles, skill.id!, roles as any);
             const asm = getAssessment(eId, skill.id!);
             return asm?.level ?? (roleTarget && roleTarget > 0 ? 0 : -1);
           }).filter(v => v !== -1);
@@ -181,9 +181,8 @@ export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = ({
         }
 
         const emp = col.employee;
-        // Find Role Target (recursive)
-        // Note: emp.role is the ID of the role
-        const roleTarget = getRoleTargetForSkill(emp.role, skill.id!, roles as any);
+        // Find Role Target (recursive) - take max across all employee roles
+        const roleTarget = getMaxRoleTargetForSkill(emp.roles, skill.id!, roles as any);
 
         const assessment = getAssessment(emp.id!, skill.id!);
         // Default to -1 (N/A) if no assessment exists, unless a role target is set, then 0
