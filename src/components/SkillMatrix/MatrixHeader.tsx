@@ -383,6 +383,32 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
       <div style={{ display: "flex", backgroundColor: "var(--mantine-color-body)" }}>
         {columns.map((col) => {
           if (col.type === 'group-summary') {
+            const groupEmployees = employees.filter(e => col.employeeIds.includes(e.id!));
+
+            // Calculate Group Average Coverage
+            let totalAvg = 0;
+            let countAvg = 0;
+            groupEmployees.forEach(e => {
+              const val = calculateEmployeeAverage(e.id!);
+              if (val !== null) {
+                totalAvg += val;
+                countAvg++;
+              }
+            });
+            const groupAvg = countAvg > 0 ? Math.round(totalAvg / countAvg) : null;
+
+            // Calculate Group Average XP
+            let totalXP = 0;
+            groupEmployees.forEach(e => {
+              const eXP = skills.reduce((sum, skill) => {
+                const assessment = getAssessment(e.id!, skill.id!);
+                const val = assessment?.level;
+                return sum + (val && val > 0 ? val : 0);
+              }, 0);
+              totalXP += eXP;
+            });
+            const avgXP = groupEmployees.length > 0 ? Math.round(totalXP / groupEmployees.length) : 0;
+
             return (
               <div
                 key={col.id}
@@ -399,6 +425,22 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
                   backgroundColor: col.backgroundColor || "var(--mantine-color-body)",
                 }}
               >
+                {showMaxValues ? (
+                  <Tooltip label={`Ø XP: ${avgXP}`} withArrow>
+                    <Badge size="xs" variant="light" color="blue" mb="xs" mt={8} style={{ cursor: 'help' }}>
+                      Ø {avgXP} XP
+                    </Badge>
+                  </Tooltip>
+                ) : (
+                  <Badge
+                    size="xs"
+                    variant="outline"
+                    color={getScoreColor(groupAvg)}
+                    mb="xs"
+                  >
+                    {groupAvg === null ? "N/A" : `Ø ${groupAvg}%`}
+                  </Badge>
+                )}
                 <Text
                   size="xs"
                   fw={700}

@@ -350,8 +350,9 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
             let total = 0;
             allSkillIds.forEach(sId => {
               const assessment = getAssessment(empId, sId);
-              const roleTarget = getMaxRoleTargetForSkill(empRoles, sId, roles as any);
-              const val = assessment?.level ?? (roleTarget && roleTarget > 0 ? 0 : -1);
+              const roleTarget = getMaxRoleTargetForSkill(empRoles, sId, roles);
+              const rawLevel = assessment?.level ?? -1;
+              const val = (rawLevel === -1 && roleTarget !== undefined) ? 0 : rawLevel;
               if (val > 0) total += val;
             });
             return total;
@@ -365,8 +366,9 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
             let total = 0, count = 0;
             allSkillIds.forEach(sId => {
               const assessment = getAssessment(empId, sId);
-              const roleTarget = getMaxRoleTargetForSkill(empRoles, sId, roles as any);
-              const val = assessment?.level ?? (roleTarget && roleTarget > 0 ? 0 : -1);
+              const roleTarget = getMaxRoleTargetForSkill(empRoles, sId, roles);
+              const rawLevel = assessment?.level ?? -1;
+              const val = (rawLevel === -1 && roleTarget !== undefined) ? 0 : rawLevel;
               if (val !== -1) { total += val; count++; }
             });
             return count > 0 ? total / count : 0;
@@ -412,8 +414,8 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
               let total = 0, count = 0;
               catSkillIds.forEach(sId => {
                 const assessment = getAssessment(emp.id!, sId);
-                const roleTarget = getMaxRoleTargetForSkill(emp.roles, sId, roles as any);
-                const val = assessment?.level ?? (roleTarget && roleTarget > 0 ? 0 : -1);
+                const roleTarget = getMaxRoleTargetForSkill(emp.roles, sId, roles);
+                const val = assessment?.level ?? (roleTarget !== undefined ? 0 : -1);
                 if (val !== -1) { total += val; count++; }
               });
               const avg = count > 0 ? total / count : 0;
@@ -435,8 +437,9 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
             catSkillIds.forEach(sId => {
               displayedEmployees.forEach(emp => {
                 const assessment = getAssessment(emp.id!, sId);
-                const roleTarget = getMaxRoleTargetForSkill(emp.roles, sId, roles as any);
-                const val = assessment?.level ?? (roleTarget && roleTarget > 0 ? 0 : -1);
+                const roleTarget = getMaxRoleTargetForSkill(emp.roles, sId, roles);
+                const rawLevel = assessment?.level ?? -1;
+                const val = (rawLevel === -1 && roleTarget !== undefined) ? 0 : rawLevel;
 
                 if (val !== -1) { total += val; count++; }
               });
@@ -494,7 +497,10 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
       }
     });
 
-    const sortedKeys = Array.from(groups.keys()).sort();
+    const sortedKeys = Array.from(groups.keys()).sort((a, b) => {
+      if (employeeSort === 'desc') return a.localeCompare(b, 'de');
+      return b.localeCompare(a, 'de');
+    });
     const columns: MatrixColumn[] = [];
 
     // Define colors for groups (rotating pastel colors)
@@ -530,7 +536,7 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
       columns.push({
         type: 'group-summary',
         id: `summary-${key}`,
-        label: `Ø ${key}`,
+        label: key,
         employeeIds: noGroup.map(e => e.id!),
         groupId: key,
         backgroundColor: bgColor
@@ -558,7 +564,7 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
       columns.push({
         type: 'group-summary',
         id: `summary-${key}`,
-        label: `Ø ${key}`,
+        label: key,
         employeeIds: groupEmps.map(e => e.id!),
         groupId: key,
         backgroundColor: bgColor
@@ -566,7 +572,7 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
     });
 
     return columns;
-  }, [displayedEmployees, groupingMode, colorScheme, hideEmployees]);
+  }, [displayedEmployees, groupingMode, colorScheme, hideEmployees, employeeSort]);
 
   const nextGroupingMode = () => {
     const modes: ('none' | 'department' | 'role')[] = ['none', 'department', 'role'];
@@ -631,8 +637,9 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
         // Logic sync with MatrixSkillRow:
         // Default to -1 (N/A) if no assessment exists, unless a role target is set, then 0
         // We need to fetch role target here to be accurate
-        const roleTarget = getMaxRoleTargetForSkill(emp.roles, sId, roles as any);
-        const val = assessment?.level ?? (roleTarget && roleTarget > 0 ? 0 : -1);
+        const roleTarget = getMaxRoleTargetForSkill(emp.roles, sId, roles);
+        const rawLevel = assessment?.level ?? -1;
+        const val = (rawLevel === -1 && roleTarget !== undefined) ? 0 : rawLevel;
 
         // Ignore N/A (-1)
         if (val === -1) return;

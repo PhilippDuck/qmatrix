@@ -1,6 +1,22 @@
 # Changelog
 
 
+## [2.6.6] - 2026-02-05
+
+### Verbesserungen & UI
+- **Gruppen-Sortierung**: Die Sortierrichtung der Gruppen (Abteilungen/Rollen) folgt nun der gewählten Mitarbeiter-Sortierung (A-Z / Z-A).
+- **Gruppen-Header**:
+  - Der Gruppenname steht nun alleinstehend (ohne "Ø").
+  - Aggregierte Metriken (Durchschnitt % oder Max XP) werden als separater Badge dargestellt.
+  - Respektiert nun den globalen Toggle für Durchschnitt/Maximum.
+- **Dark Mode**: Optimierte Darstellung von "N/A"-Badges in Kategoriereihen (Outline-Stil) für bessere Lesbarkeit.
+
+### Behobene Fehler
+- **N/A Logik**: Explizit gesetzte "N/A"-Werte (Level -1) werden nun korrekt von Rollenanforderungen überschrieben (erscheinen als 0% Gap).
+- **Max-Werte**: Bei der Anzeige von Maximalwerten in Kategorien wird nun korrekt "N/A" statt "0%" angezeigt, wenn keine Daten vorliegen.
+
+---
+
 ## [2.6.5] - 2026-02-05
 
 ### Neue Funktionen

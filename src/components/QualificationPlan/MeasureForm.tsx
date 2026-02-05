@@ -17,6 +17,7 @@ import {
   Slider,
   RangeSlider,
   Box,
+  useComputedColorScheme,
 } from "@mantine/core";
 import { DatePicker } from "@mantine/dates";
 import { useHotkeys } from "@mantine/hooks";
@@ -66,6 +67,7 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({
     qualificationPlans,
   } = useData();
   const { anonymizeName } = usePrivacy();
+  const computedColorScheme = useComputedColorScheme("light");
 
   // Get all measures for this employee (across all plans) to show occupied dates
   const employeeMeasures = React.useMemo(() => {
@@ -496,12 +498,12 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({
             <Box style={{ display: "flex", justifyContent: "center" }}>
               <DatePicker
                 type="range"
-                value={[(formData.startDate as unknown as Date) || null, (formData.targetDate as unknown as Date) || null]}
+                value={[formData.startDate || null, formData.targetDate || null]}
                 onChange={([start, end]) => {
                   setFormData({
                     ...formData,
-                    startDate: start || undefined,
-                    targetDate: end || undefined,
+                    startDate: (start as any) || undefined,
+                    targetDate: (end as any) || undefined,
                   });
                 }}
                 minDate={new Date()}
@@ -521,8 +523,13 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({
                   return isOccupied
                     ? {
                       style: {
-                        backgroundColor: "var(--mantine-color-red-1)",
-                        color: "var(--mantine-color-red-9)",
+                        backgroundColor: computedColorScheme === "dark"
+                          ? "rgba(250, 82, 82, 0.15)"
+                          : "var(--mantine-color-red-1)",
+                        color: computedColorScheme === "dark"
+                          ? "var(--mantine-color-red-5)"
+                          : "var(--mantine-color-red-9)",
+                        fontWeight: computedColorScheme === "dark" ? 600 : "normal",
                       },
                     }
                     : {};

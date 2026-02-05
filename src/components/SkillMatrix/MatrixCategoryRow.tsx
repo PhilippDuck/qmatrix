@@ -6,7 +6,7 @@ import { getScoreColor, getMaxRoleTargetForSkill } from "../../utils/skillCalcul
 import { InfoTooltip } from "../shared/InfoTooltip";
 import { BulkLevelMenu } from "./BulkLevelMenu";
 import { MatrixSubcategoryRow } from "./MatrixSubcategoryRow";
-import { Employee, Category, SubCategory, Skill, Assessment } from "../../context/DataContext";
+import { Employee, Category, SubCategory, Skill, Assessment, EmployeeRole } from "../../context/DataContext";
 import { usePrivacy } from "../../context/PrivacyContext";
 
 import { MatrixColumn } from "./types";
@@ -17,7 +17,7 @@ interface MatrixCategoryRowProps {
   subcategories: SubCategory[];
   skills: Skill[];
   employees: Employee[];
-  roles: { id?: string; name: string; requiredSkills?: { skillId: string; level: number }[] }[];
+  roles: EmployeeRole[];
   collapsedStates: Record<string, boolean>;
   hoveredSkillId: string | null;
   hoveredEmployeeId: string | null;
@@ -98,7 +98,8 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = ({
   const catAvg = calculateAverage(catSkillIds);
 
   // Calculate Max Percentage across all employees (Highest Average)
-  const maxAvg = Math.max(...employees.map(e => calculateAverage(catSkillIds, e.id) || 0), 0);
+  const validAvgs = employees.map(e => calculateAverage(catSkillIds, e.id)).filter((a): a is number => a !== null);
+  const maxAvg = validAvgs.length > 0 ? Math.max(...validAvgs) : null;
 
   return (
     <div>
@@ -175,15 +176,15 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = ({
             {!showMaxValues ? (
               // Average Bubble
               <Tooltip label="Durchschnittliche Abdeckung" withArrow>
-                <Badge size="xs" variant="filled" color={getScoreColor(catAvg)}>
+                <Badge size="xs" variant={catAvg === null ? "outline" : "filled"} color={catAvg === null ? "gray" : getScoreColor(catAvg)}>
                   {catAvg === null ? "N/A" : `${catAvg}%`}
                 </Badge>
               </Tooltip>
             ) : (
               // Max Percentage Bubble
-              <Tooltip label={`Max. Abdeckung: ${maxAvg}%`} withArrow>
-                <Badge size="xs" variant="filled" color={getScoreColor(maxAvg)} style={{ border: '1px solid currentColor' }}>
-                  {maxAvg}%
+              <Tooltip label={`Max. Abdeckung: ${maxAvg !== null ? maxAvg : "N/A"}%`} withArrow>
+                <Badge size="xs" variant={maxAvg === null ? "outline" : "filled"} color={maxAvg === null ? "gray" : getScoreColor(maxAvg)} style={{ border: maxAvg === null ? undefined : '1px solid currentColor' }}>
+                  {maxAvg !== null ? `${maxAvg}%` : "N/A"}
                 </Badge>
               </Tooltip>
             )}
@@ -212,9 +213,10 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = ({
               col.employeeIds.forEach(eId => {
                 const emp = employees.find(e => e.id === eId);
                 catSkillIds.forEach(sId => {
-                  const roleTarget = getMaxRoleTargetForSkill(emp?.roles, sId, roles as any);
+                  const roleTarget = getMaxRoleTargetForSkill(emp?.roles, sId, roles);
                   const asm = getAssessment(eId, sId);
-                  const level = asm?.level ?? (roleTarget && roleTarget > 0 ? 0 : -1);
+                  const rawLevel = asm?.level ?? -1;
+                  const level = (rawLevel === -1 && roleTarget !== undefined) ? 0 : rawLevel;
                   if (level > -1) {
                     totalScore += level;
                     count++;
@@ -229,17 +231,19 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = ({
                 let eTotal = 0;
                 let eCount = 0;
                 catSkillIds.forEach(sId => {
-                  const roleTarget = getMaxRoleTargetForSkill(emp?.roles, sId, roles as any);
+                  const roleTarget = getMaxRoleTargetForSkill(emp?.roles, sId, roles);
                   const asm = getAssessment(eId, sId);
-                  const level = asm?.level ?? (roleTarget && roleTarget > 0 ? 0 : -1);
+                  const rawLevel = asm?.level ?? -1;
+                  const level = (rawLevel === -1 && roleTarget !== undefined) ? 0 : rawLevel;
                   if (level > -1) {
                     eTotal += level;
                     eCount++;
                   }
                 });
-                return eCount > 0 ? Math.round(eTotal / eCount) : 0;
+                return eCount > 0 ? Math.round(eTotal / eCount) : null;
               });
-              const maxAvg = empAvgs.length > 0 ? Math.max(...empAvgs) : 0;
+              const validEmpAvgs = empAvgs.filter((a): a is number => a !== null);
+              const maxAvg = validEmpAvgs.length > 0 ? Math.max(...validEmpAvgs) : null;
 
               return (
                 <div
@@ -247,7 +251,7 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = ({
                   style={cellStyle}
                 >
                   {showMaxValues ? (
-                    maxAvg > 0 ? (
+                    maxAvg !== null ? (
                       <Badge size="xs" variant="filled" color={getScoreColor(maxAvg)} style={{ border: '1px solid currentColor' }}>
                         {maxAvg}%
                       </Badge>

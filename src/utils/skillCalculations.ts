@@ -42,20 +42,17 @@ export const getRoleTargetForSkill = (
 ): number | undefined => {
   if (!roleId) return undefined;
 
-  let currentRole = allRoles.find((r) => r.id === roleId);
+  const normalizedRoleId = roleId.trim().toLowerCase();
+  let currentRole = allRoles.find((r) => r.id === roleId || (r.name && r.name.trim().toLowerCase() === normalizedRoleId));
 
-  // Correction: If not found by ID, try finding by Name (legacy support)
-  if (!currentRole) {
-    currentRole = allRoles.find((r) => r.name === roleId);
-  }
   const visited = new Set<string>();
 
   while (currentRole) {
-    if (visited.has(currentRole.id!)) {
+    if (currentRole.id && visited.has(currentRole.id)) {
       console.warn("Circular dependency detected in role inheritance for role:", currentRole.name);
       return undefined;
     }
-    visited.add(currentRole.id!);
+    if (currentRole.id) visited.add(currentRole.id);
 
     // Check direct requirement
     const req = currentRole.requiredSkills?.find((s) => s.skillId === skillId);
@@ -65,7 +62,9 @@ export const getRoleTargetForSkill = (
 
     // Move to parent
     if (currentRole.inheritsFromId) {
-      currentRole = allRoles.find((r) => r.id === currentRole!.inheritsFromId);
+      const parentId = currentRole.inheritsFromId;
+      const normalizedParentId = parentId.trim().toLowerCase();
+      currentRole = allRoles.find((r) => r.id === parentId || (r.name && r.name.trim().toLowerCase() === normalizedParentId));
     } else {
       currentRole = undefined;
     }

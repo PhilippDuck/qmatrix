@@ -38,7 +38,7 @@ export const SkillCell: React.FC<SkillCellProps> = ({
   const isAtOrAboveTarget = hasTarget && level !== -1 && level >= targetLevel;
 
   // Check if below role target
-  const hasRoleTarget = roleTargetLevel !== undefined && roleTargetLevel > 0;
+  const hasRoleTarget = roleTargetLevel !== undefined && roleTargetLevel >= 0;
   const isBelowRoleTarget = hasRoleTarget && level !== -1 && level < roleTargetLevel;
   const isAtOrAboveRoleTarget = hasRoleTarget && level !== -1 && level >= roleTargetLevel;
 

@@ -4,7 +4,7 @@ import { IconPencil } from "@tabler/icons-react";
 import { MATRIX_LAYOUT, LEVELS } from "../../constants/skillLevels";
 import { getScoreColor, getMaxRoleTargetForSkill } from "../../utils/skillCalculations";
 import { SkillCell } from "./SkillCell";
-import { Employee, Skill, Assessment, useData } from "../../context/DataContext";
+import { Employee, Skill, Assessment, EmployeeRole, useData } from "../../context/DataContext";
 
 import { MatrixColumn } from "./types";
 
@@ -12,7 +12,7 @@ interface MatrixSkillRowProps {
   columns: MatrixColumn[];
   skill: Skill;
   employees: Employee[];
-  roles: { id?: string; name: string; requiredSkills?: { skillId: string; level: number }[] }[];
+  roles: EmployeeRole[];
   hoveredSkillId: string | null;
   hoveredEmployeeId: string | null;
   onSkillHover: (skillId: string | null) => void;
@@ -141,9 +141,9 @@ export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = ({
           // Calculate average for this skill in this group
           const validScores = col.employeeIds.map(eId => {
             const emp = employees.find(e => e.id === eId);
-            const roleTarget = getMaxRoleTargetForSkill(emp?.roles, skill.id!, roles as any);
+            const roleTarget = getMaxRoleTargetForSkill(emp?.roles, skill.id!, roles);
             const asm = getAssessment(eId, skill.id!);
-            return asm?.level ?? (roleTarget && roleTarget > 0 ? 0 : -1);
+            return asm?.level ?? (roleTarget !== undefined ? 0 : -1);
           }).filter(v => v !== -1);
 
           const sum = validScores.reduce<number>((a, b) => a + b, 0);
@@ -182,11 +182,12 @@ export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = ({
 
         const emp = col.employee;
         // Find Role Target (recursive) - take max across all employee roles
-        const roleTarget = getMaxRoleTargetForSkill(emp.roles, skill.id!, roles as any);
+        const roleTarget = getMaxRoleTargetForSkill(emp.roles, skill.id!, roles);
 
         const assessment = getAssessment(emp.id!, skill.id!);
-        // Default to -1 (N/A) if no assessment exists, unless a role target is set, then 0
-        const level = assessment?.level ?? (roleTarget && roleTarget > 0 ? 0 : -1);
+        // If assessment is -1 (N/A) or doesn't exist, and we have a role target, default to 0
+        const rawLevel = assessment?.level ?? -1;
+        const level = (rawLevel === -1 && roleTarget !== undefined) ? 0 : rawLevel;
 
         // Find Active Measure for this employee and skill
         const measure = skillMeasures.find(m => {

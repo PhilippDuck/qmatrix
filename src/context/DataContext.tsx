@@ -597,10 +597,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
     // 2. If a target role is specified, merge role requirements (including inherited ones)
     if (targetRoleId) {
       // Find start role (support ID or Name for legacy)
-      let currentRole = roles.find((r) => r.id === targetRoleId);
-      if (!currentRole) {
-        currentRole = roles.find((r) => r.name === targetRoleId);
-      }
+      const normalizedTargetId = targetRoleId.trim().toLowerCase();
+      let currentRole = roles.find((r) => r.id === targetRoleId || (r.name && r.name.trim().toLowerCase() === normalizedTargetId));
 
       // Traverse inheritance chain up
       // We collect requirements such that child overrides parent (first come first served in traversal)
@@ -625,7 +623,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
 
         // Move to parent
         if (currentRole.inheritsFromId) {
-          currentRole = roles.find((r) => r.id === currentRole!.inheritsFromId);
+          const parentId = currentRole.inheritsFromId;
+          const normalizedParentId = parentId.trim().toLowerCase();
+          currentRole = roles.find((r) => r.id === parentId || (r.name && r.name.trim().toLowerCase() === normalizedParentId));
         } else {
           currentRole = undefined;
         }
