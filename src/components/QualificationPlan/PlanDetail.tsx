@@ -9,28 +9,21 @@ import {
   Badge,
   Stack,
   Tabs,
-  Progress,
-  Card,
-  ThemeIcon,
   ActionIcon,
   Menu,
-  Divider,
-  SimpleGrid,
   Select,
   Alert,
+  ThemeIcon,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import {
   IconArrowLeft,
   IconEdit,
   IconPlus,
-  IconUser,
-  IconTarget,
   IconList,
   IconTimeline,
   IconChartBar,
   IconDotsVertical,
-  IconTrash,
   IconArchive,
   IconCheck,
   IconAlertCircle,
@@ -42,9 +35,10 @@ import {
 } from "../../context/DataContext";
 import { usePrivacy } from "../../context/PrivacyContext";
 import { SkillGapAnalysis } from "./SkillGapAnalysis";
-import { MeasureCard } from "./MeasureCard";
 import { MeasureForm } from "./MeasureForm";
 import { Timeline } from "./Timeline";
+import { PlanProgressStats } from "./PlanProgressStats";
+import { SkillMeasureGroup } from "./SkillMeasureGroup";
 
 interface PlanDetailProps {
   plan: QualificationPlan;
@@ -77,8 +71,6 @@ export const PlanDetail: React.FC<PlanDetailProps> = ({
     skills,
     assessments,
     qualificationMeasures,
-    categories,
-    subcategories,
     getSkillGapsForEmployee,
     updateQualificationPlan,
     updateQualificationMeasure,
@@ -91,7 +83,7 @@ export const PlanDetail: React.FC<PlanDetailProps> = ({
   const [measureDrawerOpened, { open: openMeasureDrawer, close: closeMeasureDrawer }] =
     useDisclosure(false);
   const [editingMeasure, setEditingMeasure] = useState<QualificationMeasure | null>(null);
-  const [initialSkillId, setInitialSkillId] = useState<string | null>(null); // [NEW]
+  const [initialSkillId, setInitialSkillId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
 
   const employee = employees.find((e) => e.id === plan.employeeId);
@@ -106,10 +98,6 @@ export const PlanDetail: React.FC<PlanDetailProps> = ({
 
   // Progress calculation
   const completedMeasures = planMeasures.filter((m) => m.status === "completed").length;
-  const progressPercent =
-    planMeasures.length > 0
-      ? Math.round((completedMeasures / planMeasures.length) * 100)
-      : 0;
 
   // Skills already covered by measures
   const coveredSkillIds = new Set(planMeasures.map((m) => m.skillId));
@@ -185,10 +173,6 @@ export const PlanDetail: React.FC<PlanDetailProps> = ({
     await updateQualificationPlan(plan.id!, { status });
   };
 
-  const getSkill = (skillId: string) => skills.find((s) => s.id === skillId);
-  const getMentor = (mentorId?: string) =>
-    mentorId ? employees.find((e) => e.id === mentorId) : undefined;
-
   return (
     <Box style={{ width: "100%", maxWidth: "100%" }}>
       {/* Header */}
@@ -254,65 +238,12 @@ export const PlanDetail: React.FC<PlanDetailProps> = ({
       </Group>
 
       {/* Progress Overview */}
-      <Paper shadow="xs" p="md" radius="md" withBorder mb="lg">
-        <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md">
-          <Card padding="sm" radius="sm">
-            <Group>
-              <ThemeIcon variant="light" size="lg" radius="md" color="blue">
-                <IconList size={18} />
-              </ThemeIcon>
-              <div>
-                <Text size="xl" fw={700}>
-                  {completedMeasures} / {planMeasures.length}
-                </Text>
-                <Text size="xs" c="dimmed">
-                  Maßnahmen abgeschlossen
-                </Text>
-              </div>
-            </Group>
-          </Card>
-
-          <Card padding="sm" radius="sm">
-            <Group>
-              <ThemeIcon
-                variant="light"
-                size="lg"
-                radius="md"
-                color={uncoveredGaps.length > 0 ? "orange" : "green"}
-              >
-                <IconTarget size={18} />
-              </ThemeIcon>
-              <div>
-                <Text size="xl" fw={700}>
-                  {skillGaps.length - uncoveredGaps.length} / {skillGaps.length}
-                </Text>
-                <Text size="xs" c="dimmed">
-                  Defizite adressiert
-                </Text>
-              </div>
-            </Group>
-          </Card>
-
-          <Card padding="sm" radius="sm">
-            <Stack gap={4}>
-              <Group justify="space-between">
-                <Text size="sm" c="dimmed">
-                  Fortschritt
-                </Text>
-                <Text size="sm" fw={500}>
-                  {progressPercent}%
-                </Text>
-              </Group>
-              <Progress
-                value={progressPercent}
-                color={progressPercent === 100 ? "green" : "blue"}
-                size="lg"
-                radius="xl"
-              />
-            </Stack>
-          </Card>
-        </SimpleGrid>
-      </Paper>
+      <PlanProgressStats
+        completedCount={completedMeasures}
+        totalCount={planMeasures.length}
+        totalGaps={skillGaps.length}
+        addressedGaps={skillGaps.length - uncoveredGaps.length}
+      />
 
       {/* Uncovered Gaps Alert */}
       {uncoveredGaps.length > 0 && (
@@ -435,71 +366,22 @@ export const PlanDetail: React.FC<PlanDetailProps> = ({
                       acc[measure.skillId].push(measure);
                       return acc;
                     }, {} as Record<string, QualificationMeasure[]>)
-                  ).map((groupMeasures) => {
-                    const skillId = groupMeasures[0].skillId;
-                    const skill = getSkill(skillId);
-
-                    // Resolve Category Path
-                    const subCategory = subcategories.find(s => s.id === skill?.subCategoryId);
-                    const category = categories.find(c => c.id === subCategory?.categoryId);
-
-                    // Check if fully planned
-                    const gap = skillGaps.find(g => g.skillId === skillId);
-                    const maxPlannedLevel = Math.max(0, ...groupMeasures.map(m => m.targetLevel));
-                    const isFullyPlanned = maxPlannedLevel >= (gap?.targetLevel ?? 100);
-
-                    // Sort measures by startLevel (Chain order)
-                    const sortedMeasures = [...groupMeasures].sort((a, b) => (a.startLevel ?? 0) - (b.startLevel ?? 0));
-
-                    return (
-                      <Paper key={skillId} withBorder p="md" radius="md">
-                        <Group mb="md" align="center" justify="space-between">
-                          <Group>
-                            <ThemeIcon variant="light" color="blue" radius="xl">
-                              <IconTarget size={16} />
-                            </ThemeIcon>
-                            <div>
-                              <Text size="sm" fw={700} tt="uppercase" c="dimmed" style={{ fontSize: '10px', lineHeight: 1 }}>
-                                {category?.name || "Kategorie"} &rsaquo; {subCategory?.name || "Subkategorie"}
-                              </Text>
-                              <Text fw={600} size="lg" style={{ lineHeight: 1.2 }}>
-                                {skill?.name || "Unbekannter Skill"}
-                              </Text>
-                            </div>
-                          </Group>
-                          <Button
-                            variant="subtle"
-                            size="xs"
-                            leftSection={<IconPlus size={14} />}
-                            onClick={() => handleAddMeasure(skillId)}
-                            disabled={isFullyPlanned}
-                            title={isFullyPlanned ? "Skill bereits vollständig geplant" : "Maßnahme hinzufügen"}
-                          >
-                            Maßnahme
-                          </Button>
-                        </Group>
-
-                        <SimpleGrid cols={{ base: 1, md: 2, lg: 3 }} spacing="md">
-                          {sortedMeasures.map((measure) => (
-                            <MeasureCard
-                              key={measure.id}
-                              measure={measure}
-                              skill={skill}
-                              mentor={getMentor(measure.mentorId)}
-                              onEdit={() => handleEditMeasure(measure)}
-                              onDelete={() => handleDeleteMeasure(measure.id!)}
-                              onStatusChange={(status) =>
-                                handleMeasureStatusChange(measure.id!, status)
-                              }
-                              onUpdateProgress={(level) =>
-                                setAssessment(plan.employeeId, measure.skillId, level as any)
-                              }
-                            />
-                          ))}
-                        </SimpleGrid>
-                      </Paper>
-                    );
-                  })}
+                  ).map((groupMeasures) => (
+                    <SkillMeasureGroup
+                      key={groupMeasures[0].skillId}
+                      skillId={groupMeasures[0].skillId}
+                      measures={groupMeasures}
+                      skillGaps={skillGaps}
+                      employeeId={plan.employeeId}
+                      onAddMeasure={handleAddMeasure}
+                      onEditMeasure={handleEditMeasure}
+                      onDeleteMeasure={handleDeleteMeasure}
+                      onStatusChange={handleMeasureStatusChange}
+                      onUpdateProgress={(skillId, level) =>
+                        setAssessment(plan.employeeId, skillId, level as any)
+                      }
+                    />
+                  ))}
                 </Stack>
               )}
             </Stack>

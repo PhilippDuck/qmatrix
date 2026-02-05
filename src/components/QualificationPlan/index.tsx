@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Tabs,
   Title,
@@ -10,10 +10,6 @@ import {
   Badge,
   Stack,
   Card,
-  Progress,
-  ActionIcon,
-  Menu,
-  Tooltip,
   Select,
   TextInput,
   SimpleGrid,
@@ -28,32 +24,15 @@ import {
   IconChartBar,
   IconSearch,
   IconFilter,
-  IconDotsVertical,
-  IconEdit,
-  IconTrash,
-  IconEye,
-  IconUser,
-  IconTarget,
   IconCertificate,
+  IconTarget,
+  IconUser,
 } from "@tabler/icons-react";
 import { useData, QualificationPlan as QualificationPlanType } from "../../context/DataContext";
 import { usePrivacy } from "../../context/PrivacyContext";
 import { PlanForm } from "./PlanForm";
 import { PlanDetail } from "./PlanDetail";
-
-const statusLabels: Record<QualificationPlanType["status"], string> = {
-  draft: "Entwurf",
-  active: "Aktiv",
-  completed: "Abgeschlossen",
-  archived: "Archiviert",
-};
-
-const statusColors: Record<QualificationPlanType["status"], string> = {
-  draft: "gray",
-  active: "blue",
-  completed: "green",
-  archived: "orange",
-};
+import { PlanCard } from "./PlanCard";
 
 interface QualificationPlanProps {
   initialEmployeeId?: string | null;
@@ -136,11 +115,8 @@ export const QualificationPlan: React.FC<QualificationPlanProps> = ({ initialEmp
     await updateQualificationPlan(planId, { status: "archived" });
   };
 
-  const getFilteredPlans = (statusFilter?: QualificationPlanType["status"][]) => {
+  const filteredPlans = useMemo(() => {
     return qualificationPlans.filter((plan) => {
-      // Status filter from parameter
-      if (statusFilter && !statusFilter.includes(plan.status)) return false;
-
       // Status filter from dropdown
       if (filterStatus && plan.status !== filterStatus) return false;
 
@@ -162,116 +138,15 @@ export const QualificationPlan: React.FC<QualificationPlanProps> = ({ initialEmp
 
       return true;
     });
-  };
+  }, [qualificationPlans, filterStatus, filterEmployee, searchTerm, employees, roles]);
 
-  const getPlanProgress = (planId: string) => {
-    const measures = qualificationMeasures.filter((m) => m.planId === planId);
-    if (measures.length === 0) return { completed: 0, total: 0, percent: 0 };
-    const completed = measures.filter((m) => m.status === "completed").length;
-    return {
-      completed,
-      total: measures.length,
-      percent: Math.round((completed / measures.length) * 100),
-    };
-  };
+  const activePlans = useMemo(() =>
+    filteredPlans.filter(p => p.status === 'active' || p.status === 'draft'),
+    [filteredPlans]);
 
-  const activePlans = getFilteredPlans(["active", "draft"]);
-  const archivedPlans = getFilteredPlans(["archived", "completed"]);
-
-  const PlanCard: React.FC<{ plan: QualificationPlanType }> = ({ plan }) => {
-    const employee = employees.find((e) => e.id === plan.employeeId);
-    const role = roles.find((r) => r.id === plan.targetRoleId);
-    const progress = getPlanProgress(plan.id!);
-
-    return (
-      <Card shadow="sm" padding="lg" radius="md" withBorder>
-        <Card.Section withBorder inheritPadding py="xs">
-          <Group justify="space-between">
-            <Group gap="sm">
-              <ThemeIcon variant="light" size="lg" radius="md">
-                <IconUser size={18} />
-              </ThemeIcon>
-              <div>
-                <Text fw={600}>{employee ? anonymizeName(employee.name, employee.id) : "Unbekannt"}</Text>
-                <Text size="xs" c="dimmed">
-                  Zielrolle: {role?.name || "Keine"}
-                </Text>
-              </div>
-            </Group>
-            <Menu shadow="md" width={200}>
-              <Menu.Target>
-                <ActionIcon variant="subtle" color="gray">
-                  <IconDotsVertical size={16} />
-                </ActionIcon>
-              </Menu.Target>
-              <Menu.Dropdown>
-                <Menu.Item
-                  leftSection={<IconEye size={14} />}
-                  onClick={() => handleViewPlan(plan.id!)}
-                >
-                  Details anzeigen
-                </Menu.Item>
-                <Menu.Item
-                  leftSection={<IconEdit size={14} />}
-                  onClick={() => handleEditPlan(plan)}
-                >
-                  Bearbeiten
-                </Menu.Item>
-                <Menu.Divider />
-                {plan.status !== "archived" && (
-                  <Menu.Item
-                    leftSection={<IconArchive size={14} />}
-                    onClick={() => handleArchivePlan(plan.id!)}
-                  >
-                    Archivieren
-                  </Menu.Item>
-                )}
-                <Menu.Item
-                  color="red"
-                  leftSection={<IconTrash size={14} />}
-                  onClick={() => handleDeletePlan(plan.id!)}
-                >
-                  Löschen
-                </Menu.Item>
-              </Menu.Dropdown>
-            </Menu>
-          </Group>
-        </Card.Section>
-
-        <Stack gap="xs" mt="md">
-          <Group justify="space-between">
-            <Badge color={statusColors[plan.status]} variant="light">
-              {statusLabels[plan.status]}
-            </Badge>
-            <Text size="xs" c="dimmed">
-              {progress.completed} / {progress.total} Maßnahmen
-            </Text>
-          </Group>
-
-          <Progress
-            value={progress.percent}
-            color={progress.percent === 100 ? "green" : "blue"}
-            size="sm"
-            radius="xl"
-          />
-
-          <Text size="xs" c="dimmed">
-            Erstellt: {new Date(plan.createdAt).toLocaleDateString("de-DE")}
-          </Text>
-        </Stack>
-
-        <Button
-          variant="light"
-          fullWidth
-          mt="md"
-          radius="md"
-          onClick={() => handleViewPlan(plan.id!)}
-        >
-          Details anzeigen
-        </Button>
-      </Card>
-    );
-  };
+  const archivedPlans = useMemo(() =>
+    filteredPlans.filter(p => p.status === 'archived' || p.status === 'completed'),
+    [filteredPlans]);
 
   // If a plan is selected for detail view, show the detail component
   if (activeTab === "detail" && selectedPlanId) {
@@ -400,7 +275,14 @@ export const QualificationPlan: React.FC<QualificationPlanProps> = ({ initialEmp
               ) : (
                 <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="md">
                   {activePlans.slice(0, 6).map((plan) => (
-                    <PlanCard key={plan.id} plan={plan} />
+                    <PlanCard
+                      key={plan.id}
+                      plan={plan}
+                      onView={handleViewPlan}
+                      onEdit={handleEditPlan}
+                      onArchive={handleArchivePlan}
+                      onDelete={handleDeletePlan}
+                    />
                   ))}
                 </SimpleGrid>
               )}
@@ -456,7 +338,14 @@ export const QualificationPlan: React.FC<QualificationPlanProps> = ({ initialEmp
               ) : (
                 <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="md">
                   {activePlans.map((plan) => (
-                    <PlanCard key={plan.id} plan={plan} />
+                    <PlanCard
+                      key={plan.id}
+                      plan={plan}
+                      onView={handleViewPlan}
+                      onEdit={handleEditPlan}
+                      onArchive={handleArchivePlan}
+                      onDelete={handleDeletePlan}
+                    />
                   ))}
                 </SimpleGrid>
               )}
@@ -472,7 +361,14 @@ export const QualificationPlan: React.FC<QualificationPlanProps> = ({ initialEmp
               ) : (
                 <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="md">
                   {archivedPlans.map((plan) => (
-                    <PlanCard key={plan.id} plan={plan} />
+                    <PlanCard
+                      key={plan.id}
+                      plan={plan}
+                      onView={handleViewPlan}
+                      onEdit={handleEditPlan}
+                      onArchive={handleArchivePlan}
+                      onDelete={handleDeletePlan}
+                    />
                   ))}
                 </SimpleGrid>
               )}

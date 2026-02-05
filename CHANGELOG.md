@@ -1,6 +1,18 @@
 # Changelog
 
 
+## [2.6.4] - 2026-02-05
+
+### Refactoring & Code Quality
+- **Performance**: Optimierung der Qualifizierungsplan-Ansicht durch Memoization und Component Splitting.
+- **Wartbarkeit**:
+  - `PlanCard`: Extrahiert in eigenständige Komponente.
+  - `MatrixHeader`: Berechnung von Mitarbeiter-Metriken (XP, Defizite) in `useEmployeeMetrics` Hook zentralisiert.
+  - `PlanDetail`: Statistiken und Maßnahmen-Gruppierung in separate Komponenten (`PlanProgressStats`, `SkillMeasureGroup`) ausgelagert.
+- **Stabilität**: Allgemeine Code-Bereinigung und Typisierungs-Verbesserungen.
+
+---
+
 ## [2.6.3] - 2026-02-05
 
 ### Neue Funktionen

@@ -6,6 +6,7 @@ import { getScoreColor } from "../../utils/skillCalculations";
 import { Employee, Skill, Assessment, useData, AssessmentLogEntry } from "../../context/DataContext";
 import { getIconByName } from "../shared/RoleIconPicker";
 import { usePrivacy } from "../../context/PrivacyContext";
+import { useEmployeeMetrics } from "../../hooks/useEmployeeMetrics";
 
 import { MatrixColumn } from "./types";
 
@@ -40,7 +41,23 @@ const EmployeeInfoCard: React.FC<{
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [loadingHistory, setLoadingHistory] = useState(true);
 
-  // ... (useEffect remains same) ...
+  // Hook for metrics
+  const {
+    activeSkillCount,
+    totalXP,
+    fulfillment,
+    topSkills,
+    learningNeeds,
+    activeMeasures,
+    isPlanEnabled
+  } = useEmployeeMetrics({
+    employee: emp,
+    skills,
+    getAssessment,
+    qualificationPlans,
+    qualificationMeasures
+  });
+
   useEffect(() => {
     getHistory(emp.id!).then(data => {
       setHistory(data.sort((a, b) => b.timestamp - a.timestamp).slice(0, 3));
@@ -56,63 +73,6 @@ const EmployeeInfoCard: React.FC<{
       subName: sub?.name || "-",
     };
   };
-
-  // ... (calculations remain same, skipping lines for brevity if possible, but replace tool needs context)
-  // I will assume the calculations block is unchanged and focus on the return render.
-
-  // 1. Vielseitigkeit (Active Skills > 0)
-  const employeeSkills = skills
-    .map((skill) => ({
-      skill,
-      assessment: getAssessment(emp.id!, skill.id!)
-    }))
-    .filter((item) => item.assessment && item.assessment.level > 0);
-
-  const activeSkillCount = employeeSkills.length;
-
-  // 2. XP (Wissens-Volumen)
-  const totalXP = employeeSkills.reduce((sum, item) => sum + (item.assessment?.level || 0), 0);
-
-  // 3. Soll-Erfüllungsgrad
-  let totalTarget = 0;
-  let totalActualForTarget = 0;
-
-  skills.forEach(skill => {
-    const assessment = getAssessment(emp.id!, skill.id!);
-    const target = assessment?.targetLevel;
-    if (target !== undefined && target > 0) {
-      totalTarget += target;
-      totalActualForTarget += (assessment?.level || 0);
-    }
-  });
-
-  const fulfillment = totalTarget > 0 ? Math.round((totalActualForTarget / totalTarget) * 100) : null;
-
-  // Top Skills sorted by level
-  const topSkills = [...employeeSkills]
-    .sort((a, b) => (b.assessment?.level || 0) - (a.assessment?.level || 0))
-    .slice(0, 3);
-
-  // Learning Needs (Gaps) - Skills below target
-  const learningNeeds = skills
-    .map((skill) => {
-      const assessment = getAssessment(emp.id!, skill.id!);
-      const target = assessment?.targetLevel || 0;
-      const level = assessment?.level || 0;
-      return { skill, level, target, gap: level - target };
-    })
-    .filter(item => item.gap < 0 && item.target > 0)
-    .sort((a, b) => a.gap - b.gap)
-    .slice(0, 3);
-
-  // Filter active measures for this employee
-  const activeMeasures = qualificationMeasures.filter(m => {
-    const plan = qualificationPlans.find(p => p.id === m.planId && p.employeeId === emp.id);
-    return plan && (m.status === "in_progress" || m.status === "pending");
-  });
-
-  const hasActivePlan = qualificationPlans.some(p => p.employeeId === emp.id && (p.status === "active" || p.status === "draft"));
-  const isPlanEnabled = learningNeeds.length > 0 || hasActivePlan;
 
   return (
     <Stack gap="sm">
@@ -313,6 +273,7 @@ const EmployeeInfoCard: React.FC<{
           <Stack gap={8}>
             {activeMeasures.map(measure => {
               const skill = skills.find(s => s.id === measure.skillId);
+              // eslint-disable-next-line @typescript-eslint/no-unused-vars
               const ctx = skill ? resolveContext(skill) : { catName: '-', subName: '-' };
               return (
                 <Group key={measure.id} justify="space-between" wrap="nowrap">
@@ -595,3 +556,4 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
     </div>
   );
 };
+
