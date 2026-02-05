@@ -23,12 +23,14 @@ interface PlanFormProps {
   opened: boolean;
   onClose: () => void;
   editingPlan?: QualificationPlan | null;
+  initialEmployeeId?: string | null;
 }
 
 export const PlanForm: React.FC<PlanFormProps> = ({
   opened,
   onClose,
   editingPlan,
+  initialEmployeeId,
 }) => {
   const {
     employees,
@@ -51,6 +53,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({
   const [skillGaps, setSkillGaps] = useState<SkillGap[]>([]);
   const [filterDeficits, setFilterDeficits] = useState(true);
 
+  // ... (employeeOptions useMemo remains same) ...
   const employeeOptions = useMemo(() => {
     // Get IDs of employees who already have an active or draft plan
     // Exclude the current plan if we are editing
@@ -90,11 +93,13 @@ export const PlanForm: React.FC<PlanFormProps> = ({
     // Filter out employees with active plans
     let filtered = options.filter((e) => !e.hasActivePlan);
 
+    // [New] If initialEmployeeId is set, ensure they are included even if they don't meet filterDeficits criteria initially,
+    // though logicaly if we create a plan we want gaps. But let's respect force selection.
     if (filterDeficits) {
-      filtered = filtered.filter((e) => e.gapCount > 0);
+      filtered = filtered.filter((e) => e.gapCount > 0 || e.id === initialEmployeeId);
     }
     return filtered;
-  }, [employees, roles, getSkillGapsForEmployee, filterDeficits, qualificationPlans, editingPlan]);
+  }, [employees, roles, getSkillGapsForEmployee, filterDeficits, qualificationPlans, editingPlan, initialEmployeeId]);
 
   const selectData = employeeOptions.map((e) => ({
     value: e.id!,
@@ -113,14 +118,14 @@ export const PlanForm: React.FC<PlanFormProps> = ({
         });
       } else {
         setFormData({
-          employeeId: "",
+          employeeId: initialEmployeeId || "",
           targetRoleId: "",
           status: "draft",
           notes: "",
         });
       }
     }
-  }, [opened, editingPlan]);
+  }, [opened, editingPlan, initialEmployeeId]);
 
   // Update skill gaps when employee or target role changes
   // Update skill gaps when employee or target role changes
@@ -167,7 +172,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({
           await updateEmployee(formData.employeeId, {
             name: employee.name,
             department: employee.department,
-            role: targetRole.name,
+            roles: [targetRole.name],
           });
         }
 

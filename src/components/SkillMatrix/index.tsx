@@ -52,7 +52,11 @@ import { EntityFormDrawer } from "../CategoryManager/EntityFormDrawer";
 import { SegmentedControl } from "@mantine/core";
 import { MatrixColumn } from "./types";
 
-export const SkillMatrix: React.FC = () => {
+interface SkillMatrixProps {
+  onNavigate?: (tab: string, params?: any) => void;
+}
+
+export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
   const {
     employees,
     categories,
@@ -1248,7 +1252,11 @@ export const SkillMatrix: React.FC = () => {
                     onEditEmployee={handleEditEmployee}
                     showMaxValues={showMaxValues}
                     isEditMode={isEditMode}
-                    onAddEmployee={() => setEmployeeDrawerOpened(true)}
+                    onAddEmployee={() => {
+                      setEditingEmployeeId(null);
+                      setEmployeeDrawerOpened(true);
+                    }}
+                    onNavigate={onNavigate}
                   />
                 </div>
 

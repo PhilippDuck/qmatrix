@@ -15,6 +15,7 @@ import {
   Badge,
   Paper,
   Slider,
+  RangeSlider,
   Box,
 } from "@mantine/core";
 import { DatePicker } from "@mantine/dates";
@@ -42,6 +43,7 @@ interface MeasureFormProps {
   employeeId: string;
   skillGaps: SkillGap[];
   editingMeasure?: QualificationMeasure | null;
+  initialSkillId?: string | null; // [NEW] Pre-select skill
   onDelete?: (measureId: string) => Promise<void>;
 }
 
@@ -52,6 +54,7 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({
   employeeId,
   skillGaps,
   editingMeasure,
+  initialSkillId,
   onDelete,
 }) => {
   const {
@@ -88,6 +91,7 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({
     startDate: undefined as Date | undefined,
     targetDate: undefined as Date | undefined,
     notes: "",
+    measureStartLevel: 0, // [NEW] Default start
     measureTargetLevel: 100, // Default to 100, will be updated on skill selection
   });
   const [loading, setLoading] = useState(false);
@@ -124,11 +128,12 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({
             ? new Date(editingMeasure.targetDate)
             : undefined,
           notes: editingMeasure.notes || "",
+          measureStartLevel: editingMeasure.startLevel ?? 0, // Load existing start level (migration fallback 0)
           measureTargetLevel: editingMeasure.targetLevel,
         });
       } else {
         setFormData({
-          skillId: "",
+          skillId: initialSkillId || "", // Use initialSkillId if provided
           type: "internal",
           mentorId: "",
           externalProvider: "",
@@ -137,21 +142,35 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({
           startDate: undefined,
           targetDate: undefined,
           notes: "",
+          measureStartLevel: 0,
           measureTargetLevel: 100,
         });
       }
     }
-  }, [opened, editingMeasure]);
+  }, [opened, editingMeasure, initialSkillId]);
 
   // When skill is selected (and not editing), set initial target level to role target
   useEffect(() => {
-    if (formData.skillId && !editingMeasure && selectedGap) {
+    // Logic for Chaining:
+    // Find highest target level of existing measures for this skill in this plan
+    const existingMeasuresForSkill = qualificationMeasures.filter(
+      m => m.planId === planId && m.skillId === formData.skillId
+    );
+
+    if (selectedGap) {
+      let suggestedStart = selectedGap.currentLevel;
+      if (existingMeasuresForSkill.length > 0) {
+        const maxLevel = Math.max(...existingMeasuresForSkill.map(m => m.targetLevel));
+        suggestedStart = maxLevel;
+      }
+
       setFormData(prev => ({
         ...prev,
+        measureStartLevel: suggestedStart,
         measureTargetLevel: selectedGap.targetLevel
       }));
     }
-  }, [formData.skillId, editingMeasure, selectedGap]);
+  }, [formData.skillId, editingMeasure, selectedGap, qualificationMeasures, planId]);
 
   // Auto-select mentor type based on availability
   useEffect(() => {
@@ -173,6 +192,7 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({
         planId,
         skillId: formData.skillId,
         currentLevel,
+        startLevel: formData.measureStartLevel, // [NEW]
         targetLevel: formData.measureTargetLevel, // Use User defined target
         type: formData.type,
         status: editingMeasure?.status || "pending",
@@ -225,10 +245,24 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({
   );
 
   const isEditing = !!editingMeasure;
-  const skillOptions = availableSkillGaps.map((gap) => ({
-    value: gap.skillId,
-    label: `${gap.categoryName} > ${gap.subCategoryName} > ${gap.skillName} (${gap.currentLevel}% → ${gap.targetLevel}%)`,
-  }));
+
+  // Filter skills: Remove those where max planned target >= role target
+  // UNLESS it is the currently selected one (editing) or the explicitly requested one (quick add)
+  const skillOptions = availableSkillGaps
+    .filter(gap => {
+      // Find all measures for this skill in this plan
+      const skillMeasures = qualificationMeasures.filter(m => m.planId === planId && m.skillId === gap.skillId);
+      const maxPlanned = Math.max(0, ...skillMeasures.map(m => m.targetLevel));
+
+      // Keep if:
+      // 1. Not fully planned yet (maxPlanned < gap.targetLevel)
+      // 2. OR it's the one we are currently editing/adding (to allow adding more steps even if technically covered)
+      return maxPlanned < gap.targetLevel || gap.skillId === initialSkillId || gap.skillId === editingMeasure?.skillId;
+    })
+    .map((gap) => ({
+      value: gap.skillId,
+      label: `${gap.categoryName} > ${gap.subCategoryName} > ${gap.skillName} (${gap.currentLevel}% → ${gap.targetLevel}%)`,
+    }));
 
   const levelMarks = [
     { value: 0, label: '0%' },
@@ -294,13 +328,15 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({
 
               <Text size="sm" fw={500}>Ziel dieser Maßnahme</Text>
               <Box px="xs" pb="xl">
-                <Slider
-                  value={formData.measureTargetLevel}
-                  onChange={(val) => setFormData({ ...formData, measureTargetLevel: val })}
+                <RangeSlider
+                  defaultValue={[formData.measureStartLevel, formData.measureTargetLevel]}
+                  value={[formData.measureStartLevel, formData.measureTargetLevel]}
+                  onChange={([start, end]) => setFormData({ ...formData, measureStartLevel: start, measureTargetLevel: end })}
                   marks={levelMarks}
                   step={25}
                   min={0}
                   max={100}
+                  minRange={25}
                   label={(val) => `${val}%`}
                 />
               </Box>
@@ -460,7 +496,7 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({
             <Box style={{ display: "flex", justifyContent: "center" }}>
               <DatePicker
                 type="range"
-                value={[formData.startDate || null, formData.targetDate || null]}
+                value={[(formData.startDate as unknown as Date) || null, (formData.targetDate as unknown as Date) || null]}
                 onChange={([start, end]) => {
                   setFormData({
                     ...formData,
@@ -484,11 +520,11 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({
 
                   return isOccupied
                     ? {
-                        style: {
-                          backgroundColor: "var(--mantine-color-red-1)",
-                          color: "var(--mantine-color-red-9)",
-                        },
-                      }
+                      style: {
+                        backgroundColor: "var(--mantine-color-red-1)",
+                        color: "var(--mantine-color-red-9)",
+                      },
+                    }
                     : {};
                 }}
               />

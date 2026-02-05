@@ -77,6 +77,8 @@ export const PlanDetail: React.FC<PlanDetailProps> = ({
     skills,
     assessments,
     qualificationMeasures,
+    categories,
+    subcategories,
     getSkillGapsForEmployee,
     updateQualificationPlan,
     updateQualificationMeasure,
@@ -89,6 +91,7 @@ export const PlanDetail: React.FC<PlanDetailProps> = ({
   const [measureDrawerOpened, { open: openMeasureDrawer, close: closeMeasureDrawer }] =
     useDisclosure(false);
   const [editingMeasure, setEditingMeasure] = useState<QualificationMeasure | null>(null);
+  const [initialSkillId, setInitialSkillId] = useState<string | null>(null); // [NEW]
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
 
   const employee = employees.find((e) => e.id === plan.employeeId);
@@ -112,8 +115,9 @@ export const PlanDetail: React.FC<PlanDetailProps> = ({
   const coveredSkillIds = new Set(planMeasures.map((m) => m.skillId));
   const uncoveredGaps = skillGaps.filter((g) => !coveredSkillIds.has(g.skillId));
 
-  const handleAddMeasure = () => {
+  const handleAddMeasure = (skillId?: string) => {
     setEditingMeasure(null);
+    setInitialSkillId(skillId || null);
     openMeasureDrawer();
   };
 
@@ -386,7 +390,7 @@ export const PlanDetail: React.FC<PlanDetailProps> = ({
                 />
                 <Button
                   leftSection={<IconPlus size={16} />}
-                  onClick={handleAddMeasure}
+                  onClick={() => handleAddMeasure()}
                   disabled={skillGaps.length === 0}
                 >
                   Maßnahme hinzufügen
@@ -415,30 +419,88 @@ export const PlanDetail: React.FC<PlanDetailProps> = ({
                         : "Die Zielrolle hat keine Skill-Anforderungen definiert. Bitte definieren Sie zuerst Skill-Anforderungen unter Stammdaten > Rollen & Level."}
                   </Text>
                   {skillGaps.length > 0 && (
-                    <Button mt="md" onClick={handleAddMeasure}>
+                    <Button mt="md" onClick={() => handleAddMeasure()}>
                       Erste Maßnahme hinzufügen
                     </Button>
                   )}
                 </Paper>
               ) : (
-                <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
-                  {filteredMeasures.map((measure) => (
-                    <MeasureCard
-                      key={measure.id}
-                      measure={measure}
-                      skill={getSkill(measure.skillId)}
-                      mentor={getMentor(measure.mentorId)}
-                      onEdit={() => handleEditMeasure(measure)}
-                      onDelete={() => handleDeleteMeasure(measure.id!)}
-                      onStatusChange={(status) =>
-                        handleMeasureStatusChange(measure.id!, status)
+                <Stack gap="xl">
+                  {/* Group measures by Skill */}
+                  {Object.values(
+                    filteredMeasures.reduce((acc, measure) => {
+                      if (!acc[measure.skillId]) {
+                        acc[measure.skillId] = [];
                       }
-                      onUpdateProgress={(level) =>
-                        setAssessment(plan.employeeId, measure.skillId, level as any)
-                      }
-                    />
-                  ))}
-                </SimpleGrid>
+                      acc[measure.skillId].push(measure);
+                      return acc;
+                    }, {} as Record<string, QualificationMeasure[]>)
+                  ).map((groupMeasures) => {
+                    const skillId = groupMeasures[0].skillId;
+                    const skill = getSkill(skillId);
+
+                    // Resolve Category Path
+                    const subCategory = subcategories.find(s => s.id === skill?.subCategoryId);
+                    const category = categories.find(c => c.id === subCategory?.categoryId);
+
+                    // Check if fully planned
+                    const gap = skillGaps.find(g => g.skillId === skillId);
+                    const maxPlannedLevel = Math.max(0, ...groupMeasures.map(m => m.targetLevel));
+                    const isFullyPlanned = maxPlannedLevel >= (gap?.targetLevel ?? 100);
+
+                    // Sort measures by startLevel (Chain order)
+                    const sortedMeasures = [...groupMeasures].sort((a, b) => (a.startLevel ?? 0) - (b.startLevel ?? 0));
+
+                    return (
+                      <Paper key={skillId} withBorder p="md" radius="md">
+                        <Group mb="md" align="center" justify="space-between">
+                          <Group>
+                            <ThemeIcon variant="light" color="blue" radius="xl">
+                              <IconTarget size={16} />
+                            </ThemeIcon>
+                            <div>
+                              <Text size="sm" fw={700} tt="uppercase" c="dimmed" style={{ fontSize: '10px', lineHeight: 1 }}>
+                                {category?.name || "Kategorie"} &rsaquo; {subCategory?.name || "Subkategorie"}
+                              </Text>
+                              <Text fw={600} size="lg" style={{ lineHeight: 1.2 }}>
+                                {skill?.name || "Unbekannter Skill"}
+                              </Text>
+                            </div>
+                          </Group>
+                          <Button
+                            variant="subtle"
+                            size="xs"
+                            leftSection={<IconPlus size={14} />}
+                            onClick={() => handleAddMeasure(skillId)}
+                            disabled={isFullyPlanned}
+                            title={isFullyPlanned ? "Skill bereits vollständig geplant" : "Maßnahme hinzufügen"}
+                          >
+                            Maßnahme
+                          </Button>
+                        </Group>
+
+                        <SimpleGrid cols={{ base: 1, md: 2, lg: 3 }} spacing="md">
+                          {sortedMeasures.map((measure) => (
+                            <MeasureCard
+                              key={measure.id}
+                              measure={measure}
+                              skill={skill}
+                              mentor={getMentor(measure.mentorId)}
+                              onEdit={() => handleEditMeasure(measure)}
+                              onDelete={() => handleDeleteMeasure(measure.id!)}
+                              onStatusChange={(status) =>
+                                handleMeasureStatusChange(measure.id!, status)
+                              }
+                              onUpdateProgress={(level) =>
+                                setAssessment(plan.employeeId, measure.skillId, level as any)
+                              }
+                            />
+                          ))}
+                        </SimpleGrid>
+                      </Paper>
+                    );
+                  })}
+                </Stack>
               )}
             </Stack>
           </Tabs.Panel>
@@ -476,6 +538,7 @@ export const PlanDetail: React.FC<PlanDetailProps> = ({
         employeeId={plan.employeeId}
         skillGaps={skillGaps}
         editingMeasure={editingMeasure}
+        initialSkillId={initialSkillId} // [NEW]
         onDelete={handleDeleteMeasure}
       />
     </Box>

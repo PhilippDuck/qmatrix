@@ -4,14 +4,14 @@
 
 - [ ] Mitarbeiter "deaktivieren" (nicht mehr sichtbar, und nicht Auswertung)
 - [ ] Drag and drop skill organigramm
-- [ ] Qualifizierungsplan - Maßnahmenkachel nur skill name aber keine kategore/Subkategorie
+- [x] Qualifizierungsplan - Maßnahmenkachel nur skill name aber keine kategore/Subkategorie
 - [ ] Dashboard überarbeiten?
 - [ ] Struktur Hauptkategorie/Unterkategorie/Skill aufbrechen. auch keine untergategorie möglich oder beliebig viele unterkategorien?
 - [ ] Alle vererbten skills sollen nochmal ein seperates solllevel eingestellt bekommen
 - [ ] Maßnahmen Daten CHeck von überschneidung
 - [ ] Inline bearbeitung
-- [ ] Mitarbeiter kontextmenü, bearbeiten, maßnahmeeinleiten
-- [ ] Standartseite der APP soll Matrix sein
+- [x] Mitarbeiter kontextmenü, bearbeiten, maßnahmeeinleiten
+- [x] Standartseite der APP soll Matrix sein
 
 ### Abgeschlossen
 

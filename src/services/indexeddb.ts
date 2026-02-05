@@ -89,7 +89,8 @@ export interface QualificationMeasure {
   id?: string;
   planId: string;            // Referenz zum QualificationPlan
   skillId: string;           // Welcher Skill wird trainiert
-  currentLevel: number;      // Ist-Level bei Erstellung
+  currentLevel: number;      // Ist-Level bei Erstellung (Snapshot)
+  startLevel: number;        // [NEW] Geplanter Start-Level der Maßnahme (für Ketten)
   targetLevel: number;       // Soll-Level (aus Rolle)
   type: 'internal' | 'external' | 'self_learning';
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { Badge, Text, HoverCard, Stack, Group, Divider, ThemeIcon, Box, SimpleGrid, Tooltip, ActionIcon } from "@mantine/core";
-import { IconBuilding, IconHistory, IconTrendingUp, IconTrendingDown, IconMinus, IconPencil, IconPlus } from "@tabler/icons-react";
+import { Badge, Text, HoverCard, Stack, Group, Divider, ThemeIcon, Box, SimpleGrid, Tooltip, ActionIcon, Menu } from "@mantine/core";
+import { IconBuilding, IconHistory, IconTrendingUp, IconTrendingDown, IconMinus, IconPencil, IconPlus, IconDotsVertical, IconCertificate } from "@tabler/icons-react";
 import { MATRIX_LAYOUT } from "../../constants/skillLevels";
 import { getScoreColor } from "../../utils/skillCalculations";
 import { Employee, Skill, Assessment, useData, AssessmentLogEntry } from "../../context/DataContext";
@@ -23,6 +23,7 @@ interface MatrixHeaderProps {
   showMaxValues: boolean;
   isEditMode: boolean;
   onAddEmployee: () => void;
+  onNavigate?: (tab: string, params?: any) => void;
 }
 
 const EmployeeInfoCard: React.FC<{
@@ -31,13 +32,15 @@ const EmployeeInfoCard: React.FC<{
   skills: Skill[];
   getAssessment: (empId: string, skillId: string) => Assessment | undefined;
   onEdit: () => void;
-}> = ({ emp, avg, skills, getAssessment, onEdit }) => {
+  onNavigate?: (tab: string, params?: any) => void;
+}> = ({ emp, avg, skills, getAssessment, onEdit, onNavigate }) => {
   const { getHistory, categories, subcategories, roles, qualificationMeasures, qualificationPlans } = useData();
   const { anonymizeName } = usePrivacy();
   const [history, setHistory] = useState<AssessmentLogEntry[]>([]);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [loadingHistory, setLoadingHistory] = useState(true);
 
+  // ... (useEffect remains same) ...
   useEffect(() => {
     getHistory(emp.id!).then(data => {
       setHistory(data.sort((a, b) => b.timestamp - a.timestamp).slice(0, 3));
@@ -54,6 +57,9 @@ const EmployeeInfoCard: React.FC<{
     };
   };
 
+  // ... (calculations remain same, skipping lines for brevity if possible, but replace tool needs context)
+  // I will assume the calculations block is unchanged and focus on the return render.
+
   // 1. Vielseitigkeit (Active Skills > 0)
   const employeeSkills = skills
     .map((skill) => ({
@@ -62,7 +68,7 @@ const EmployeeInfoCard: React.FC<{
     }))
     .filter((item) => item.assessment && item.assessment.level > 0);
 
-  const activeSkillCount = employeeSkills.length; // Vielseitigkeit
+  const activeSkillCount = employeeSkills.length;
 
   // 2. XP (Wissens-Volumen)
   const totalXP = employeeSkills.reduce((sum, item) => sum + (item.assessment?.level || 0), 0);
@@ -105,6 +111,9 @@ const EmployeeInfoCard: React.FC<{
     return plan && (m.status === "in_progress" || m.status === "pending");
   });
 
+  const hasActivePlan = qualificationPlans.some(p => p.employeeId === emp.id && (p.status === "active" || p.status === "draft"));
+  const isPlanEnabled = learningNeeds.length > 0 || hasActivePlan;
+
   return (
     <Stack gap="sm">
       <Group justify="space-between" align="start" wrap="nowrap">
@@ -135,9 +144,27 @@ const EmployeeInfoCard: React.FC<{
             )}
           </Stack>
         </Box>
-        <ActionIcon variant="subtle" color="gray" onClick={onEdit} title="Mitarbeiter bearbeiten">
-          <IconPencil size={16} />
-        </ActionIcon>
+        <Menu shadow="md" width={200} position="bottom-end">
+          <Menu.Target>
+            <ActionIcon variant="subtle" color="gray" title="Optionen">
+              <IconDotsVertical size={16} />
+            </ActionIcon>
+          </Menu.Target>
+
+          <Menu.Dropdown>
+            <Menu.Item leftSection={<IconPencil size={14} />} onClick={onEdit}>
+              Mitarbeiter bearbeiten
+            </Menu.Item>
+            <Menu.Item
+              leftSection={<IconCertificate size={14} />}
+              onClick={() => onNavigate?.('qualification', { employeeId: emp.id })}
+              disabled={!isPlanEnabled}
+              title={!isPlanEnabled ? "Keine Defizite vorhanden" : undefined}
+            >
+              Qualifizierungsplan
+            </Menu.Item>
+          </Menu.Dropdown>
+        </Menu>
       </Group>
 
       <Divider />
@@ -356,9 +383,10 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
   showMaxValues,
   isEditMode,
   onAddEmployee,
+  onNavigate,
 }) => {
   const { anonymizeName } = usePrivacy();
-  const { roles } = useData();
+  const { roles, qualificationPlans } = useData();
   const { cellSize, labelWidth, headerHeight } = MATRIX_LAYOUT;
 
   return (
@@ -537,6 +565,7 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
                   skills={skills}
                   getAssessment={getAssessment}
                   onEdit={() => onEditEmployee(emp.id!)}
+                  onNavigate={onNavigate}
                 />
               </HoverCard.Dropdown>
             </HoverCard>

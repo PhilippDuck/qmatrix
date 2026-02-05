@@ -99,8 +99,16 @@ function AppContent() {
   const computedColorScheme = useComputedColorScheme("light");
   const [activeTab, setActiveTab] = useLocalStorage({
     key: 'skillgrid-active-tab',
-    defaultValue: 'dashboard',
+    defaultValue: 'matrix',
   });
+
+  // Navigation params for cross-module jumping (e.g. Matrix -> QualPlan)
+  const [navParams, setNavParams] = useState(null);
+
+  const handleNavigate = (tab, params) => {
+    setNavParams(params);
+    setActiveTab(tab);
+  };
 
   // Title edit state
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -378,8 +386,8 @@ function AppContent() {
           }}
         >
           {activeTab === "dashboard" && <Dashboard />}
-          {activeTab === "matrix" && <SkillMatrix />}
-          {activeTab === "qualification" && <QualificationPlan />}
+          {activeTab === "matrix" && <SkillMatrix onNavigate={handleNavigate} />}
+          {activeTab === "qualification" && <QualificationPlan initialEmployeeId={navParams?.employeeId} onClearParams={() => setNavParams(null)} />}
           {activeTab === "data" && <UnifiedDataView />}
           {activeTab === "system" && <DataManagement />}
         </div>

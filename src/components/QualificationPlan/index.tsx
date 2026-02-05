@@ -55,7 +55,12 @@ const statusColors: Record<QualificationPlanType["status"], string> = {
   archived: "orange",
 };
 
-export const QualificationPlan: React.FC = () => {
+interface QualificationPlanProps {
+  initialEmployeeId?: string | null;
+  onClearParams?: () => void;
+}
+
+export const QualificationPlan: React.FC<QualificationPlanProps> = ({ initialEmployeeId, onClearParams }) => {
   const {
     qualificationPlans,
     qualificationMeasures,
@@ -79,6 +84,31 @@ export const QualificationPlan: React.FC = () => {
   const [filterEmployee, setFilterEmployee] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+
+  const handleViewPlan = (planId: string) => {
+    setSelectedPlanId(planId);
+    setActiveTab("detail");
+  };
+
+  // Handle cross-module navigation
+  useEffect(() => {
+    if (initialEmployeeId) {
+      // Check if active plan exists
+      const activePlan = qualificationPlans.find(p => p.employeeId === initialEmployeeId && (p.status === 'active' || p.status === 'draft'));
+      if (activePlan) {
+        handleViewPlan(activePlan.id!);
+      } else {
+        // Open creation drawer pre-filled
+        setEditingPlan(null); // Ensure "New" mode
+        openDrawer();
+      }
+
+      // Clear the params so this doesn't run again on next render/tab switch
+      if (onClearParams) {
+        onClearParams();
+      }
+    }
+  }, [initialEmployeeId, qualificationPlans, onClearParams]);
 
   useEffect(() => {
     if (activeTab && activeTab !== "detail") {
@@ -104,11 +134,6 @@ export const QualificationPlan: React.FC = () => {
 
   const handleArchivePlan = async (planId: string) => {
     await updateQualificationPlan(planId, { status: "archived" });
-  };
-
-  const handleViewPlan = (planId: string) => {
-    setSelectedPlanId(planId);
-    setActiveTab("detail");
   };
 
   const getFilteredPlans = (statusFilter?: QualificationPlanType["status"][]) => {
@@ -460,6 +485,7 @@ export const QualificationPlan: React.FC = () => {
         opened={drawerOpened}
         onClose={closeDrawer}
         editingPlan={editingPlan}
+        initialEmployeeId={initialEmployeeId}
       />
     </Box>
   );

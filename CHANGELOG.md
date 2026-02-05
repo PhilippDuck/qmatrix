@@ -1,6 +1,26 @@
 # Changelog
 
 
+## [2.6.3] - 2026-02-05
+
+### Neue Funktionen
+- **Startseite**: Die "Skill Matrix" ist nun die Standard-Startseite der Anwendung.
+- **Kontextmenü in der Matrix**: Das "Bearbeiten"-Icon im Mitarbeiter-Hover wurde durch ein erweitertes Drei-Punkte-Menü ersetzt.
+  - Zugriff auf "Mitarbeiter bearbeiten" und "Qualifizierungsplan".
+  - Der Eintrag "Qualifizierungsplan" ist intelligent deaktiviert, wenn keine Defizite oder aktiven Pläne vorliegen.
+- **Qualifizierungs-Ketten**: Maßnahmen können nun als Ketten angelegt werden (z.B. 0-50% -> 50-80%).
+  - Neuer Range-Slider im Formular erlaubt Definition von Start- und Ziel-Level.
+  - Automatische Vorschläge für den Start-Level basierend auf bestehenden Maßnahmen.
+- **Plan-Visualisierung**: Maßnahmen im Qualifizierungsplan sind nun übersichtlich nach Skills gruppiert und sortiert.
+- **Schnell-Aktionen**: Neuer "+" Button in den Skill-Gruppen erlaubt das direkte Hinzufügen von Folgemaßnahmen.
+
+### Verbesserungen & Fixes
+- **Navigation**: Nahtloser Wechsel von der Skill Matrix zum Qualifizierungsplan (öffnet automatisch den passenden Plan oder das Erstellungs-Fenster).
+- **Bereinigung**: Fehler behoben, bei dem sich der Plan-Drawer nach Navigation beim Tab-Wechsel ungewollt wieder öffnete.
+- **Filterung**: Im "Neue Maßnahme"-Dialog werden Skills ausgeblendet, die bereits vollständig verplant sind.
+
+---
+
 ## [2.6.2] - 2026-02-05
 
 ### Neue Funktionen

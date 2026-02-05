@@ -172,44 +172,51 @@ export const MeasureCard: React.FC<MeasureCardProps> = ({
 
       <Stack gap="sm" mt="md">
         {/* Level Progress */}
+        {/* Level Progress */}
         <div>
           <Group justify="space-between" mb={4}>
             <Text size="xs" c="dimmed">
-              Level-Fortschritt
+              Ziel-Bereich ({measure.startLevel ?? 0}% - {measure.targetLevel}%)
             </Text>
             <Group gap={4}>
               <Badge size="xs" color="gray" variant="light">
-                {localLevel}%
+                Start: {measure.startLevel ?? 0}%
               </Badge>
               <IconArrowRight size={10} />
               <Badge size="xs" color="blue" variant="light">
-                {measure.targetLevel}%
+                Ziel: {measure.targetLevel}%
               </Badge>
             </Group>
           </Group>
-          <Progress
-            value={measure.status === "completed" ? 100 : (localLevel / measure.targetLevel) * 100}
-            color={measure.status === "completed" ? "green" : "blue"}
-            size="sm"
-            radius="xl"
-          />
+          <Progress.Root size="sm" radius="xl">
+            <Progress.Section
+              value={
+                measure.status === "completed"
+                  ? 100
+                  : Math.max(0, Math.min(100, ((localLevel - (measure.startLevel ?? 0)) / (measure.targetLevel - (measure.startLevel ?? 0))) * 100))
+              }
+              color={measure.status === "completed" ? "green" : "blue"}
+            >
+              <Progress.Label>{localLevel}%</Progress.Label>
+            </Progress.Section>
+          </Progress.Root>
+
           <Group gap={4} mt="xs" grow>
-            {LEVELS.filter(l => l.value >= 0).map(level => {
-              const isSelected = localLevel === level.value;
-              const isDisabled = level.value > measure.targetLevel;
+            {LEVELS.filter(l => l.value >= (measure.startLevel ?? 0) && l.value <= measure.targetLevel).map(level => {
+              const isSelected = localLevel >= level.value;
+              const isCurrent = localLevel === level.value;
+
               return (
                 <Button
                   key={level.value}
                   size="compact-xs"
                   p={0}
-                  variant={isSelected ? "filled" : "default"}
+                  variant={isCurrent ? "filled" : "default"}
                   color={level.color}
-                  disabled={isDisabled}
                   onClick={() => handleLevelUpdate(level.value)}
                   style={{
-                    opacity: isDisabled ? 0.3 : 1,
-                    borderColor: isSelected ? undefined : `var(--mantine-color-${level.color}-4)`,
-                    color: isSelected ? undefined : `var(--mantine-color-${level.color}-7)`,
+                    borderColor: isCurrent ? undefined : `var(--mantine-color-${level.color}-4)`,
+                    color: isCurrent ? undefined : `var(--mantine-color-${level.color}-7)`,
                   }}
                 >
                   {level.value}%
