@@ -1,6 +1,19 @@
 # Changelog
 
 
+## [2.6.2] - 2026-02-05
+
+### Neue Funktionen
+- **Verbesserter Zeitplanungs-Picker**: Überarbeitete Datumsauswahl mit visuellem Range-Picker für Start- und Zieldatum.
+- **Belegungsanzeige**: Bereits belegte Zeiträume anderer Maßnahmen werden im Kalender rot markiert zur besseren Planung.
+- **Zeitraum-Badge**: Anzeige des gewählten Zeitraums als Badge über dem Datumsbereich.
+
+### Geändert
+- **Datepicker-Komponente**: Migration von einzelnen DateInput-Feldern zu DatePicker mit Range-Auswahl für intuitivere Bedienung.
+- **Datenkontext**: Verwendung von `qualificationMeasures` und `qualificationPlans` statt `getQualificationMeasuresForPlan` für bessere Datenfluss-Kontrolle.
+
+---
+
 ## [2.6.1] - 2026-02-05
 
 ### Neue Funktionen

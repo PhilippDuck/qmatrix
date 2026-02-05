@@ -17,7 +17,7 @@ import {
   Slider,
   Box,
 } from "@mantine/core";
-import { DateInput } from "@mantine/dates";
+import { DatePicker } from "@mantine/dates";
 import { useHotkeys } from "@mantine/hooks";
 import {
   IconPlus,
@@ -59,9 +59,24 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({
     addQualificationMeasure,
     updateQualificationMeasure,
     getPotentialMentors,
-    getQualificationMeasuresForPlan,
+    qualificationMeasures,
+    qualificationPlans,
   } = useData();
   const { anonymizeName } = usePrivacy();
+
+  // Get all measures for this employee (across all plans) to show occupied dates
+  const employeeMeasures = React.useMemo(() => {
+    const employeePlanIds = qualificationPlans
+      .filter((p) => p.employeeId === employeeId)
+      .map((p) => p.id);
+    return qualificationMeasures.filter(
+      (m) =>
+        employeePlanIds.includes(m.planId) &&
+        m.startDate &&
+        m.targetDate &&
+        m.id !== editingMeasure?.id // Exclude the measure being edited
+    );
+  }, [qualificationMeasures, qualificationPlans, employeeId, editingMeasure]);
 
   const [formData, setFormData] = useState({
     skillId: "",
@@ -425,28 +440,61 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({
 
         <Divider label="Zeitplanung" labelPosition="center" />
 
-        <Group grow>
-          <DateInput
-            label="Startdatum"
-            placeholder="Startdatum wählen"
-            value={formData.startDate || null}
-            onChange={(value) =>
-              setFormData({ ...formData, startDate: value || undefined })
-            }
-            clearable
-          />
+        <Paper p="md" withBorder radius="sm">
+          <Stack gap="xs">
+            <Group justify="space-between">
+              <Text size="sm" fw={500}>Zeitraum auswählen</Text>
+              {formData.startDate && formData.targetDate && (
+                <Badge variant="light" color="blue">
+                  {new Date(formData.startDate).toLocaleDateString("de-DE")} - {new Date(formData.targetDate).toLocaleDateString("de-DE")}
+                </Badge>
+              )}
+            </Group>
 
-          <DateInput
-            label="Zieldatum"
-            placeholder="Zieldatum wählen"
-            value={formData.targetDate || null}
-            onChange={(value) =>
-              setFormData({ ...formData, targetDate: value || undefined })
-            }
-            clearable
-            minDate={formData.startDate || undefined}
-          />
-        </Group>
+            {employeeMeasures.length > 0 && (
+              <Text size="xs" c="dimmed">
+                Rot markierte Bereiche sind bereits durch andere Maßnahmen belegt.
+              </Text>
+            )}
+
+            <Box style={{ display: "flex", justifyContent: "center" }}>
+              <DatePicker
+                type="range"
+                value={[formData.startDate || null, formData.targetDate || null]}
+                onChange={([start, end]) => {
+                  setFormData({
+                    ...formData,
+                    startDate: start || undefined,
+                    targetDate: end || undefined,
+                  });
+                }}
+                minDate={new Date()}
+                numberOfColumns={2}
+                getDayProps={(date) => {
+                  // Check if this date is within any existing measure's range
+                  const isOccupied = employeeMeasures.some((m) => {
+                    const start = new Date(m.startDate!);
+                    const end = new Date(m.targetDate!);
+                    start.setHours(0, 0, 0, 0);
+                    end.setHours(23, 59, 59, 999);
+                    const checkDate = new Date(date);
+                    checkDate.setHours(12, 0, 0, 0);
+                    return checkDate >= start && checkDate <= end;
+                  });
+
+                  return isOccupied
+                    ? {
+                        style: {
+                          backgroundColor: "var(--mantine-color-red-1)",
+                          color: "var(--mantine-color-red-9)",
+                        },
+                      }
+                    : {};
+                }}
+              />
+            </Box>
+          </Stack>
+        </Paper>
 
         <Textarea
           label="Notizen"
