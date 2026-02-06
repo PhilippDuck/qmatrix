@@ -12,6 +12,8 @@
 - [ ] Inline bearbeitung
 - [x] Mitarbeiter kontextmenü, bearbeiten, maßnahmeeinleiten
 - [x] Standartseite der APP soll Matrix sein
+- [ ] Metrik Matrix, Rollensoll erfüllung
+- [ ] Ausblenden von N/A Button
 
 ### Abgeschlossen
 
