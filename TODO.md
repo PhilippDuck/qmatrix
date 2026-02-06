@@ -3,20 +3,22 @@
 ## Verbesserungen
 
 - [ ] Mitarbeiter "deaktivieren" (nicht mehr sichtbar, und nicht Auswertung)
-- [ ] Drag and drop skill organigramm
-- [x] Qualifizierungsplan - Maßnahmenkachel nur skill name aber keine kategore/Subkategorie
 - [ ] Dashboard überarbeiten?
 - [ ] Struktur Hauptkategorie/Unterkategorie/Skill aufbrechen. auch keine untergategorie möglich oder beliebig viele unterkategorien?
 - [ ] Alle vererbten skills sollen nochmal ein seperates solllevel eingestellt bekommen
 - [ ] Maßnahmen Daten CHeck von überschneidung
 - [ ] Inline bearbeitung
-- [x] Mitarbeiter kontextmenü, bearbeiten, maßnahmeeinleiten
-- [x] Standartseite der APP soll Matrix sein
 - [ ] Metrik Matrix, Rollensoll erfüllung
 - [ ] Ausblenden von N/A Button
+- [ ] Drawer Speicherbuttons anordnung
+- [ ] wenn drawer "versehentlich" geschlossen wird (nicht über button) dann frage wirklich schließen?
+- [ ] Alle popup meldungen als Modal? nicht browser alert
 
 ### Abgeschlossen
 
+- [x] Mitarbeiter kontextmenü, bearbeiten, maßnahmeeinleiten
+- [x] Standartseite der APP soll Matrix sein
+- [x] Qualifizierungsplan - Maßnahmenkachel nur skill name aber keine kategore/Subkategorie
 - [x] Ein Nutzer soll mehrer Rollen einnehmen können
 - [x] Matrix: Rollenicon hinter Name
 - [x] Farben der iconbuttons in Matrix nicht so intensiv
@@ -31,6 +33,8 @@
 - [x] Maßnahme "Selbstlerner"
 
 ## Bugs
+
+- [ ] Neuer Mitarbeiter -> Rolle festgelegt (defizite) Kontextmenür Qualifizierungsplan ausgegraut
 
 ### Abgeschlossen
 
