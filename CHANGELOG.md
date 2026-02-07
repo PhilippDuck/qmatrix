@@ -8,6 +8,7 @@
   - Minimale Breite: 260px
   - Maximale Breite: 600px
   - Die Breite reagiert dynamisch auf das Ein- und Ausklappen von Kategorien.
+- **Unendliche Verschachtelung**: Es sind nun beliebig tiefe Unterkategorien möglich (Unterkategorie in Unterkategorie, etc.), die in der Matrix und im Manager korrekt dargestellt werden.
 - **Rekursives Einklappen**: Beim Einklappen einer Unterkategorie werden nun auch alle darin enthaltenen (rekursiven) Unterkategorien visuell ausgeblendet.
 
 ## [2.6.6] - 2026-02-05
