@@ -4,15 +4,16 @@
 
 - [ ] Mitarbeiter "deaktivieren" (nicht mehr sichtbar, und nicht Auswertung)
 - [ ] Dashboard überarbeiten?
-- [ ] Struktur Hauptkategorie/Unterkategorie/Skill aufbrechen. auch keine untergategorie möglich oder beliebig viele unterkategorien?
-- [ ] Alle vererbten skills sollen nochmal ein seperates solllevel eingestellt bekommen
+- [x] Struktur Hauptkategorie/Unterkategorie/Skill aufbrechen. auch keine untergategorie möglich oder beliebig viele unterkategorien?
+- [x] Alle vererbten skills sollen nochmal ein seperates solllevel eingestellt bekommen
 - [ ] Maßnahmen Daten CHeck von überschneidung
 - [ ] Inline bearbeitung
 - [ ] Metrik Matrix, Rollensoll erfüllung
-- [ ] Ausblenden von N/A Button
+- [x] Ausblenden von N/A Button
 - [ ] Drawer Speicherbuttons anordnung
-- [ ] wenn drawer "versehentlich" geschlossen wird (nicht über button) dann frage wirklich schließen?
+- [x] wenn drawer "versehentlich" geschlossen wird (nicht über button) dann frage wirklich schließen?
 - [ ] Alle popup meldungen als Modal? nicht browser alert
+- [ ] Solllevel Indikatoren auch besserer Tooltip
 
 ### Abgeschlossen
 
