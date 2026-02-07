@@ -25,6 +25,7 @@ interface MatrixHeaderProps {
   isEditMode: boolean;
   onAddEmployee: () => void;
   onNavigate?: (tab: string, params?: any) => void;
+  labelWidth?: number;
 }
 
 const EmployeeInfoCard: React.FC<{
@@ -345,10 +346,12 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
   isEditMode,
   onAddEmployee,
   onNavigate,
+  labelWidth,
 }) => {
   const { anonymizeName } = usePrivacy();
   const { roles, qualificationPlans } = useData();
-  const { cellSize, labelWidth, headerHeight } = MATRIX_LAYOUT;
+  const { cellSize, headerHeight } = MATRIX_LAYOUT;
+  const effectiveLabelWidth = labelWidth || MATRIX_LAYOUT.labelWidth;
 
   return (
     <div
@@ -361,7 +364,7 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
     >
       <div
         style={{
-          width: labelWidth,
+          width: effectiveLabelWidth,
           height: headerHeight,
           position: "sticky",
           left: 0,
@@ -376,6 +379,7 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
           fontSize: "11px",
           fontWeight: 600,
           textTransform: "uppercase",
+          transition: "width 0.2s ease",
         }}
       >
         Struktur / Team

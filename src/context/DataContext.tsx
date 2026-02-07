@@ -79,6 +79,7 @@ interface DataContextType {
   ) => Promise<void>;
   deleteSubCategory: (id: string) => Promise<void>;
   getSubCategoriesByCategory: (categoryId: string) => SubCategory[];
+  getSubCategoriesByParent: (parentSubCategoryId: string) => SubCategory[];
 
   // Skill methods
   addSkill: (skill: Omit<Skill, "id">) => Promise<void>;
@@ -320,7 +321,11 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
   };
 
   const getSubCategoriesByCategory = (categoryId: string): SubCategory[] => {
-    return subcategories.filter((sc) => sc.categoryId === categoryId);
+    return subcategories.filter((sc) => sc.categoryId === categoryId && !sc.parentSubCategoryId);
+  };
+
+  const getSubCategoriesByParent = (parentSubCategoryId: string): SubCategory[] => {
+    return subcategories.filter((sc) => sc.parentSubCategoryId === parentSubCategoryId);
   };
 
   // Skill methods
@@ -823,6 +828,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
         updateSubCategory,
         deleteSubCategory,
         getSubCategoriesByCategory,
+        getSubCategoriesByParent,
         addSkill,
         updateSkill,
         deleteSkill,

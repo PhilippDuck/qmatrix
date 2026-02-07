@@ -33,6 +33,7 @@ export const CategoryManager: React.FC = () => {
   const [formMode, setFormMode] = useState<FormMode>("category");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedSubCategory, setSelectedSubCategory] = useState<string | null>(null);
+  const [selectedParentSubCategory, setSelectedParentSubCategory] = useState<string | null>(null); // For creating nested subcategories
 
   // Form State
   const [inputValue, setInputValue] = useState("");
@@ -51,7 +52,8 @@ export const CategoryManager: React.FC = () => {
     initialValue: string = "",
     initialDescription: string = "",
     initialDeptId: string | null = null,
-    initialRoleIds: string[] = []
+    initialRoleIds: string[] = [],
+    initialParentSubId: string | null = null // New parameter
   ) => {
     setFormMode(mode);
     setEditingId(id);
@@ -60,6 +62,7 @@ export const CategoryManager: React.FC = () => {
     setSelectedDepartmentId(initialDeptId);
     setSelectedRoleIds(initialRoleIds);
     setSelectedSubCategoryIds([]); // Reset
+    setSelectedParentSubCategory(initialParentSubId); // Store parent context
     open();
   };
 
@@ -86,6 +89,7 @@ export const CategoryManager: React.FC = () => {
           })
           : await addSubCategory({
             categoryId: selectedCategory,
+            parentSubCategoryId: selectedParentSubCategory || undefined, // Use explicit parent if set
             name: inputValue,
             description: inputDescription,
           });
@@ -149,8 +153,9 @@ export const CategoryManager: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string | null>("list");
 
   // ... (keep existing helper consts)
+  // Get ALL subcategories for this category (recursive list building happens in component)
   const subCatsInCategory = selectedCategory
-    ? getSubCategoriesByCategory(selectedCategory)
+    ? subcategories.filter(s => s.categoryId === selectedCategory)
     : [];
   const skillsInSubCategory = selectedSubCategory
     ? getSkillsBySubCategory(selectedSubCategory)
@@ -230,6 +235,21 @@ export const CategoryManager: React.FC = () => {
     }
   };
 
+  // Derive Parent Context String for Drawer
+  let parentContextString: string | undefined;
+  if (formMode === "skill" && selectedSubCategory) {
+    const sub = subcategories.find(s => s.id === selectedSubCategory);
+    if (sub) parentContextString = `Gruppe: ${sub.name}`;
+  } else if (formMode === "subcategory") {
+    if (selectedParentSubCategory) {
+      const parent = subcategories.find(s => s.id === selectedParentSubCategory);
+      if (parent) parentContextString = `Übergeordnete Gruppe: ${parent.name}`;
+    } else if (selectedCategory) {
+      const cat = categories.find(c => c.id === selectedCategory);
+      if (cat) parentContextString = `Kategorie: ${cat.name}`;
+    }
+  }
+
   return (
     <Box style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column" }}>
       <Group justify="space-between" mb="lg">
@@ -298,6 +318,7 @@ export const CategoryManager: React.FC = () => {
               onEdit={(sub) => openForm("subcategory", sub.id!, sub.name, sub.description || "")}
               onDelete={deleteSubCategory}
               getSkillCount={(id) => getSkillsBySubCategory(id).length}
+              onAddNested={(parentId) => openForm("subcategory", null, "", "", null, [], parentId)} // New nested add
             />
 
             <SkillColumn
@@ -344,9 +365,9 @@ export const CategoryManager: React.FC = () => {
                 );
               }}
               onAddCategory={() => openForm("category")}
-              onAddSubCategory={(catId) => {
+              onAddSubCategory={(catId, parentSubId) => {
                 setSelectedCategory(catId);
-                openForm("subcategory");
+                openForm("subcategory", null, "", "", null, [], parentSubId);
               }}
               onAddSkill={(subCatId) => {
                 setSelectedSubCategory(subCatId);
@@ -382,6 +403,7 @@ export const CategoryManager: React.FC = () => {
         departments={departments}
         roles={roles}
         subcategories={subcategoryOptions}
+        parentContext={parentContextString}
       />
 
     </Box>

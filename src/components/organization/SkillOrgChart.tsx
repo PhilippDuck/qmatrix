@@ -66,7 +66,7 @@ interface SkillOrgChartProps {
   onEditSubCategory?: (subcategory: SubCategory) => void;
   onEditSkill?: (skill: Skill) => void;
   onAddCategory?: () => void;
-  onAddSubCategory?: (categoryId: string) => void;
+  onAddSubCategory?: (categoryId: string, parentSubId?: string) => void;
   onAddSkill?: (subcategoryId: string) => void;
   // Clipboard Props
   clipboardItem?: ClipboardItem | null;
@@ -438,43 +438,75 @@ const SkillOrgChart: React.FC<SkillOrgChartProps> = ({
   }, []);
 
   const trees = useMemo<HierarchyNode[]>(() => {
-    const categoryNodes: HierarchyNode[] = categories.map((cat) => {
-      const catSubcategories = subcategories.filter(
-        (sc) => sc.categoryId === cat.id,
-      );
 
-      const children: HierarchyNode[] = catSubcategories.map((sc) => {
-        const subSkills = skills.filter((s) => s.subCategoryId === sc.id);
+    // Recursive helper to build subcategory nodes and their children (subcategories and skills)
+    const buildSubcategoryNode = (sc: SubCategory): HierarchyNode => {
+      // 1. Find Child Subcategories
+      const childSubcats = subcategories
+        .filter(child => child.parentSubCategoryId === sc.id)
+        .sort((a, b) => a.name.localeCompare(b.name, 'de'));
 
-        const skillNodes: HierarchyNode[] = subSkills.map((s) => ({
-          type: "skill" as const,
-          id: s.id!,
-          name: s.name,
-          description: s.description,
-          data: s,
-          children: [],
-        }));
+      // 2. Find Skills for this Subcategory
+      const subSkills = skills.filter(s => s.subCategoryId === sc.id)
+        .sort((a, b) => a.name.localeCompare(b.name, 'de'));
 
-        if (onAddSkill) {
-          skillNodes.push({
-            type: "skill" as const,
-            id: `add-skill-${sc.id}`,
-            name: "Skill hinzufügen",
-            isAddNode: true,
-            parentId: sc.id!,
-            children: [],
-          });
-        }
+      const childrenNodes: HierarchyNode[] = [];
 
-        return {
+      // Add Child Subcategory Nodes (Recursive)
+      childrenNodes.push(...childSubcats.map(child => buildSubcategoryNode(child)));
+
+      // Add Skill Nodes
+      childrenNodes.push(...subSkills.map(s => ({
+        type: "skill" as const,
+        id: s.id!,
+        name: s.name,
+        description: s.description,
+        data: s,
+        children: [],
+      })));
+
+      // Add "Add Subcategory" Node (Nested)
+      if (onAddSubCategory) {
+        childrenNodes.push({
           type: "subcategory" as const,
-          id: sc.id!,
-          name: sc.name,
-          description: sc.description,
-          data: sc,
-          children: skillNodes,
-        };
-      });
+          id: `add-sub-${sc.id}-nested`,
+          name: "Bereich hinzufügen",
+          isAddNode: true,
+          parentId: sc.id!, // This is the parent SubCategory ID
+          data: { categoryId: sc.categoryId }, // Pass categoryId context if needed
+          children: [],
+        });
+      }
+
+      // Add "Add Skill" Node
+      if (onAddSkill) {
+        childrenNodes.push({
+          type: "skill" as const,
+          id: `add-skill-${sc.id}`,
+          name: "Skill hinzufügen",
+          isAddNode: true,
+          parentId: sc.id!,
+          children: [],
+        });
+      }
+
+      return {
+        type: "subcategory" as const,
+        id: sc.id!,
+        name: sc.name,
+        description: sc.description,
+        data: sc,
+        children: childrenNodes,
+      };
+    };
+
+    const categoryNodes: HierarchyNode[] = categories.map((cat) => {
+      // Find Top-Level Subcategories for this Category
+      const topLevelSubcats = subcategories
+        .filter((sc) => sc.categoryId === cat.id && !sc.parentSubCategoryId)
+        .sort((a, b) => a.name.localeCompare(b.name, 'de'));
+
+      const children: HierarchyNode[] = topLevelSubcats.map((sc) => buildSubcategoryNode(sc));
 
       if (onAddSubCategory) {
         children.push({
@@ -482,7 +514,7 @@ const SkillOrgChart: React.FC<SkillOrgChartProps> = ({
           id: `add-sub-${cat.id}`,
           name: "Bereich hinzufügen",
           isAddNode: true,
-          parentId: cat.id!,
+          parentId: cat.id!, // This is the Category ID
           children: [],
         });
       }
@@ -528,12 +560,19 @@ const SkillOrgChart: React.FC<SkillOrgChartProps> = ({
   const handleNodeClick = (node: HierarchyNode) => {
     if (node.isAddNode) {
       if (node.id === "add-root-category" && onAddCategory) onAddCategory();
-      else if (
-        node.id.startsWith("add-sub") &&
-        onAddSubCategory &&
-        node.parentId
-      )
-        onAddSubCategory(node.parentId);
+      else if (node.id.startsWith("add-sub") && onAddSubCategory && node.parentId) {
+        // Distinguish between adding to category (top level) or subcategory (nested)
+        if (node.id.includes("nested")) {
+          // Parent ID is the SubCategory ID
+          // We need the Category ID too. We passed it in `data`.
+          const catId = node.data?.categoryId;
+          // If catId is missing we can't proceed easily, but we should have it.
+          if (catId) onAddSubCategory(catId, node.parentId);
+        } else {
+          // Parent ID is the Category ID (Top Level)
+          onAddSubCategory(node.parentId);
+        }
+      }
       else if (node.id.startsWith("add-skill") && onAddSkill && node.parentId)
         onAddSkill(node.parentId);
       return;

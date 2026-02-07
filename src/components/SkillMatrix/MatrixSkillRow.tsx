@@ -24,6 +24,8 @@ interface MatrixSkillRowProps {
   showMaxValues: boolean;
   onEditSkill: (skillId: string) => void;
   isEditMode: boolean;
+  depth?: number;
+  labelWidth?: number;
 }
 
 export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = ({
@@ -42,9 +44,12 @@ export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = ({
   showMaxValues,
   onEditSkill,
   isEditMode,
+  depth = 0,
+  labelWidth,
 }) => {
   const { qualificationMeasures, qualificationPlans } = useData();
-  const { labelWidth, cellSize } = MATRIX_LAYOUT;
+  const { cellSize } = MATRIX_LAYOUT;
+  const effectiveLabelWidth = labelWidth || MATRIX_LAYOUT.labelWidth;
   const isRowHovered = hoveredSkillId === skill.id;
   const skillAvg = calculateSkillAverage(skill.id!);
 
@@ -64,8 +69,9 @@ export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = ({
     <div style={{ display: "flex" }}>
       <div
         style={{
-          width: labelWidth,
-          padding: "6px 12px 6px 44px",
+          width: effectiveLabelWidth,
+          padding: "6px 12px",
+          paddingLeft: `${44 + (depth * 24)}px`,
           position: "sticky",
           left: 0,
           zIndex: 5,
@@ -77,7 +83,7 @@ export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = ({
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          transition: "background-color 0.15s ease",
+          transition: "background-color 0.15s ease, width 0.2s ease",
         }}
       >
         <HoverCard width={280} shadow="md" withArrow openDelay={200}>

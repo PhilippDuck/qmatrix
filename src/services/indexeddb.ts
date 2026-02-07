@@ -19,7 +19,8 @@ export interface Category {
 
 export interface SubCategory {
   id?: string;
-  categoryId: string;
+  categoryId: string; // The root visual category
+  parentSubCategoryId?: string; // For nesting, if present
   name: string;
   description?: string;
   updatedAt?: number;
@@ -448,6 +449,15 @@ class IndexedDBService {
   }
 
   async deleteSubCategory(id: string): Promise<void> {
+    // First, find all child subcategories
+    const allSubs = await this.getSubCategories();
+    const children = allSubs.filter(s => s.parentSubCategoryId === id);
+
+    // Recursively delete children first
+    for (const child of children) {
+      if (child.id) await this.deleteSubCategory(child.id);
+    }
+
     // First, get all skills in this subcategory
     const skillsToDelete = await this.getSkillsBySubCategory(id);
 

@@ -102,7 +102,8 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
   // Skill Edit State
   // Entity Edit State (Skill, Category, Subcategory)
   const [editEntityId, setEditEntityId] = useState<string | null>(null);
-  const [editParentId, setEditParentId] = useState<string | null>(null); // For creating new items
+  const [editParentId, setEditParentId] = useState<string | null>(null); // Category ID
+  const [editParentSubId, setEditParentSubId] = useState<string | null>(null); // SubCategory ID (for nesting)
   const [editEntityType, setEditEntityType] = useState<'skill' | 'category' | 'subcategory'>('skill');
   const [editEntityName, setEditEntityName] = useState("");
   const [editEntityDescription, setEditEntityDescription] = useState("");
@@ -705,12 +706,13 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
     setEditDrawerOpened(true);
   };
 
-  const handleAddSubCategory = (categoryId: string) => {
+  const handleAddSubCategory = (categoryId: string, parentSubId?: string) => {
     setEditEntityId(null);
     setEditEntityType('subcategory');
     setEditEntityName("");
     setEditEntityDescription("");
     setEditParentId(categoryId);
+    setEditParentSubId(parentSubId || null);
     setEditDrawerOpened(true);
   };
 
@@ -790,6 +792,7 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
         if (originalSub) {
           await updateSubCategory(editEntityId, {
             categoryId: originalSub.categoryId,
+            parentSubCategoryId: originalSub.parentSubCategoryId, // Preserve parent if not changed (TODO: allow moving)
             name: editEntityName.trim(),
             description: editEntityDescription.trim(),
           });
@@ -805,6 +808,7 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
       } else if (editEntityType === 'subcategory' && editParentId) {
         await addSubCategory({
           categoryId: editParentId,
+          parentSubCategoryId: editParentSubId || undefined,
           name: editEntityName.trim(),
           description: editEntityDescription.trim(),
         });
@@ -846,6 +850,12 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
     if (editEntityType === 'subcategory') {
       // If creating, we have editParentId (categoryId)
       if (editParentId) {
+        // Check for nested subcategory parent
+        if (editParentSubId) {
+          const sub = subcategories.find(s => s.id === editParentSubId);
+          return sub ? `Übergeordnete Gruppe: ${sub.name}` : undefined;
+        }
+
         const cat = categories.find(c => c.id === editParentId);
         return cat ? `Kategorie: ${cat.name}` : undefined;
       }
@@ -853,6 +863,10 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
       if (editEntityId) {
         const sub = subcategories.find(s => s.id === editEntityId);
         if (sub) {
+          if (sub.parentSubCategoryId) {
+            const parentSub = subcategories.find(s => s.id === sub.parentSubCategoryId);
+            return parentSub ? `Übergeordnete Gruppe: ${parentSub.name}` : undefined;
+          }
           const cat = categories.find(c => c.id === sub.categoryId);
           return cat ? `Kategorie: ${cat.name}` : undefined;
         }
@@ -880,6 +894,59 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
     }
     return undefined;
   }, [editEntityType, editEntityId, editParentId, categories, subcategories, skills]);
+
+  // Dynamische Breite für die Label-Spalte berechnen
+  const responsiveLabelWidth = useMemo(() => {
+    let maxW = 260; // Min width aus Constants
+    const charW = 9; // Geschätzte Pixel pro Zeichen (für Segoe UI / System Font)
+
+    const calcW = (text: string, depth: number, type: 'cat' | 'sub' | 'skill') => {
+      let padding = 40; // Base padding + Icons
+      if (type === 'cat') padding += 0;
+      else if (type === 'sub') padding += (depth * 24);
+      else if (type === 'skill') padding += 20 + (depth * 24); // +20 indentation for skills
+
+      return padding + (text.length * charW) + 40; // + Buffer right
+    };
+
+    categories.forEach(cat => {
+      maxW = Math.max(maxW, calcW(cat.name, 0, 'cat'));
+
+      // If category collapsed, skip children
+      if (collapsedStates[cat.id!]) return;
+
+      // Rekursive Funktion für Subkategorien
+      const processSub = (subId: string, depth: number) => {
+        const sub = subcategories.find(s => s.id === subId);
+        if (!sub) return;
+
+        maxW = Math.max(maxW, calcW(sub.name, depth, 'sub'));
+
+        // If subcategory collapsed, skip processing its children (skills and nested subs)
+        if (collapsedStates[sub.id!]) return;
+
+        // Buttons: "Unterkategorie hinzufügen" ~25 chars, "Skill hinzufügen" ~16 chars
+        maxW = Math.max(maxW, calcW("Unterkategorie hinzufügen", depth, 'sub'));
+        maxW = Math.max(maxW, calcW("Skill hinzufügen", depth, 'sub'));
+
+        // Skills
+        const subSkills = skills.filter(s => s.subCategoryId === subId);
+        subSkills.forEach(sk => {
+          maxW = Math.max(maxW, calcW(sk.name, depth, 'skill'));
+        });
+
+        // Children
+        const children = subcategories.filter(s => s.parentSubCategoryId === subId);
+        children.forEach(c => processSub(c.id!, depth + 1));
+      };
+
+      // Root Subs of Category
+      const rootSubs = subcategories.filter(s => s.categoryId === cat.id && !s.parentSubCategoryId);
+      rootSubs.forEach(s => processSub(s.id!, 0));
+    });
+
+    return Math.min(600, maxW); // Max width limit
+  }, [categories, subcategories, skills, collapsedStates]);
 
   return (
     <Box
@@ -1264,6 +1331,7 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
                       setEmployeeDrawerOpened(true);
                     }}
                     onNavigate={onNavigate}
+                    labelWidth={responsiveLabelWidth}
                   />
                 </div>
 
@@ -1293,9 +1361,10 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
                     onEditCategory={handleEditCategory}
                     onEditSubcategory={handleEditSubcategory}
                     isEditMode={isEditMode}
-                    onAddSubcategory={() => handleAddSubCategory(cat.id!)}
+                    onAddSubcategory={(parentSubId) => handleAddSubCategory(cat.id!, parentSubId)}
                     onAddSkill={(subId) => handleOpenAddSkill(subId)}
                     skillSort={skillSort}
+                    labelWidth={responsiveLabelWidth}
                   />
                 ))}
 
@@ -1303,13 +1372,14 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
                   <div style={{ display: "flex", borderBottom: "1px solid var(--mantine-color-default-border)", backgroundColor: "var(--mantine-color-body)" }}>
                     <div
                       style={{
-                        width: MATRIX_LAYOUT.labelWidth,
+                        width: responsiveLabelWidth,
                         padding: "8px 12px",
                         position: "sticky",
                         left: 0,
                         zIndex: 10,
                         backgroundColor: "var(--mantine-color-body)",
                         borderRight: "1px solid var(--mantine-color-default-border)",
+                        transition: "width 0.2s ease",
                       }}
                     >
                       <Button

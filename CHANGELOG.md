@@ -1,6 +1,15 @@
 # Changelog
 
 
+## [2.6.7] - 2026-02-07
+
+### Verbesserungen & UI
+- **Dynamische Spaltenbreite**: Die erste Spalte ("Struktur / Team") passt sich nun automatisch an die Länge der Inhalte (Kategorien, Unterkategorien, Skills) sowie deren Einrückung an.
+  - Minimale Breite: 260px
+  - Maximale Breite: 600px
+  - Die Breite reagiert dynamisch auf das Ein- und Ausklappen von Kategorien.
+- **Rekursives Einklappen**: Beim Einklappen einer Unterkategorie werden nun auch alle darin enthaltenen (rekursiven) Unterkategorien visuell ausgeblendet.
+
 ## [2.6.6] - 2026-02-05
 
 ### Verbesserungen & UI

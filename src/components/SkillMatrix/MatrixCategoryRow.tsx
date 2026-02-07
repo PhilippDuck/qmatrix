@@ -35,9 +35,10 @@ interface MatrixCategoryRowProps {
   onEditCategory: (categoryId: string) => void;
   onEditSubcategory: (subcategoryId: string) => void;
   isEditMode: boolean;
-  onAddSubcategory: () => void;
+  onAddSubcategory: (parentSubId?: string) => void;
   onAddSkill: (subCategoryId: string) => void;
   skillSort: 'asc' | 'desc' | null;
+  labelWidth?: number;
 }
 
 
@@ -68,15 +69,17 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = ({
   onAddSubcategory,
   onAddSkill,
   skillSort,
+  labelWidth,
 }) => {
   const { anonymizeName } = usePrivacy();
   const isCatCollapsed = collapsedStates[category.id!];
-  const { cellSize, labelWidth } = MATRIX_LAYOUT;
+  const { cellSize } = MATRIX_LAYOUT;
+  const effectiveLabelWidth = labelWidth || MATRIX_LAYOUT.labelWidth;
   const [isLabelHovered, setIsLabelHovered] = useState(false);
 
   // Get subcategories for this category and sort them
   const categorySubcategories = [...subcategories.filter(
-    (s) => s.categoryId === category.id
+    (s) => s.categoryId === category.id && !s.parentSubCategoryId
   )].sort((a, b) => {
     if (skillSort) {
       // Sort by value
@@ -112,7 +115,7 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = ({
       >
         <div
           style={{
-            width: labelWidth,
+            width: effectiveLabelWidth,
             padding: "8px 12px",
             position: "sticky",
             left: 0,
@@ -122,6 +125,7 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = ({
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
+            transition: "width 0.2s ease",
           }}
           onMouseEnter={() => setIsLabelHovered(true)}
           onMouseLeave={() => setIsLabelHovered(false)}
@@ -312,13 +316,18 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = ({
                 key={sub.id}
                 columns={columns}
                 subcategory={sub}
+                allSubcategories={subcategories} // Pass all so it can find children if any (global or category scoped?)
+                // Actually we probably want to pass ALL available subcategories so it can find ANY child,
+                // even if that child technically belongs to the same parent category.
+                // `subcategories` prop passed to MatrixCategoryRow contains all subcategories (from context).
+                allSkills={skills} // Pass all skills
                 skills={subSkills}
                 employees={employees}
                 roles={roles}
-                isCollapsed={collapsedStates[sub.id!]}
+                collapsedStates={collapsedStates}
+                onToggleSubcategory={onToggleSubcategory}
                 hoveredSkillId={hoveredSkillId}
                 hoveredEmployeeId={hoveredEmployeeId}
-                onToggle={() => onToggleSubcategory(sub.id!)}
                 onSkillHover={onSkillHover}
                 onEmployeeHover={onEmployeeHover}
                 calculateAverage={calculateAverage}
@@ -331,7 +340,9 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = ({
                 onEditSubcategory={onEditSubcategory}
                 isEditMode={isEditMode}
                 onAddSkill={onAddSkill}
+                onAddSubcategory={onAddSubcategory} // Pass it down for children
                 skillSort={skillSort}
+                labelWidth={effectiveLabelWidth}
               />
             );
           })}
@@ -345,7 +356,7 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = ({
             >
               <div
                 style={{
-                  width: labelWidth,
+                  width: effectiveLabelWidth,
                   padding: "4px 12px 4px 24px",
                   position: "sticky",
                   left: 0,
@@ -358,7 +369,7 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = ({
                   variant="subtle"
                   size="sm"
                   color="blue"
-                  onClick={onAddSubcategory}
+                  onClick={() => onAddSubcategory()} // No parent ID for top-level subcategory
                   style={{ width: "100%", justifyContent: "flex-start" }}
                 >
                   <IconPlus size={14} style={{ marginRight: 8 }} />

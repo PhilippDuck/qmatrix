@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { Text, Group, ActionIcon, Badge, Stack, Tooltip, HoverCard } from "@mantine/core";
-import { IconPlus, IconMinus, IconTrophy, IconPencil, IconInfoCircle } from "@tabler/icons-react";
+import { Text, Group, ActionIcon, Badge, Stack, Tooltip, HoverCard, Button } from "@mantine/core";
+import { IconPlus, IconMinus, IconTrophy, IconPencil, IconInfoCircle, IconFolderPlus } from "@tabler/icons-react";
 import { MATRIX_LAYOUT } from "../../constants/skillLevels";
 import { getScoreColor, getMaxRoleTargetForSkill } from "../../utils/skillCalculations";
 import { InfoTooltip } from "../shared/InfoTooltip";
@@ -14,13 +14,15 @@ import { MatrixColumn } from "./types";
 interface MatrixSubcategoryRowProps {
   columns: MatrixColumn[];
   subcategory: SubCategory;
-  skills: Skill[];
+  allSubcategories: SubCategory[]; // Added: Pass all subcategories to find children
+  skills: Skill[]; // Skills directly in this subcategory
+  allSkills: Skill[]; // Added: Pass all skills to find descendants in children
   employees: Employee[];
   roles: EmployeeRole[];
-  isCollapsed: boolean;
+  collapsedStates: Record<string, boolean>;
   hoveredSkillId: string | null;
   hoveredEmployeeId: string | null;
-  onToggle: () => void;
+  onToggleSubcategory: (subcategoryId: string) => void;
   onSkillHover: (skillId: string | null) => void;
   onEmployeeHover: (employeeId: string | null) => void;
   calculateAverage: (skillIds: string[], employeeId?: string) => number | null;
@@ -34,17 +36,22 @@ interface MatrixSubcategoryRowProps {
   isEditMode: boolean;
   onAddSkill: (subCategoryId: string) => void;
   skillSort: 'asc' | 'desc' | null;
+  depth?: number;
+  onAddSubcategory: (parentSubId?: string) => void;
+  labelWidth?: number;
 }
 export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
   columns,
   subcategory,
+  allSubcategories,
   skills,
+  allSkills,
   employees,
   roles,
-  isCollapsed,
+  collapsedStates,
   hoveredSkillId,
   hoveredEmployeeId,
-  onToggle,
+  onToggleSubcategory,
   onSkillHover,
   onEmployeeHover,
   calculateAverage,
@@ -58,11 +65,31 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
   isEditMode,
   onAddSkill,
   skillSort,
+  depth = 0,
+  onAddSubcategory,
+  labelWidth,
 }) => {
   const { anonymizeName } = usePrivacy();
-  const { cellSize, labelWidth } = MATRIX_LAYOUT;
-  const subSkillIds = skills.map((s) => s.id!);
-  const subAvg = calculateAverage(subSkillIds);
+  const { cellSize } = MATRIX_LAYOUT;
+  const effectiveLabelWidth = labelWidth || MATRIX_LAYOUT.labelWidth;
+  const isCollapsed = collapsedStates[subcategory.id!] || false;
+
+  // Find child subcategories
+  const childSubcategories = allSubcategories.filter(s => s.parentSubCategoryId === subcategory.id)
+    .sort((a, b) => a.name.localeCompare(b.name, 'de'));
+
+  // Collect all skill IDs recursively (direct + descendants)
+  const getAllSkillIds = (subId: string): string[] => {
+    const directSkills = allSkills.filter(s => s.subCategoryId === subId).map(s => s.id!);
+    const children = allSubcategories.filter(s => s.parentSubCategoryId === subId);
+    const childSkills = children.flatMap(child => getAllSkillIds(child.id!));
+    return [...directSkills, ...childSkills];
+  };
+
+  const allDescendantSkillIds = getAllSkillIds(subcategory.id!);
+
+  // Use all descendants for average calculation
+  const subAvg = calculateAverage(allDescendantSkillIds);
   const [isLabelHovered, setIsLabelHovered] = useState(false);
 
   // Sort skills
@@ -77,8 +104,8 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
     return a.name.localeCompare(b.name, 'de');
   });
 
-  // Calculate Max Percentage across all employees (Highest Average)
-  const validAvgs = employees.map(e => calculateAverage(subSkillIds, e.id)).filter((a): a is number => a !== null);
+  // Calculate Max Percentage across all employees (Highest Average) using all descendants
+  const validAvgs = employees.map(e => calculateAverage(allDescendantSkillIds, e.id)).filter((a): a is number => a !== null);
   const maxAvg = validAvgs.length > 0 ? Math.max(...validAvgs) : null;
 
   return (
@@ -92,8 +119,9 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
       >
         <div
           style={{
-            width: labelWidth,
+            width: effectiveLabelWidth,
             padding: "6px 12px 6px 24px",
+            paddingLeft: `${24 + (depth * 24)}px`, // Dynamic indentation
             position: "sticky",
             left: 0,
             zIndex: 10,
@@ -102,19 +130,20 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
+            transition: "width 0.2s ease",
           }}
           onMouseEnter={() => setIsLabelHovered(true)}
           onMouseLeave={() => setIsLabelHovered(false)}
         >
           <Group gap="xs">
-            <ActionIcon size="xs" variant="transparent" onClick={onToggle}>
+            <ActionIcon size="xs" variant="transparent" onClick={() => onToggleSubcategory(subcategory.id!)}>
               {isCollapsed ? <IconPlus size={12} /> : <IconMinus size={12} />}
             </ActionIcon>
             <Text
               fw={500}
               size="xs"
               style={{ cursor: "pointer" }}
-              onClick={onToggle}
+              onClick={() => onToggleSubcategory(subcategory.id!)}
             >
               {subcategory.name}
             </Text>
@@ -172,7 +201,7 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
             let count = 0;
             col.employeeIds.forEach(eId => {
               const emp = employees.find(e => e.id === eId);
-              subSkillIds.forEach(sId => {
+              allDescendantSkillIds.forEach(sId => {
                 const roleTarget = getMaxRoleTargetForSkill(emp?.roles, sId, roles);
                 const asm = getAssessment(eId, sId);
                 const rawLevel = asm?.level ?? -1;
@@ -192,7 +221,7 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
               // Reuse logic - calculate average for this employee for these skills
               let eTotal = 0;
               let eCount = 0;
-              subSkillIds.forEach(sId => {
+              allDescendantSkillIds.forEach(sId => {
                 const roleTarget = getMaxRoleTargetForSkill(emp?.roles, sId, roles);
                 const asm = getAssessment(eId, sId);
                 const rawLevel = asm?.level ?? -1;
@@ -235,13 +264,13 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
           }
 
           const emp = col.employee;
-          const avg = calculateAverage(subSkillIds, emp.id);
+          const avg = calculateAverage(allDescendantSkillIds, emp.id);
 
           return (
             <BulkLevelMenu
               key={emp.id}
-              label={`Alle "${subcategory.name}" setzen für ${anonymizeName(emp.name, emp.id)}`}
-              onSelectLevel={(level) => onBulkSetLevel(emp.id!, subSkillIds, level)}
+              label={`Alle "${subcategory.name}" (inkl. Untergruppen) setzen für ${anonymizeName(emp.name, emp.id)}`}
+              onSelectLevel={(level) => onBulkSetLevel(emp.id!, allDescendantSkillIds, level)}
             >
               <div
                 onMouseEnter={() => onEmployeeHover(emp.id!)}
@@ -298,44 +327,130 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
               showMaxValues={showMaxValues}
               onEditSkill={onEditSkill}
               isEditMode={isEditMode}
+              depth={depth}
+              labelWidth={effectiveLabelWidth}
             />
           ))}
           {isEditMode && (
-            <div
-              style={{
-                display: "flex",
-                borderBottom: "1px solid var(--mantine-color-default-border)",
-                backgroundColor: "var(--mantine-color-body)",
-              }}
-            >
+            <>
+              {/* Add Skill Row */}
               <div
                 style={{
-                  width: labelWidth,
-                  padding: "4px 12px 4px 44px",
-                  position: "sticky",
-                  left: 0,
-                  zIndex: 5,
+                  display: "flex",
+                  borderBottom: "1px solid var(--mantine-color-default-border)",
                   backgroundColor: "var(--mantine-color-body)",
-                  borderRight: "1px solid var(--mantine-color-default-border)",
                 }}
               >
-                <ActionIcon
-                  variant="subtle"
-                  size="sm"
-                  color="blue"
-                  onClick={() => onAddSkill(subcategory.id!)}
-                  style={{ width: "100%", justifyContent: "flex-start" }}
+                <div
+                  style={{
+                    width: effectiveLabelWidth,
+                    padding: "4px 12px",
+                    paddingLeft: `${24 + (depth * 24) + 20}px`,
+                    position: "sticky",
+                    left: 0,
+                    zIndex: 5,
+                    backgroundColor: "var(--mantine-color-body)",
+                    borderRight: "1px solid var(--mantine-color-default-border)",
+                    transition: "width 0.2s ease",
+                  }}
                 >
-                  <IconPlus size={14} style={{ marginRight: 8 }} />
-                  <span style={{ fontSize: "12px" }}>Skill hinzufügen</span>
-                </ActionIcon>
+                  <Button
+                    variant="subtle"
+                    size="xs"
+                    color="blue"
+                    leftSection={<IconPlus size={14} />}
+                    onClick={() => onAddSkill(subcategory.id!)}
+                    fullWidth
+                    justify="flex-start"
+                    styles={{ section: { marginRight: 8 } }}
+                  >
+                    Skill hinzufügen
+                  </Button>
+                </div>
+                {/* Empty Space for Employee Columns */}
+                <div style={{ flex: 1 }} />
+                {/* Empty Space for Add Employee Column */}
+                <div style={{ width: cellSize }} />
               </div>
-              {/* Empty Space for Employee Columns */}
-              <div style={{ flex: 1 }} />
-              {/* Empty Space for Add Employee Column */}
-              <div style={{ width: cellSize }} />
-            </div>
+
+              {/* Add Subcategory Row */}
+              <div
+                style={{
+                  display: "flex",
+                  borderBottom: "1px solid var(--mantine-color-default-border)",
+                  backgroundColor: "var(--mantine-color-body)",
+                }}
+              >
+                <div
+                  style={{
+                    width: effectiveLabelWidth,
+                    padding: "4px 12px",
+                    paddingLeft: `${24 + (depth * 24) + 20}px`,
+                    position: "sticky",
+                    left: 0,
+                    zIndex: 5,
+                    backgroundColor: "var(--mantine-color-body)",
+                    borderRight: "1px solid var(--mantine-color-default-border)",
+                    transition: "width 0.2s ease",
+                  }}
+                >
+                  <Button
+                    variant="subtle"
+                    size="xs"
+                    color="violet"
+                    leftSection={<IconFolderPlus size={14} />}
+                    onClick={() => onAddSubcategory(subcategory.id!)}
+                    fullWidth
+                    justify="flex-start"
+                    styles={{ section: { marginRight: 8 } }}
+                  >
+                    Unterkategorie hinzufügen
+                  </Button>
+                </div>
+                {/* Empty Space for Employee Columns */}
+                <div style={{ flex: 1 }} />
+                {/* Empty Space for Add Employee Column */}
+                <div style={{ width: cellSize }} />
+              </div>
+            </>
           )}
+
+          {/* Recursive Child Subcategories */}
+          {childSubcategories.map((child) => {
+            const childSkills = allSkills.filter(s => s.subCategoryId === child.id);
+            return (
+              <MatrixSubcategoryRow
+                key={child.id}
+                columns={columns}
+                subcategory={child}
+                allSubcategories={allSubcategories}
+                skills={childSkills}
+                allSkills={allSkills}
+                employees={employees}
+                roles={roles}
+                collapsedStates={collapsedStates}
+                onToggleSubcategory={onToggleSubcategory}
+                hoveredSkillId={hoveredSkillId}
+                hoveredEmployeeId={hoveredEmployeeId}
+                onSkillHover={onSkillHover}
+                onEmployeeHover={onEmployeeHover}
+                calculateAverage={calculateAverage}
+                getAssessment={getAssessment}
+                onBulkSetLevel={onBulkSetLevel}
+                onLevelChange={onLevelChange}
+                onTargetLevelChange={onTargetLevelChange}
+                showMaxValues={showMaxValues}
+                onEditSkill={onEditSkill}
+                onEditSubcategory={onEditSubcategory}
+                isEditMode={isEditMode}
+                onAddSkill={onAddSkill}
+                skillSort={skillSort}
+                depth={depth + 1}
+                onAddSubcategory={onAddSubcategory}
+                labelWidth={labelWidth}
+              />
+            );
+          })}
         </>
       )}
     </div>
