@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Box, Group, Title, Tabs, Badge, ActionIcon, Tooltip, Text } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
+import { modals } from "@mantine/modals";
 import { IconList, IconHierarchy, IconClipboardOff } from "@tabler/icons-react";
 import { useData } from "../../context/DataContext";
 import { CategoryColumn } from "./CategoryColumn";
@@ -150,22 +151,31 @@ export const CategoryManager: React.FC = () => {
   const handleDelete = async () => {
     if (!editingId) return;
 
-    if (window.confirm("Sind Sie sicher, dass Sie diesen Eintrag löschen möchten?")) {
-      try {
-        if (formMode === "category") {
-          await deleteCategory(editingId);
-        } else if (formMode === "subcategory") {
-          await deleteSubCategory(editingId);
-        } else if (formMode === "skill") {
-          await deleteSkill(editingId);
+    modals.openConfirmModal({
+      title: 'Eintrag löschen',
+      centered: true,
+      children: (
+        <Text size="sm">
+          Sind Sie sicher, dass Sie diesen Eintrag löschen möchten?
+        </Text>
+      ),
+      labels: { confirm: 'Löschen', cancel: 'Abbrechen' },
+      confirmProps: { color: 'red' },
+      onConfirm: async () => {
+        try {
+          if (formMode === "category") {
+            await deleteCategory(editingId);
+          } else if (formMode === "subcategory") {
+            await deleteSubCategory(editingId);
+          } else if (formMode === "skill") {
+            await deleteSkill(editingId);
+          }
+          close();
+        } catch (error) {
+          console.error("Fehler beim Löschen:", error);
         }
-        close();
-        // Reset selection if needed, though state management above usually handles this 
-        // by checking if selected ID still exists in lists.
-      } catch (error) {
-        console.error("Fehler beim Löschen:", error);
-      }
-    }
+      },
+    });
   };
 
   const [activeTab, setActiveTab] = useState<string | null>("list");

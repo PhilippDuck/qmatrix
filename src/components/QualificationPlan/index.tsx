@@ -17,6 +17,7 @@ import {
   Divider,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
+import { modals } from "@mantine/modals";
 import {
   IconPlus,
   IconList,
@@ -106,9 +107,20 @@ export const QualificationPlan: React.FC<QualificationPlanProps> = ({ initialEmp
   };
 
   const handleDeletePlan = async (planId: string) => {
-    if (window.confirm("Möchten Sie diesen Qualifizierungsplan wirklich löschen?")) {
-      await deleteQualificationPlan(planId);
-    }
+    modals.openConfirmModal({
+      title: 'Plan löschen',
+      centered: true,
+      children: (
+        <Text size="sm">
+          Möchten Sie diesen Qualifizierungsplan wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.
+        </Text>
+      ),
+      labels: { confirm: 'Plan löschen', cancel: 'Abbrechen' },
+      confirmProps: { color: 'red' },
+      onConfirm: async () => {
+        await deleteQualificationPlan(planId);
+      },
+    });
   };
 
   const handleArchivePlan = async (planId: string) => {

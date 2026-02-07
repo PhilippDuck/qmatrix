@@ -16,6 +16,7 @@ import {
   ThemeIcon,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
+import { modals } from "@mantine/modals";
 import {
   IconArrowLeft,
   IconEdit,
@@ -115,9 +116,20 @@ export const PlanDetail: React.FC<PlanDetailProps> = ({
   };
 
   const handleDeleteMeasure = async (measureId: string) => {
-    if (window.confirm("Möchten Sie diese Maßnahme wirklich löschen?")) {
-      await deleteQualificationMeasure(measureId);
-    }
+    modals.openConfirmModal({
+      title: 'Maßnahme löschen',
+      centered: true,
+      children: (
+        <Text size="sm">
+          Möchten Sie diese Maßnahme wirklich löschen?
+        </Text>
+      ),
+      labels: { confirm: 'Löschen', cancel: 'Abbrechen' },
+      confirmProps: { color: 'red' },
+      onConfirm: async () => {
+        await deleteQualificationMeasure(measureId);
+      },
+    });
   };
 
   const handleMeasureStatusChange = async (

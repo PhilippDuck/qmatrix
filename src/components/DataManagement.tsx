@@ -34,6 +34,8 @@ import {
 import { useData, MergeReport, MergeDiff, MergeItemDiff } from "../context/DataContext";
 import { generateQuarterlyReport } from "../services/pdfReportService";
 import { useDisclosure } from "@mantine/hooks";
+import { modals } from "@mantine/modals";
+import { notifications } from "@mantine/notifications";
 
 interface ActionInfo {
   type: string;
@@ -85,10 +87,10 @@ export const DataManagement = () => {
       const text = await file.text();
       await importData(text);
       updateTimestamp("Import");
-      alert("Daten erfolgreich importiert!");
-      window.location.reload();
+      notifications.show({ title: 'Erfolg', message: 'Daten erfolgreich importiert! Seite wird neu geladen...', color: 'green' });
+      setTimeout(() => window.location.reload(), 1500);
     } catch (error: any) {
-      alert("Import fehlgeschlagen: " + error.message);
+      notifications.show({ title: 'Import fehlgeschlagen', message: error.message, color: 'red' });
     }
   };
 
@@ -111,7 +113,7 @@ export const DataManagement = () => {
       setSelectedIds(autoSelected);
       openDiff();
     } catch (error: any) {
-      alert("Fehler beim Analysieren: " + error.message);
+      notifications.show({ title: 'Fehler', message: 'Fehler beim Analysieren: ' + error.message, color: 'red' });
     } finally {
       setIsMerging(false);
     }
@@ -127,7 +129,7 @@ export const DataManagement = () => {
       closeDiff();
       openResult();
     } catch (error: any) {
-      alert("Fehler beim Abgleich: " + error.message);
+      notifications.show({ title: 'Fehler', message: 'Fehler beim Abgleich: ' + error.message, color: 'red' });
     } finally {
       setIsMerging(false);
     }
@@ -148,20 +150,27 @@ export const DataManagement = () => {
   };
 
   const handleReset = async () => {
-    if (
-      window.confirm(
-        "ACHTUNG: Möchten Sie wirklich ALLE Daten löschen? Dies kann nicht rückgängig gemacht werden!",
-      )
-    ) {
-      try {
-        await clearAllData(); // Use the new clearAllData function from context
-        updateTimestamp("Reset");
-        alert("Datenbank wurde vollständig geleert.");
-        window.location.reload();
-      } catch (error) {
-        alert("Fehler beim Zurücksetzen.");
-      }
-    }
+    modals.openConfirmModal({
+      title: 'System zurücksetzen',
+      centered: true,
+      children: (
+        <Text size="sm">
+          ACHTUNG: Möchten Sie wirklich ALLE Daten löschen? Dies kann nicht rückgängig gemacht werden!
+        </Text>
+      ),
+      labels: { confirm: 'Alles löschen', cancel: 'Abbrechen' },
+      confirmProps: { color: 'red' },
+      onConfirm: async () => {
+        try {
+          await clearAllData();
+          updateTimestamp("Reset");
+          notifications.show({ title: 'Zurückgesetzt', message: 'Datenbank wurde vollständig geleert.', color: 'blue' });
+          setTimeout(() => window.location.reload(), 1000);
+        } catch (error) {
+          notifications.show({ title: 'Fehler', message: 'Fehler beim Zurücksetzen.', color: 'red' });
+        }
+      },
+    });
   };
 
   const handleGenerateReport = async () => {
@@ -170,8 +179,9 @@ export const DataManagement = () => {
       const data = await exportData(); // Re-use exportData to get the full snapshot
       generateQuarterlyReport(data, parseInt(reportYear), parseInt(reportQuarter), projectTitle);
       updateTimestamp("Report");
+      notifications.show({ title: 'Erfolg', message: 'Bericht wurde erstellt.', color: 'green' });
     } catch (error: any) {
-      alert("Fehler beim Erstellen des Berichts: " + error.message);
+      notifications.show({ title: 'Fehler', message: 'Fehler beim Erstellen des Berichts: ' + error.message, color: 'red' });
     } finally {
       setIsGeneratingReport(false);
     }

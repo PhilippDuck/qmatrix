@@ -13,6 +13,8 @@ import {
   Modal,
 } from "@mantine/core";
 import { useHotkeys } from "@mantine/hooks";
+import { modals } from "@mantine/modals";
+import { notifications } from "@mantine/notifications";
 import { IconPlus, IconHistory, IconUser } from "@tabler/icons-react";
 import { HistoryTimeline } from "./HistoryTimeline";
 import { useData } from "../../context/DataContext";
@@ -68,7 +70,11 @@ export const EmployeeDrawer: React.FC<EmployeeDrawerProps> = ({
       );
 
       if (isDuplicate) {
-        alert("Ein Mitarbeiter mit diesem Namen existiert bereits.");
+        notifications.show({
+          title: 'Fehler',
+          message: 'Ein Mitarbeiter mit diesem Namen existiert bereits.',
+          color: 'red',
+        });
         return;
       }
 
@@ -96,17 +102,28 @@ export const EmployeeDrawer: React.FC<EmployeeDrawerProps> = ({
   const handleDelete = async () => {
     if (!employeeId || !onDelete) return;
 
-    if (window.confirm("Sind Sie sicher, dass Sie diesen Mitarbeiter löschen möchten?")) {
-      setLoading(true);
-      try {
-        await onDelete(employeeId);
-        onClose();
-      } catch (error) {
-        console.error("Fehler beim Löschen:", error);
-      } finally {
-        setLoading(false);
-      }
-    }
+    modals.openConfirmModal({
+      title: 'Mitarbeiter löschen',
+      centered: true,
+      children: (
+        <Text size="sm">
+          Sind Sie sicher, dass Sie diesen Mitarbeiter löschen möchten?
+        </Text>
+      ),
+      labels: { confirm: 'Löschen', cancel: 'Abbrechen' },
+      confirmProps: { color: 'red' },
+      onConfirm: async () => {
+        setLoading(true);
+        try {
+          await onDelete(employeeId);
+          onClose();
+        } catch (error) {
+          console.error("Fehler beim Löschen:", error);
+        } finally {
+          setLoading(false);
+        }
+      },
+    });
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

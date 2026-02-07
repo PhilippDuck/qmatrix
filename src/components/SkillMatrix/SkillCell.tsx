@@ -81,66 +81,70 @@ export const SkillCell: React.FC<SkillCellProps> = ({
           </Badge>
           {/* Individual Target: Below (Orange) */}
           {isBelowTarget && (
-            <div
-              title={`Individuelles Ziel: ${targetLevel}% (Defizit)`}
-              style={{
-                position: "absolute",
-                bottom: 2,
-                right: 2,
-                width: 0,
-                height: 0,
-                borderLeft: "6px solid transparent",
-                borderBottom: "6px solid var(--mantine-color-orange-filled)",
-              }}
-            />
+            <Tooltip label={`Individuelles Ziel: ${targetLevel}% (Defizit)`} position="top" withArrow withinPortal>
+              <div
+                style={{
+                  position: "absolute",
+                  bottom: 2,
+                  right: 2,
+                  width: 0,
+                  height: 0,
+                  borderLeft: "6px solid transparent",
+                  borderBottom: "6px solid var(--mantine-color-orange-filled)",
+                }}
+              />
+            </Tooltip>
           )}
           {/* Individual Target: Met/Above (Green) */}
           {isAtOrAboveTarget && (
-            <div
-              title={`Individuelles Ziel: ${targetLevel}% (Erreicht)`}
-              style={{
-                position: "absolute",
-                bottom: 2,
-                right: 2,
-                width: 0,
-                height: 0,
-                borderLeft: "6px solid transparent",
-                borderBottom: "6px solid var(--mantine-color-green-filled)",
-              }}
-            />
+            <Tooltip label={`Individuelles Ziel: ${targetLevel}% (Erreicht)`} position="top" withArrow withinPortal>
+              <div
+                style={{
+                  position: "absolute",
+                  bottom: 2,
+                  right: 2,
+                  width: 0,
+                  height: 0,
+                  borderLeft: "6px solid transparent",
+                  borderBottom: "6px solid var(--mantine-color-green-filled)",
+                }}
+              />
+            </Tooltip>
           )}
 
           {/* Role Target: Below (Orange) */}
           {isBelowRoleTarget && (
-            <div
-              title={`Rolle fordert: ${roleTargetLevel}% (Defizit)`}
-              style={{
-                position: "absolute",
-                top: 2,
-                right: 2,
-                width: 0,
-                height: 0,
-                borderLeft: "6px solid transparent",
-                borderTop: "6px solid var(--mantine-color-orange-filled)",
-                zIndex: 10,
-              }}
-            />
+            <Tooltip label={`Rolle fordert: ${roleTargetLevel}% (Defizit)`} position="top" withArrow withinPortal>
+              <div
+                style={{
+                  position: "absolute",
+                  top: 2,
+                  right: 2,
+                  width: 0,
+                  height: 0,
+                  borderLeft: "6px solid transparent",
+                  borderTop: "6px solid var(--mantine-color-orange-filled)",
+                  zIndex: 10,
+                }}
+              />
+            </Tooltip>
           )}
           {/* Role Target: Met/Above (Green) */}
           {isAtOrAboveRoleTarget && (
-            <div
-              title={`Rolle fordert: ${roleTargetLevel}% (Erreicht)`}
-              style={{
-                position: "absolute",
-                top: 2,
-                right: 2,
-                width: 0,
-                height: 0,
-                borderLeft: "6px solid transparent",
-                borderTop: "6px solid var(--mantine-color-green-filled)",
-                zIndex: 10,
-              }}
-            />
+            <Tooltip label={`Rolle fordert: ${roleTargetLevel}% (Erreicht)`} position="top" withArrow withinPortal>
+              <div
+                style={{
+                  position: "absolute",
+                  top: 2,
+                  right: 2,
+                  width: 0,
+                  height: 0,
+                  borderLeft: "6px solid transparent",
+                  borderTop: "6px solid var(--mantine-color-green-filled)",
+                  zIndex: 10,
+                }}
+              />
+            </Tooltip>
           )}
 
           {/* Active Measure Indicator (Pulsing Dot) */}

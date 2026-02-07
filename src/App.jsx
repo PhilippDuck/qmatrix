@@ -49,8 +49,11 @@ import { QualificationPlan } from "./components/QualificationPlan";
 import { WelcomeModal } from "./components/WelcomeModal";
 import { ChangelogModal } from "./components/ChangelogModal";
 import { PrivacyProvider, usePrivacy } from "./context/PrivacyContext";
+import { ModalsProvider } from "@mantine/modals";
+import { Notifications } from "@mantine/notifications";
 import "@mantine/core/styles.css";
 import "@mantine/dates/styles.css";
+import "@mantine/notifications/styles.css";
 
 const theme = createTheme({
   primaryColor: "blue",
@@ -426,11 +429,14 @@ function App() {
 
   return (
     <MantineProvider theme={theme} defaultColorScheme={colorScheme}>
-      <PrivacyProvider>
-        <DataProvider>
-          <AppContent />
-        </DataProvider>
-      </PrivacyProvider>
+      <Notifications />
+      <ModalsProvider>
+        <PrivacyProvider>
+          <DataProvider>
+            <AppContent />
+          </DataProvider>
+        </PrivacyProvider>
+      </ModalsProvider>
     </MantineProvider>
   );
 }

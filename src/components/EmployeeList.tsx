@@ -10,6 +10,7 @@ import {
   Select,
 } from "@mantine/core";
 import { useDisclosure, useHotkeys } from "@mantine/hooks";
+import { modals } from "@mantine/modals";
 import { IconPlus, IconEdit, IconTrash, IconUser } from "@tabler/icons-react";
 import { useData } from "../context/DataContext";
 import { usePrivacy } from "../context/PrivacyContext";
@@ -59,13 +60,24 @@ export const EmployeeList: React.FC = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (window.confirm("Mitarbeiter wirklich löschen?")) {
-      try {
-        await deleteEmployee(id);
-      } catch (error) {
-        console.error("Fehler beim Löschen:", error);
-      }
-    }
+    modals.openConfirmModal({
+      title: 'Mitarbeiter löschen',
+      centered: true,
+      children: (
+        <Text size="sm">
+          Mitarbeiter wirklich löschen?
+        </Text>
+      ),
+      labels: { confirm: 'Löschen', cancel: 'Abbrechen' },
+      confirmProps: { color: 'red' },
+      onConfirm: async () => {
+        try {
+          await deleteEmployee(id);
+        } catch (error) {
+          console.error("Fehler beim Löschen:", error);
+        }
+      },
+    });
   };
 
   const filteredEmployees = employees.filter((emp) => {

@@ -1,6 +1,15 @@
 # Changelog
 
 
+## [2.7.1] - 2026-02-07
+
+### Verbesserungen & UI
+- **Modern UI Dialogs**: Alle nativen Browser-Dialoge (`alert`, `confirm`) wurden durch integrierte Mantine Modals und Notifications ersetzt. Dies sorgt für ein einheitliches und modernes Design in der gesamten Anwendung.
+  - Betrifft: Mitarbeiter löschen/erstellen, Daten-Import/Export/Reset, Kategorien-Verwaltung, Qualifizierungspläne.
+
+### Wartung
+- **Dependencies**: Aktualisierung aller Mantine-Pakete auf die neueste Version zur Behebung von Konflikten bei Peer-Dependencies.
+
 ## [2.7.0] - 2026-02-07
 
 ### Neue Funktionen
