@@ -12,6 +12,7 @@ import {
   Badge,
   Box,
   Checkbox,
+  Modal,
 } from "@mantine/core";
 import { useHotkeys } from "@mantine/hooks";
 import { IconPlus, IconAlertCircle, IconTarget, IconUser } from "@tabler/icons-react";
@@ -107,27 +108,47 @@ export const PlanForm: React.FC<PlanFormProps> = ({
   }));
 
   // Reset form when opened or editing plan changes
+  // Unsaved Changes Logic
+  const [confirmationOpen, setConfirmationOpen] = useState(false);
+  const [initialFormData, setInitialFormData] = useState(formData);
+
   useEffect(() => {
     if (opened) {
       if (editingPlan) {
-        setFormData({
+        const initial = {
           employeeId: editingPlan.employeeId,
           targetRoleId: editingPlan.targetRoleId || "",
           status: editingPlan.status,
           notes: editingPlan.notes || "",
-        });
+        };
+        setFormData(initial);
+        setInitialFormData(initial);
       } else {
-        setFormData({
+        const initial = {
           employeeId: initialEmployeeId || "",
           targetRoleId: "",
-          status: "draft",
+          status: "draft" as QualificationPlan["status"],
           notes: "",
-        });
+        };
+        setFormData(initial);
+        setInitialFormData(initial);
       }
     }
   }, [opened, editingPlan, initialEmployeeId]);
 
-  // Update skill gaps when employee or target role changes
+  const hasChanges = () => {
+    return JSON.stringify(formData) !== JSON.stringify(initialFormData);
+  };
+
+  const handleCloseAttempt = () => {
+    if (hasChanges()) {
+      setConfirmationOpen(true);
+    } else {
+      onClose();
+    }
+  };
+
+
   // Update skill gaps when employee or target role changes
   useEffect(() => {
     if (formData.employeeId) {
@@ -209,137 +230,166 @@ export const PlanForm: React.FC<PlanFormProps> = ({
   const selectedRole = roles.find((r) => r.id === formData.targetRoleId);
 
   return (
-    <Drawer
-      opened={opened}
-      onClose={onClose}
-      position="right"
-      size="lg"
-      overlayProps={{ backgroundOpacity: 0.5, blur: 4 }}
-      title={
-        <Text fw={700} size="lg">
-          {isEditing ? "Qualifizierungsplan bearbeiten" : "Neuen Qualifizierungsplan erstellen"}
+    <>
+      <Drawer
+        opened={opened}
+        onClose={handleCloseAttempt}
+        position="right"
+        size="lg"
+        overlayProps={{ backgroundOpacity: 0.5, blur: 4 }}
+        title={
+          <Text fw={700} size="lg">
+            {isEditing ? "Qualifizierungsplan bearbeiten" : "Neuen Qualifizierungsplan erstellen"}
+          </Text>
+        }
+      >
+        <Stack gap="md">
+          <Divider label="Grunddaten" labelPosition="center" />
+
+          <Select
+            label="Mitarbeiter"
+            placeholder="Mitarbeiter auswählen"
+            leftSection={<IconUser size={16} />}
+            data={selectData}
+            value={formData.employeeId}
+            onChange={(value) =>
+              setFormData({ ...formData, employeeId: value || "" })
+            }
+            searchable
+            required
+            disabled={isEditing}
+          />
+          <Checkbox
+            label="Nur Mitarbeiter mit aktuellen Defiziten anzeigen"
+            checked={filterDeficits}
+            onChange={(event) => setFilterDeficits(event.currentTarget.checked)}
+            mb="sm"
+            size="xs"
+          />
+
+          <Select
+            label="Zielrolle (Optional)"
+            placeholder="Keine Zielrolle (Individuelle Entwicklung)"
+            leftSection={<IconTarget size={16} />}
+            data={roles.map((r) => ({ value: r.id!, label: r.name }))}
+            value={formData.targetRoleId}
+            onChange={(value) =>
+              setFormData({ ...formData, targetRoleId: value || "" })
+            }
+            searchable
+            clearable
+            description={
+              selectedEmployee?.roles && selectedEmployee.roles.length > 0
+                ? `Aktuelle Rollen: ${selectedEmployee.roles.join(", ")}`
+                : "Wählen Sie eine Zielrolle oder lassen Sie das Feld leer für individuelle Ziele."
+            }
+          />
+
+          <Select
+            label="Status"
+            data={[
+              { value: "draft", label: "Entwurf" },
+              { value: "active", label: "Aktiv" },
+              { value: "completed", label: "Abgeschlossen" },
+              { value: "archived", label: "Archiviert" },
+            ]}
+            value={formData.status}
+            onChange={(value) =>
+              setFormData({
+                ...formData,
+                status: (value as QualificationPlan["status"]) || "draft",
+              })
+            }
+          />
+
+          <Textarea
+            label="Notizen"
+            placeholder="Optionale Notizen zum Plan..."
+            value={formData.notes}
+            onChange={(e) =>
+              setFormData({ ...formData, notes: e.currentTarget.value })
+            }
+            minRows={3}
+          />
+
+          {formData.employeeId && (
+            <>
+              <Divider
+                label={
+                  <Group gap="xs">
+                    <Text>Defizit-Analyse</Text>
+                    {skillGaps.length > 0 && (
+                      <Badge color="red" size="sm">
+                        {skillGaps.length} Defizite
+                      </Badge>
+                    )}
+                  </Group>
+                }
+                labelPosition="center"
+              />
+
+              {skillGaps.length === 0 ? (
+                <Alert color="green" icon={<IconAlertCircle size={16} />}>
+                  {formData.targetRoleId
+                    ? (roles.find(r => r.id === formData.targetRoleId)?.requiredSkills?.length
+                      ? "Keine Skill-Defizite gefunden! Der Mitarbeiter erfüllt bereits alle Anforderungen der Zielrolle."
+                      : "Diese Rolle hat keine Skill-Anforderungen definiert.")
+                    : "Keine Defizite gefunden. (Basierend auf individuell festgelegten Soll-Werten)"}
+                </Alert>
+              ) : (
+                <Box style={{ maxHeight: 400, overflowY: "auto" }}>
+                  <SkillGapAnalysis
+                    gaps={skillGaps}
+                    employeeId={formData.employeeId}
+                    compact
+                  />
+                </Box>
+              )}
+            </>
+          )}
+
+          <Group justify="flex-end" mt="xl">
+            <Button variant="subtle" color="gray" onClick={handleCloseAttempt}>
+              Abbrechen
+            </Button>
+            <Button
+              onClick={handleSave}
+              loading={loading}
+              disabled={!formData.employeeId}
+              leftSection={<IconPlus size={16} />}
+            >
+              {isEditing ? "Aktualisieren" : "Plan erstellen"}
+            </Button>
+          </Group>
+        </Stack>
+      </Drawer>
+      <Modal
+        opened={confirmationOpen}
+        onClose={() => setConfirmationOpen(false)}
+        title="Ungespeicherte Änderungen"
+        centered
+      >
+        <Text size="sm" mb="lg">
+          Du hast ungespeicherte Änderungen. Möchtest du diese speichern oder verwerfen?
         </Text>
-      }
-    >
-      <Stack gap="md">
-        <Divider label="Grunddaten" labelPosition="center" />
-
-        <Select
-          label="Mitarbeiter"
-          placeholder="Mitarbeiter auswählen"
-          leftSection={<IconUser size={16} />}
-          data={selectData}
-          value={formData.employeeId}
-          onChange={(value) =>
-            setFormData({ ...formData, employeeId: value || "" })
-          }
-          searchable
-          required
-          disabled={isEditing}
-        />
-        <Checkbox
-          label="Nur Mitarbeiter mit aktuellen Defiziten anzeigen"
-          checked={filterDeficits}
-          onChange={(event) => setFilterDeficits(event.currentTarget.checked)}
-          mb="sm"
-          size="xs"
-        />
-
-        <Select
-          label="Zielrolle (Optional)"
-          placeholder="Keine Zielrolle (Individuelle Entwicklung)"
-          leftSection={<IconTarget size={16} />}
-          data={roles.map((r) => ({ value: r.id!, label: r.name }))}
-          value={formData.targetRoleId}
-          onChange={(value) =>
-            setFormData({ ...formData, targetRoleId: value || "" })
-          }
-          searchable
-          clearable
-          description={
-            selectedEmployee?.roles && selectedEmployee.roles.length > 0
-              ? `Aktuelle Rollen: ${selectedEmployee.roles.join(", ")}`
-              : "Wählen Sie eine Zielrolle oder lassen Sie das Feld leer für individuelle Ziele."
-          }
-        />
-
-        <Select
-          label="Status"
-          data={[
-            { value: "draft", label: "Entwurf" },
-            { value: "active", label: "Aktiv" },
-            { value: "completed", label: "Abgeschlossen" },
-            { value: "archived", label: "Archiviert" },
-          ]}
-          value={formData.status}
-          onChange={(value) =>
-            setFormData({
-              ...formData,
-              status: (value as QualificationPlan["status"]) || "draft",
-            })
-          }
-        />
-
-        <Textarea
-          label="Notizen"
-          placeholder="Optionale Notizen zum Plan..."
-          value={formData.notes}
-          onChange={(e) =>
-            setFormData({ ...formData, notes: e.currentTarget.value })
-          }
-          minRows={3}
-        />
-
-        {formData.employeeId && (
-          <>
-            <Divider
-              label={
-                <Group gap="xs">
-                  <Text>Defizit-Analyse</Text>
-                  {skillGaps.length > 0 && (
-                    <Badge color="red" size="sm">
-                      {skillGaps.length} Defizite
-                    </Badge>
-                  )}
-                </Group>
-              }
-              labelPosition="center"
-            />
-
-            {skillGaps.length === 0 ? (
-              <Alert color="green" icon={<IconAlertCircle size={16} />}>
-                {formData.targetRoleId
-                  ? (roles.find(r => r.id === formData.targetRoleId)?.requiredSkills?.length
-                    ? "Keine Skill-Defizite gefunden! Der Mitarbeiter erfüllt bereits alle Anforderungen der Zielrolle."
-                    : "Diese Rolle hat keine Skill-Anforderungen definiert.")
-                  : "Keine Defizite gefunden. (Basierend auf individuell festgelegten Soll-Werten)"}
-              </Alert>
-            ) : (
-              <Box style={{ maxHeight: 400, overflowY: "auto" }}>
-                <SkillGapAnalysis
-                  gaps={skillGaps}
-                  employeeId={formData.employeeId}
-                  compact
-                />
-              </Box>
-            )}
-          </>
-        )}
-
-        <Group justify="flex-end" mt="xl">
-          <Button variant="subtle" color="gray" onClick={onClose}>
+        <Group justify="flex-end">
+          <Button variant="subtle" color="gray" onClick={() => setConfirmationOpen(false)}>
             Abbrechen
           </Button>
-          <Button
-            onClick={handleSave}
-            loading={loading}
-            disabled={!formData.employeeId}
-            leftSection={<IconPlus size={16} />}
-          >
-            {isEditing ? "Aktualisieren" : "Plan erstellen"}
+          <Button variant="light" color="red" onClick={() => {
+            setConfirmationOpen(false);
+            onClose();
+          }}>
+            Verwerfen
+          </Button>
+          <Button onClick={() => {
+            setConfirmationOpen(false);
+            handleSave();
+          }}>
+            Speichern
           </Button>
         </Group>
-      </Stack>
-    </Drawer>
+      </Modal>
+    </>
   );
 };

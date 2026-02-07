@@ -126,6 +126,7 @@ export interface SavedView {
     settings: {
       showMaxValues: boolean;
       hideEmployees: boolean;
+      hideNaColumns?: boolean; // Optional for backward compatibility
     };
     sort: {
       employee: 'asc' | 'desc' | null;
@@ -175,14 +176,24 @@ export interface MergeDiff {
 
 class IndexedDBService {
   private db: IDBDatabase | null = null;
+  private initPromise: Promise<void> | null = null;
 
   async init(): Promise<void> {
-    return new Promise((resolve, reject) => {
+    if (this.db) return Promise.resolve();
+    if (this.initPromise) return this.initPromise;
+
+    this.initPromise = new Promise((resolve, reject) => {
       const request = indexedDB.open(DB_NAME, DB_VERSION);
 
-      request.onerror = () => reject(request.error);
+      request.onerror = () => {
+        this.initPromise = null;
+        reject(request.error);
+      };
       request.onsuccess = () => {
         this.db = request.result;
+        // Don't clear initPromise here immediately to avoid race conditions if needed, 
+        // but clearing it in finally logic or keeping it resolved is fine.
+        // Actually simplest is just resolve.
         resolve();
       };
 
@@ -326,6 +337,8 @@ class IndexedDBService {
         }
       };
     });
+
+    return this.initPromise;
   }
 
   // Employees
@@ -501,6 +514,8 @@ class IndexedDBService {
   }
 
   async updateSkillsForRole(roleId: string, skillIds: string[]): Promise<void> {
+    // Check initialization here too since we use this.db directly
+    if (!this.db) await this.init();
     if (!this.db) throw new Error("Database not initialized");
 
     const transaction = this.db.transaction("skills", "readwrite");
@@ -793,10 +808,11 @@ class IndexedDBService {
     employeeId: string,
     skillId: string,
   ): Promise<Assessment | undefined> {
-    return new Promise((resolve, reject) => {
-      if (!this.db) return reject(new Error("Database not initialized"));
+    if (!this.db) await this.init();
+    if (!this.db) throw new Error("Database not initialized");
 
-      const transaction = this.db.transaction("assessments", "readonly");
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction("assessments", "readonly");
       const store = transaction.objectStore("assessments");
       const index = store.index("employeeSkill");
       const request = index.get([employeeId, skillId]);
@@ -816,6 +832,8 @@ class IndexedDBService {
     method: "add" | "put" | "delete" | "get" | "getAll" | "clear",
     data?: any,
   ): Promise<any> {
+    if (!this.db) await this.init();
+
     return new Promise((resolve, reject) => {
       if (!this.db) return reject(new Error("Database not initialized"));
 
@@ -857,23 +875,27 @@ class IndexedDBService {
     method: "get" | "getAll",
     data?: any,
   ): Promise<any> {
-    return new Promise((resolve, reject) => {
-      if (!this.db) return reject(new Error("Database not initialized"));
+    return (async () => {
+      if (!this.db) await this.init();
 
-      const transaction = this.db.transaction(storeName, "readonly");
-      const store = transaction.objectStore(storeName);
-      const index = store.index(indexName);
-      let request: IDBRequest;
+      return new Promise((resolve, reject) => {
+        if (!this.db) return reject(new Error("Database not initialized"));
 
-      if (method === "get") {
-        request = index.get(data);
-      } else {
-        request = index.getAll(data);
-      }
+        const transaction = this.db.transaction(storeName, "readonly");
+        const store = transaction.objectStore(storeName);
+        const index = store.index(indexName);
+        let request: IDBRequest;
 
-      request.onerror = () => reject(request.error);
-      request.onsuccess = () => resolve(request.result);
-    });
+        if (method === "get") {
+          request = index.get(data);
+        } else {
+          request = index.getAll(data);
+        }
+
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve(request.result);
+      });
+    })();
   }
 
   // Export all data as JSON

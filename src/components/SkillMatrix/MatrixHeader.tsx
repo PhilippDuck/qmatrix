@@ -551,7 +551,7 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
                           const RoleIcon = getIconByName(role?.icon);
                           return (
                             <Tooltip key={idx} label={roleName} withArrow position="top">
-                              <ThemeIcon size={14} variant="light" color="gray" radius="xl">
+                              <ThemeIcon size={14} variant="light" color="gray" radius="xl" style={{ transform: 'rotate(180deg)' }}>
                                 <RoleIcon size={10} />
                               </ThemeIcon>
                             </Tooltip>

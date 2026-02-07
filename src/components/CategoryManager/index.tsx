@@ -6,7 +6,7 @@ import { useData } from "../../context/DataContext";
 import { CategoryColumn } from "./CategoryColumn";
 import { SubcategoryColumn } from "./SubcategoryColumn";
 import { SkillColumn } from "./SkillColumn";
-import { EntityFormDrawer, FormMode } from "./EntityFormDrawer";
+import { EntityFormDrawer, FormMode, EntityFormValues } from "./EntityFormDrawer";
 import SkillOrgChart, { ClipboardItem } from "../organization/SkillOrgChart";
 
 export const CategoryManager: React.FC = () => {
@@ -42,6 +42,13 @@ export const CategoryManager: React.FC = () => {
   const [selectedRoleIds, setSelectedRoleIds] = useState<string[]>([]);
   const [selectedSubCategoryIds, setSelectedSubCategoryIds] = useState<string[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [initialValues, setInitialValues] = useState<EntityFormValues>({
+    name: "",
+    description: "",
+    departmentId: null,
+    roleIds: [],
+    subCategoryIds: [],
+  });
 
   // Clipboard State
   const [clipboardItem, setClipboardItem] = useState<ClipboardItem | null>(null);
@@ -63,8 +70,19 @@ export const CategoryManager: React.FC = () => {
     setSelectedRoleIds(initialRoleIds);
     setSelectedSubCategoryIds([]); // Reset
     setSelectedParentSubCategory(initialParentSubId); // Store parent context
+
+    // Set initial values for dirty content check
+    setInitialValues({
+      name: initialValue,
+      description: initialDescription,
+      departmentId: initialDeptId,
+      roleIds: initialRoleIds,
+      subCategoryIds: [],
+    });
+
     open();
   };
+
 
   const handleSave = async () => {
     if (!inputValue.trim()) return;
@@ -403,6 +421,7 @@ export const CategoryManager: React.FC = () => {
         departments={departments}
         roles={roles}
         subcategories={subcategoryOptions}
+        initialValues={initialValues}
         parentContext={parentContextString}
       />
 

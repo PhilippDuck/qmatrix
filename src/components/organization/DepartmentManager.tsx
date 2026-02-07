@@ -12,6 +12,7 @@ import {
     Drawer,
     Avatar,
     Tooltip,
+    Modal,
 } from "@mantine/core";
 import { IconPlus, IconTrash, IconBuilding, IconEdit } from "@tabler/icons-react";
 import { useDisclosure } from "@mantine/hooks";
@@ -27,16 +28,34 @@ export const DepartmentManager: React.FC = () => {
     const [name, setName] = useState("");
     const [loading, setLoading] = useState(false);
 
+    // Unsaved Changes
+    const [confirmationOpen, setConfirmationOpen] = useState(false);
+    const [initialName, setInitialName] = useState("");
+
     const handleOpenAdd = () => {
         setEditingId(null);
         setName("");
+        setInitialName("");
         open();
     };
 
     const handleOpenEdit = (dept: Department) => {
         setEditingId(dept.id!);
         setName(dept.name);
+        setInitialName(dept.name);
         open();
+    };
+
+    const hasChanges = () => {
+        return name !== initialName;
+    };
+
+    const handleCloseAttempt = () => {
+        if (hasChanges()) {
+            setConfirmationOpen(true);
+        } else {
+            close();
+        }
     };
 
     const handleSave = async () => {
@@ -165,7 +184,7 @@ export const DepartmentManager: React.FC = () => {
 
             <Drawer
                 opened={opened}
-                onClose={close}
+                onClose={handleCloseAttempt}
                 position="right"
                 title={editingId ? "Abteilung bearbeiten" : "Neue Abteilung"}
                 overlayProps={{ backgroundOpacity: 0.5, blur: 4 }}
@@ -197,7 +216,7 @@ export const DepartmentManager: React.FC = () => {
                             <div />
                         )}
                         <Group>
-                            <Button variant="default" onClick={close}>
+                            <Button variant="default" onClick={handleCloseAttempt}>
                                 Abbrechen
                             </Button>
                             <Button onClick={handleSave} loading={loading}>
@@ -207,6 +226,33 @@ export const DepartmentManager: React.FC = () => {
                     </Group>
                 </Stack>
             </Drawer>
+            <Modal
+                opened={confirmationOpen}
+                onClose={() => setConfirmationOpen(false)}
+                title="Ungespeicherte Änderungen"
+                centered
+            >
+                <Text size="sm" mb="lg">
+                    Du hast ungespeicherte Änderungen. Möchtest du diese speichern oder verwerfen?
+                </Text>
+                <Group justify="flex-end">
+                    <Button variant="subtle" color="gray" onClick={() => setConfirmationOpen(false)}>
+                        Abbrechen
+                    </Button>
+                    <Button variant="light" color="red" onClick={() => {
+                        setConfirmationOpen(false);
+                        close();
+                    }}>
+                        Verwerfen
+                    </Button>
+                    <Button onClick={() => {
+                        setConfirmationOpen(false);
+                        handleSave();
+                    }}>
+                        Speichern
+                    </Button>
+                </Group>
+            </Modal>
         </Stack>
     );
 };

@@ -10,6 +10,7 @@ import {
   Tabs,
   Autocomplete,
   MultiSelect,
+  Modal,
 } from "@mantine/core";
 import { useHotkeys } from "@mantine/hooks";
 import { IconPlus, IconHistory, IconUser } from "@tabler/icons-react";
@@ -134,152 +135,207 @@ export const EmployeeDrawer: React.FC<EmployeeDrawerProps> = ({
   };
   */
 
+  // Unsaved Changes Logic
+  const [confirmationOpen, setConfirmationOpen] = useState(false);
+
+  const hasChanges = () => {
+    const initName = initialData?.name || "";
+    const initDept = initialData?.department || "";
+    const initRoles = (initialData?.roles || []).slice().sort();
+
+    if (formData.name !== initName) return true;
+    if (formData.department !== initDept) return true;
+
+    const currRoles = formData.roles.slice().sort();
+    if (JSON.stringify(currRoles) !== JSON.stringify(initRoles)) return true;
+
+    return false;
+  };
+
+  const handleCloseAttempt = () => {
+    if (hasChanges()) {
+      setConfirmationOpen(true);
+    } else {
+      onClose();
+    }
+  };
+
   return (
-    <Drawer
-      opened={opened}
-      onClose={onClose}
-      position="right"
-      size="md"
-      overlayProps={{ backgroundOpacity: 0.5, blur: 4 }}
-      title={
-        <Text fw={700} size="lg">
-          {isEditing ? "Mitarbeiter bearbeiten" : "Neuen Mitarbeiter anlegen"}
-        </Text>
-      }
-    >
-      {isEditing && employeeId ? (
-        <Tabs value={activeTab} onChange={setActiveTab}>
-          <Tabs.List mb="md" grow>
-            <Tabs.Tab value="details" leftSection={<IconUser size={16} />}>
-              Stammdaten
-            </Tabs.Tab>
-            <Tabs.Tab value="history" leftSection={<IconHistory size={16} />}>
-              Historie
-            </Tabs.Tab>
-          </Tabs.List>
+    <>
+      <Drawer
+        opened={opened}
+        onClose={handleCloseAttempt}
+        position="right"
+        size="md"
+        overlayProps={{ backgroundOpacity: 0.5, blur: 4 }}
+        title={
+          <Text fw={700} size="lg">
+            {isEditing ? "Mitarbeiter bearbeiten" : "Neuen Mitarbeiter anlegen"}
+          </Text>
+        }
+      >
+        {isEditing && employeeId ? (
+          <Tabs value={activeTab} onChange={setActiveTab}>
+            <Tabs.List mb="md" grow>
+              <Tabs.Tab value="details" leftSection={<IconUser size={16} />}>
+                Stammdaten
+              </Tabs.Tab>
+              <Tabs.Tab value="history" leftSection={<IconHistory size={16} />}>
+                Historie
+              </Tabs.Tab>
+            </Tabs.List>
 
-          <Tabs.Panel value="details">
-            <Stack gap="md">
-              <TextInput
-                label="Vollständiger Name"
-                placeholder="z.B. Max Mustermann"
-                value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.currentTarget.value })
-                }
-                onKeyDown={handleKeyDown}
-                data-autofocus
-                required
-              />
+            <Tabs.Panel value="details">
+              <Stack gap="md">
+                <TextInput
+                  label="Vollständiger Name"
+                  placeholder="z.B. Max Mustermann"
+                  value={formData.name}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.currentTarget.value })
+                  }
+                  onKeyDown={handleKeyDown}
+                  data-autofocus
+                  required
+                />
 
-              <Autocomplete
-                label="Abteilung / Team"
-                placeholder="Wähle eine Abteilung oder erstelle neu"
-                data={departments.map((d) => d.name)}
-                value={formData.department}
-                onChange={(value) =>
-                  setFormData({ ...formData, department: value || "" })
-                }
-              />
+                <Autocomplete
+                  label="Abteilung / Team"
+                  placeholder="Wähle eine Abteilung oder erstelle neu"
+                  data={departments.map((d) => d.name)}
+                  value={formData.department}
+                  onChange={(value) =>
+                    setFormData({ ...formData, department: value || "" })
+                  }
+                />
 
-              <MultiSelect
-                label="Rollen / Qualifikations-Level"
-                placeholder="Wähle Rollen oder erstelle neu"
-                data={roles.map(r => r.name)}
-                value={formData.roles}
-                onChange={(value) => setFormData({ ...formData, roles: value })}
-                searchable
-                clearable
-                creatable
-                getCreateLabel={(query) => `+ "${query}" erstellen`}
-                onCreate={(query) => {
-                  setFormData({ ...formData, roles: [...formData.roles, query] });
-                  return query;
-                }}
-              />
+                <MultiSelect
+                  label="Rollen / Qualifikations-Level"
+                  placeholder="Wähle Rollen oder erstelle neu"
+                  data={roles.map(r => r.name)}
+                  value={formData.roles}
+                  onChange={(value) => setFormData({ ...formData, roles: value })}
+                  searchable
+                  clearable
+                  creatable
+                  getCreateLabel={(query) => `+ "${query}" erstellen`}
+                  onCreate={(query) => {
+                    setFormData({ ...formData, roles: [...formData.roles, query] });
+                    return query;
+                  }}
+                />
 
-              <Group justify="space-between" mt="xl">
-                {onDelete && (
-                  <Button variant="light" color="red" onClick={handleDelete} loading={loading}>
-                    Löschen
-                  </Button>
-                )}
-                <Group>
-                  <Button variant="subtle" color="gray" onClick={onClose}>
-                    Abbrechen
-                  </Button>
-                  <Button
-                    onClick={handleSave}
-                    loading={loading}
-                    leftSection={<IconPlus size={16} />}
-                  >
-                    Aktualisieren
-                  </Button>
+                <Group justify="space-between" mt="xl">
+                  {onDelete && (
+                    <Button variant="light" color="red" onClick={handleDelete} loading={loading}>
+                      Löschen
+                    </Button>
+                  )}
+                  <Group>
+                    <Button variant="subtle" color="gray" onClick={handleCloseAttempt}>
+                      Abbrechen
+                    </Button>
+                    <Button
+                      onClick={handleSave}
+                      loading={loading}
+                      leftSection={<IconPlus size={16} />}
+                    >
+                      Aktualisieren
+                    </Button>
+                  </Group>
                 </Group>
-              </Group>
-            </Stack>
-          </Tabs.Panel>
+              </Stack>
+            </Tabs.Panel>
 
-          <Tabs.Panel value="history">
-            <HistoryTimeline employeeId={employeeId} />
-          </Tabs.Panel>
-        </Tabs>
-      ) : (
-        <Stack gap="md">
-          <Divider label="Personalinformationen" labelPosition="center" />
+            <Tabs.Panel value="history">
+              <HistoryTimeline employeeId={employeeId} />
+            </Tabs.Panel>
+          </Tabs>
+        ) : (
+          <Stack gap="md">
+            <Divider label="Personalinformationen" labelPosition="center" />
 
-          <TextInput
-            label="Vollständiger Name"
-            placeholder="z.B. Max Mustermann"
-            value={formData.name}
-            onChange={(e) =>
-              setFormData({ ...formData, name: e.currentTarget.value })
-            }
-            onKeyDown={handleKeyDown}
-            data-autofocus
-            required
-          />
+            <TextInput
+              label="Vollständiger Name"
+              placeholder="z.B. Max Mustermann"
+              value={formData.name}
+              onChange={(e) =>
+                setFormData({ ...formData, name: e.currentTarget.value })
+              }
+              onKeyDown={handleKeyDown}
+              data-autofocus
+              required
+            />
 
-          <Autocomplete
-            label="Abteilung / Team"
-            placeholder="Wähle eine Abteilung oder erstelle neu"
-            data={departments.map((d) => d.name)}
-            value={formData.department}
-            onChange={(value) =>
-              setFormData({ ...formData, department: value || "" })
-            }
-          />
+            <Autocomplete
+              label="Abteilung / Team"
+              placeholder="Wähle eine Abteilung oder erstelle neu"
+              data={departments.map((d) => d.name)}
+              value={formData.department}
+              onChange={(value) =>
+                setFormData({ ...formData, department: value || "" })
+              }
+            />
 
-          <MultiSelect
-            label="Rollen / Qualifikations-Level"
-            placeholder="Wähle Rollen oder erstelle neu"
-            data={roles.map(r => r.name)}
-            value={formData.roles}
-            onChange={(value) => setFormData({ ...formData, roles: value })}
-            searchable
-            clearable
-            creatable
-            getCreateLabel={(query) => `+ "${query}" erstellen`}
-            onCreate={(query) => {
-              setFormData({ ...formData, roles: [...formData.roles, query] });
-              return query;
-            }}
-          />
+            <MultiSelect
+              label="Rollen / Qualifikations-Level"
+              placeholder="Wähle Rollen oder erstelle neu"
+              data={roles.map(r => r.name)}
+              value={formData.roles}
+              onChange={(value) => setFormData({ ...formData, roles: value })}
+              searchable
+              clearable
+              creatable
+              getCreateLabel={(query) => `+ "${query}" erstellen`}
+              onCreate={(query) => {
+                setFormData({ ...formData, roles: [...formData.roles, query] });
+                return query;
+              }}
+            />
 
-          <Group justify="flex-end" mt="xl">
-            <Button variant="subtle" color="gray" onClick={onClose}>
-              Abbrechen
-            </Button>
-            <Button
-              onClick={handleSave}
-              loading={loading}
-              leftSection={<IconPlus size={16} />}
-            >
-              Mitarbeiter anlegen
-            </Button>
-          </Group>
-        </Stack>
-      )}
-    </Drawer>
+            <Group justify="flex-end" mt="xl">
+              <Button variant="subtle" color="gray" onClick={handleCloseAttempt}>
+                Abbrechen
+              </Button>
+              <Button
+                onClick={handleSave}
+                loading={loading}
+                leftSection={<IconPlus size={16} />}
+              >
+                Mitarbeiter anlegen
+              </Button>
+            </Group>
+          </Stack>
+        )}
+      </Drawer>
+
+      <Modal
+        opened={confirmationOpen}
+        onClose={() => setConfirmationOpen(false)}
+        title="Ungespeicherte Änderungen"
+        centered
+      >
+        <Text size="sm" mb="lg">
+          Du hast ungespeicherte Änderungen. Möchtest du diese speichern oder verwerfen?
+        </Text>
+        <Group justify="flex-end">
+          <Button variant="subtle" color="gray" onClick={() => setConfirmationOpen(false)}>
+            Abbrechen
+          </Button>
+          <Button variant="light" color="red" onClick={() => {
+            setConfirmationOpen(false);
+            onClose();
+          }}>
+            Verwerfen
+          </Button>
+          <Button onClick={() => {
+            setConfirmationOpen(false);
+            handleSave();
+          }}>
+            Speichern
+          </Button>
+        </Group>
+      </Modal>
+    </>
   );
 };

@@ -1,6 +1,21 @@
 # Changelog
 
 
+## [2.7.0] - 2026-02-07
+
+### Neue Funktionen
+- **Ungespeicherte Änderungen**: Sicherheitsmechanismus implementiert, der vor Datenverlust warnt, wenn Drawer (Mitarbeiter, Pläne, Maßnahmen, etc.) mit ungespeicherten Änderungen geschlossen werden.
+- **Leere Spalten ausblenden (Skill Matrix)**: Neuer Toggle-Button in der Toolbar erlaubt das Ausblenden von Skills, die für die aktuell angezeigten Mitarbeiter keine Daten (N/A) enthalten.
+  - Dies wirkt rekursiv auf Kategorien und Unterkategorien.
+  - Die Einstellung wird in Gespeicherten Ansichten persistiert.
+
+### Verbesserungen & UI
+- **Optimierte Spaltenbreite**: Die "Kategorie / Skill" Spalte wurde überarbeitet, um weniger Leerraum zu verschwenden und sich kompakter darzustellen.
+- **Rollen-Icons**: Die Ausrichtung der Rollen-Icons im Matrix-Header wurde korrigiert (waren zuvor um 180° verdreht).
+
+### Behobene Fehler
+- **Datenbank-Initialisierung**: Ein Fehler ("Database not initialized") beim Speichern von Ansichten wurde behoben, indem eine robustere Verbindungslogik (Lazy Initialization) implementiert wurde.
+
 ## [2.6.7] - 2026-02-07
 
 ### Verbesserungen & UI

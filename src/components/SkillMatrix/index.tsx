@@ -29,6 +29,7 @@ import {
   IconEye,
   IconEyeOff,
   IconDeviceFloppy,
+  IconColumnsOff,
 } from "@tabler/icons-react";
 import { useData, Employee, SavedView } from "../../context/DataContext";
 import { ViewTabs } from "./ViewTabs";
@@ -47,7 +48,7 @@ import { MatrixHeader } from "./MatrixHeader";
 import { MatrixCategoryRow } from "./MatrixCategoryRow";
 import { MatrixLegend } from "./MatrixLegend";
 import { QuickAddDrawer } from "./QuickAddDrawer";
-import { EntityFormDrawer } from "../CategoryManager/EntityFormDrawer";
+import { EntityFormDrawer, FormMode, EntityFormValues } from "../CategoryManager/EntityFormDrawer";
 
 import { SegmentedControl } from "@mantine/core";
 import { MatrixColumn } from "./types";
@@ -107,9 +108,17 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
   const [editEntityType, setEditEntityType] = useState<'skill' | 'category' | 'subcategory'>('skill');
   const [editEntityName, setEditEntityName] = useState("");
   const [editEntityDescription, setEditEntityDescription] = useState("");
-  const [editDepartmentId, setEditDepartmentId] = useState<string | null>(null);
-  const [editRoleIds, setEditRoleIds] = useState<string[]>([]);
+  const [editEntityDepartmentId, setEditEntityDepartmentId] = useState<string | null>(null);
+  const [editEntityRoleIds, setEditEntityRoleIds] = useState<string[]>([]);
+  const [editEntitySubCategoryIds, setEditEntitySubCategoryIds] = useState<string[]>([]); // New
   const [editDrawerOpened, setEditDrawerOpened] = useState(false);
+  const [initialValues, setInitialValues] = useState<EntityFormValues>({
+    name: "",
+    description: "",
+    departmentId: null,
+    roleIds: [],
+    subCategoryIds: [],
+  });
 
   // Context Menu State
   const [contextMenuPos, setContextMenuPos] = useState<{ x: number; y: number } | null>(null);
@@ -173,6 +182,12 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
     defaultValue: false,
   });
 
+  // Toggle for hiding N/A columns
+  const [hideNaColumns, setHideNaColumns] = useLocalStorage<boolean>({
+    key: 'skill-matrix-hide-na-columns',
+    defaultValue: false,
+  });
+
   const [filtersOpened, setFiltersOpened] = useState(false);
 
   // Saved View State
@@ -197,6 +212,7 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
     // Apply settings
     setShowMaxValues(view.config.settings.showMaxValues);
     setHideEmployees(view.config.settings.hideEmployees);
+    setHideNaColumns(view.config.settings.hideNaColumns || false);
 
     // Apply sort
     setEmployeeSort(view.config.sort.employee);
@@ -222,6 +238,7 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
         settings: {
           showMaxValues: showMaxValues,
           hideEmployees: hideEmployees,
+          hideNaColumns: hideNaColumns,
         },
         sort: {
           employee: employeeSort,
@@ -253,11 +270,12 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
       config.groupingMode !== groupingMode ||
       config.settings.showMaxValues !== showMaxValues ||
       config.settings.hideEmployees !== hideEmployees ||
+      config.settings.hideNaColumns !== hideNaColumns ||
       config.sort.employee !== employeeSort ||
       config.sort.skill !== skillSort ||
       JSON.stringify(config.collapsedStates || {}) !== JSON.stringify(collapsedStates)
     );
-  }, [activeViewId, savedViews, filterDepartments, filterRoles, filterCategories, groupingMode, showMaxValues, hideEmployees, employeeSort, skillSort, collapsedStates]);
+  }, [activeViewId, savedViews, filterDepartments, filterRoles, filterCategories, groupingMode, showMaxValues, hideEmployees, hideNaColumns, employeeSort, skillSort, collapsedStates]);
 
   // Update the current active view with current settings
   const handleUpdateCurrentView = async () => {
@@ -278,6 +296,7 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
           settings: {
             showMaxValues: showMaxValues,
             hideEmployees: hideEmployees,
+            hideNaColumns: hideNaColumns,
           },
           sort: {
             employee: employeeSort,
@@ -303,6 +322,7 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
     setGroupingMode("none");
     setShowMaxValues(false);
     setHideEmployees(false);
+    setHideNaColumns(false);
     setEmployeeSort(null);
     setSkillSort(null);
   };
@@ -703,6 +723,13 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
     setEditEntityName("");
     setEditEntityDescription("");
     setEditParentId(null);
+    setInitialValues({
+      name: "",
+      description: "",
+      departmentId: null,
+      roleIds: [],
+      subCategoryIds: [],
+    });
     setEditDrawerOpened(true);
   };
 
@@ -713,6 +740,13 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
     setEditEntityDescription("");
     setEditParentId(categoryId);
     setEditParentSubId(parentSubId || null);
+    setInitialValues({
+      name: "",
+      description: "",
+      departmentId: null,
+      roleIds: [],
+      subCategoryIds: [],
+    });
     setEditDrawerOpened(true);
   };
 
@@ -721,9 +755,17 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
     setEditEntityType('skill');
     setEditEntityName("");
     setEditEntityDescription("");
+    setEditEntityDescription("");
+    setEditEntityDepartmentId(null);
+    setEditEntityRoleIds([]);
     setEditParentId(subCategoryId);
-    setEditDepartmentId(null);
-    setEditRoleIds([]);
+    setInitialValues({
+      name: "",
+      description: "",
+      departmentId: null,
+      roleIds: [],
+      subCategoryIds: [],
+    });
     setEditDrawerOpened(true);
   };
 
@@ -734,8 +776,16 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
       setEditEntityType('skill');
       setEditEntityName(skill.name);
       setEditEntityDescription(skill.description || "");
-      setEditDepartmentId(skill.departmentId || null);
-      setEditRoleIds(skill.requiredByRoleIds || []);
+      setEditEntityDepartmentId(skill.departmentId || null);
+      setEditEntityRoleIds(skill.requiredByRoleIds || []); // Assuming requiredByRoleIds is the correct field for roles on skill
+      setEditParentId(skill.subCategoryId);
+      setInitialValues({
+        name: skill.name,
+        description: skill.description || "",
+        departmentId: skill.departmentId || null,
+        roleIds: skill.requiredByRoleIds || [], // Assuming requiredByRoleIds is the correct field for roles on skill
+        subCategoryIds: [],
+      });
       setEditDrawerOpened(true);
     }
   };
@@ -743,10 +793,17 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
   const handleEditCategory = (categoryId: string) => {
     const category = categories.find((c) => c.id === categoryId);
     if (category) {
-      setEditEntityId(categoryId);
+      setEditEntityId(category.id!);
       setEditEntityType('category');
       setEditEntityName(category.name);
       setEditEntityDescription(category.description || "");
+      setInitialValues({
+        name: category.name,
+        description: category.description || "",
+        departmentId: null,
+        roleIds: [],
+        subCategoryIds: [],
+      });
       setEditDrawerOpened(true);
     }
   };
@@ -754,10 +811,17 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
   const handleEditSubcategory = (subcategoryId: string) => {
     const sub = subcategories.find((s) => s.id === subcategoryId);
     if (sub) {
-      setEditEntityId(subcategoryId);
+      setEditEntityId(sub.id!);
       setEditEntityType('subcategory');
       setEditEntityName(sub.name);
       setEditEntityDescription(sub.description || "");
+      setInitialValues({
+        name: sub.name,
+        description: sub.description || "",
+        departmentId: null,
+        roleIds: [],
+        subCategoryIds: [],
+      });
       setEditDrawerOpened(true);
     }
   };
@@ -774,8 +838,8 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
             subCategoryId: originalSkill.subCategoryId,
             name: editEntityName.trim(),
             description: editEntityDescription.trim(),
-            departmentId: editDepartmentId || undefined,
-            requiredByRoleIds: editRoleIds,
+            departmentId: editEntityDepartmentId || undefined,
+            requiredByRoleIds: editEntityRoleIds,
           });
           // Also invoke helper if role relation needs explicit update or just relying on skill update is enough? 
           // DataContext updateSkillsForRole handles the inverse "Role -> Skills". 
@@ -817,8 +881,8 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
           subCategoryId: editParentId,
           name: editEntityName.trim(),
           description: editEntityDescription.trim(),
-          departmentId: editDepartmentId || undefined,
-          requiredByRoleIds: editRoleIds,
+          departmentId: editEntityDepartmentId || undefined,
+          requiredByRoleIds: editEntityRoleIds,
         });
       }
     }
@@ -898,15 +962,15 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
   // Dynamische Breite für die Label-Spalte berechnen
   const responsiveLabelWidth = useMemo(() => {
     let maxW = 260; // Min width aus Constants
-    const charW = 9; // Geschätzte Pixel pro Zeichen (für Segoe UI / System Font)
+    const charW = 7.5; // Reduziert für engere Breite (vorher 9)
 
     const calcW = (text: string, depth: number, type: 'cat' | 'sub' | 'skill') => {
-      let padding = 40; // Base padding + Icons
+      let padding = 24; // Reduzierter Buffer (vorher 40) + Icons
       if (type === 'cat') padding += 0;
       else if (type === 'sub') padding += (depth * 24);
       else if (type === 'skill') padding += 20 + (depth * 24); // +20 indentation for skills
 
-      return padding + (text.length * charW) + 40; // + Buffer right
+      return padding + (text.length * charW) + 24; // + Buffer right (vorher 40)
     };
 
     categories.forEach(cat => {
@@ -945,7 +1009,7 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
       rootSubs.forEach(s => processSub(s.id!, 0));
     });
 
-    return Math.min(600, maxW); // Max width limit
+    return Math.min(maxW, 500); // Hard cap at 500px to prevent layout break
   }, [categories, subcategories, skills, collapsedStates]);
 
   return (
@@ -1022,6 +1086,16 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
                     size="lg"
                   >
                     <IconLayoutNavbarCollapse size={20} />
+                  </ActionIcon>
+                </Tooltip>
+                <Tooltip label={hideNaColumns ? "Leere Spalten (N/A) anzeigen" : "Leere Spalten (N/A) ausblenden"}>
+                  <ActionIcon
+                    variant="light"
+                    color={hideNaColumns ? "blue" : "gray"}
+                    onClick={() => setHideNaColumns(!hideNaColumns)}
+                    size="lg"
+                  >
+                    <IconColumnsOff size={20} />
                   </ActionIcon>
                 </Tooltip>
               </Group>
@@ -1335,38 +1409,70 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
                   />
                 </div>
 
-                {displayedCategories.map((cat) => (
-                  <MatrixCategoryRow
-                    key={cat.id}
-                    category={cat}
-                    subcategories={subcategories}
-                    skills={skills}
-                    employees={displayedEmployees}
-                    columns={matrixColumns}
-                    collapsedStates={collapsedStates}
-                    hoveredSkillId={hoveredSkillId}
-                    hoveredEmployeeId={hoveredEmployeeId}
-                    onToggleCategory={toggleItem}
-                    onToggleSubcategory={toggleItem}
-                    onSkillHover={setHoveredSkillId}
-                    onEmployeeHover={setHoveredEmployeeId}
-                    calculateAverage={calculateAverage}
-                    getAssessment={getAssessment}
-                    onBulkSetLevel={bulkSetLevel}
-                    onLevelChange={handleLevelChange}
-                    onTargetLevelChange={handleTargetLevelChange}
-                    showMaxValues={showMaxValues}
-                    onEditSkill={handleEditSkill}
-                    roles={roles}
-                    onEditCategory={handleEditCategory}
-                    onEditSubcategory={handleEditSubcategory}
-                    isEditMode={isEditMode}
-                    onAddSubcategory={(parentSubId) => handleAddSubCategory(cat.id!, parentSubId)}
-                    onAddSkill={(subId) => handleOpenAddSkill(subId)}
-                    skillSort={skillSort}
-                    labelWidth={responsiveLabelWidth}
-                  />
-                ))}
+                {displayedCategories.map((cat) => {
+                  // [NEW] Filter Subcategories and Skills if hidden
+                  const catSubcategories = subcategories.filter(s => s.categoryId === cat.id);
+                  const catSkills = skills.filter(s => {
+                    if (!hideNaColumns) return true;
+                    // Check if this skill has ANY relevant data across displayed employees
+                    const avg = calculateAverage([s.id!]);
+                    return avg !== null;
+                  });
+
+                  // If hiding N/A, we also need to check if subcategories have any visible skills OR nested subcategories with visible skills
+                  // calculateAverage handles the check against displayedEmployees.
+
+                  // Effective check for a category/subcategory being visible:
+                  // Recursive function to check if a subcategory has visible content
+                  const hasVisibleContent = (subId: string): boolean => {
+                    const subSkills = catSkills.filter(s => s.subCategoryId === subId);
+                    if (subSkills.length > 0) return true;
+
+                    const children = catSubcategories.filter(s => s.parentSubCategoryId === subId);
+                    return children.some(c => hasVisibleContent(c.id!));
+                  };
+
+                  // If hiding N/A, filter subcategories
+                  const visibleSubcategories = hideNaColumns
+                    ? catSubcategories.filter(s => hasVisibleContent(s.id!))
+                    : catSubcategories;
+
+                  // If hiding N/A and no visible subcategories (and no direct skills? skills are in subcategories), hide category
+                  if (hideNaColumns && visibleSubcategories.length === 0) return null;
+
+                  return (
+                    <MatrixCategoryRow
+                      key={cat.id}
+                      category={cat}
+                      subcategories={visibleSubcategories}
+                      skills={catSkills}
+                      employees={displayedEmployees}
+                      columns={matrixColumns}
+                      collapsedStates={collapsedStates}
+                      hoveredSkillId={hoveredSkillId}
+                      hoveredEmployeeId={hoveredEmployeeId}
+                      onToggleCategory={toggleItem}
+                      onToggleSubcategory={toggleItem}
+                      onSkillHover={setHoveredSkillId}
+                      onEmployeeHover={setHoveredEmployeeId}
+                      calculateAverage={calculateAverage}
+                      getAssessment={getAssessment}
+                      onBulkSetLevel={bulkSetLevel}
+                      onLevelChange={handleLevelChange}
+                      onTargetLevelChange={handleTargetLevelChange}
+                      showMaxValues={showMaxValues}
+                      onEditSkill={handleEditSkill}
+                      roles={roles}
+                      onEditCategory={handleEditCategory}
+                      onEditSubcategory={handleEditSubcategory}
+                      isEditMode={isEditMode}
+                      onAddSubcategory={(parentSubId) => handleAddSubCategory(cat.id!, parentSubId)}
+                      onAddSkill={(subId) => handleOpenAddSkill(subId)}
+                      skillSort={skillSort}
+                      labelWidth={responsiveLabelWidth}
+                    />
+                  );
+                })}
 
                 {isEditMode && (
                   <div style={{ display: "flex", borderBottom: "1px solid var(--mantine-color-default-border)", backgroundColor: "var(--mantine-color-body)" }}>
@@ -1449,15 +1555,16 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
         editingId={editEntityId}
         inputValue={editEntityName}
         inputDescription={editEntityDescription}
-        selectedDepartmentId={editDepartmentId}
-        selectedRoleIds={editRoleIds}
+        selectedDepartmentId={editEntityDepartmentId}
+        selectedRoleIds={editEntityRoleIds}
         onInputChange={setEditEntityName}
         onDescriptionChange={setEditEntityDescription}
-        onDepartmentChange={setEditDepartmentId}
-        onRolesChange={setEditRoleIds}
+        onDepartmentChange={setEditEntityDepartmentId}
+        onRolesChange={setEditEntityRoleIds}
         onSave={handleSaveEditedEntity}
         onDelete={handleDeleteEntity}
         parentContext={parentContext}
+        initialValues={initialValues}
         departments={departments}
         roles={roles}
       />

@@ -18,6 +18,7 @@ import {
     Divider,
     ScrollArea,
     Badge,
+    Modal,
 } from "@mantine/core";
 import { IconPlus, IconTrash, IconBadge, IconArrowUpRight, IconEdit, IconList, IconHierarchy, IconX } from "@tabler/icons-react";
 import { useDisclosure } from "@mantine/hooks";
@@ -40,13 +41,27 @@ export const RoleManager: React.FC = () => {
     const [requiredSkills, setRequiredSkills] = useState<{ skillId: string; level: number }[]>([]);
     const [loading, setLoading] = useState(false);
 
+    // Unsaved Changes
+    const [confirmationOpen, setConfirmationOpen] = useState(false);
+    const [initialRoleState, setInitialRoleState] = useState<{
+        name: string;
+        inheritsFrom: string | null;
+        icon: string;
+        requiredSkills: { skillId: string; level: number }[];
+    } | null>(null);
+
     const handleOpenAdd = () => {
         setEditingId(null);
         setName("");
         setInheritsFrom(null);
         setIcon("IconUser");
-        setIcon("IconUser");
         setRequiredSkills([]);
+        setInitialRoleState({
+            name: "",
+            inheritsFrom: null,
+            icon: "IconUser",
+            requiredSkills: [],
+        });
         open();
     };
 
@@ -56,19 +71,53 @@ export const RoleManager: React.FC = () => {
         setInheritsFrom(role.inheritsFromId || null);
         setIcon(role.icon || "IconUser");
 
+        let initialSkills: { skillId: string; level: number }[] = [];
         // Load existing requiredSkills or migrate from legacy
         if (role.requiredSkills && role.requiredSkills.length > 0) {
             setRequiredSkills(role.requiredSkills);
+            initialSkills = role.requiredSkills;
         } else {
             // Legacy Migration: Find skills strictly by 'requiredByRoleIds'
             const roleSkills = skills
                 .filter(s => s.requiredByRoleIds?.includes(role.id!))
                 .map(s => ({ skillId: s.id!, level: 75 })); // Default to 75 if migrating
             setRequiredSkills(roleSkills);
+            initialSkills = roleSkills;
         }
+
+        setInitialRoleState({
+            name: role.name,
+            inheritsFrom: role.inheritsFromId || null,
+            icon: role.icon || "IconUser",
+            requiredSkills: initialSkills.map(s => ({ ...s })), // deep copy
+        });
 
         open();
     };
+
+    const hasChanges = () => {
+        if (!initialRoleState) return false;
+        if (name !== initialRoleState.name) return true;
+        if (inheritsFrom !== initialRoleState.inheritsFrom) return true;
+        if (icon !== initialRoleState.icon) return true;
+
+        if (JSON.stringify(requiredSkills.sort((a, b) => a.skillId.localeCompare(b.skillId))) !==
+            JSON.stringify(initialRoleState.requiredSkills.sort((a, b) => a.skillId.localeCompare(b.skillId)))) {
+            return true;
+        }
+
+        return false;
+    };
+
+    const handleCloseAttempt = () => {
+        if (hasChanges()) {
+            setConfirmationOpen(true);
+        } else {
+            close();
+        }
+    };
+
+    // ... (rest of component handles) Use handleCloseAttempt instead of close
 
     const handleSave = async () => {
         if (!name.trim()) return;
@@ -305,7 +354,7 @@ export const RoleManager: React.FC = () => {
 
             <Drawer
                 opened={opened}
-                onClose={close}
+                onClose={handleCloseAttempt}
                 position="right"
                 title={editingId ? "Rolle bearbeiten" : "Neue Rolle"}
                 overlayProps={{ backgroundOpacity: 0.5, blur: 4 }}
@@ -427,6 +476,7 @@ export const RoleManager: React.FC = () => {
                                                         }
                                                         labelPosition="left"
                                                         mt="md"
+                                                    // ... continuing same logic
                                                     />
                                                     {inheritedSkills
                                                         .filter(is => !requiredSkills.some(rs => rs.skillId === is.skillId))
@@ -510,7 +560,7 @@ export const RoleManager: React.FC = () => {
                             <div />
                         )}
                         <Group>
-                            <Button variant="default" onClick={close}>
+                            <Button variant="default" onClick={handleCloseAttempt}>
                                 Abbrechen
                             </Button>
                             <Button onClick={handleSave} loading={loading}>
@@ -520,6 +570,33 @@ export const RoleManager: React.FC = () => {
                     </Group>
                 </Stack>
             </Drawer>
+            <Modal
+                opened={confirmationOpen}
+                onClose={() => setConfirmationOpen(false)}
+                title="Ungespeicherte Änderungen"
+                centered
+            >
+                <Text size="sm" mb="lg">
+                    Du hast ungespeicherte Änderungen. Möchtest du diese speichern oder verwerfen?
+                </Text>
+                <Group justify="flex-end">
+                    <Button variant="subtle" color="gray" onClick={() => setConfirmationOpen(false)}>
+                        Abbrechen
+                    </Button>
+                    <Button variant="light" color="red" onClick={() => {
+                        setConfirmationOpen(false);
+                        close();
+                    }}>
+                        Verwerfen
+                    </Button>
+                    <Button onClick={() => {
+                        setConfirmationOpen(false);
+                        handleSave();
+                    }}>
+                        Speichern
+                    </Button>
+                </Group>
+            </Modal>
         </Stack>
     );
 };
