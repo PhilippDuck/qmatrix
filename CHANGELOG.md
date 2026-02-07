@@ -1,6 +1,12 @@
 # Changelog
 
 
+## [2.7.2] - 2026-02-07
+
+### Behobene Fehler
+- **Kategorie-Aggregation**: Hauptkategorien (z.B. IBV) zeigten "N/A" an, obwohl verschachtelte Unterkategorien (z.B. Cognex → 3D Scanner) gültige Werte hatten. Die Berechnung berücksichtigt nun rekursiv alle Skills aus beliebig tief verschachtelten Unterkategorien.
+  - Betrifft: Kategorie-Prozentanzeige, Masseneinstellung von Skill-Levels auf Kategorieebene.
+
 ## [2.7.1] - 2026-02-07
 
 ### Verbesserungen & UI

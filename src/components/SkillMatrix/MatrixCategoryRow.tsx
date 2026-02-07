@@ -77,25 +77,59 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = ({
   const effectiveLabelWidth = labelWidth || MATRIX_LAYOUT.labelWidth;
   const [isLabelHovered, setIsLabelHovered] = useState(false);
 
-  // Get subcategories for this category and sort them
+  // Helper function to recursively get all subcategory IDs (including nested ones)
+  const getAllSubcategoryIds = (categoryId: string): string[] => {
+    const ids: string[] = [];
+
+    // Get root-level subcategories for this category
+    const rootSubs = subcategories.filter(s =>
+      s.categoryId === categoryId && !s.parentSubCategoryId
+    );
+
+    // Recursive helper to collect children
+    const collectChildren = (parentId: string) => {
+      const children = subcategories.filter(s => s.parentSubCategoryId === parentId);
+      children.forEach(child => {
+        ids.push(child.id!);
+        collectChildren(child.id!); // Recurse into deeper levels
+      });
+    };
+
+    // Add root subs and their descendants
+    rootSubs.forEach(sub => {
+      ids.push(sub.id!);
+      collectChildren(sub.id!);
+    });
+
+    return ids;
+  };
+
+  // Get ALL subcategory IDs for this category (including nested ones)
+  const allSubIds = getAllSubcategoryIds(category.id!);
+
+  // Get subcategories for this category and sort them (only root level for display)
   const categorySubcategories = [...subcategories.filter(
     (s) => s.categoryId === category.id && !s.parentSubCategoryId
   )].sort((a, b) => {
     if (skillSort) {
-      // Sort by value
-      const getSubSkillIds = (subId: string) => skills.filter(s => s.subCategoryId === subId).map(s => s.id!);
-      const avgA = calculateAverage(getSubSkillIds(a.id!)) || 0;
-      const avgB = calculateAverage(getSubSkillIds(b.id!)) || 0;
+      // Sort by value - use recursive skill collection
+      const getSubSkillIdsRecursive = (subId: string): string[] => {
+        const directSkills = skills.filter(s => s.subCategoryId === subId).map(s => s.id!);
+        const childSubs = subcategories.filter(s => s.parentSubCategoryId === subId);
+        const childSkills = childSubs.flatMap(child => getSubSkillIdsRecursive(child.id!));
+        return [...directSkills, ...childSkills];
+      };
+      const avgA = calculateAverage(getSubSkillIdsRecursive(a.id!)) || 0;
+      const avgB = calculateAverage(getSubSkillIdsRecursive(b.id!)) || 0;
       return skillSort === 'asc' ? avgA - avgB : avgB - avgA;
     }
     // Default: alphabetical
     return a.name.localeCompare(b.name, 'de');
   });
-  const subIds = categorySubcategories.map((s) => s.id);
 
-  // Get all skills for this category
+  // Get all skills for this category (from ALL subcategories including nested)
   const catSkillIds = skills
-    .filter((s) => subIds.includes(s.subCategoryId))
+    .filter((s) => allSubIds.includes(s.subCategoryId))
     .map((s) => s.id!);
 
   const catAvg = calculateAverage(catSkillIds);
