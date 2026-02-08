@@ -7,6 +7,7 @@
 - [ ] Inline bearbeitung
 - [ ] Metrik Matrix, Rollensoll erfüllung
 - [ ] Drawer Speicherbuttons anordnung
+- [ ] Demodaten?
 
 
 ### Abgeschlossen
