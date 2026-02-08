@@ -4,19 +4,19 @@
 
 - [ ] Mitarbeiter "deaktivieren" (nicht mehr sichtbar, und nicht Auswertung)
 - [ ] Dashboard überarbeiten?
-- [x] Struktur Hauptkategorie/Unterkategorie/Skill aufbrechen. auch keine untergategorie möglich oder beliebig viele unterkategorien?
-- [x] Alle vererbten skills sollen nochmal ein seperates solllevel eingestellt bekommen
 - [ ] Maßnahmen Daten CHeck von überschneidung
 - [ ] Inline bearbeitung
 - [ ] Metrik Matrix, Rollensoll erfüllung
-- [x] Ausblenden von N/A Button
 - [ ] Drawer Speicherbuttons anordnung
-- [x] wenn drawer "versehentlich" geschlossen wird (nicht über button) dann frage wirklich schließen?
 - [ ] Alle popup meldungen als Modal? nicht browser alert
 - [ ] Solllevel Indikatoren auch besserer Tooltip
+- [ ] Organigramm kopieren von Untergruppen und einfügen dieser in Untergruppen
 
 ### Abgeschlossen
-
+- [x] Struktur Hauptkategorie/Unterkategorie/Skill aufbrechen. auch keine untergategorie möglich oder beliebig viele unterkategorien?
+- [x] Alle vererbten skills sollen nochmal ein seperates solllevel eingestellt bekommen
+- [x] Ausblenden von N/A Button
+- [x] wenn drawer "versehentlich" geschlossen wird (nicht über button) dann frage wirklich schließen?
 - [x] Mitarbeiter kontextmenü, bearbeiten, maßnahmeeinleiten
 - [x] Standartseite der APP soll Matrix sein
 - [x] Qualifizierungsplan - Maßnahmenkachel nur skill name aber keine kategore/Subkategorie
