@@ -67,13 +67,13 @@ export const SkillCell: React.FC<SkillCellProps> = ({
           }}
         >
           <Badge
-            color={level === -1 ? "gray.3" : levelObj?.color}
+            color={level === -1 ? "gray.6" : levelObj?.color}
             variant={level <= 0 ? "light" : "filled"}
             style={{
               pointerEvents: "none",
               width: "80%",
               fontSize: "9px",
-              opacity: level === -1 ? 0.6 : 1,
+              opacity: level === -1 ? 0.3 : 1,
               border: level === -1 ? "1px dashed var(--mantine-color-default-border)" : "none",
             }}
           >

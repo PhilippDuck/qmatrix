@@ -61,6 +61,7 @@ export const QualificationPlan: React.FC<QualificationPlanProps> = ({ initialEmp
   const [drawerOpened, { open: openDrawer, close: closeDrawer }] = useDisclosure(false);
   const [editingPlan, setEditingPlan] = useState<QualificationPlanType | null>(null);
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
+  const [targetEmployeeId, setTargetEmployeeId] = useState<string | null>(null); // Local state to persist initialEmployeeId
   const [filterEmployee, setFilterEmployee] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -80,6 +81,7 @@ export const QualificationPlan: React.FC<QualificationPlanProps> = ({ initialEmp
       } else {
         // Open creation drawer pre-filled
         setEditingPlan(null); // Ensure "New" mode
+        setTargetEmployeeId(initialEmployeeId); // Store locally
         openDrawer();
       }
 
@@ -88,7 +90,7 @@ export const QualificationPlan: React.FC<QualificationPlanProps> = ({ initialEmp
         onClearParams();
       }
     }
-  }, [initialEmployeeId, qualificationPlans, onClearParams]);
+  }, [initialEmployeeId, qualificationPlans, onClearParams, openDrawer]);
 
   useEffect(() => {
     if (activeTab && activeTab !== "detail") {
@@ -98,6 +100,7 @@ export const QualificationPlan: React.FC<QualificationPlanProps> = ({ initialEmp
 
   const handleNewPlan = () => {
     setEditingPlan(null);
+    setTargetEmployeeId(null); // Clear any target employee
     openDrawer();
   };
 
@@ -393,7 +396,7 @@ export const QualificationPlan: React.FC<QualificationPlanProps> = ({ initialEmp
         opened={drawerOpened}
         onClose={closeDrawer}
         editingPlan={editingPlan}
-        initialEmployeeId={initialEmployeeId}
+        initialEmployeeId={targetEmployeeId}
       />
     </Box>
   );

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Text, Group, ActionIcon, Badge, Stack, Tooltip, HoverCard } from "@mantine/core";
+import { Text, Group, ActionIcon, Badge, Stack, Tooltip, HoverCard, Button } from "@mantine/core";
 import { IconPlus, IconMinus, IconTrophy, IconPencil, IconInfoCircle } from "@tabler/icons-react";
 import { MATRIX_LAYOUT } from "../../constants/skillLevels";
 import { getScoreColor, getMaxRoleTargetForSkill } from "../../utils/skillCalculations";
@@ -39,6 +39,7 @@ interface MatrixCategoryRowProps {
   onAddSkill: (subCategoryId: string) => void;
   skillSort: 'asc' | 'desc' | null;
   labelWidth?: number;
+  onNavigate?: (tab: string, params?: any) => void;
 }
 
 
@@ -70,6 +71,7 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = ({
   onAddSkill,
   skillSort,
   labelWidth,
+  onNavigate
 }) => {
   const { anonymizeName } = usePrivacy();
   const isCatCollapsed = collapsedStates[category.id!];
@@ -295,7 +297,7 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = ({
                       </Badge>
                     ) : <Text fw={700} size="xs" c="dimmed">-</Text>
                   ) : (
-                    <Text fw={700} size="xs" c={getScoreColor(avg)}>
+                    <Text fw={700} size="xs" c={avg === 0 ? "dimmed" : getScoreColor(avg)}>
                       {avg === 0 ? "-" : `${avg}%`}
                     </Text>
                   )}
@@ -320,7 +322,7 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = ({
                     cursor: "pointer",
                   }}
                 >
-                  <Text fw={700} size="xs" c={getScoreColor(avg)}>
+                  <Text fw={700} size="xs" c={avg === null ? "dimmed" : getScoreColor(avg)}>
                     {avg === null ? "N/A" : `${avg}%`}
                   </Text>
                 </div>
@@ -377,6 +379,7 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = ({
                 onAddSubcategory={onAddSubcategory} // Pass it down for children
                 skillSort={skillSort}
                 labelWidth={effectiveLabelWidth}
+                onNavigate={onNavigate}
               />
             );
           })}
@@ -399,16 +402,18 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = ({
                   borderRight: "1px solid var(--mantine-color-default-border)",
                 }}
               >
-                <ActionIcon
+                <Button
                   variant="subtle"
-                  size="sm"
+                  size="xs"
                   color="blue"
+                  leftSection={<IconPlus size={14} />}
                   onClick={() => onAddSubcategory()} // No parent ID for top-level subcategory
-                  style={{ width: "100%", justifyContent: "flex-start" }}
+                  fullWidth
+                  justify="flex-start"
+                  styles={{ section: { marginRight: 8 } }}
                 >
-                  <IconPlus size={14} style={{ marginRight: 8 }} />
-                  <span style={{ fontSize: "12px" }}>Unterkategorie hinzufügen</span>
-                </ActionIcon>
+                  Unterkategorie hinzufügen
+                </Button>
 
               </div>
               {/* Empty Space for Employee Columns */}

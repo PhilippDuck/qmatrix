@@ -56,7 +56,8 @@ const EmployeeInfoCard: React.FC<{
     skills,
     getAssessment,
     qualificationPlans,
-    qualificationMeasures
+    qualificationMeasures,
+    roles
   });
 
   useEffect(() => {

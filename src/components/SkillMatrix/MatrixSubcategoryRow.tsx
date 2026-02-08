@@ -39,6 +39,7 @@ interface MatrixSubcategoryRowProps {
   depth?: number;
   onAddSubcategory: (parentSubId?: string) => void;
   labelWidth?: number;
+  onNavigate?: (tab: string, params?: any) => void;
 }
 export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
   columns,
@@ -68,6 +69,7 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
   depth = 0,
   onAddSubcategory,
   labelWidth,
+  onNavigate
 }) => {
   const { anonymizeName } = usePrivacy();
   const { cellSize } = MATRIX_LAYOUT;
@@ -255,7 +257,7 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
                     </Badge>
                   ) : <Text size="xs" c="dimmed">-</Text>
                 ) : (
-                  <Text size="xs" fw={500} c={getScoreColor(avg)}>
+                  <Text size="xs" fw={500} c={avg === 0 ? "dimmed" : getScoreColor(avg)}>
                     {avg === 0 ? "-" : `${avg}%`}
                   </Text>
                 )}
@@ -285,7 +287,7 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
                   transition: "background-color 0.15s ease",
                 }}
               >
-                <Text size="xs" fw={500} c={getScoreColor(avg)}>
+                <Text size="xs" fw={500} c={avg === null ? "dimmed" : getScoreColor(avg)}>
                   {avg === null ? "N/A" : `${avg}%`}
                 </Text>
               </div>
@@ -448,6 +450,7 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
                 depth={depth + 1}
                 onAddSubcategory={onAddSubcategory}
                 labelWidth={labelWidth}
+                onNavigate={onNavigate}
               />
             );
           })}

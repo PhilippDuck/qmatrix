@@ -95,10 +95,25 @@ export const PlanForm: React.FC<PlanFormProps> = ({
     let filtered = options.filter((e) => !e.hasActivePlan);
 
     // [New] If initialEmployeeId is set, ensure they are included even if they don't meet filterDeficits criteria initially,
-    // though logicaly if we create a plan we want gaps. But let's respect force selection.
+    // though logically if we create a plan we want gaps. But let's respect force selection.
     if (filterDeficits) {
       filtered = filtered.filter((e) => e.gapCount > 0 || e.id === initialEmployeeId);
     }
+
+    // Explicitly add back the initial employee if they were filtered out by hasActivePlan check (though that shouldn't happen for New Plan flow usually)
+    // or if they were filtered out by gap count but we want to allow creating a plan anyway (maybe manual overrides).
+    if (initialEmployeeId) {
+      const initialEmp = options.find(e => e.id === initialEmployeeId);
+      if (initialEmp && !filtered.find(e => e.id === initialEmployeeId)) {
+        // Only add if not already present. 
+        // Note: If they have an active plan, they might be filtered out above. 
+        // But if we are "viewing" a plan, we might be in edit mode. 
+        // If we are creating a NEW plan for an employee who has an ACTIVE plan, we generally shouldn't allow it. 
+        // But the user request is about pre-selecting.
+        filtered.push(initialEmp);
+      }
+    }
+
     return filtered;
   }, [employees, roles, getSkillGapsForEmployee, filterDeficits, qualificationPlans, editingPlan, initialEmployeeId]);
 
@@ -124,6 +139,8 @@ export const PlanForm: React.FC<PlanFormProps> = ({
         setFormData(initial);
         setInitialFormData(initial);
       } else {
+        // When creating a new plan, initialize with default values.
+        // If initialEmployeeId is present, use it.
         const initial = {
           employeeId: initialEmployeeId || "",
           targetRoleId: "",
@@ -134,7 +151,18 @@ export const PlanForm: React.FC<PlanFormProps> = ({
         setInitialFormData(initial);
       }
     }
-  }, [opened, editingPlan, initialEmployeeId]);
+  }, [opened, editingPlan]); // Removed initialEmployeeId from dependency array to prevent reset when it becomes null
+
+  // Separate effect to handle initialEmployeeId updates ONLY when provided (and not clearing)
+  // This ensures that if we navigate to the page with an ID, it sets it.
+  // But if the ID is cleared (e.g. by onClearParams in parent), we DON'T run this and don't clear the form.
+  useEffect(() => {
+    if (opened && !editingPlan && initialEmployeeId) {
+      setFormData(prev => ({ ...prev, employeeId: initialEmployeeId }));
+      // Also update initial form data so "unsaved changes" check works correctly for this initial state
+      setInitialFormData(prev => ({ ...prev, employeeId: initialEmployeeId }));
+    }
+  }, [initialEmployeeId, opened, editingPlan]);
 
   const hasChanges = () => {
     return JSON.stringify(formData) !== JSON.stringify(initialFormData);

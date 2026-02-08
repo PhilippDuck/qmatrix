@@ -178,7 +178,7 @@ export const CategoryManager: React.FC = () => {
     });
   };
 
-  const [activeTab, setActiveTab] = useState<string | null>("list");
+  const [activeTab, setActiveTab] = useState<string | null>("chart");
 
   // ... (keep existing helper consts)
   // Get ALL subcategories for this category (recursive list building happens in component)
@@ -218,13 +218,33 @@ export const CategoryManager: React.FC = () => {
 
     try {
       if (clipboardItem.mode === "cut") {
-        // Validation: Don't paste into same parent
         if (clipboardItem.type === "skill" && targetType === "subcategory") {
           if (clipboardItem.data.subCategoryId === targetId) return;
           await updateSkill(clipboardItem.id, { ...clipboardItem.data, subCategoryId: targetId });
-        } else if (clipboardItem.type === "subcategory" && targetType === "category") {
-          if (clipboardItem.data.categoryId === targetId) return;
-          await updateSubCategory(clipboardItem.id, { ...clipboardItem.data, categoryId: targetId });
+
+        } else if (clipboardItem.type === "subcategory") {
+          // Handle Cut for Subcategory
+          if (targetType === "category") {
+            // Move to root of category
+            await updateSubCategory(clipboardItem.id, {
+              ...clipboardItem.data,
+              categoryId: targetId,
+              parentSubCategoryId: undefined // Clear parent if moving to root
+            });
+          } else if (targetType === "subcategory") {
+            // Move into another subcategory (Nest)
+            // Prevent pasting into itself
+            if (clipboardItem.id === targetId) return;
+
+            const targetSub = subcategories.find(s => s.id === targetId);
+            if (!targetSub) return;
+
+            await updateSubCategory(clipboardItem.id, {
+              ...clipboardItem.data,
+              categoryId: targetSub.categoryId, // Adopt target's category
+              parentSubCategoryId: targetId
+            });
+          }
         }
       } else {
         // Copy Mode
@@ -235,16 +255,33 @@ export const CategoryManager: React.FC = () => {
             subCategoryId: targetId,
             name: skillData.name,
           });
-        } else if (clipboardItem.type === "subcategory" && targetType === "category") {
-          // Deep Copy: Copy Subcategory AND its skills
+        } else if (clipboardItem.type === "subcategory") {
+          // Paste Subcategory (Copy)
           const { id, ...subData } = clipboardItem.data;
           const newSubName = subData.name;
 
-          const newSubId = await addSubCategory({
-            ...subData,
-            categoryId: targetId,
-            name: newSubName,
-          });
+          let newSubId: string;
+
+          if (targetType === "category") {
+            // Paste as root in category
+            newSubId = await addSubCategory({
+              ...subData,
+              categoryId: targetId,
+              parentSubCategoryId: undefined,
+              name: newSubName,
+            });
+          } else {
+            // Paste as child of another subcategory
+            const targetSub = subcategories.find(s => s.id === targetId);
+            if (!targetSub) return;
+
+            newSubId = await addSubCategory({
+              ...subData,
+              categoryId: targetSub.categoryId,
+              parentSubCategoryId: targetId,
+              name: newSubName,
+            });
+          }
 
           // Copy children skills
           const skillsToCopy = getSkillsBySubCategory(clipboardItem.id);

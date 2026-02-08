@@ -41,6 +41,7 @@ import {
   Stack,
   Badge,
   MultiSelect,
+  Modal,
 } from "@mantine/core";
 import { EmployeeDrawer } from "../shared/EmployeeDrawer";
 import { EmptyState } from "./EmptyState";
@@ -99,6 +100,9 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
 
   // Skill Drawer state
   const [skillDrawerOpened, setSkillDrawerOpened] = useState(false);
+
+  // Delete Modal State
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 
   // Skill Edit State
   // Entity Edit State (Skill, Category, Subcategory)
@@ -891,21 +895,25 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
     setEditParentId(null);
   };
 
-  const handleDeleteEntity = async () => {
+  const handleDeleteEntity = () => {
+    if (!editEntityId) return;
+    setDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
     if (!editEntityId) return;
 
-    if (window.confirm("Sind Sie sicher, dass Sie diesen Eintrag löschen möchten?")) {
-      if (editEntityType === 'category') {
-        await deleteCategory(editEntityId);
-      } else if (editEntityType === 'subcategory') {
-        await deleteSubCategory(editEntityId);
-      } else if (editEntityType === 'skill') {
-        await deleteSkill(editEntityId);
-      }
-      setEditDrawerOpened(false);
-      setEditEntityId(null);
-      setEditParentId(null);
+    if (editEntityType === 'category') {
+      await deleteCategory(editEntityId);
+    } else if (editEntityType === 'subcategory') {
+      await deleteSubCategory(editEntityId);
+    } else if (editEntityType === 'skill') {
+      await deleteSkill(editEntityId);
     }
+    setDeleteModalOpen(false);
+    setEditDrawerOpened(false);
+    setEditEntityId(null);
+    setEditParentId(null);
   };
 
   const parentContext = useMemo(() => {
@@ -1405,6 +1413,7 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
                       setEmployeeDrawerOpened(true);
                     }}
                     onNavigate={onNavigate}
+
                     labelWidth={responsiveLabelWidth}
                   />
                 </div>
@@ -1470,6 +1479,7 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
                       onAddSkill={(subId) => handleOpenAddSkill(subId)}
                       skillSort={skillSort}
                       labelWidth={responsiveLabelWidth}
+                      onNavigate={onNavigate}
                     />
                   );
                 })}
@@ -1606,6 +1616,25 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
         onClose={() => setSaveViewModalOpened(false)}
         onSave={handleSaveView}
       />
+
+      <Modal
+        opened={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        title="Löschen bestätigen"
+        centered
+      >
+        <Text size="sm">
+          Sind Sie sicher, dass Sie diesen Eintrag löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.
+        </Text>
+        <Group justify="flex-end" mt="md">
+          <Button variant="default" onClick={() => setDeleteModalOpen(false)}>
+            Abbrechen
+          </Button>
+          <Button color="red" onClick={confirmDelete}>
+            Löschen
+          </Button>
+        </Group>
+      </Modal>
     </Box >
   );
 };

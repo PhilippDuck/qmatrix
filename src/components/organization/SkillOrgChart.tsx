@@ -166,7 +166,7 @@ const NodeCard: React.FC<{
   const canPaste =
     clipboardItem &&
     ((clipboardItem.type === "skill" && node.type === "subcategory") ||
-      (clipboardItem.type === "subcategory" && node.type === "category"));
+      (clipboardItem.type === "subcategory" && (node.type === "category" || node.type === "subcategory")));
 
   // Construct Tooltip Label
   const tooltipLabel = (

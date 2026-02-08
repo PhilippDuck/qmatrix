@@ -4,15 +4,15 @@
 
 - [ ] Mitarbeiter "deaktivieren" (nicht mehr sichtbar, und nicht Auswertung)
 - [ ] Dashboard überarbeiten?
-- [ ] Maßnahmen Daten CHeck von überschneidung
 - [ ] Inline bearbeitung
 - [ ] Metrik Matrix, Rollensoll erfüllung
 - [ ] Drawer Speicherbuttons anordnung
-- [ ] Alle popup meldungen als Modal? nicht browser alert
-- [ ] Solllevel Indikatoren auch besserer Tooltip
-- [ ] Organigramm kopieren von Untergruppen und einfügen dieser in Untergruppen
+
 
 ### Abgeschlossen
+- [x] Organigramm kopieren von Untergruppen und einfügen dieser in Untergruppen
+- [x] Alle popup meldungen als Modal? nicht browser alert
+- [x] Solllevel Indikatoren auch besserer Tooltip
 - [x] Struktur Hauptkategorie/Unterkategorie/Skill aufbrechen. auch keine untergategorie möglich oder beliebig viele unterkategorien?
 - [x] Alle vererbten skills sollen nochmal ein seperates solllevel eingestellt bekommen
 - [x] Ausblenden von N/A Button
@@ -35,10 +35,10 @@
 
 ## Bugs
 
-- [ ] Neuer Mitarbeiter -> Rolle festgelegt (defizite) Kontextmenür Qualifizierungsplan ausgegraut
 
 ### Abgeschlossen
 
+- [x] Neuer Mitarbeiter -> Rolle festgelegt (defizite) Kontextmenür Qualifizierungsplan ausgegraut
 - [x] Wenn neuer nutzer angelegt wird und es gibt Haupt/Unterkategorien ohne skills wird die aggregation 0% verwirt etwas
 - [x] Wenn ich die ansicht lösche in der ich mich befinde, muss ich auf die standartansicht geworfen werden
 - [x] Drawer mit Enter speichern (zb Skill)

@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
-import { Employee, Skill, Assessment, QualificationPlan, QualificationMeasure } from '../context/DataContext';
+import { Employee, Skill, Assessment, QualificationPlan, QualificationMeasure, EmployeeRole } from '../context/DataContext';
+import { getMaxRoleTargetForSkill } from '../utils/skillCalculations';
 
 interface UseEmployeeMetricsProps {
     employee: Employee;
@@ -7,6 +8,7 @@ interface UseEmployeeMetricsProps {
     getAssessment: (empId: string, skillId: string) => Assessment | undefined;
     qualificationPlans: QualificationPlan[];
     qualificationMeasures: QualificationMeasure[];
+    roles: EmployeeRole[];
 }
 
 export const useEmployeeMetrics = ({
@@ -15,6 +17,7 @@ export const useEmployeeMetrics = ({
     getAssessment,
     qualificationPlans,
     qualificationMeasures,
+    roles,
 }: UseEmployeeMetricsProps) => {
     return useMemo(() => {
         // 1. Vielseitigkeit (Active Skills > 0)
@@ -36,10 +39,17 @@ export const useEmployeeMetrics = ({
 
         skills.forEach(skill => {
             const assessment = getAssessment(employee.id!, skill.id!);
-            const target = assessment?.targetLevel;
-            if (target !== undefined && target > 0) {
+            const individualTarget = assessment?.targetLevel;
+            const roleTarget = getMaxRoleTargetForSkill(employee.roles, skill.id!, roles);
+
+            // Effective target is the maximum of individual and role target (if defined)
+            // But we treat undefined as 0 for calculation
+            const target = Math.max(individualTarget || 0, roleTarget || 0);
+
+            if (target > 0) {
                 totalTarget += target;
-                totalActualForTarget += (assessment?.level || 0);
+                totalActualForTarget += (assessment?.level || 0); // Only count active skill level if there is a target? 
+                // Or usually if level > target we cap it? Let's keep it simple: sum of actuals vs sum of targets.
             }
         });
 
@@ -54,9 +64,15 @@ export const useEmployeeMetrics = ({
         const learningNeeds = skills
             .map((skill) => {
                 const assessment = getAssessment(employee.id!, skill.id!);
-                const target = assessment?.targetLevel || 0;
+                const individualTarget = assessment?.targetLevel || 0;
+                const roleTarget = getMaxRoleTargetForSkill(employee.roles, skill.id!, roles) || 0;
+                const target = Math.max(individualTarget, roleTarget);
+
                 const level = assessment?.level || 0;
-                return { skill, level, target, gap: level - target };
+                // If level is -1 (N/A) treat as 0 for gap calculation if there is a target
+                const effectiveLevel = level === -1 ? 0 : level;
+
+                return { skill, level: effectiveLevel, target, gap: effectiveLevel - target };
             })
             .filter(item => item.gap < 0 && item.target > 0)
             .sort((a, b) => a.gap - b.gap)
@@ -84,5 +100,5 @@ export const useEmployeeMetrics = ({
             hasDeficits,
             isPlanEnabled
         };
-    }, [employee.id, skills, getAssessment, qualificationPlans, qualificationMeasures]);
+    }, [employee.id, employee.roles, skills, getAssessment, qualificationPlans, qualificationMeasures, roles]);
 };

@@ -1,6 +1,16 @@
 # Changelog
 
 
+## [2.8.0] - 2026-02-08
+
+### Neue Funktionen & Verbesserungen
+- **Organigramm-Priorisierung**: Im Manager ist nun standardmäßig die Organigramm-Ansicht aktiv, um die Struktur besser zu visualisieren.
+- **Erweitertes Copy & Paste**: Im Organigramm können nun Unterkategorien in andere Unterkategorien kopiert oder verschoben werden (Verschachtelung).
+- **Navigation**: Verbesserte Integration zwischen Skill Matrix und Qualifizierungsplan. Die Mitarbeiterauswahl bleibt nun auch beim Wechsel zwischen den Ansichten oder beim Neuladen der Parameter stabil erhalten.
+
+### Behobene Fehler
+- **Auswahl-Verlust**: Ein Fehler wurde behoben, bei dem die Vorselektion eines Mitarbeiters im Qualifizierungsplan verloren ging, wenn die Navigation durch interne Updates bereinigt wurde.
+
 ## [2.7.2] - 2026-02-07
 
 ### Behobene Fehler
