@@ -8,9 +8,10 @@
 - [ ] Metrik Matrix, Rollensoll erfüllung
 - [ ] Drawer Speicherbuttons anordnung
 - [ ] Demodaten?
-
+- [ ] Erstellen mehrerer gleicher Unterkategorien in Unterkategrien
 
 ### Abgeschlossen
+
 - [x] Organigramm kopieren von Untergruppen und einfügen dieser in Untergruppen
 - [x] Alle popup meldungen als Modal? nicht browser alert
 - [x] Solllevel Indikatoren auch besserer Tooltip
@@ -35,7 +36,6 @@
 - [x] Maßnahme "Selbstlerner"
 
 ## Bugs
-
 
 ### Abgeschlossen
 
