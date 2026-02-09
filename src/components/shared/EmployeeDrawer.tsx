@@ -11,7 +11,12 @@ import {
   Autocomplete,
   MultiSelect,
   Modal,
+  Switch,
+  Box,
+  TagsInput,
 } from "@mantine/core";
+import { DatePickerInput } from "@mantine/dates";
+import "@mantine/dates/styles.css";
 import { useHotkeys } from "@mantine/hooks";
 import { modals } from "@mantine/modals";
 import { notifications } from "@mantine/notifications";
@@ -22,9 +27,9 @@ import { useData } from "../../context/DataContext";
 interface EmployeeDrawerProps {
   opened: boolean;
   onClose: () => void;
-  onSave: (name: string, department: string, roles: string[]) => Promise<void>;
+  onSave: (name: string, department: string, roles: string[], isActive: boolean, deactivationDate?: Date | null, reactivationDate?: Date | null) => Promise<void>;
   onDelete?: (id: string) => Promise<void>;
-  initialData?: { name: string; department: string; roles?: string[] };
+  initialData?: { name: string; department: string; roles?: string[]; isActive?: boolean; deactivationDate?: string; reactivationDate?: string };
   isEditing?: boolean;
   employeeId?: string | null;
 }
@@ -39,7 +44,14 @@ export const EmployeeDrawer: React.FC<EmployeeDrawerProps> = ({
   employeeId,
 }) => {
   const { employees, departments, roles, addDepartment, addRole } = useData();
-  const [formData, setFormData] = useState({ name: "", department: "", roles: [] as string[] });
+  const [formData, setFormData] = useState({
+    name: "",
+    department: "",
+    roles: [] as string[],
+    isActive: true,
+    deactivationDate: null as Date | null,
+    reactivationDate: null as Date | null,
+  });
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<string | null>("details");
 
@@ -49,6 +61,9 @@ export const EmployeeDrawer: React.FC<EmployeeDrawerProps> = ({
         name: initialData?.name || "",
         department: initialData?.department || "",
         roles: initialData?.roles || [],
+        isActive: initialData?.isActive !== undefined ? initialData.isActive : true,
+        deactivationDate: initialData?.deactivationDate ? new Date(initialData.deactivationDate) : null,
+        reactivationDate: initialData?.reactivationDate ? new Date(initialData.reactivationDate) : null,
       });
       setActiveTab("details");
     }
@@ -90,7 +105,14 @@ export const EmployeeDrawer: React.FC<EmployeeDrawerProps> = ({
         }
       }
 
-      await onSave(formData.name.trim(), trimmedDept, trimmedRoles);
+      await onSave(
+        formData.name.trim(),
+        trimmedDept,
+        trimmedRoles,
+        formData.isActive,
+        formData.deactivationDate,
+        formData.reactivationDate
+      );
       onClose();
     } catch (error) {
       console.error("Fehler beim Speichern:", error);
@@ -159,9 +181,21 @@ export const EmployeeDrawer: React.FC<EmployeeDrawerProps> = ({
     const initName = initialData?.name || "";
     const initDept = initialData?.department || "";
     const initRoles = (initialData?.roles || []).slice().sort();
+    const initActive = initialData?.isActive !== undefined ? initialData.isActive : true;
+
+    // Normalize dates for comparison (null vs undefined, string vs Date)
+    const initDeact = initialData?.deactivationDate ? new Date(initialData.deactivationDate).getTime() : 0;
+    const currDeact = formData.deactivationDate ? formData.deactivationDate.getTime() : 0;
+
+    const initReact = initialData?.reactivationDate ? new Date(initialData.reactivationDate).getTime() : 0;
+    const currReact = formData.reactivationDate ? formData.reactivationDate.getTime() : 0;
+
 
     if (formData.name !== initName) return true;
     if (formData.department !== initDept) return true;
+    if (formData.isActive !== initActive) return true;
+    if (initDeact !== currDeact) return true;
+    if (initReact !== currReact) return true;
 
     const currRoles = formData.roles.slice().sort();
     if (JSON.stringify(currRoles) !== JSON.stringify(initRoles)) return true;
@@ -203,46 +237,85 @@ export const EmployeeDrawer: React.FC<EmployeeDrawerProps> = ({
             </Tabs.List>
 
             <Tabs.Panel value="details">
-              <Stack gap="md">
-                <TextInput
-                  label="Vollständiger Name"
-                  placeholder="z.B. Max Mustermann"
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.currentTarget.value })
-                  }
-                  onKeyDown={handleKeyDown}
-                  data-autofocus
-                  required
-                />
+              <Stack gap="md" h="calc(100vh - 140px)" justify="space-between">
+                <Box style={{ flex: 1, overflowY: "auto", paddingRight: 4 }}>
+                  <Stack>
+                    <TextInput
+                      label="Vollständiger Name"
+                      placeholder="z.B. Max Mustermann"
+                      value={formData.name}
+                      onChange={(e) =>
+                        setFormData({ ...formData, name: e.currentTarget.value })
+                      }
+                      onKeyDown={handleKeyDown}
+                      data-autofocus
+                      required
+                    />
 
-                <Autocomplete
-                  label="Abteilung / Team"
-                  placeholder="Wähle eine Abteilung oder erstelle neu"
-                  data={departments.map((d) => d.name)}
-                  value={formData.department}
-                  onChange={(value) =>
-                    setFormData({ ...formData, department: value || "" })
-                  }
-                />
+                    <Autocomplete
+                      label="Abteilung / Team"
+                      placeholder="Wähle eine Abteilung oder erstelle neu"
+                      data={departments.map((d) => d.name)}
+                      value={formData.department}
+                      onChange={(value) =>
+                        setFormData({ ...formData, department: value || "" })
+                      }
+                    />
 
-                <MultiSelect
-                  label="Rollen / Qualifikations-Level"
-                  placeholder="Wähle Rollen oder erstelle neu"
-                  data={roles.map(r => r.name)}
-                  value={formData.roles}
-                  onChange={(value) => setFormData({ ...formData, roles: value })}
-                  searchable
-                  clearable
-                  creatable
-                  getCreateLabel={(query) => `+ "${query}" erstellen`}
-                  onCreate={(query) => {
-                    setFormData({ ...formData, roles: [...formData.roles, query] });
-                    return query;
-                  }}
-                />
+                    <TagsInput
+                      label="Rollen / Qualifikations-Level"
+                      placeholder="Wähle Rollen oder erstelle neu"
+                      data={roles.map(r => r.name)}
+                      value={formData.roles}
+                      onChange={(value) => setFormData({ ...formData, roles: value })}
+                      splitChars={[',']}
+                      clearable
+                    />
+                    {/* Deactivation Section */}
+                    <Divider label="Status & Deaktivierung" labelPosition="center" mt="md" />
 
-                <Group justify="space-between" mt="xl">
+                    <Switch
+                      label="Mitarbeiter ist aktiv"
+                      labelPosition="left"
+                      checked={formData.isActive}
+                      onChange={(event) => {
+                        const active = event.currentTarget.checked;
+                        setFormData(prev => ({
+                          ...prev,
+                          isActive: active,
+                          deactivationDate: !active && !prev.deactivationDate ? new Date() : prev.deactivationDate
+                        }));
+                      }}
+                      size="md"
+                      onLabel="JA"
+                      offLabel="NEIN"
+                      mb={formData.isActive ? 0 : "md"}
+                    />
+
+                    {!formData.isActive && (
+                      <Group grow mt="xs">
+                        <DatePickerInput
+                          label="Deaktiviert ab"
+                          placeholder="Datum wählen"
+                          value={formData.deactivationDate}
+                          onChange={(date) => setFormData({ ...formData, deactivationDate: date as Date | null })}
+                          clearable
+                        />
+                        <DatePickerInput
+                          label="Wieder aktiv ab (optional)"
+                          placeholder="Datum wählen"
+                          description="z.B. bei Elternzeit oder Sabbatical"
+                          value={formData.reactivationDate}
+                          onChange={(date) => setFormData({ ...formData, reactivationDate: date as Date | null })}
+                          clearable
+                        />
+                      </Group>
+                    )}
+                  </Stack>
+
+
+                </Box>
+                <Group justify="space-between" mt="md" pt="md" style={{ borderTop: '1px solid var(--mantine-color-default-border)' }}>
                   {onDelete && (
                     <Button variant="light" color="red" onClick={handleDelete} loading={loading}>
                       Löschen
@@ -267,50 +340,48 @@ export const EmployeeDrawer: React.FC<EmployeeDrawerProps> = ({
             <Tabs.Panel value="history">
               <HistoryTimeline employeeId={employeeId} />
             </Tabs.Panel>
-          </Tabs>
+          </Tabs >
         ) : (
-          <Stack gap="md">
-            <Divider label="Personalinformationen" labelPosition="center" />
+          <Stack gap="md" h="calc(100vh - 100px)" justify="space-between">
+            <Box style={{ flex: 1, overflowY: "auto", paddingRight: 4 }}>
+              <Stack>
+                <Divider label="Personalinformationen" labelPosition="center" />
 
-            <TextInput
-              label="Vollständiger Name"
-              placeholder="z.B. Max Mustermann"
-              value={formData.name}
-              onChange={(e) =>
-                setFormData({ ...formData, name: e.currentTarget.value })
-              }
-              onKeyDown={handleKeyDown}
-              data-autofocus
-              required
-            />
+                <TextInput
+                  label="Vollständiger Name"
+                  placeholder="z.B. Max Mustermann"
+                  value={formData.name}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.currentTarget.value })
+                  }
+                  onKeyDown={handleKeyDown}
+                  data-autofocus
+                  required
+                />
 
-            <Autocomplete
-              label="Abteilung / Team"
-              placeholder="Wähle eine Abteilung oder erstelle neu"
-              data={departments.map((d) => d.name)}
-              value={formData.department}
-              onChange={(value) =>
-                setFormData({ ...formData, department: value || "" })
-              }
-            />
+                <Autocomplete
+                  label="Abteilung / Team"
+                  placeholder="Wähle eine Abteilung oder erstelle neu"
+                  data={departments.map((d) => d.name)}
+                  value={formData.department}
+                  onChange={(value) =>
+                    setFormData({ ...formData, department: value || "" })
+                  }
+                />
 
-            <MultiSelect
-              label="Rollen / Qualifikations-Level"
-              placeholder="Wähle Rollen oder erstelle neu"
-              data={roles.map(r => r.name)}
-              value={formData.roles}
-              onChange={(value) => setFormData({ ...formData, roles: value })}
-              searchable
-              clearable
-              creatable
-              getCreateLabel={(query) => `+ "${query}" erstellen`}
-              onCreate={(query) => {
-                setFormData({ ...formData, roles: [...formData.roles, query] });
-                return query;
-              }}
-            />
+                <TagsInput
+                  label="Rollen / Qualifikations-Level"
+                  placeholder="Wähle Rollen oder erstelle neu"
+                  data={roles.map(r => r.name)}
+                  value={formData.roles}
+                  onChange={(value) => setFormData({ ...formData, roles: value })}
+                  splitChars={[',']}
+                  clearable
+                />
+              </Stack>
+            </Box>
 
-            <Group justify="flex-end" mt="xl">
+            <Group justify="flex-end" mt="md" pt="md" style={{ borderTop: '1px solid var(--mantine-color-default-border)' }}>
               <Button variant="subtle" color="gray" onClick={handleCloseAttempt}>
                 Abbrechen
               </Button>
@@ -324,7 +395,7 @@ export const EmployeeDrawer: React.FC<EmployeeDrawerProps> = ({
             </Group>
           </Stack>
         )}
-      </Drawer>
+      </Drawer >
 
       <Modal
         opened={confirmationOpen}

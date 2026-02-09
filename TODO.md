@@ -2,11 +2,10 @@
 
 ## Verbesserungen
 
-- [ ] Mitarbeiter "deaktivieren" (nicht mehr sichtbar, und nicht Auswertung)
+- [x] Mitarbeiter "deaktivieren" (nicht mehr sichtbar, und nicht Auswertung)
 - [ ] Dashboard überarbeiten?
-- [ ] Inline bearbeitung
 - [ ] Metrik Matrix, Rollensoll erfüllung
-- [ ] Drawer Speicherbuttons anordnung
+- [x] Drawer Speicherbuttons anordnung
 - [ ] Demodaten?
 - [ ] Erstellen mehrerer gleicher Unterkategorien in Unterkategrien
 

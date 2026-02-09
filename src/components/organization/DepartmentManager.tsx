@@ -13,6 +13,7 @@ import {
     Avatar,
     Tooltip,
     Modal,
+    Box,
 } from "@mantine/core";
 import { IconPlus, IconTrash, IconBuilding, IconEdit } from "@tabler/icons-react";
 import { useDisclosure } from "@mantine/hooks";
@@ -189,18 +190,20 @@ export const DepartmentManager: React.FC = () => {
                 title={editingId ? "Abteilung bearbeiten" : "Neue Abteilung"}
                 overlayProps={{ backgroundOpacity: 0.5, blur: 4 }}
             >
-                <Stack>
-                    <TextInput
-                        label="Name"
-                        placeholder="Name der Abteilung"
-                        value={name}
-                        onChange={(e) => setName(e.currentTarget.value)}
-                        data-autofocus
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter') handleSave();
-                        }}
-                    />
-                    <Group justify="space-between" mt="md">
+                <Stack h="calc(100vh - 100px)" justify="space-between" gap="md">
+                    <Box style={{ flex: 1, overflowY: 'auto', paddingRight: 4 }}>
+                        <TextInput
+                            label="Name"
+                            placeholder="Name der Abteilung"
+                            value={name}
+                            onChange={(e) => setName(e.currentTarget.value)}
+                            data-autofocus
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleSave();
+                            }}
+                        />
+                    </Box>
+                    <Group justify="space-between" mt="md" pt="md" style={{ borderTop: '1px solid var(--mantine-color-default-border)' }}>
                         {editingId ? (
                             <Button
                                 color="red"

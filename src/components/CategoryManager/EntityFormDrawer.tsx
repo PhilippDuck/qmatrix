@@ -11,6 +11,7 @@ import {
   Select,
   MultiSelect,
   Modal,
+  Box,
 } from "@mantine/core";
 import { useHotkeys } from "@mantine/hooks";
 import { Department, EmployeeRole } from "../../services/indexeddb";
@@ -134,92 +135,96 @@ export const EntityFormDrawer: React.FC<EntityFormDrawerProps> = ({
           </Text>
         }
       >
-        <Stack gap="md">
-          {parentContext && (
-            <div
-              style={{
-                backgroundColor: "var(--mantine-color-blue-light)",
-                padding: "8px 12px",
-                borderRadius: "4px",
-                border: "1px solid var(--mantine-color-blue-2)",
-              }}
-            >
-              <Text size="sm" c="blue.8" fw={500}>
-                Zuordnung: {parentContext}
-              </Text>
-            </div>
-          )}
-
-          <Divider
-            label={`Eingabe für ${MODE_LABELS[formMode]}`}
-            labelPosition="center"
-          />
-
-          <TextInput
-            label="Name"
-            placeholder="Bezeichnung eingeben..."
-            value={inputValue}
-            onChange={(e) => onInputChange(e.currentTarget.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && inputValue.trim()) {
-                e.preventDefault();
-                handleCreate();
-              }
-            }}
-            data-autofocus
-            required
-          />
-
-          <Textarea
-            label="Beschreibung"
-            placeholder="Zusätzliche Informationen, Details oder Lernziele..."
-            value={inputDescription}
-            onChange={(e) => onDescriptionChange(e.currentTarget.value)}
-            minRows={4}
-            autosize
-          />
-
-          {formMode === "skill" && (
-            <>
-              <Divider label="Zuordnung & Anforderungen" labelPosition="center" />
-
-              <Select
-                label="Zuständige Abteilung (Optional)"
-                placeholder="Wähle eine Abteilung"
-                data={departments.map(d => ({ value: d.id!, label: d.name }))}
-                value={selectedDepartmentId}
-                onChange={(val) => onDepartmentChange?.(val)}
-                clearable
-                searchable
-              />
-
-              <MultiSelect
-                label="Erforderlich für Rollen / Level (Optional)"
-                placeholder="Wähle Rollen aus"
-                data={roles.map(r => ({ value: r.id!, label: r.name }))}
-                value={selectedRoleIds || []}
-                onChange={(vals) => onRolesChange?.(vals)}
-                searchable
-                clearable
-              />
-
-              {!editingId && onSubcategoriesChange && (
-                <MultiSelect
-                  label="Auch anderen Kategorien hinzufügen (Kopie)"
-                  placeholder="Wähle weitere Unterkategorien"
-                  description="Der Skill wird auch in den gewählten Unterkategorien erstellt."
-                  data={subcategories}
-                  value={selectedSubCategoryIds || []}
-                  onChange={(vals) => onSubcategoriesChange && onSubcategoriesChange(vals)}
-                  searchable
-                  clearable
-                  mt="md"
-                />
+        <Stack gap="md" h="calc(100vh - 100px)" justify="space-between">
+          <Box style={{ flex: 1, overflowY: 'auto', paddingRight: 4 }}>
+            <Stack gap="md">
+              {parentContext && (
+                <div
+                  style={{
+                    backgroundColor: "var(--mantine-color-blue-light)",
+                    padding: "8px 12px",
+                    borderRadius: "4px",
+                    border: "1px solid var(--mantine-color-blue-2)",
+                  }}
+                >
+                  <Text size="sm" c="blue.8" fw={500}>
+                    Zuordnung: {parentContext}
+                  </Text>
+                </div>
               )}
-            </>
-          )}
 
-          <Group justify="space-between" mt="xl">
+              <Divider
+                label={`Eingabe für ${MODE_LABELS[formMode]}`}
+                labelPosition="center"
+              />
+
+              <TextInput
+                label="Name"
+                placeholder="Bezeichnung eingeben..."
+                value={inputValue}
+                onChange={(e) => onInputChange(e.currentTarget.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && inputValue.trim()) {
+                    e.preventDefault();
+                    handleCreate();
+                  }
+                }}
+                data-autofocus
+                required
+              />
+
+              <Textarea
+                label="Beschreibung"
+                placeholder="Zusätzliche Informationen, Details oder Lernziele..."
+                value={inputDescription}
+                onChange={(e) => onDescriptionChange(e.currentTarget.value)}
+                minRows={4}
+                autosize
+              />
+
+              {formMode === "skill" && (
+                <>
+                  <Divider label="Zuordnung & Anforderungen" labelPosition="center" />
+
+                  <Select
+                    label="Zuständige Abteilung (Optional)"
+                    placeholder="Wähle eine Abteilung"
+                    data={departments.map(d => ({ value: d.id!, label: d.name }))}
+                    value={selectedDepartmentId}
+                    onChange={(val) => onDepartmentChange?.(val)}
+                    clearable
+                    searchable
+                  />
+
+                  <MultiSelect
+                    label="Erforderlich für Rollen / Level (Optional)"
+                    placeholder="Wähle Rollen aus"
+                    data={roles.map(r => ({ value: r.id!, label: r.name }))}
+                    value={selectedRoleIds || []}
+                    onChange={(vals) => onRolesChange?.(vals)}
+                    searchable
+                    clearable
+                  />
+
+                  {!editingId && onSubcategoriesChange && (
+                    <MultiSelect
+                      label="Auch anderen Kategorien hinzufügen (Kopie)"
+                      placeholder="Wähle weitere Unterkategorien"
+                      description="Der Skill wird auch in den gewählten Unterkategorien erstellt."
+                      data={subcategories}
+                      value={selectedSubCategoryIds || []}
+                      onChange={(vals) => onSubcategoriesChange && onSubcategoriesChange(vals)}
+                      searchable
+                      clearable
+                      mt="md"
+                    />
+                  )}
+                </>
+              )}
+            </Stack>
+          </Box>
+
+          <Group justify="space-between" mt="md" pt="md" style={{ borderTop: '1px solid var(--mantine-color-default-border)' }}>
             {editingId && onDelete ? (
               <Button variant="light" color="red" onClick={onDelete}>
                 Löschen

@@ -271,112 +271,116 @@ export const PlanForm: React.FC<PlanFormProps> = ({
           </Text>
         }
       >
-        <Stack gap="md">
-          <Divider label="Grunddaten" labelPosition="center" />
+        <Stack gap="md" h="calc(100vh - 100px)" justify="space-between">
+          <Box style={{ flex: 1, overflowY: 'auto', paddingRight: 4 }}>
+            <Stack gap="md">
+              <Divider label="Grunddaten" labelPosition="center" />
 
-          <Select
-            label="Mitarbeiter"
-            placeholder="Mitarbeiter auswählen"
-            leftSection={<IconUser size={16} />}
-            data={selectData}
-            value={formData.employeeId}
-            onChange={(value) =>
-              setFormData({ ...formData, employeeId: value || "" })
-            }
-            searchable
-            required
-            disabled={isEditing}
-          />
-          <Checkbox
-            label="Nur Mitarbeiter mit aktuellen Defiziten anzeigen"
-            checked={filterDeficits}
-            onChange={(event) => setFilterDeficits(event.currentTarget.checked)}
-            mb="sm"
-            size="xs"
-          />
-
-          <Select
-            label="Zielrolle (Optional)"
-            placeholder="Keine Zielrolle (Individuelle Entwicklung)"
-            leftSection={<IconTarget size={16} />}
-            data={roles.map((r) => ({ value: r.id!, label: r.name }))}
-            value={formData.targetRoleId}
-            onChange={(value) =>
-              setFormData({ ...formData, targetRoleId: value || "" })
-            }
-            searchable
-            clearable
-            description={
-              selectedEmployee?.roles && selectedEmployee.roles.length > 0
-                ? `Aktuelle Rollen: ${selectedEmployee.roles.join(", ")}`
-                : "Wählen Sie eine Zielrolle oder lassen Sie das Feld leer für individuelle Ziele."
-            }
-          />
-
-          <Select
-            label="Status"
-            data={[
-              { value: "draft", label: "Entwurf" },
-              { value: "active", label: "Aktiv" },
-              { value: "completed", label: "Abgeschlossen" },
-              { value: "archived", label: "Archiviert" },
-            ]}
-            value={formData.status}
-            onChange={(value) =>
-              setFormData({
-                ...formData,
-                status: (value as QualificationPlan["status"]) || "draft",
-              })
-            }
-          />
-
-          <Textarea
-            label="Notizen"
-            placeholder="Optionale Notizen zum Plan..."
-            value={formData.notes}
-            onChange={(e) =>
-              setFormData({ ...formData, notes: e.currentTarget.value })
-            }
-            minRows={3}
-          />
-
-          {formData.employeeId && (
-            <>
-              <Divider
-                label={
-                  <Group gap="xs">
-                    <Text>Defizit-Analyse</Text>
-                    {skillGaps.length > 0 && (
-                      <Badge color="red" size="sm">
-                        {skillGaps.length} Defizite
-                      </Badge>
-                    )}
-                  </Group>
+              <Select
+                label="Mitarbeiter"
+                placeholder="Mitarbeiter auswählen"
+                leftSection={<IconUser size={16} />}
+                data={selectData}
+                value={formData.employeeId}
+                onChange={(value) =>
+                  setFormData({ ...formData, employeeId: value || "" })
                 }
-                labelPosition="center"
+                searchable
+                required
+                disabled={isEditing}
+              />
+              <Checkbox
+                label="Nur Mitarbeiter mit aktuellen Defiziten anzeigen"
+                checked={filterDeficits}
+                onChange={(event) => setFilterDeficits(event.currentTarget.checked)}
+                mb="sm"
+                size="xs"
               />
 
-              {skillGaps.length === 0 ? (
-                <Alert color="green" icon={<IconAlertCircle size={16} />}>
-                  {formData.targetRoleId
-                    ? (roles.find(r => r.id === formData.targetRoleId)?.requiredSkills?.length
-                      ? "Keine Skill-Defizite gefunden! Der Mitarbeiter erfüllt bereits alle Anforderungen der Zielrolle."
-                      : "Diese Rolle hat keine Skill-Anforderungen definiert.")
-                    : "Keine Defizite gefunden. (Basierend auf individuell festgelegten Soll-Werten)"}
-                </Alert>
-              ) : (
-                <Box style={{ maxHeight: 400, overflowY: "auto" }}>
-                  <SkillGapAnalysis
-                    gaps={skillGaps}
-                    employeeId={formData.employeeId}
-                    compact
-                  />
-                </Box>
-              )}
-            </>
-          )}
+              <Select
+                label="Zielrolle (Optional)"
+                placeholder="Keine Zielrolle (Individuelle Entwicklung)"
+                leftSection={<IconTarget size={16} />}
+                data={roles.map((r) => ({ value: r.id!, label: r.name }))}
+                value={formData.targetRoleId}
+                onChange={(value) =>
+                  setFormData({ ...formData, targetRoleId: value || "" })
+                }
+                searchable
+                clearable
+                description={
+                  selectedEmployee?.roles && selectedEmployee.roles.length > 0
+                    ? `Aktuelle Rollen: ${selectedEmployee.roles.join(", ")}`
+                    : "Wählen Sie eine Zielrolle oder lassen Sie das Feld leer für individuelle Ziele."
+                }
+              />
 
-          <Group justify="flex-end" mt="xl">
+              <Select
+                label="Status"
+                data={[
+                  { value: "draft", label: "Entwurf" },
+                  { value: "active", label: "Aktiv" },
+                  { value: "completed", label: "Abgeschlossen" },
+                  { value: "archived", label: "Archiviert" },
+                ]}
+                value={formData.status}
+                onChange={(value) =>
+                  setFormData({
+                    ...formData,
+                    status: (value as QualificationPlan["status"]) || "draft",
+                  })
+                }
+              />
+
+              <Textarea
+                label="Notizen"
+                placeholder="Optionale Notizen zum Plan..."
+                value={formData.notes}
+                onChange={(e) =>
+                  setFormData({ ...formData, notes: e.currentTarget.value })
+                }
+                minRows={3}
+              />
+
+              {formData.employeeId && (
+                <>
+                  <Divider
+                    label={
+                      <Group gap="xs">
+                        <Text>Defizit-Analyse</Text>
+                        {skillGaps.length > 0 && (
+                          <Badge color="red" size="sm">
+                            {skillGaps.length} Defizite
+                          </Badge>
+                        )}
+                      </Group>
+                    }
+                    labelPosition="center"
+                  />
+
+                  {skillGaps.length === 0 ? (
+                    <Alert color="green" icon={<IconAlertCircle size={16} />}>
+                      {formData.targetRoleId
+                        ? (roles.find(r => r.id === formData.targetRoleId)?.requiredSkills?.length
+                          ? "Keine Skill-Defizite gefunden! Der Mitarbeiter erfüllt bereits alle Anforderungen der Zielrolle."
+                          : "Diese Rolle hat keine Skill-Anforderungen definiert.")
+                        : "Keine Defizite gefunden. (Basierend auf individuell festgelegten Soll-Werten)"}
+                    </Alert>
+                  ) : (
+                    <Box style={{ maxHeight: 400, overflowY: "auto" }}>
+                      <SkillGapAnalysis
+                        gaps={skillGaps}
+                        employeeId={formData.employeeId}
+                        compact
+                      />
+                    </Box>
+                  )}
+                </>
+              )}
+            </Stack>
+          </Box>
+
+          <Group justify="flex-end" mt="md" pt="md" style={{ borderTop: '1px solid var(--mantine-color-default-border)' }}>
             <Button variant="subtle" color="gray" onClick={handleCloseAttempt}>
               Abbrechen
             </Button>

@@ -7,6 +7,9 @@ export interface Employee {
   name: string;
   department?: string;
   roles?: string[];  // Multiple roles per employee
+  isActive?: boolean; // Default true if undefined
+  deactivationDate?: string; // ISO Date String
+  reactivationDate?: string; // ISO Date String
   updatedAt?: number;
 }
 
@@ -127,6 +130,7 @@ export interface SavedView {
       showMaxValues: boolean;
       hideEmployees: boolean;
       hideNaColumns?: boolean; // Optional for backward compatibility
+      showInactive?: boolean; // [NEW] Optional for backward compatibility
     };
     sort: {
       employee: 'asc' | 'desc' | null;

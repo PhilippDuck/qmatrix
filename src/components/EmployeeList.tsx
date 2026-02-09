@@ -11,7 +11,7 @@ import {
 } from "@mantine/core";
 import { useDisclosure, useHotkeys } from "@mantine/hooks";
 import { modals } from "@mantine/modals";
-import { IconPlus, IconEdit, IconTrash, IconUser } from "@tabler/icons-react";
+import { IconPlus, IconEdit, IconTrash, IconUser, IconUserOff } from "@tabler/icons-react";
 import { useData } from "../context/DataContext";
 import { usePrivacy } from "../context/PrivacyContext";
 import { Employee } from "../services/indexeddb";
@@ -24,12 +24,26 @@ export const EmployeeList: React.FC = () => {
   const [opened, { open, close }] = useDisclosure(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [initialData, setInitialData] = useState({ name: "", department: "", roles: [] as string[] });
+  const [initialData, setInitialData] = useState({
+    name: "",
+    department: "",
+    roles: [] as string[],
+    isActive: true,
+    deactivationDate: undefined as string | undefined,
+    reactivationDate: undefined as string | undefined
+  });
   const [filterRole, setFilterRole] = useState<string | null>(null);
   const [filterDepartment, setFilterDepartment] = useState<string | null>(null);
 
   const handleOpenNew = () => {
-    setInitialData({ name: "", department: "", roles: [] });
+    setInitialData({
+      name: "",
+      department: "",
+      roles: [],
+      isActive: true,
+      deactivationDate: undefined,
+      reactivationDate: undefined
+    });
     setIsEditing(false);
     setEditingId(null);
     open();
@@ -39,7 +53,10 @@ export const EmployeeList: React.FC = () => {
     setInitialData({
       name: employee.name,
       department: employee.department || "",
-      roles: employee.roles || []
+      roles: employee.roles || [],
+      isActive: employee.isActive !== undefined ? employee.isActive : true,
+      deactivationDate: employee.deactivationDate,
+      reactivationDate: employee.reactivationDate
     });
     setIsEditing(true);
     setEditingId(employee.id!);
@@ -51,11 +68,19 @@ export const EmployeeList: React.FC = () => {
     handleOpenNew();
   }]], ['INPUT', 'TEXTAREA', 'SELECT']);
 
-  const handleSave = async (name: string, department: string, roles: string[]) => {
+  const handleSave = async (name: string, department: string, roles: string[], isActive: boolean, deactivationDate?: Date | null, reactivationDate?: Date | null) => {
+    const data = {
+      name,
+      department,
+      roles,
+      isActive,
+      deactivationDate: deactivationDate?.toISOString(),
+      reactivationDate: reactivationDate?.toISOString()
+    };
     if (isEditing && editingId) {
-      await updateEmployee(editingId, { name, department, roles });
+      await updateEmployee(editingId, data);
     } else {
-      await addEmployee({ name, department, roles });
+      await addEmployee(data);
     }
   };
 
@@ -142,8 +167,13 @@ export const EmployeeList: React.FC = () => {
                 <Table.Tr key={employee.id}>
                   <Table.Td style={{ paddingLeft: "20px" }}>
                     <Group gap="sm">
-                      <IconUser size={16} color="gray" />
-                      <Text size="sm" fw={500}>
+
+                      {employee.isActive === false ? (
+                        <IconUserOff size={16} color="gray" />
+                      ) : (
+                        <IconUser size={16} color="gray" />
+                      )}
+                      <Text size="sm" fw={500} td={employee.isActive === false ? "line-through" : undefined} c={employee.isActive === false ? "dimmed" : undefined}>
                         {anonymizeName(employee.name, employee.id)}
                       </Text>
                     </Group>

@@ -1,6 +1,18 @@
 # Changelog
 
 
+## [2.8.1] - 2026-02-09
+
+### Neue Funktionen & Verbesserungen
+- **Mitarbeiter-Deaktivierung (Wissensverlust-Prävention)**: Mitarbeiter können nun als "Inaktiv" markiert werden (z.B. bei Austritt, Ruhestand oder Sabbatical).
+  - Inaktive Mitarbeiter werden standardmäßig in der Matrix ausgeblendet, können aber über einen neuen Toggle-Button ("Wissensverlust anzeigen") wieder eingeblendet werden.
+  - Deaktivierte Profile werden in KPI-Berechnungen (Durchschnitte, XP) ignoriert, um den aktuellen Status nicht zu verfälschen.
+  - Im "Mitarbeiter bearbeiten"-Drawer gibt es nun einen eigenen Bereich für "Status & Deaktivierung" mit Datumsfeldern für Deaktivierung und optionale Reaktivierung.
+- **Konsistentes Layout**: Alle Drawer (Mitarbeiter, Abteilungen, Rollen, Maßnahmen, etc.) haben nun einheitlich positionierte Aktions-Buttons ("Abbrechen", "Speichern") am unteren Rand des Fensters. Dies verbessert die Bedienbarkeit, da Buttons immer an festen Positionen erreichbar sind, unabhängig von der Scrollposition.
+
+### Wartung
+- **Code-Qualität**: Behebung von Linting-Fehlern im `EmployeeDrawer` und allgemeine Code-Bereinigung.
+
 ## [2.8.0] - 2026-02-08
 
 ### Neue Funktionen & Verbesserungen

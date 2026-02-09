@@ -30,6 +30,7 @@ import {
   IconEyeOff,
   IconDeviceFloppy,
   IconColumnsOff,
+  IconUserOff,
 } from "@tabler/icons-react";
 import { useData, Employee, SavedView } from "../../context/DataContext";
 import { ViewTabs } from "./ViewTabs";
@@ -192,6 +193,14 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
     defaultValue: false,
   });
 
+  // Toggle for showing inactive employees
+  const [showInactive, setShowInactive] = useLocalStorage<boolean>({
+    key: 'skill-matrix-show-inactive',
+    defaultValue: false,
+  });
+
+
+
   const [filtersOpened, setFiltersOpened] = useState(false);
 
   // Saved View State
@@ -216,7 +225,9 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
     // Apply settings
     setShowMaxValues(view.config.settings.showMaxValues);
     setHideEmployees(view.config.settings.hideEmployees);
+    setHideEmployees(view.config.settings.hideEmployees);
     setHideNaColumns(view.config.settings.hideNaColumns || false);
+    setShowInactive(view.config.settings.showInactive || false);
 
     // Apply sort
     setEmployeeSort(view.config.sort.employee);
@@ -243,6 +254,7 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
           showMaxValues: showMaxValues,
           hideEmployees: hideEmployees,
           hideNaColumns: hideNaColumns,
+          showInactive: showInactive,
         },
         sort: {
           employee: employeeSort,
@@ -275,6 +287,7 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
       config.settings.showMaxValues !== showMaxValues ||
       config.settings.hideEmployees !== hideEmployees ||
       config.settings.hideNaColumns !== hideNaColumns ||
+      config.settings.showInactive !== showInactive ||
       config.sort.employee !== employeeSort ||
       config.sort.skill !== skillSort ||
       JSON.stringify(config.collapsedStates || {}) !== JSON.stringify(collapsedStates)
@@ -301,6 +314,7 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
             showMaxValues: showMaxValues,
             hideEmployees: hideEmployees,
             hideNaColumns: hideNaColumns,
+            showInactive: showInactive,
           },
           sort: {
             employee: employeeSort,
@@ -326,7 +340,9 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
     setGroupingMode("none");
     setShowMaxValues(false);
     setHideEmployees(false);
+    setHideEmployees(false);
     setHideNaColumns(false);
+    setShowInactive(false);
     setEmployeeSort(null);
     setSkillSort(null);
   };
@@ -345,6 +361,11 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
     // Focus filter
     if (focusEmployeeId) {
       result = result.filter((e) => e.id === focusEmployeeId);
+    }
+
+    // Filter Inactive
+    if (!showInactive) {
+      result = result.filter(e => e.isActive !== false);
     }
 
     // Department filter - filterDepartments contains IDs, e.department contains name
@@ -406,7 +427,7 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
     }
 
     return result;
-  }, [employees, focusEmployeeId, filterDepartments, filterRoles, employeeSort, skills, departments, roles, showMaxValues, getAssessment]);
+  }, [employees, focusEmployeeId, filterDepartments, filterRoles, employeeSort, skills, departments, roles, showMaxValues, getAssessment, showInactive]);
 
   const displayedCategories = useMemo(() => {
     let result = [...categories];

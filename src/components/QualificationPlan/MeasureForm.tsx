@@ -311,269 +311,273 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({
           </Text>
         }
       >
-        <Stack gap="md">
-          <Divider label="Skill-Auswahl" labelPosition="center" />
+        <Stack gap="md" h="calc(100vh - 100px)" justify="space-between">
+          <Box style={{ flex: 1, overflowY: 'auto', paddingRight: 4 }}>
+            <Stack gap="md">
+              <Divider label="Skill-Auswahl" labelPosition="center" />
 
-          <Select
-            label="Skill"
-            placeholder="Skill auswählen"
-            data={skillOptions}
-            value={formData.skillId}
-            onChange={(value) =>
-              setFormData({ ...formData, skillId: value || "", mentorId: "" })
-            }
-            searchable
-            required
-            disabled={isEditing}
-            description={
-              skillGaps.length === 0
-                ? "Keine Skill-Defizite vorhanden"
-                : undefined
-            }
-          />
+              <Select
+                label="Skill"
+                placeholder="Skill auswählen"
+                data={skillOptions}
+                value={formData.skillId}
+                onChange={(value) =>
+                  setFormData({ ...formData, skillId: value || "", mentorId: "" })
+                }
+                searchable
+                required
+                disabled={isEditing}
+                description={
+                  skillGaps.length === 0
+                    ? "Keine Skill-Defizite vorhanden"
+                    : undefined
+                }
+              />
 
-          {selectedGap && (
-            <Paper p="sm" radius="sm" withBorder>
-              <Stack gap="xs">
-                <Group justify="space-between">
-                  <Text size="sm" c="dimmed">
-                    Aktuelles Skill-Gap:
-                  </Text>
-                  <Group gap="xs">
-                    <Badge color="gray" variant="light">
-                      {currentLevel}%
-                    </Badge>
-                    <Text size="sm">→</Text>
-                    <Badge color="blue" variant="light">
-                      {roleTargetLevel}%
-                    </Badge>
-                  </Group>
-                </Group>
+              {selectedGap && (
+                <Paper p="sm" radius="sm" withBorder>
+                  <Stack gap="xs">
+                    <Group justify="space-between">
+                      <Text size="sm" c="dimmed">
+                        Aktuelles Skill-Gap:
+                      </Text>
+                      <Group gap="xs">
+                        <Badge color="gray" variant="light">
+                          {currentLevel}%
+                        </Badge>
+                        <Text size="sm">→</Text>
+                        <Badge color="blue" variant="light">
+                          {roleTargetLevel}%
+                        </Badge>
+                      </Group>
+                    </Group>
 
-                <Divider my="xs" />
+                    <Divider my="xs" />
 
-                <Text size="sm" fw={500}>Ziel dieser Maßnahme</Text>
-                <Box px="xs" pb="xl">
-                  <RangeSlider
-                    defaultValue={[formData.measureStartLevel, formData.measureTargetLevel]}
-                    value={[formData.measureStartLevel, formData.measureTargetLevel]}
-                    onChange={([start, end]) => setFormData({ ...formData, measureStartLevel: start, measureTargetLevel: end })}
-                    marks={levelMarks}
-                    step={25}
-                    min={0}
-                    max={100}
-                    minRange={25}
-                    label={(val) => `${val}%`}
-                  />
-                </Box>
-              </Stack>
-            </Paper>
-          )}
-
-          <Divider label="Maßnahmen-Typ" labelPosition="center" />
-
-          <SegmentedControl
-            fullWidth
-            value={formData.type}
-            onChange={(value) =>
-              setFormData({
-                ...formData,
-                type: value as "internal" | "external" | "self_learning",
-                mentorId: "",
-              })
-            }
-            data={[
-              {
-                value: "internal",
-                label: (
-                  <Group gap="xs" justify="center">
-                    <IconUsers size={16} />
-                    <Text size="sm">Intern</Text>
-                  </Group>
-                ),
-              },
-              {
-                value: "external",
-                label: (
-                  <Group gap="xs" justify="center">
-                    <IconSchool size={16} />
-                    <Text size="sm">Extern</Text>
-                  </Group>
-                ),
-              },
-              {
-                value: "self_learning",
-                label: (
-                  <Group gap="xs" justify="center">
-                    <IconBook size={16} />
-                    <Text size="sm">Selbstst.</Text>
-                  </Group>
-                ),
-              },
-            ]}
-          />
-
-          {formData.type === "internal" && (
-            <>
-              {potentialMentors.length === 0 && formData.skillId ? (
-                <Alert color="yellow" icon={<IconAlertCircle size={16} title="Warnung" />}>
-                  Kein Mitarbeiter mit 100% Level in diesem Skill verfügbar. Ggf. externe Schulung oder Selbststudium wählen.
-                </Alert>
-              ) : (
-                <>
-                  <Select
-                    label="Mentor"
-                    placeholder="Mentor auswählen"
-                    leftSection={<IconUser size={16} />}
-                    data={potentialMentors.map((m) => ({
-                      value: m.id!,
-                      label: anonymizeName(m.name, m.id),
-                    }))}
-                    value={formData.mentorId}
-                    onChange={(value) =>
-                      setFormData({ ...formData, mentorId: value || "" })
-                    }
-                    searchable
-                    disabled={!formData.skillId}
-                  />
-
-                  {formData.skillId && potentialMentors.length > 0 && (
-                    <MentorSuggestion
-                      mentors={potentialMentors}
-                      selectedMentorId={formData.mentorId}
-                      onSelect={(mentorId) =>
-                        setFormData({ ...formData, mentorId })
-                      }
-                    />
-                  )}
-                </>
+                    <Text size="sm" fw={500}>Ziel dieser Maßnahme</Text>
+                    <Box px="xs" pb="xl">
+                      <RangeSlider
+                        defaultValue={[formData.measureStartLevel, formData.measureTargetLevel]}
+                        value={[formData.measureStartLevel, formData.measureTargetLevel]}
+                        onChange={([start, end]) => setFormData({ ...formData, measureStartLevel: start, measureTargetLevel: end })}
+                        marks={levelMarks}
+                        step={25}
+                        min={0}
+                        max={100}
+                        minRange={25}
+                        label={(val) => `${val}%`}
+                      />
+                    </Box>
+                  </Stack>
+                </Paper>
               )}
-            </>
-          )}
 
-          {formData.type === "external" && (
-            <>
-              <TextInput
-                label="Anbieter"
-                placeholder="z.B. Udemy, Coursera, interne Akademie"
-                value={formData.externalProvider}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    externalProvider: e.currentTarget.value,
-                  })
-                }
-              />
+              <Divider label="Maßnahmen-Typ" labelPosition="center" />
 
-              <TextInput
-                label="Kursname"
-                placeholder="z.B. Advanced TypeScript Masterclass"
-                value={formData.externalCourse}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    externalCourse: e.currentTarget.value,
-                  })
-                }
-              />
-
-              <NumberInput
-                label="Geschätzte Kosten (€)"
-                placeholder="0"
-                min={0}
-                value={formData.estimatedCost}
+              <SegmentedControl
+                fullWidth
+                value={formData.type}
                 onChange={(value) =>
                   setFormData({
                     ...formData,
-                    estimatedCost: typeof value === "number" ? value : undefined,
+                    type: value as "internal" | "external" | "self_learning",
+                    mentorId: "",
                   })
                 }
-                leftSection="€"
+                data={[
+                  {
+                    value: "internal",
+                    label: (
+                      <Group gap="xs" justify="center">
+                        <IconUsers size={16} />
+                        <Text size="sm">Intern</Text>
+                      </Group>
+                    ),
+                  },
+                  {
+                    value: "external",
+                    label: (
+                      <Group gap="xs" justify="center">
+                        <IconSchool size={16} />
+                        <Text size="sm">Extern</Text>
+                      </Group>
+                    ),
+                  },
+                  {
+                    value: "self_learning",
+                    label: (
+                      <Group gap="xs" justify="center">
+                        <IconBook size={16} />
+                        <Text size="sm">Selbstst.</Text>
+                      </Group>
+                    ),
+                  },
+                ]}
               />
-            </>
-          )}
 
-          {/* Self Learning fields (mostly just timeline and notes, no specific extra fields) */}
-          {formData.type === "self_learning" && (
-            <Alert variant="light" color="blue" title="Selbststudium / Erfahrung">
-              Planen Sie hier Zeit für eigenständiges Lernen oder das Sammeln von praktischer Erfahrung im Projekt ein.
-            </Alert>
-          )}
+              {formData.type === "internal" && (
+                <>
+                  {potentialMentors.length === 0 && formData.skillId ? (
+                    <Alert color="yellow" icon={<IconAlertCircle size={16} title="Warnung" />}>
+                      Kein Mitarbeiter mit 100% Level in diesem Skill verfügbar. Ggf. externe Schulung oder Selbststudium wählen.
+                    </Alert>
+                  ) : (
+                    <>
+                      <Select
+                        label="Mentor"
+                        placeholder="Mentor auswählen"
+                        leftSection={<IconUser size={16} />}
+                        data={potentialMentors.map((m) => ({
+                          value: m.id!,
+                          label: anonymizeName(m.name, m.id),
+                        }))}
+                        value={formData.mentorId}
+                        onChange={(value) =>
+                          setFormData({ ...formData, mentorId: value || "" })
+                        }
+                        searchable
+                        disabled={!formData.skillId}
+                      />
 
-          <Divider label="Zeitplanung" labelPosition="center" />
-
-          <Paper p="md" withBorder radius="sm">
-            <Stack gap="xs">
-              <Group justify="space-between">
-                <Text size="sm" fw={500}>Zeitraum auswählen</Text>
-                {formData.startDate && formData.targetDate && (
-                  <Badge variant="light" color="blue">
-                    {new Date(formData.startDate).toLocaleDateString("de-DE")} - {new Date(formData.targetDate).toLocaleDateString("de-DE")}
-                  </Badge>
-                )}
-              </Group>
-
-              {employeeMeasures.length > 0 && (
-                <Text size="xs" c="dimmed">
-                  Rot markierte Bereiche sind bereits durch andere Maßnahmen belegt.
-                </Text>
+                      {formData.skillId && potentialMentors.length > 0 && (
+                        <MentorSuggestion
+                          mentors={potentialMentors}
+                          selectedMentorId={formData.mentorId}
+                          onSelect={(mentorId) =>
+                            setFormData({ ...formData, mentorId })
+                          }
+                        />
+                      )}
+                    </>
+                  )}
+                </>
               )}
 
-              <Box style={{ display: "flex", justifyContent: "center" }}>
-                <DatePicker
-                  type="range"
-                  value={[formData.startDate || null, formData.targetDate || null]}
-                  onChange={([start, end]) => {
-                    setFormData({
-                      ...formData,
-                      startDate: (start as any) || undefined,
-                      targetDate: (end as any) || undefined,
-                    });
-                  }}
-                  minDate={new Date()}
-                  numberOfColumns={2}
-                  getDayProps={(date) => {
-                    // Check if this date is within any existing measure's range
-                    const isOccupied = employeeMeasures.some((m) => {
-                      const start = new Date(m.startDate!);
-                      const end = new Date(m.targetDate!);
-                      start.setHours(0, 0, 0, 0);
-                      end.setHours(23, 59, 59, 999);
-                      const checkDate = new Date(date);
-                      checkDate.setHours(12, 0, 0, 0);
-                      return checkDate >= start && checkDate <= end;
-                    });
+              {formData.type === "external" && (
+                <>
+                  <TextInput
+                    label="Anbieter"
+                    placeholder="z.B. Udemy, Coursera, interne Akademie"
+                    value={formData.externalProvider}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        externalProvider: e.currentTarget.value,
+                      })
+                    }
+                  />
 
-                    return isOccupied
-                      ? {
-                        style: {
-                          backgroundColor: computedColorScheme === "dark"
-                            ? "rgba(250, 82, 82, 0.15)"
-                            : "var(--mantine-color-red-1)",
-                          color: computedColorScheme === "dark"
-                            ? "var(--mantine-color-red-5)"
-                            : "var(--mantine-color-red-9)",
-                          fontWeight: computedColorScheme === "dark" ? 600 : "normal",
-                        },
-                      }
-                      : {};
-                  }}
-                />
-              </Box>
+                  <TextInput
+                    label="Kursname"
+                    placeholder="z.B. Advanced TypeScript Masterclass"
+                    value={formData.externalCourse}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        externalCourse: e.currentTarget.value,
+                      })
+                    }
+                  />
+
+                  <NumberInput
+                    label="Geschätzte Kosten (€)"
+                    placeholder="0"
+                    min={0}
+                    value={formData.estimatedCost}
+                    onChange={(value) =>
+                      setFormData({
+                        ...formData,
+                        estimatedCost: typeof value === "number" ? value : undefined,
+                      })
+                    }
+                    leftSection="€"
+                  />
+                </>
+              )}
+
+              {/* Self Learning fields (mostly just timeline and notes, no specific extra fields) */}
+              {formData.type === "self_learning" && (
+                <Alert variant="light" color="blue" title="Selbststudium / Erfahrung">
+                  Planen Sie hier Zeit für eigenständiges Lernen oder das Sammeln von praktischer Erfahrung im Projekt ein.
+                </Alert>
+              )}
+
+              <Divider label="Zeitplanung" labelPosition="center" />
+
+              <Paper p="md" withBorder radius="sm">
+                <Stack gap="xs">
+                  <Group justify="space-between">
+                    <Text size="sm" fw={500}>Zeitraum auswählen</Text>
+                    {formData.startDate && formData.targetDate && (
+                      <Badge variant="light" color="blue">
+                        {new Date(formData.startDate).toLocaleDateString("de-DE")} - {new Date(formData.targetDate).toLocaleDateString("de-DE")}
+                      </Badge>
+                    )}
+                  </Group>
+
+                  {employeeMeasures.length > 0 && (
+                    <Text size="xs" c="dimmed">
+                      Rot markierte Bereiche sind bereits durch andere Maßnahmen belegt.
+                    </Text>
+                  )}
+
+                  <Box style={{ display: "flex", justifyContent: "center" }}>
+                    <DatePicker
+                      type="range"
+                      value={[formData.startDate || null, formData.targetDate || null]}
+                      onChange={([start, end]) => {
+                        setFormData({
+                          ...formData,
+                          startDate: (start as any) || undefined,
+                          targetDate: (end as any) || undefined,
+                        });
+                      }}
+                      minDate={new Date()}
+                      numberOfColumns={2}
+                      getDayProps={(date) => {
+                        // Check if this date is within any existing measure's range
+                        const isOccupied = employeeMeasures.some((m) => {
+                          const start = new Date(m.startDate!);
+                          const end = new Date(m.targetDate!);
+                          start.setHours(0, 0, 0, 0);
+                          end.setHours(23, 59, 59, 999);
+                          const checkDate = new Date(date);
+                          checkDate.setHours(12, 0, 0, 0);
+                          return checkDate >= start && checkDate <= end;
+                        });
+
+                        return isOccupied
+                          ? {
+                            style: {
+                              backgroundColor: computedColorScheme === "dark"
+                                ? "rgba(250, 82, 82, 0.15)"
+                                : "var(--mantine-color-red-1)",
+                              color: computedColorScheme === "dark"
+                                ? "var(--mantine-color-red-5)"
+                                : "var(--mantine-color-red-9)",
+                              fontWeight: computedColorScheme === "dark" ? 600 : "normal",
+                            },
+                          }
+                          : {};
+                      }}
+                    />
+                  </Box>
+                </Stack>
+              </Paper>
+
+              <Textarea
+                label="Notizen"
+                placeholder="Optionale Notizen, Lernziele oder Links..."
+                value={formData.notes}
+                onChange={(e) =>
+                  setFormData({ ...formData, notes: e.currentTarget.value })
+                }
+                minRows={3}
+              />
+
             </Stack>
-          </Paper>
-
-          <Textarea
-            label="Notizen"
-            placeholder="Optionale Notizen, Lernziele oder Links..."
-            value={formData.notes}
-            onChange={(e) =>
-              setFormData({ ...formData, notes: e.currentTarget.value })
-            }
-            minRows={3}
-          />
-
-          <Group justify="space-between" mt="xl">
+          </Box>
+          <Group justify="space-between" mt="md" pt="md" style={{ borderTop: '1px solid var(--mantine-color-default-border)' }}>
             {isEditing && onDelete ? (
               <Button variant="light" color="red" onClick={handleDelete}>
                 Löschen

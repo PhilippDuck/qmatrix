@@ -197,12 +197,17 @@ export const Dashboard: React.FC = () => {
     }, [getAllHistory]);
 
     const kpis = useMemo(() => {
+        // Filter out inactive employees
+        const activeEmployees = employees.filter(e => e.isActive !== false);
+        const activeEmployeeIds = new Set(activeEmployees.map(e => e.id));
+        const activeAssessments = assessments.filter(a => activeEmployeeIds.has(a.employeeId));
+
         const { currentStart, previousStart, previousEnd } = getPeriodBoundaries(period);
 
         // Current period metrics
-        const employeeAverages = employees.map(emp => {
+        const employeeAverages = activeEmployees.map(emp => {
             // Include 0, but exclude -1 (N/A)
-            const empAssessments = assessments.filter(a => a.employeeId === emp.id && a.level >= 0);
+            const empAssessments = activeAssessments.filter(a => a.employeeId === emp.id && a.level >= 0);
             if (empAssessments.length === 0) return null;
             const avg = empAssessments.reduce((sum, a) => sum + a.level, 0) / empAssessments.length;
             return { employee: emp, avg };
@@ -212,20 +217,20 @@ export const Dashboard: React.FC = () => {
             ? Math.round(employeeAverages.reduce((sum, e) => sum + e.avg, 0) / employeeAverages.length)
             : 0;
 
-        const activeSkillIds = new Set(assessments.filter(a => a.level > 0).map(a => a.skillId));
+        const activeSkillIds = new Set(activeAssessments.filter(a => a.level > 0).map(a => a.skillId));
         const activeSkillCount = activeSkillIds.size;
 
-        const totalXP = assessments.reduce((sum, a) => sum + (a.level > 0 ? a.level : 0), 0);
+        const totalXP = activeAssessments.reduce((sum, a) => sum + (a.level > 0 ? a.level : 0), 0);
 
-        const assessmentsWithTargets = assessments.filter(a => a.targetLevel && a.targetLevel > 0);
+        const assessmentsWithTargets = activeAssessments.filter(a => a.targetLevel && a.targetLevel > 0);
         const achievedTargets = assessmentsWithTargets.filter(a => a.level >= (a.targetLevel || 0));
         const goalFulfillment = assessmentsWithTargets.length > 0
             ? Math.round((achievedTargets.length / assessmentsWithTargets.length) * 100)
             : 0;
 
         const previousXP = calculateHistoricalXP(
-            assessments.map(a => ({ employeeId: a.employeeId, skillId: a.skillId, level: a.level })),
-            historyLogs,
+            activeAssessments.map(a => ({ employeeId: a.employeeId, skillId: a.skillId, level: a.level })),
+            historyLogs.filter(h => activeEmployeeIds.has(h.employeeId)), // Filter history for active employees too
             previousEnd
         );
 
@@ -234,11 +239,11 @@ export const Dashboard: React.FC = () => {
             : totalXP > 0 ? 100 : 0;
 
         const currentPeriodImprovements = historyLogs.filter(
-            log => log.timestamp >= currentStart && log.newLevel > log.previousLevel
+            log => activeEmployeeIds.has(log.employeeId) && log.timestamp >= currentStart && log.newLevel > log.previousLevel
         ).length;
 
         const previousPeriodImprovements = historyLogs.filter(
-            log => log.timestamp >= previousStart && log.timestamp < previousEnd && log.newLevel > log.previousLevel
+            log => activeEmployeeIds.has(log.employeeId) && log.timestamp >= previousStart && log.timestamp < previousEnd && log.newLevel > log.previousLevel
         ).length;
 
         const improvementsTrend = previousPeriodImprovements > 0
@@ -248,7 +253,7 @@ export const Dashboard: React.FC = () => {
         // Most improved skills (aggregated)
         const skillImprovements = new Map<string, number>();
         historyLogs
-            .filter(log => log.timestamp >= currentStart && log.newLevel > log.previousLevel)
+            .filter(log => activeEmployeeIds.has(log.employeeId) && log.timestamp >= currentStart && log.newLevel > log.previousLevel)
             .forEach(log => {
                 const current = skillImprovements.get(log.skillId) || 0;
                 skillImprovements.set(log.skillId, current + (log.newLevel - log.previousLevel));
@@ -265,35 +270,35 @@ export const Dashboard: React.FC = () => {
 
         // Skill coverage (how many employees have each skill at 50%+)
         const skillCoverage = skills.map(skill => {
-            const skillAssessments = assessments.filter(a => a.skillId === skill.id && a.level >= 50);
+            const skillAssessments = activeAssessments.filter(a => a.skillId === skill.id && a.level >= 50);
             return {
                 skill,
                 coverage: skillAssessments.length,
-                percentage: employees.length > 0 ? Math.round((skillAssessments.length / employees.length) * 100) : 0
+                percentage: activeEmployees.length > 0 ? Math.round((skillAssessments.length / activeEmployees.length) * 100) : 0
             };
         }).sort((a, b) => b.coverage - a.coverage).slice(0, 5);
 
         // Low coverage skills (critical skills with low coverage)
         const lowCoverageSkills = skills
             .map(skill => {
-                const skillAssessments = assessments.filter(a => a.skillId === skill.id && a.level >= 50);
+                const skillAssessments = activeAssessments.filter(a => a.skillId === skill.id && a.level >= 50);
                 return {
                     skill,
                     coverage: skillAssessments.length,
-                    percentage: employees.length > 0 ? Math.round((skillAssessments.length / employees.length) * 100) : 0
+                    percentage: activeEmployees.length > 0 ? Math.round((skillAssessments.length / activeEmployees.length) * 100) : 0
                 };
             })
-            .filter(s => s.percentage < 30 && employees.length > 0)
+            .filter(s => s.percentage < 30 && activeEmployees.length > 0)
             .sort((a, b) => a.percentage - b.percentage)
             .slice(0, 5);
 
         // Skill level distribution
         const levelDistribution = {
-            level0: assessments.filter(a => a.level === 0).length,
-            level25: assessments.filter(a => a.level === 25).length,
-            level50: assessments.filter(a => a.level === 50).length,
-            level75: assessments.filter(a => a.level === 75).length,
-            level100: assessments.filter(a => a.level === 100).length,
+            level0: activeAssessments.filter(a => a.level === 0).length,
+            level25: activeAssessments.filter(a => a.level === 25).length,
+            level50: activeAssessments.filter(a => a.level === 50).length,
+            level75: activeAssessments.filter(a => a.level === 75).length,
+            level100: activeAssessments.filter(a => a.level === 100).length,
         };
         const totalAssessments = Object.values(levelDistribution).reduce((a, b) => a + b, 0);
 

@@ -206,131 +206,133 @@ export const QuickAddDrawer: React.FC<QuickAddDrawerProps> = ({
           </Text>
         }
       >
-        <Stack gap="md">
-          {mode === "skill" && (
-            <>
-              {/* Category Selection/Creation */}
-              <Group align="flex-end" gap="xs">
-                <div style={{ flex: 1 }}>
-                  {isCreatingCategory ? (
-                    <TextInput
-                      label="Kategorie"
-                      placeholder="Name der neuen Kategorie"
-                      value={newCategoryName}
-                      onChange={(e) => setNewCategoryName(e.currentTarget.value)}
-                      required
-                      data-autofocus
-                    />
-                  ) : (
-                    <Select
-                      label="Kategorie"
-                      placeholder="Kategorie wählen..."
-                      data={categories.map((c) => ({ value: c.id!, label: c.name }))}
-                      value={categoryId}
-                      onChange={(val) => {
-                        setCategoryId(val);
-                        setSubcategoryId(null); // Reset subcategory when category changes
+        <Stack gap="md" h="calc(100vh - 100px)" justify="space-between">
+          <Stack gap="md">
+            {mode === "skill" && (
+              <>
+                {/* Category Selection/Creation */}
+                <Group align="flex-end" gap="xs">
+                  <div style={{ flex: 1 }}>
+                    {isCreatingCategory ? (
+                      <TextInput
+                        label="Kategorie"
+                        placeholder="Name der neuen Kategorie"
+                        value={newCategoryName}
+                        onChange={(e) => setNewCategoryName(e.currentTarget.value)}
+                        required
+                        data-autofocus
+                      />
+                    ) : (
+                      <Select
+                        label="Kategorie"
+                        placeholder="Kategorie wählen..."
+                        data={categories.map((c) => ({ value: c.id!, label: c.name }))}
+                        value={categoryId}
+                        onChange={(val) => {
+                          setCategoryId(val);
+                          setSubcategoryId(null); // Reset subcategory when category changes
+                        }}
+                        searchable
+                        required
+                      />
+                    )}
+                  </div>
+                  <Tooltip label={isCreatingCategory ? "Auswahl verwenden" : "Neue Kategorie erstellen"}>
+                    <ActionIcon
+                      onClick={() => {
+                        setIsCreatingCategory(!isCreatingCategory);
+                        setNewCategoryName("");
+                        if (!isCreatingCategory) {
+                          setCategoryId(null);
+                          setSubcategoryId(null);
+                        }
                       }}
-                      searchable
-                      required
-                    />
-                  )}
-                </div>
-                <Tooltip label={isCreatingCategory ? "Auswahl verwenden" : "Neue Kategorie erstellen"}>
-                  <ActionIcon
-                    onClick={() => {
-                      setIsCreatingCategory(!isCreatingCategory);
-                      setNewCategoryName("");
-                      if (!isCreatingCategory) {
-                        setCategoryId(null);
-                        setSubcategoryId(null);
-                      }
-                    }}
-                    variant={isCreatingCategory ? "filled" : "light"}
-                    color={isCreatingCategory ? "red" : "blue"}
-                    size="lg"
-                    mb={2}
-                  >
-                    {isCreatingCategory ? <IconX size={18} /> : <IconPlus size={18} />}
-                  </ActionIcon>
-                </Tooltip>
-              </Group>
+                      variant={isCreatingCategory ? "filled" : "light"}
+                      color={isCreatingCategory ? "red" : "blue"}
+                      size="lg"
+                      mb={2}
+                    >
+                      {isCreatingCategory ? <IconX size={18} /> : <IconPlus size={18} />}
+                    </ActionIcon>
+                  </Tooltip>
+                </Group>
 
-              {/* Subcategory Selection/Creation */}
-              <Group align="flex-end" gap="xs">
-                <div style={{ flex: 1 }}>
-                  {isCreatingSubCategory ? (
-                    <TextInput
-                      label="Unterkategorie"
-                      placeholder="Name der neuen Unterkategorie"
-                      value={newSubCategoryName}
-                      onChange={(e) => setNewSubCategoryName(e.currentTarget.value)}
-                      required
-                      disabled={!categoryId && !isCreatingCategory}
-                    />
-                  ) : (
-                    <Select
-                      label="Unterkategorie"
-                      placeholder="Unterkategorie wählen..."
-                      data={filteredSubcategories.map((sc) => ({ value: sc.id!, label: sc.name }))}
-                      value={subcategoryId}
-                      onChange={setSubcategoryId}
-                      searchable
-                      required
-                      disabled={!categoryId}
-                    />
-                  )}
-                </div>
-                {/* Only show toggle if we are NOT forced to create subcategory (because parent is new) */}
-                <Tooltip label={isCreatingSubCategory ? "Auswahl verwenden" : "Neue Unterkategorie erstellen"}>
-                  <ActionIcon
-                    onClick={() => {
-                      setIsCreatingSubCategory(!isCreatingSubCategory);
-                      setNewSubCategoryName("");
-                      if (!isCreatingSubCategory) setSubcategoryId(null);
-                    }}
-                    variant={isCreatingSubCategory ? "filled" : "light"}
-                    color={isCreatingSubCategory ? "red" : "blue"}
-                    size="lg"
-                    mb={2}
-                    disabled={isCreatingCategory || (!categoryId && !isCreatingCategory)}
-                  >
-                    {isCreatingSubCategory ? <IconX size={18} /> : <IconPlus size={18} />}
-                  </ActionIcon>
-                </Tooltip>
-              </Group>
+                {/* Subcategory Selection/Creation */}
+                <Group align="flex-end" gap="xs">
+                  <div style={{ flex: 1 }}>
+                    {isCreatingSubCategory ? (
+                      <TextInput
+                        label="Unterkategorie"
+                        placeholder="Name der neuen Unterkategorie"
+                        value={newSubCategoryName}
+                        onChange={(e) => setNewSubCategoryName(e.currentTarget.value)}
+                        required
+                        disabled={!categoryId && !isCreatingCategory}
+                      />
+                    ) : (
+                      <Select
+                        label="Unterkategorie"
+                        placeholder="Unterkategorie wählen..."
+                        data={filteredSubcategories.map((sc) => ({ value: sc.id!, label: sc.name }))}
+                        value={subcategoryId}
+                        onChange={setSubcategoryId}
+                        searchable
+                        required
+                        disabled={!categoryId}
+                      />
+                    )}
+                  </div>
+                  {/* Only show toggle if we are NOT forced to create subcategory (because parent is new) */}
+                  <Tooltip label={isCreatingSubCategory ? "Auswahl verwenden" : "Neue Unterkategorie erstellen"}>
+                    <ActionIcon
+                      onClick={() => {
+                        setIsCreatingSubCategory(!isCreatingSubCategory);
+                        setNewSubCategoryName("");
+                        if (!isCreatingSubCategory) setSubcategoryId(null);
+                      }}
+                      variant={isCreatingSubCategory ? "filled" : "light"}
+                      color={isCreatingSubCategory ? "red" : "blue"}
+                      size="lg"
+                      mb={2}
+                      disabled={isCreatingCategory || (!categoryId && !isCreatingCategory)}
+                    >
+                      {isCreatingSubCategory ? <IconX size={18} /> : <IconPlus size={18} />}
+                    </ActionIcon>
+                  </Tooltip>
+                </Group>
 
+                <TextInput
+                  label="Skill-Bezeichnung"
+                  placeholder="Name des Skills..."
+                  value={skillName}
+                  onChange={(e) => setSkillName(e.currentTarget.value)}
+                  onKeyDown={handleKeyDown}
+                  required
+                />
+
+                <Textarea
+                  label="Beschreibung (optional)"
+                  placeholder="Zusätzliche Informationen..."
+                  value={description}
+                  onChange={(e) => setDescription(e.currentTarget.value)}
+                  minRows={3}
+                  autosize
+                />
+              </>
+            )}
+
+            {mode === "employee" && (
               <TextInput
-                label="Skill-Bezeichnung"
-                placeholder="Name des Skills..."
-                value={skillName}
-                onChange={(e) => setSkillName(e.currentTarget.value)}
+                label="Name"
+                placeholder="Mitarbeitername..."
+                value={name}
+                onChange={(e) => setName(e.currentTarget.value)}
                 onKeyDown={handleKeyDown}
+                data-autofocus
                 required
               />
-
-              <Textarea
-                label="Beschreibung (optional)"
-                placeholder="Zusätzliche Informationen..."
-                value={description}
-                onChange={(e) => setDescription(e.currentTarget.value)}
-                minRows={3}
-                autosize
-              />
-            </>
-          )}
-
-          {mode === "employee" && (
-            <TextInput
-              label="Name"
-              placeholder="Mitarbeitername..."
-              value={name}
-              onChange={(e) => setName(e.currentTarget.value)}
-              onKeyDown={handleKeyDown}
-              data-autofocus
-              required
-            />
-          )}
+            )}
+          </Stack>
 
           <Group justify="flex-end" mt="md">
             <Button variant="subtle" color="gray" onClick={handleCloseAttempt}>
