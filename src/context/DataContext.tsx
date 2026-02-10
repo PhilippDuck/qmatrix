@@ -22,10 +22,13 @@ import {
   QualificationPlan as DBQualificationPlan,
   QualificationMeasure,
   SavedView,
+  ChangeHistoryEntry,
+  EntityType,
+  ChangeAction,
 } from "../services/indexeddb";
 
 // Re-export types for convenience
-export type { Employee, Category, SubCategory, Skill, Assessment, AssessmentLogEntry, Department, EmployeeRole, ExportData, MergeReport, MergeDiff, MergeItemDiff, QualificationMeasure, SavedView };
+export type { Employee, Category, SubCategory, Skill, Assessment, AssessmentLogEntry, Department, EmployeeRole, ExportData, MergeReport, MergeDiff, MergeItemDiff, QualificationMeasure, SavedView, ChangeHistoryEntry, EntityType, ChangeAction };
 
 // Redefine QualificationPlan locally to make targetRoleId optional
 export interface QualificationPlan extends Omit<DBQualificationPlan, 'targetRoleId'> {
@@ -56,6 +59,7 @@ interface DataContextType {
   qualificationPlans: QualificationPlan[];
   qualificationMeasures: QualificationMeasure[];
   savedViews: SavedView[];
+  changeHistory: ChangeHistoryEntry[];
   projectTitle: string;
   dataHash: string;
   loading: boolean;
@@ -152,6 +156,10 @@ interface DataContextType {
   diffData: (jsonData: string) => Promise<MergeDiff>;
   applyMerge: (diff: MergeDiff, selectedIds: string[]) => Promise<MergeReport>;
   clearAllData: () => Promise<void>;
+
+  // Change History
+  undoChange: (historyEntryId: string) => Promise<void>;
+  refreshChangeHistory: () => Promise<void>;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -169,6 +177,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
   const [qualificationPlans, setQualificationPlans] = useState<QualificationPlan[]>([]);
   const [qualificationMeasures, setQualificationMeasures] = useState<QualificationMeasure[]>([]);
   const [savedViews, setSavedViews] = useState<SavedView[]>([]);
+  const [changeHistory, setChangeHistory] = useState<ChangeHistoryEntry[]>([]);
   const [projectTitle, setProjectTitle] = useState<string>("");
   const [dataHash, setDataHash] = useState<string>("");
   const [loading, setLoading] = useState(true);
@@ -193,7 +202,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
 
   const refreshAllData = async () => {
     try {
-      const [emps, cats, subcats, sks, asms, depts, rls, qPlans, qMeasures, settings, views, hash] = await Promise.all([
+      const [emps, cats, subcats, sks, asms, depts, rls, qPlans, qMeasures, settings, views, history, hash] = await Promise.all([
         db.getEmployees(),
         db.getCategories(),
         db.getSubCategories(),
@@ -205,6 +214,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
         db.getQualificationMeasures(),
         db.getSettings(),
         db.getSavedViews(),
+        db.getRecentChangeHistory(20),
         db.getDataHash()
       ]);
 
@@ -218,6 +228,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
       setQualificationPlans(qPlans || []);
       setQualificationMeasures(qMeasures || []);
       setSavedViews(views || []);
+      setChangeHistory(history || []);
       setProjectTitle(settings?.projectTitle || "");
       setDataHash(hash || "");
     } catch (err) {
@@ -225,10 +236,204 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
     }
   };
 
+  const refreshChangeHistory = async () => {
+    try {
+      const history = await db.getRecentChangeHistory(20);
+      setChangeHistory(history || []);
+    } catch (err) {
+      console.error("Failed to refresh change history", err);
+    }
+  };
+
+  // Helper to record changes
+  const recordChange = async (
+    entityType: EntityType,
+    entityId: string,
+    entityLabel: string,
+    action: ChangeAction,
+    previousData: any | null,
+    newData: any | null
+  ) => {
+    try {
+      await db.addChangeHistoryEntry({
+        entityType,
+        entityId,
+        entityLabel,
+        action,
+        previousData,
+        newData,
+        timestamp: Date.now(),
+        undone: false,
+      });
+    } catch (err) {
+      console.error("Failed to record change", err);
+    }
+  };
+
+  // Undo a change
+  const undoChange = async (historyEntryId: string) => {
+    try {
+      const entry = await db.getChangeHistoryById(historyEntryId);
+      if (!entry || entry.undone) {
+        throw new Error("Eintrag nicht gefunden oder bereits rückgängig gemacht");
+      }
+
+      switch (entry.action) {
+        case 'create':
+          // Undo create = delete the entity
+          switch (entry.entityType) {
+            case 'employee':
+              await db.deleteEmployee(entry.entityId);
+              break;
+            case 'category':
+              await db.deleteCategory(entry.entityId);
+              break;
+            case 'subcategory':
+              await db.deleteSubCategory(entry.entityId);
+              break;
+            case 'skill':
+              await db.deleteSkill(entry.entityId);
+              break;
+            case 'department':
+              await db.deleteDepartment(entry.entityId);
+              break;
+            case 'role':
+              await db.deleteRole(entry.entityId);
+              break;
+            case 'qualificationPlan':
+              await db.deleteQualificationPlan(entry.entityId);
+              break;
+            case 'qualificationMeasure':
+              await db.deleteQualificationMeasure(entry.entityId);
+              break;
+          }
+          break;
+
+        case 'update':
+          // Undo update = restore previousData
+          if (entry.previousData) {
+            switch (entry.entityType) {
+              case 'employee':
+                await db.updateEmployee(entry.entityId, entry.previousData);
+                break;
+              case 'category':
+                await db.updateCategory(entry.entityId, entry.previousData);
+                break;
+              case 'subcategory':
+                await db.updateSubCategory(entry.entityId, entry.previousData);
+                break;
+              case 'skill':
+                await db.updateSkill(entry.entityId, entry.previousData);
+                break;
+              case 'department':
+                await db.updateDepartment(entry.entityId, entry.previousData);
+                break;
+              case 'role':
+                await db.updateRole(entry.entityId, entry.previousData);
+                break;
+              case 'qualificationPlan':
+                await db.updateQualificationPlan(entry.entityId, entry.previousData);
+                break;
+              case 'qualificationMeasure':
+                await db.updateQualificationMeasure(entry.entityId, entry.previousData);
+                break;
+              case 'assessment':
+                if (entry.previousData.level !== undefined) {
+                  await db.setAssessment(entry.previousData.employeeId, entry.previousData.skillId, entry.previousData.level);
+                }
+                if (entry.previousData.targetLevel !== undefined) {
+                  await db.setTargetLevel(entry.previousData.employeeId, entry.previousData.skillId, entry.previousData.targetLevel);
+                }
+                break;
+            }
+          }
+          break;
+
+        case 'delete':
+          // Undo delete = recreate with previousData (including cascade data)
+          if (entry.previousData) {
+            const { _cascade, ...mainData } = entry.previousData;
+
+            // Helper to restore cascade data
+            const restoreCascade = async (cascade: any) => {
+              if (!cascade) return;
+
+              // Restore in correct order: subcategories first, then skills, then assessments
+              if (cascade.subcategories) {
+                for (const sc of cascade.subcategories) {
+                  await db.execute("subcategories", "put", sc);
+                }
+              }
+              if (cascade.skills) {
+                for (const s of cascade.skills) {
+                  await db.execute("skills", "put", s);
+                }
+              }
+              if (cascade.assessments) {
+                for (const a of cascade.assessments) {
+                  await db.execute("assessments", "put", a);
+                }
+              }
+              if (cascade.qualificationPlans) {
+                for (const p of cascade.qualificationPlans) {
+                  await db.execute("qualificationPlans", "put", p);
+                }
+              }
+              if (cascade.qualificationMeasures) {
+                for (const m of cascade.qualificationMeasures) {
+                  await db.execute("qualificationMeasures", "put", m);
+                }
+              }
+            };
+
+            switch (entry.entityType) {
+              case 'employee':
+                await db.execute("employees", "put", { ...mainData, id: entry.entityId });
+                await restoreCascade(_cascade);
+                break;
+              case 'category':
+                await db.execute("categories", "put", { ...mainData, id: entry.entityId });
+                await restoreCascade(_cascade);
+                break;
+              case 'subcategory':
+                await db.execute("subcategories", "put", { ...mainData, id: entry.entityId });
+                await restoreCascade(_cascade);
+                break;
+              case 'skill':
+                await db.execute("skills", "put", { ...mainData, id: entry.entityId });
+                await restoreCascade(_cascade);
+                break;
+              case 'department':
+                await db.execute("departments", "put", { ...mainData, id: entry.entityId });
+                break;
+              case 'role':
+                await db.execute("roles", "put", { ...mainData, id: entry.entityId });
+                break;
+              case 'qualificationPlan':
+                await db.execute("qualificationPlans", "put", { ...mainData, id: entry.entityId });
+                await restoreCascade(_cascade);
+                break;
+              case 'qualificationMeasure':
+                await db.execute("qualificationMeasures", "put", { ...mainData, id: entry.entityId });
+                break;
+            }
+          }
+          break;
+      }
+
+      await db.markHistoryEntryUndone(historyEntryId);
+      await refreshAllData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Fehler beim Rückgängig machen");
+      throw err;
+    }
+  };
+
   // Employee methods
   const addEmployee = async (employee: Omit<Employee, "id">) => {
     try {
-      await db.addEmployee(employee);
+      const id = await db.addEmployee(employee);
+      await recordChange('employee', id, employee.name, 'create', null, { ...employee, id });
       await refreshAllData();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to add employee");
@@ -238,7 +443,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
 
   const updateEmployee = async (id: string, employee: Omit<Employee, "id">) => {
     try {
+      const existing = employees.find(e => e.id === id);
       await db.updateEmployee(id, employee);
+      await recordChange('employee', id, employee.name, 'update', existing, { ...employee, id });
       await refreshAllData();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update employee");
@@ -248,7 +455,21 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
 
   const deleteEmployee = async (id: string) => {
     try {
+      const existing = employees.find(e => e.id === id);
+
+      // Collect all cascade data BEFORE deletion
+      const cascadeAssessments = assessments.filter(a => a.employeeId === id);
+      const cascadePlans = qualificationPlans.filter(p => p.employeeId === id);
+      const cascadeMeasures = qualificationMeasures.filter(m => cascadePlans.some(p => p.id === m.planId));
+
+      const cascadeData = {
+        assessments: cascadeAssessments,
+        qualificationPlans: cascadePlans,
+        qualificationMeasures: cascadeMeasures,
+      };
+
       await db.deleteEmployee(id);
+      await recordChange('employee', id, existing?.name || id, 'delete', { ...existing, _cascade: cascadeData }, null);
       await refreshAllData();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to delete employee");
@@ -260,6 +481,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
   const addCategory = async (category: Omit<Category, "id">) => {
     try {
       const id = await db.addCategory(category);
+      await recordChange('category', id, category.name, 'create', null, { ...category, id });
       await refreshAllData();
       return id;
     } catch (err) {
@@ -270,7 +492,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
 
   const updateCategory = async (id: string, category: Omit<Category, "id">) => {
     try {
+      const existing = categories.find(c => c.id === id);
       await db.updateCategory(id, category);
+      await recordChange('category', id, category.name, 'update', existing, { ...category, id });
       await refreshAllData();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update category");
@@ -280,7 +504,21 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
 
   const deleteCategory = async (id: string) => {
     try {
+      const existing = categories.find(c => c.id === id);
+
+      // Collect all cascade data BEFORE deletion
+      const cascadeSubcategories = subcategories.filter(sc => sc.categoryId === id);
+      const cascadeSkills = skills.filter(s => cascadeSubcategories.some(sc => sc.id === s.subCategoryId));
+      const cascadeAssessments = assessments.filter(a => cascadeSkills.some(s => s.id === a.skillId));
+
+      const cascadeData = {
+        subcategories: cascadeSubcategories,
+        skills: cascadeSkills,
+        assessments: cascadeAssessments,
+      };
+
       await db.deleteCategory(id);
+      await recordChange('category', id, existing?.name || id, 'delete', { ...existing, _cascade: cascadeData }, null);
       await refreshAllData();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to delete category");
@@ -292,6 +530,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
   const addSubCategory = async (subCategory: Omit<SubCategory, "id">) => {
     try {
       const id = await db.addSubCategory(subCategory);
+      await recordChange('subcategory', id, subCategory.name, 'create', null, { ...subCategory, id });
       await refreshAllData();
       return id;
     } catch (err) {
@@ -302,7 +541,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
 
   const updateSubCategory = async (id: string, subCategory: Omit<SubCategory, "id">) => {
     try {
+      const existing = subcategories.find(sc => sc.id === id);
       await db.updateSubCategory(id, subCategory);
+      await recordChange('subcategory', id, subCategory.name, 'update', existing, { ...subCategory, id });
       await refreshAllData();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update subcategory");
@@ -312,7 +553,28 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
 
   const deleteSubCategory = async (id: string) => {
     try {
+      const existing = subcategories.find(sc => sc.id === id);
+
+      // Recursively collect all child subcategories
+      const collectChildSubcategories = (parentId: string): SubCategory[] => {
+        const children = subcategories.filter(sc => sc.parentSubCategoryId === parentId);
+        return children.concat(children.flatMap(c => collectChildSubcategories(c.id!)));
+      };
+      const cascadeSubcategories = collectChildSubcategories(id);
+      const allSubcategoryIds = [id, ...cascadeSubcategories.map(sc => sc.id!)];
+
+      // Collect skills from this subcategory and all children
+      const cascadeSkills = skills.filter(s => allSubcategoryIds.includes(s.subCategoryId));
+      const cascadeAssessments = assessments.filter(a => cascadeSkills.some(s => s.id === a.skillId));
+
+      const cascadeData = {
+        subcategories: cascadeSubcategories,
+        skills: cascadeSkills,
+        assessments: cascadeAssessments,
+      };
+
       await db.deleteSubCategory(id);
+      await recordChange('subcategory', id, existing?.name || id, 'delete', { ...existing, _cascade: cascadeData }, null);
       await refreshAllData();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to delete subcategory");
@@ -331,7 +593,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
   // Skill methods
   const addSkill = async (skill: Omit<Skill, "id">) => {
     try {
-      await db.addSkill(skill);
+      const id = await db.addSkill(skill);
+      await recordChange('skill', id, skill.name, 'create', null, { ...skill, id });
       await refreshAllData();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to add skill");
@@ -341,7 +604,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
 
   const updateSkill = async (id: string, skill: Omit<Skill, "id">) => {
     try {
+      const existing = skills.find(s => s.id === id);
       await db.updateSkill(id, skill);
+      await recordChange('skill', id, skill.name, 'update', existing, { ...skill, id });
       await refreshAllData();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update skill");
@@ -351,7 +616,14 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
 
   const deleteSkill = async (id: string) => {
     try {
+      const existing = skills.find(s => s.id === id);
+
+      // Collect all assessments for this skill
+      const cascadeAssessments = assessments.filter(a => a.skillId === id);
+      const cascadeData = { assessments: cascadeAssessments };
+
       await db.deleteSkill(id);
+      await recordChange('skill', id, existing?.name || id, 'delete', { ...existing, _cascade: cascadeData }, null);
       await refreshAllData();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to delete skill");
@@ -370,7 +642,19 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
     level: -1 | 0 | 25 | 50 | 75 | 100,
   ) => {
     try {
+      const existing = assessments.find(a => a.employeeId === employeeId && a.skillId === skillId);
+      const skill = skills.find(s => s.id === skillId);
+      const employee = employees.find(e => e.id === employeeId);
       await db.setAssessment(employeeId, skillId, level);
+      const assessmentId = `${employeeId}-${skillId}`;
+      await recordChange(
+        'assessment',
+        assessmentId,
+        `${employee?.name || employeeId}: ${skill?.name || skillId}`,
+        existing ? 'update' : 'create',
+        existing || null,
+        { employeeId, skillId, level, targetLevel: existing?.targetLevel }
+      );
       await refreshAllData();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to set assessment");
@@ -384,7 +668,19 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
     targetLevel: number | undefined,
   ) => {
     try {
+      const existing = assessments.find(a => a.employeeId === employeeId && a.skillId === skillId);
+      const skill = skills.find(s => s.id === skillId);
+      const employee = employees.find(e => e.id === employeeId);
       await db.setTargetLevel(employeeId, skillId, targetLevel);
+      const assessmentId = `${employeeId}-${skillId}`;
+      await recordChange(
+        'assessment',
+        assessmentId,
+        `Ziel: ${employee?.name || employeeId} - ${skill?.name || skillId}`,
+        'update',
+        existing || null,
+        { employeeId, skillId, level: existing?.level ?? 0, targetLevel }
+      );
       await refreshAllData();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to set target level");
@@ -427,6 +723,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
   const addDepartment = async (name: string) => {
     try {
       const id = await db.addDepartment(name);
+      await recordChange('department', id, name, 'create', null, { name, id });
       await refreshAllData();
       return id;
     } catch (err) {
@@ -437,7 +734,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
 
   const updateDepartment = async (id: string, department: Omit<Department, "id">) => {
     try {
+      const existing = departments.find(d => d.id === id);
       await db.updateDepartment(id, department);
+      await recordChange('department', id, department.name, 'update', existing, { ...department, id });
       await refreshAllData();
     } catch (err) {
       setError(
@@ -449,7 +748,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
 
   const deleteDepartment = async (id: string) => {
     try {
+      const existing = departments.find(d => d.id === id);
       await db.deleteDepartment(id);
+      await recordChange('department', id, existing?.name || id, 'delete', existing, null);
       await refreshAllData();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to delete department");
@@ -461,6 +762,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
   const addRole = async (role: Omit<EmployeeRole, "id">) => {
     try {
       const id = await db.addRole(role);
+      await recordChange('role', id, role.name, 'create', null, { ...role, id });
       await refreshAllData();
       return id;
     } catch (err) {
@@ -471,7 +773,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
 
   const updateRole = async (id: string, role: Omit<EmployeeRole, "id">) => {
     try {
+      const existing = roles.find(r => r.id === id);
       await db.updateRole(id, role);
+      await recordChange('role', id, role.name, 'update', existing, { ...role, id });
       await refreshAllData();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update role");
@@ -481,7 +785,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
 
   const deleteRole = async (id: string) => {
     try {
+      const existing = roles.find(r => r.id === id);
       await db.deleteRole(id);
+      await recordChange('role', id, existing?.name || id, 'delete', existing, null);
       await refreshAllData();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to delete role");
@@ -514,6 +820,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
   const addQualificationPlan = async (plan: Omit<QualificationPlan, "id" | "createdAt" | "updatedAt">) => {
     try {
       const id = await db.addQualificationPlan(plan as any);
+      const employee = employees.find(e => e.id === plan.employeeId);
+      await recordChange('qualificationPlan', id, `Plan für ${employee?.name || plan.employeeId}`, 'create', null, { ...plan, id });
       await refreshAllData();
       return id;
     } catch (err) {
@@ -524,7 +832,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
 
   const updateQualificationPlan = async (id: string, plan: Partial<Omit<QualificationPlan, "id" | "createdAt">>) => {
     try {
+      const existing = qualificationPlans.find(p => p.id === id);
+      const employee = employees.find(e => e.id === existing?.employeeId);
       await db.updateQualificationPlan(id, plan);
+      await recordChange('qualificationPlan', id, `Plan für ${employee?.name || existing?.employeeId || id}`, 'update', existing, { ...existing, ...plan, id });
       await refreshAllData();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update qualification plan");
@@ -534,7 +845,15 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
 
   const deleteQualificationPlan = async (id: string) => {
     try {
+      const existing = qualificationPlans.find(p => p.id === id);
+      const employee = employees.find(e => e.id === existing?.employeeId);
+
+      // Collect all measures for this plan
+      const cascadeMeasures = qualificationMeasures.filter(m => m.planId === id);
+      const cascadeData = { qualificationMeasures: cascadeMeasures };
+
       await db.deleteQualificationPlan(id);
+      await recordChange('qualificationPlan', id, `Plan für ${employee?.name || existing?.employeeId || id}`, 'delete', { ...existing, _cascade: cascadeData }, null);
       await refreshAllData();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to delete qualification plan");
@@ -550,6 +869,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
   const addQualificationMeasure = async (measure: Omit<QualificationMeasure, "id" | "updatedAt">) => {
     try {
       const id = await db.addQualificationMeasure(measure);
+      const skill = skills.find(s => s.id === measure.skillId);
+      await recordChange('qualificationMeasure', id, `Maßnahme: ${skill?.name || measure.skillId}`, 'create', null, { ...measure, id });
       await refreshAllData();
       return id;
     } catch (err) {
@@ -560,7 +881,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
 
   const updateQualificationMeasure = async (id: string, measure: Partial<Omit<QualificationMeasure, "id">>) => {
     try {
+      const existing = qualificationMeasures.find(m => m.id === id);
+      const skill = skills.find(s => s.id === existing?.skillId);
       await db.updateQualificationMeasure(id, measure);
+      await recordChange('qualificationMeasure', id, `Maßnahme: ${skill?.name || existing?.skillId || id}`, 'update', existing, { ...existing, ...measure, id });
       await refreshAllData();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update qualification measure");
@@ -570,7 +894,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
 
   const deleteQualificationMeasure = async (id: string) => {
     try {
+      const existing = qualificationMeasures.find(m => m.id === id);
+      const skill = skills.find(s => s.id === existing?.skillId);
       await db.deleteQualificationMeasure(id);
+      await recordChange('qualificationMeasure', id, `Maßnahme: ${skill?.name || existing?.skillId || id}`, 'delete', existing, null);
       await refreshAllData();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to delete qualification measure");
@@ -814,6 +1141,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
         qualificationPlans,
         qualificationMeasures,
         savedViews,
+        changeHistory,
         projectTitle,
         dataHash,
         loading,
@@ -867,6 +1195,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
         diffData,
         applyMerge,
         clearAllData,
+        undoChange,
+        refreshChangeHistory,
       }}
     >
       {children}

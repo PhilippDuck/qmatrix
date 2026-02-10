@@ -1,6 +1,23 @@
 # Changelog
 
 
+## [2.9.0] - 2026-02-10
+
+### Neue Funktionen
+- **Änderungshistorie mit Undo**: Vollständiges Tracking aller Änderungen an Stammdaten mit Rückgängig-Funktion.
+  - Neuer History-Button in der Navbar (Uhr-Symbol) öffnet einen Drawer mit den letzten 20 Änderungen.
+  - Jeder Eintrag zeigt Entity-Typ, Name, Aktion (Erstellt/Geändert/Gelöscht) und Zeitstempel.
+  - Detaillierte Beschreibungen: Level-Änderungen (50% → 75%), Namensänderungen, Status-Wechsel, etc.
+  - Trend-Icons für Bewertungsänderungen (↗️ erhöht, ↘️ gesenkt).
+  - Undo-Button pro Eintrag stellt den vorherigen Zustand wieder her.
+- **Tastenkürzel Strg+Z**: Macht die letzte Änderung rückgängig (funktioniert nur außerhalb von Textfeldern, um Browser-Undo nicht zu blockieren).
+- **Kaskaden-Undo**: Beim Löschen von Kategorien, Unterkategorien, Skills oder Mitarbeitern werden alle Unterelemente (Skills, Bewertungen, Pläne, Maßnahmen) gespeichert und beim Undo vollständig wiederhergestellt.
+  - Anzeige im History-Drawer: "inkl. 3 Unterkategorien, 12 Skills" etc.
+
+### Technische Details
+- Neue IndexedDB-Store `changeHistory` (DB Version 12) für persistente Speicherung.
+- Unterstützte Entity-Typen: Employee, Skill, Category, SubCategory, Department, Role, QualificationPlan, QualificationMeasure, Assessment.
+
 ## [2.8.1] - 2026-02-09
 
 ### Neue Funktionen & Verbesserungen

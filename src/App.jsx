@@ -19,7 +19,8 @@ import {
   useComputedColorScheme,
   TextInput,
 } from "@mantine/core";
-import { useDisclosure, useLocalStorage } from "@mantine/hooks";
+import { useDisclosure, useLocalStorage, useHotkeys } from "@mantine/hooks";
+import { notifications } from "@mantine/notifications";
 import {
   IconUsers,
   IconTags,
@@ -38,6 +39,7 @@ import {
   IconDeviceFloppy,
   IconEdit,
   IconCertificate,
+  IconHistory,
 } from "@tabler/icons-react";
 
 import { DataProvider, useData } from "./context/DataContext";
@@ -48,6 +50,7 @@ import { Dashboard } from "./components/Dashboard/Dashboard";
 import { QualificationPlan } from "./components/QualificationPlan";
 import { WelcomeModal } from "./components/WelcomeModal";
 import { ChangelogModal } from "./components/ChangelogModal";
+import { HistoryDrawer } from "./components/shared/HistoryDrawer";
 import { PrivacyProvider, usePrivacy } from "./context/PrivacyContext";
 import { ModalsProvider } from "@mantine/modals";
 import { Notifications } from "@mantine/notifications";
@@ -98,7 +101,7 @@ function AnonymousToggle() {
 }
 
 function AppContent() {
-  const { loading, exportData, projectTitle, updateProjectTitle } = useData();
+  const { loading, exportData, projectTitle, updateProjectTitle, changeHistory, undoChange } = useData();
   const computedColorScheme = useComputedColorScheme("light");
   const [activeTab, setActiveTab] = useLocalStorage({
     key: 'skillgrid-active-tab',
@@ -119,6 +122,40 @@ function AppContent() {
 
   // Changelog modal state
   const [changelogOpened, { open: openChangelog, close: closeChangelog }] = useDisclosure(false);
+
+  // History drawer state
+  const [historyOpened, { open: openHistory, close: closeHistory }] = useDisclosure(false);
+
+  // Global Undo Shortcut (Ctrl+Z) - only when not in input fields
+  useHotkeys([
+    ['mod+z', () => {
+      // Find the most recent undoable entry
+      const lastUndoable = changeHistory.find(h => !h.undone);
+      if (lastUndoable) {
+        undoChange(lastUndoable.id).then(() => {
+          notifications.show({
+            title: 'Rückgängig',
+            message: `"${lastUndoable.entityLabel}" wurde rückgängig gemacht`,
+            color: 'blue',
+            autoClose: 3000,
+          });
+        }).catch((err) => {
+          notifications.show({
+            title: 'Fehler',
+            message: err.message || 'Konnte nicht rückgängig gemacht werden',
+            color: 'red',
+          });
+        });
+      } else {
+        notifications.show({
+          title: 'Nichts zum Rückgängig machen',
+          message: 'Es gibt keine weiteren Änderungen in der Historie',
+          color: 'gray',
+          autoClose: 2000,
+        });
+      }
+    }],
+  ]);
 
   const handleTitleSave = () => {
     if (tempTitle !== projectTitle) {
@@ -280,6 +317,16 @@ function AppContent() {
                 <IconDeviceFloppy size={18} />
               </ActionIcon>
             </Tooltip>
+            <Tooltip label="Änderungshistorie">
+              <ActionIcon
+                variant="subtle"
+                color="gray"
+                size="md"
+                onClick={openHistory}
+              >
+                <IconHistory size={18} />
+              </ActionIcon>
+            </Tooltip>
             <AnonymousToggle />
             <ColorSchemeToggle />
           </Group>
@@ -395,6 +442,7 @@ function AppContent() {
           {activeTab === "system" && <DataManagement />}
         </div>
       </AppShell.Main>
+      <HistoryDrawer opened={historyOpened} onClose={closeHistory} />
       <WelcomeModal />
       <ChangelogModal opened={changelogOpened} onClose={closeChangelog} />
     </AppShell >

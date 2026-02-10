@@ -1,6 +1,6 @@
 // IndexedDB Service für Qualifizierungsmatrix
 const DB_NAME = "QualificationMatrixDB";
-const DB_VERSION = 11;
+const DB_VERSION = 12;
 
 export interface Employee {
   id?: string;
@@ -139,6 +139,26 @@ export interface SavedView {
     collapsedStates: Record<string, boolean>;
   };
   updatedAt?: number;
+}
+
+// Change History Types
+export type EntityType =
+  | 'employee' | 'skill' | 'category' | 'subcategory'
+  | 'department' | 'role' | 'qualificationPlan'
+  | 'qualificationMeasure' | 'assessment';
+
+export type ChangeAction = 'create' | 'update' | 'delete';
+
+export interface ChangeHistoryEntry {
+  id?: string;
+  entityType: EntityType;
+  entityId: string;
+  entityLabel: string;        // Lesbare Bezeichnung für UI
+  action: ChangeAction;
+  previousData: any | null;   // Für Undo bei update/delete
+  newData: any | null;        // Für Referenz bei create/update
+  timestamp: number;
+  undone: boolean;
 }
 
 export interface ExportData {
@@ -338,6 +358,13 @@ class IndexedDBService {
         if (!db.objectStoreNames.contains("savedViews")) {
           const viewStore = db.createObjectStore("savedViews", { keyPath: "id" });
           viewStore.createIndex("name", "name", { unique: false });
+        }
+
+        // Change History Store (v12)
+        if (!db.objectStoreNames.contains("changeHistory")) {
+          const historyStore = db.createObjectStore("changeHistory", { keyPath: "id" });
+          historyStore.createIndex("timestamp", "timestamp", { unique: false });
+          historyStore.createIndex("entityType", "entityType", { unique: false });
         }
       };
     });
@@ -778,6 +805,49 @@ class IndexedDBService {
 
   async deleteSavedView(id: string): Promise<void> {
     await this.execute("savedViews", "delete", id);
+  }
+
+  // Change History Methods
+  async addChangeHistoryEntry(entry: Omit<ChangeHistoryEntry, "id">): Promise<string> {
+    const id = crypto.randomUUID();
+    const data = { ...entry, id };
+    await this.execute("changeHistory", "add", data);
+    return id;
+  }
+
+  async getRecentChangeHistory(limit: number = 20): Promise<ChangeHistoryEntry[]> {
+    if (!this.db) await this.init();
+    if (!this.db) throw new Error("Database not initialized");
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction("changeHistory", "readonly");
+      const store = transaction.objectStore("changeHistory");
+      const index = store.index("timestamp");
+      const request = index.openCursor(null, "prev"); // Newest first
+      const results: ChangeHistoryEntry[] = [];
+
+      request.onerror = () => reject(request.error);
+      request.onsuccess = (event: any) => {
+        const cursor = event.target.result;
+        if (cursor && results.length < limit) {
+          results.push(cursor.value);
+          cursor.continue();
+        } else {
+          resolve(results);
+        }
+      };
+    });
+  }
+
+  async getChangeHistoryById(id: string): Promise<ChangeHistoryEntry | undefined> {
+    return this.execute("changeHistory", "get", id);
+  }
+
+  async markHistoryEntryUndone(id: string): Promise<void> {
+    const entry = await this.getChangeHistoryById(id);
+    if (!entry) throw new Error("History entry not found");
+    const updated = { ...entry, undone: true };
+    await this.execute("changeHistory", "put", updated);
   }
 
   async setTargetLevel(
