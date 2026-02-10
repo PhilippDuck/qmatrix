@@ -346,7 +346,11 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
               break;
             case 'assessment':
               // Assessment ID format: ${employeeId}-${skillId}
-              const [empId, sklId] = entry.entityId.split('-');
+              // Both are UUIDs (8-4-4-4-12 format), so we need to split carefully
+              const parts = entry.entityId.split('-');
+              // UUID has 5 parts: 8-4-4-4-12, so employeeId is first 5, skillId is last 5
+              const empId = parts.slice(0, 5).join('-');
+              const sklId = parts.slice(5).join('-');
               await db.deleteAssessment(empId, sklId);
               break;
           }
@@ -707,15 +711,23 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
       const existing = assessments.find(a => a.employeeId === employeeId && a.skillId === skillId);
       const skill = skills.find(s => s.id === skillId);
       const employee = employees.find(e => e.id === employeeId);
-      await db.setAssessment(employeeId, skillId, level);
       const assessmentId = `${employeeId}-${skillId}`;
+
+      await db.setAssessment(employeeId, skillId, level);
+
+      // Ensure previousData has complete assessment object with id
+      const previousData = existing ? {
+        ...existing,
+        id: existing.id || assessmentId  // Ensure id is present
+      } : null;
+
       await recordChange(
         'assessment',
         assessmentId,
         `${employee?.name || employeeId}: ${skill?.name || skillId}`,
         existing ? 'update' : 'create',
-        existing || null,
-        { employeeId, skillId, level, targetLevel: existing?.targetLevel }
+        previousData,
+        { id: assessmentId, employeeId, skillId, level, targetLevel: existing?.targetLevel }
       );
       await refreshAllData();
     } catch (err) {

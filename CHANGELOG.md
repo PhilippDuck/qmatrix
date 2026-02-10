@@ -1,6 +1,15 @@
 # Changelog
 
 
+## [2.9.5] - 2026-02-10
+
+### Behobene Fehler
+- **Undo für Assessment-Erstellung**: Behebt kritischen Bug beim Rückgängigmachen von neu erstellten Skill-Bewertungen.
+  - Problem: UUID-Split war fehlerhaft - `split('-')` zerstörte die UUIDs, da sowohl employeeId als auch skillId selbst Bindestriche enthalten.
+  - Lösung: Korrektes Splitten in UUID-Komponenten (erste 5 Teile = employeeId, letzte 5 Teile = skillId).
+  - Betroffen: Undo von Änderungen wie "leer/N/A → 25%" funktionierte nicht - Assessment wurde nicht gelöscht.
+  - Zusätzlicher Fix: Sicherstellung dass previousData immer vollständiges Assessment-Objekt mit ID enthält.
+
 ## [2.9.4] - 2026-02-10
 
 ### Behobene Fehler
