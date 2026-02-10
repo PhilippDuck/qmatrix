@@ -106,7 +106,7 @@ const EmployeeInfoCard: React.FC<{
             )}
           </Stack>
         </Box>
-        <Menu shadow="md" width={200} position="bottom-end">
+        <Menu shadow="md" width={200} position="bottom-end" withinPortal={false}>
           <Menu.Target>
             <ActionIcon variant="subtle" color="gray" title="Optionen">
               <IconDotsVertical size={16} />

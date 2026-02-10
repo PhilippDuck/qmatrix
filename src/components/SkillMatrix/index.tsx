@@ -730,11 +730,25 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
     setEmployeeDrawerOpened(true);
   };
 
-  const handleSaveEmployee = async (name: string, department: string, roles: string[]) => {
+  const handleSaveEmployee = async (name: string, department: string, roles: string[], isActive: boolean, deactivationDate?: Date | null, reactivationDate?: Date | null) => {
+    const formatDate = (date: Date | null | undefined) => {
+      if (!date) return undefined;
+      return date.toISOString();
+    };
+
+    const data = {
+      name,
+      department,
+      roles,
+      isActive,
+      deactivationDate: formatDate(deactivationDate),
+      reactivationDate: formatDate(reactivationDate)
+    };
+
     if (editingEmployeeId) {
-      await updateEmployee(editingEmployeeId, { name, department, roles });
+      await updateEmployee(editingEmployeeId, data);
     } else {
-      await addEmployee({ name, department, roles });
+      await addEmployee(data);
     }
   };
 
@@ -1567,6 +1581,9 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
                   name: emp.name,
                   department: emp.department || "",
                   roles: emp.roles || [],
+                  isActive: emp.isActive,
+                  deactivationDate: emp.deactivationDate,
+                  reactivationDate: emp.reactivationDate
                 }
                 : undefined;
             })()

@@ -68,14 +68,33 @@ export const EmployeeList: React.FC = () => {
     handleOpenNew();
   }]], ['INPUT', 'TEXTAREA', 'SELECT']);
 
-  const handleSave = async (name: string, department: string, roles: string[], isActive: boolean, deactivationDate?: Date | null, reactivationDate?: Date | null) => {
+  const handleSave = async (name: string, department: string, roles: string[], isActive: boolean, deactivationDate?: Date | null | string, reactivationDate?: Date | null | string) => {
+    const formatDate = (date: Date | null | string | undefined) => {
+      if (!date) return undefined;
+      if (typeof date === 'string') return date;
+      if (date instanceof Date) return date.toISOString();
+      return undefined;
+    };
+
+    // Force active if deactivation date is in the future
+    let finalIsActive = isActive;
+    if (deactivationDate) {
+      const dDate = deactivationDate instanceof Date ? deactivationDate : new Date(deactivationDate);
+      if (dDate > new Date()) {
+        finalIsActive = true;
+      }
+    } else {
+      // If no deactivation date, trust the isActive toggle
+      finalIsActive = isActive;
+    }
+
     const data = {
       name,
       department,
       roles,
-      isActive,
-      deactivationDate: deactivationDate?.toISOString(),
-      reactivationDate: reactivationDate?.toISOString()
+      isActive: finalIsActive,
+      deactivationDate: formatDate(deactivationDate),
+      reactivationDate: formatDate(reactivationDate)
     };
     if (isEditing && editingId) {
       await updateEmployee(editingId, data);

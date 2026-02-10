@@ -283,22 +283,30 @@ export const EmployeeDrawer: React.FC<EmployeeDrawerProps> = ({
                         setFormData(prev => ({
                           ...prev,
                           isActive: active,
-                          deactivationDate: !active && !prev.deactivationDate ? new Date() : prev.deactivationDate
+                          deactivationDate: active ? null : (!prev.deactivationDate ? new Date() : prev.deactivationDate)
                         }));
                       }}
                       size="md"
                       onLabel="JA"
                       offLabel="NEIN"
-                      mb={formData.isActive ? 0 : "md"}
+                      mb={formData.isActive && !formData.deactivationDate ? 0 : "md"}
                     />
 
-                    {!formData.isActive && (
+                    {(!formData.isActive || (formData.deactivationDate && new Date(formData.deactivationDate) > new Date())) && (
                       <Group grow mt="xs">
                         <DatePickerInput
                           label="Deaktiviert ab"
                           placeholder="Datum wählen"
                           value={formData.deactivationDate}
-                          onChange={(date) => setFormData({ ...formData, deactivationDate: date as Date | null })}
+                          onChange={(date) => {
+                            const newDate = date as Date | null;
+                            const isFuture = newDate && newDate > new Date();
+                            setFormData(prev => ({
+                              ...prev,
+                              deactivationDate: newDate,
+                              isActive: isFuture ? true : prev.isActive
+                            }));
+                          }}
                           clearable
                         />
                         <DatePickerInput

@@ -1,6 +1,17 @@
 # Changelog
 
 
+## [2.9.2] - 2026-02-10
+
+### Behobene Fehler
+- **Mitarbeiter-Deaktivierung**: Behebt mehrere Fehler beim Setzen von Deaktivierungsdaten.
+  - Mitarbeiter mit zukünftigem Deaktivierungsdatum bleiben nun korrekt aktiv bis zum eingestellten Datum.
+  - Deaktivierungsdatum-Feld wird angezeigt, auch wenn ein zukünftiges Datum gesetzt ist.
+  - Beim Setzen eines zukünftigen Deaktivierungsdatums wird der Status automatisch auf "Aktiv" gesetzt.
+  - Deaktivierungsdatum wird korrekt gelöscht, wenn Mitarbeiter wieder auf "Aktiv" gesetzt wird.
+  - Korrekte Übergabe von isActive, deactivationDate und reactivationDate in allen Komponenten (EmployeeList, SkillMatrix).
+  - Verbessertes Datum-Handling (String/Date Konvertierung).
+
 ## [2.9.1] - 2026-02-10
 
 ### Behobene Fehler
