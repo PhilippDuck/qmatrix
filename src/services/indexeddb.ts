@@ -174,6 +174,7 @@ export interface ExportData {
   qualificationPlans?: QualificationPlan[];
   qualificationMeasures?: QualificationMeasure[];
   savedViews?: SavedView[];
+  changeHistory?: ChangeHistoryEntry[];
 }
 
 export interface MergeReport {
@@ -986,13 +987,14 @@ class IndexedDBService {
       history: await this.execute("assessment_logs", "getAll"),
       qualificationPlans: await this.getQualificationPlans(),
       qualificationMeasures: await this.getQualificationMeasures(),
-      savedViews: await this.getSavedViews()
+      savedViews: await this.getSavedViews(),
+      changeHistory: await this.execute("changeHistory", "getAll")
     };
   }
 
   async clearAllData(): Promise<void> {
     if (!this.db) return;
-    const stores = ["employees", "categories", "subcategories", "skills", "assessments", "departments", "roles", "assessment_logs", "settings", "qualificationPlans", "qualificationMeasures", "savedViews"];
+    const stores = ["employees", "categories", "subcategories", "skills", "assessments", "departments", "roles", "assessment_logs", "settings", "qualificationPlans", "qualificationMeasures", "savedViews", "changeHistory"];
     const transaction = this.db.transaction(stores, "readwrite");
     for (const storeName of stores) {
       const store = transaction.objectStore(storeName);
@@ -1009,7 +1011,7 @@ class IndexedDBService {
     // Clear all stores
     if (!this.db) return;
 
-    const stores = ["employees", "categories", "subcategories", "skills", "assessments", "departments", "roles", "assessment_logs", "settings", "qualificationPlans", "qualificationMeasures"];
+    const stores = ["employees", "categories", "subcategories", "skills", "assessments", "departments", "roles", "assessment_logs", "settings", "qualificationPlans", "qualificationMeasures", "savedViews", "changeHistory"];
     const transaction = this.db.transaction(stores, "readwrite");
 
     for (const storeName of stores) {
@@ -1034,7 +1036,8 @@ class IndexedDBService {
       assessment_logs: data.history,
       qualificationPlans: data.qualificationPlans || [],
       qualificationMeasures: data.qualificationMeasures || [],
-      savedViews: data.savedViews || []
+      savedViews: data.savedViews || [],
+      changeHistory: data.changeHistory || []
     };
 
     for (const [storeName, items] of Object.entries(mappings)) {
@@ -1092,6 +1095,7 @@ class IndexedDBService {
     if (data.qualificationPlans) await mergeStore("qualificationPlans", data.qualificationPlans);
     if (data.qualificationMeasures) await mergeStore("qualificationMeasures", data.qualificationMeasures);
     if (data.savedViews) await mergeStore("savedViews", data.savedViews);
+    if (data.changeHistory) await mergeStore("changeHistory", data.changeHistory);
 
     return report;
   }
@@ -1112,7 +1116,8 @@ class IndexedDBService {
       { name: "settings", property: "settings", label: "Einstellungen" },
       { name: "qualificationPlans", property: "qualificationPlans", label: "Qualifizierungsplan" },
       { name: "qualificationMeasures", property: "qualificationMeasures", label: "Qualifizierungsmaßnahme" },
-      { name: "savedViews", property: "savedViews", label: "Gespeicherte Ansicht" }
+      { name: "savedViews", property: "savedViews", label: "Gespeicherte Ansicht" },
+      { name: "changeHistory", property: "changeHistory", label: "Änderungshistorie" }
     ];
 
     for (const store of stores) {
@@ -1141,6 +1146,9 @@ class IndexedDBService {
         } else if (store.name === "qualificationMeasures") {
           const measure = item as QualificationMeasure;
           label = `Maßnahme ${measure.skillId?.substring(0, 8)}... (${measure.type})`;
+        } else if (store.name === "changeHistory") {
+          const change = item as ChangeHistoryEntry;
+          label = `${change.entityLabel} (${change.action}, ${new Date(change.timestamp).toLocaleString("de-DE")})`;
         }
 
         const itemUpdatedAt = item.updatedAt || item.timestamp;

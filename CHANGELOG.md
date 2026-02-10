@@ -1,6 +1,14 @@
 # Changelog
 
 
+## [2.9.3] - 2026-02-10
+
+### Behobene Fehler
+- **🚨 KRITISCH: Export/Import/Backup**: Behebt schwerwiegenden Datenverlust-Bug bei Backups.
+  - **changeHistory** (Änderungshistorie mit Undo-Daten) wurde nicht exportiert/importiert - nun vollständig enthalten in allen Backup-/Merge-Operationen.
+  - Betroffen waren: `exportData()`, `importData()`, `mergeData()`, `diffData()`, `clearAllData()`.
+  - **WICHTIG**: Alte Backups (vor 2.9.3) enthalten keine Änderungshistorie. Neue Backups ab dieser Version sind vollständig.
+
 ## [2.9.2] - 2026-02-10
 
 ### Behobene Fehler
