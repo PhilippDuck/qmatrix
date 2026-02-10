@@ -218,7 +218,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
         db.getDataHash()
       ]);
 
-      setEmployees(emps);
       setCategories(cats || []);
       setSubCategories(subcats || []);
       setSkills(sks || []);
@@ -231,6 +230,45 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
       setChangeHistory(history || []);
       setProjectTitle(settings?.projectTitle || "");
       setDataHash(hash || "");
+
+      // Check for scheduled status changes
+      const now = new Date();
+      const updatedEmps = await Promise.all((emps || []).map(async (emp) => {
+        let modified = false;
+        let finalEmp = { ...emp };
+
+        // 1. Check Deactivation
+        if (finalEmp.isActive !== false && finalEmp.deactivationDate) {
+          if (new Date(finalEmp.deactivationDate) <= now) {
+            finalEmp.isActive = false;
+            modified = true;
+          }
+        }
+
+        // 2. Check Reactivation
+        if (finalEmp.isActive === false && finalEmp.reactivationDate) {
+          if (new Date(finalEmp.reactivationDate) <= now) {
+            finalEmp.isActive = true;
+            modified = true;
+          }
+        }
+
+        if (modified && finalEmp.id) {
+          try {
+            // update local object to reflect change in UI immediately without another fetch
+            // But we must remove ID before sending to updateEmployee which expects Omit<Employee, "id">
+            // Actually our db.updateEmployee takes (id, Omit<id | updatedAt>)
+            const { id, updatedAt, ...rest } = finalEmp;
+            await db.updateEmployee(id, rest);
+          } catch (e) {
+            console.error("Failed to auto-update employee status", e);
+          }
+        }
+
+        return finalEmp;
+      }));
+
+      setEmployees(updatedEmps);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load data");
     }
@@ -306,46 +344,52 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
             case 'qualificationMeasure':
               await db.deleteQualificationMeasure(entry.entityId);
               break;
+            case 'assessment':
+              // Assessment ID format: ${employeeId}-${skillId}
+              const [empId, sklId] = entry.entityId.split('-');
+              await db.deleteAssessment(empId, sklId);
+              break;
           }
           break;
 
         case 'update':
           // Undo update = restore previousData
           if (entry.previousData) {
+            // Helper to strip ID from data for update functions that expect Omit<T, "id">
+            const { id, ...dataWithoutId } = entry.previousData;
+
             switch (entry.entityType) {
               case 'employee':
-                await db.updateEmployee(entry.entityId, entry.previousData);
+                await db.updateEmployee(entry.entityId, dataWithoutId);
                 break;
               case 'category':
-                await db.updateCategory(entry.entityId, entry.previousData);
+                await db.updateCategory(entry.entityId, dataWithoutId);
                 break;
               case 'subcategory':
-                await db.updateSubCategory(entry.entityId, entry.previousData);
+                await db.updateSubCategory(entry.entityId, dataWithoutId);
                 break;
               case 'skill':
-                await db.updateSkill(entry.entityId, entry.previousData);
+                await db.updateSkill(entry.entityId, dataWithoutId);
                 break;
               case 'department':
-                await db.updateDepartment(entry.entityId, entry.previousData);
+                await db.updateDepartment(entry.entityId, dataWithoutId);
                 break;
               case 'role':
-                await db.updateRole(entry.entityId, entry.previousData);
+                await db.updateRole(entry.entityId, dataWithoutId);
                 break;
               case 'qualificationPlan':
-                await db.updateQualificationPlan(entry.entityId, entry.previousData);
+                await db.updateQualificationPlan(entry.entityId, dataWithoutId);
                 break;
               case 'qualificationMeasure':
-                await db.updateQualificationMeasure(entry.entityId, entry.previousData);
+                await db.updateQualificationMeasure(entry.entityId, dataWithoutId);
                 break;
               case 'assessment':
-                if (entry.previousData.level !== undefined) {
-                  await db.setAssessment(entry.previousData.employeeId, entry.previousData.skillId, entry.previousData.level);
-                }
-                if (entry.previousData.targetLevel !== undefined) {
-                  await db.setTargetLevel(entry.previousData.employeeId, entry.previousData.skillId, entry.previousData.targetLevel);
-                }
+                // Restore the entire assessment object to preserve all fields including undefined values
+                await db.execute("assessments", "put", entry.previousData);
                 break;
             }
+          } else {
+            throw new Error("Wiederherstellung fehlgeschlagen: Keine vorherigen Daten gefunden.");
           }
           break;
 
@@ -415,6 +459,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
                 break;
               case 'qualificationMeasure':
                 await db.execute("qualificationMeasures", "put", { ...mainData, id: entry.entityId });
+                break;
+              case 'assessment':
+                await db.execute("assessments", "put", { ...mainData, id: entry.entityId });
                 break;
             }
           }
@@ -492,7 +539,12 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
 
   const updateCategory = async (id: string, category: Omit<Category, "id">) => {
     try {
-      const existing = categories.find(c => c.id === id);
+      let existing = categories.find(c => c.id === id);
+      if (!existing) {
+        const all = await db.getCategories();
+        existing = all.find(c => c.id === id);
+      }
+
       await db.updateCategory(id, category);
       await recordChange('category', id, category.name, 'update', existing, { ...category, id });
       await refreshAllData();
@@ -541,7 +593,12 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
 
   const updateSubCategory = async (id: string, subCategory: Omit<SubCategory, "id">) => {
     try {
-      const existing = subcategories.find(sc => sc.id === id);
+      let existing = subcategories.find(sc => sc.id === id);
+      if (!existing) {
+        const all = await db.getSubCategories();
+        existing = all.find(sc => sc.id === id);
+      }
+
       await db.updateSubCategory(id, subCategory);
       await recordChange('subcategory', id, subCategory.name, 'update', existing, { ...subCategory, id });
       await refreshAllData();
@@ -604,7 +661,12 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
 
   const updateSkill = async (id: string, skill: Omit<Skill, "id">) => {
     try {
-      const existing = skills.find(s => s.id === id);
+      let existing = skills.find(s => s.id === id);
+      if (!existing) {
+        const all = await db.getSkills();
+        existing = all.find(s => s.id === id);
+      }
+
       await db.updateSkill(id, skill);
       await recordChange('skill', id, skill.name, 'update', existing, { ...skill, id });
       await refreshAllData();
@@ -673,12 +735,22 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
       const employee = employees.find(e => e.id === employeeId);
       await db.setTargetLevel(employeeId, skillId, targetLevel);
       const assessmentId = `${employeeId}-${skillId}`;
+
+      // Create a default previousData if no existing assessment
+      const previousData = existing || {
+        id: assessmentId,
+        employeeId,
+        skillId,
+        level: 0,
+        targetLevel: undefined
+      };
+
       await recordChange(
         'assessment',
         assessmentId,
         `Ziel: ${employee?.name || employeeId} - ${skill?.name || skillId}`,
         'update',
-        existing || null,
+        previousData,
         { employeeId, skillId, level: existing?.level ?? 0, targetLevel }
       );
       await refreshAllData();

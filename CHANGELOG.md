@@ -1,6 +1,15 @@
 # Changelog
 
 
+## [2.9.1] - 2026-02-10
+
+### Behobene Fehler
+- **Undo-Funktionalität für Skill-Bewertungen**: Behebt kritische Fehler in der Rückgängig-Funktion (Strg+Z).
+  - Undo für neu erstellte Assessments (z.B. erste Bewertung 0 → 25%) funktionierte nicht - fehlender `case 'assessment'` im create-Block ergänzt.
+  - Undo für gelöschte Assessments fehlte ebenfalls - `case 'assessment'` im delete-Block ergänzt.
+  - Undo für Soll-Level-Änderungen warf Fehler "keine vorherigen Daten gefunden" - Standard-previousData wird nun erstellt, wenn kein Assessment existiert.
+  - Undo für Soll-Level stellte `undefined`-Werte nicht wieder her - vollständige Assessment-Wiederherstellung implementiert, um alle Felder korrekt zurückzusetzen.
+
 ## [2.9.0] - 2026-02-10
 
 ### Neue Funktionen
