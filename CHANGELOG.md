@@ -1,6 +1,15 @@
 # Changelog
 
 
+## [2.9.4] - 2026-02-10
+
+### Behobene Fehler
+- **Fingerprint-Stabilität**: Behebt Problem mit inkonsistenten Daten-Fingerprints nach Import.
+  - Import/Merge-Operationen erzeugen nun stabile, reproduzierbare Fingerprints.
+  - `updatedAt` und `timestamp` Felder werden beim Hash-Berechnen ignoriert (nicht relevant für Datenintegrität).
+  - Import speichert Daten exakt wie im Backup, ohne neue Timestamps zu generieren.
+  - Gleiche Backup-Datei erzeugt nun immer denselben Fingerprint - wichtig für Verifizierung und Multi-Instanz-Synchronisation.
+
 ## [2.9.3] - 2026-02-10
 
 ### Behobene Fehler

@@ -1043,12 +1043,9 @@ class IndexedDBService {
     for (const [storeName, items] of Object.entries(mappings)) {
       if (items) {
         for (const item of items) {
-          // Ensure imported items have updatedAt, using timestamp as fallback for logs
-          const dataToSave = {
-            ...item,
-            updatedAt: item.updatedAt || item.timestamp || Date.now()
-          };
-          await this.execute(storeName, "add", dataToSave);
+          // Import data exactly as-is to preserve fingerprint stability
+          // Don't add timestamps if they don't exist - preserve original state
+          await this.execute(storeName, "add", item);
         }
       }
     }
@@ -1228,11 +1225,8 @@ class IndexedDBService {
     for (const itemDiff of diff.items) {
       const fullId = `${itemDiff.storeName}-${itemDiff.id}`;
       if (selectedSet.has(fullId)) {
-        const dataToSave = {
-          ...itemDiff.remoteData,
-          updatedAt: itemDiff.remoteData.updatedAt || itemDiff.remoteData.timestamp || Date.now()
-        };
-        await this.execute(itemDiff.storeName, "put", dataToSave);
+        // Apply data exactly as-is to preserve fingerprint stability
+        await this.execute(itemDiff.storeName, "put", itemDiff.remoteData);
         if (itemDiff.type === 'new') report.added++;
         else report.updated++;
       } else {
@@ -1266,6 +1260,10 @@ class IndexedDBService {
       const sortedKeys = Object.keys(obj).sort();
       const result: any = {};
       for (const key of sortedKeys) {
+        // Exclude updatedAt and timestamp from hash calculation for stability
+        if (key === 'updatedAt' || key === 'timestamp') {
+          continue;
+        }
         result[key] = this.makeStable(obj[key]);
       }
       return result;
