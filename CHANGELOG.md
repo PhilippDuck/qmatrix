@@ -1,6 +1,18 @@
 # Changelog
 
 
+## [2.9.6] - 2026-02-11
+
+### Verbesserungen
+- **Sticky Header in der Skill-Matrix**: Toolbar und Mitarbeiter-Spaltenköpfe bleiben beim vertikalen Scrollen sichtbar.
+  - AppShell-Höhenkette korrigiert: `height: 100dvh` und `minHeight: 0` überschreiben Mantines Standard `min-height: 100dvh`.
+  - Card-Container nutzt `flex: 0 1 auto` statt `flex: 1` - kein leerer Bereich mehr bei eingeklappten Kategorien.
+- **Legende als HoverCard**: Legende wurde von Inline-Collapse zu einem kompakten Info-Icon mit HoverCard umgestaltet.
+  - Zeigt Kompetenzstufen, Status-Werte und Zell-Indikatoren (Individuelles Soll, Rollen-Soll, Schulungsmaßnahmen).
+  - Kein Klick nötig - Hover reicht aus.
+- **Z-Index-Korrekturen für horizontales Scrollen**: Sticky Labels (Kategorien, Unterkategorien, Skills) haben nun einheitlich höheren z-Index (30+), sodass scrollende Zellen korrekt dahinter verschwinden.
+- **Opaque Hintergründe für Sticky-Spalten**: Behebt Problem in Dark Mode, bei dem semi-transparente Mantine-Farben (`--mantine-color-gray-light`) Zellinhalte durchscheinen ließen. CSS-Layering-Trick mit `linear-gradient` sorgt für blickdichte Hintergründe.
+
 ## [2.9.5] - 2026-02-10
 
 ### Behobene Fehler

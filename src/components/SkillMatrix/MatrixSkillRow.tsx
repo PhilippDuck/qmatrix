@@ -74,9 +74,9 @@ export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = ({
           paddingLeft: `${44 + (depth * 24)}px`,
           position: "sticky",
           left: 0,
-          zIndex: 5,
-          backgroundColor: isRowHovered
-            ? "var(--mantine-color-default-hover)"
+          zIndex: 30,
+          background: isRowHovered
+            ? "linear-gradient(var(--mantine-color-default-hover), var(--mantine-color-default-hover)), var(--mantine-color-body)"
             : "var(--mantine-color-body)",
           borderRight: "1px solid var(--mantine-color-default-border)",
           borderBottom: "1px solid var(--mantine-color-default-border)",

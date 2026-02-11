@@ -360,7 +360,7 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
         display: "flex",
         position: "sticky",
         top: 0,
-        zIndex: 20,
+        zIndex: 31,
       }}
     >
       <div
@@ -369,7 +369,7 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
           height: headerHeight,
           position: "sticky",
           left: 0,
-          zIndex: 21,
+          zIndex: 32,
           backgroundColor: "var(--mantine-color-body)",
           borderRight: "1px solid var(--mantine-color-default-border)",
           borderBottom: "2px solid var(--mantine-color-default-border)",

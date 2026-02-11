@@ -220,6 +220,7 @@ function AppContent() {
       padding="md"
       transitionDuration={300}
       transitionTimingFunction="ease"
+      styles={{ root: { height: "100dvh" } }}
     >
       <AppShell.Header>
         <Group h="100%" px="md" justify="space-between">
@@ -424,6 +425,9 @@ function AppContent() {
         style={{
           display: "flex",
           flexDirection: "column",
+          height: "100dvh",
+          minHeight: 0,
+          overflow: "hidden",
           backgroundColor: computedColorScheme === "dark" ? "var(--mantine-color-dark-8)" : "#f8f9fa",
         }}
       >
@@ -433,6 +437,8 @@ function AppContent() {
             flex: 1,
             display: "flex",
             flexDirection: "column",
+            overflow: "auto",
+            minHeight: 0,
           }}
         >
           {activeTab === "dashboard" && <Dashboard />}

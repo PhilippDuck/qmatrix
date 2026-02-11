@@ -89,7 +89,6 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
     importData,
   } = useData();
 
-  const [legendOpened, setLegendOpened] = useState(false);
   const [focusEmployeeId, setFocusEmployeeId] = useState<string | null>(null);
   const [hoveredSkillId, setHoveredSkillId] = useState<string | null>(null);
   const [hoveredEmployeeId, setHoveredEmployeeId] = useState<string | null>(null);
@@ -1077,7 +1076,7 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
           }}
         />
       ) : (
-        <Stack gap="md" h="100%" style={{ overflow: "hidden" }}>
+        <Stack gap="md" h="100%" style={{ overflow: "hidden", minHeight: 0 }}>
           <Group justify="space-between" align="center">
             <Group gap="md" align="center">
               <Title order={2}>Skill-Matrix</Title>
@@ -1253,6 +1252,7 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
                     <IconEdit size={20} />
                   </ActionIcon>
                 </Tooltip>
+                <MatrixLegend />
               </Group>
 
               {/* Add Actions Group */}
@@ -1407,7 +1407,7 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
             withBorder
             p={0}
             style={{
-              flex: 1,
+              flex: "0 1 auto",
               display: "flex",
               flexDirection: "column",
               overflow: "hidden",
@@ -1426,7 +1426,7 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
                   style={{
                     position: "sticky",
                     top: 0,
-                    zIndex: 20,
+                    zIndex: 31,
                     backgroundColor: "var(--mantine-color-body)",
                   }}
                 >
@@ -1527,7 +1527,7 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
                         padding: "8px 12px",
                         position: "sticky",
                         left: 0,
-                        zIndex: 10,
+                        zIndex: 30,
                         backgroundColor: "var(--mantine-color-body)",
                         borderRight: "1px solid var(--mantine-color-default-border)",
                         transition: "width 0.2s ease",
@@ -1557,10 +1557,6 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
       )
       }
 
-      <MatrixLegend
-        opened={legendOpened}
-        onToggle={() => setLegendOpened((o) => !o)}
-      />
 
       {/* Employee Drawer - same as on Mitarbeiter page */}
       <EmployeeDrawer
