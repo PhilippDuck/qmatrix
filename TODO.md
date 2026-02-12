@@ -2,15 +2,16 @@
 
 ## Verbesserungen
 
-- [x] Mitarbeiter "deaktivieren" (nicht mehr sichtbar, und nicht Auswertung)
+- [ ] Orgaqnigramm kacheln passen sich nach Inhalt an.
 - [ ] Dashboard überarbeiten?
 - [ ] Metrik Matrix, Rollensoll erfüllung
-- [x] Drawer Speicherbuttons anordnung
 - [ ] Demodaten?
 - [ ] Erstellen mehrerer gleicher Unterkategorien in Unterkategrien
 
 ### Abgeschlossen
 
+- [x] Mitarbeiter "deaktivieren" (nicht mehr sichtbar, und nicht Auswertung)
+- [x] Drawer Speicherbuttons anordnung
 - [x] Organigramm kopieren von Untergruppen und einfügen dieser in Untergruppen
 - [x] Alle popup meldungen als Modal? nicht browser alert
 - [x] Solllevel Indikatoren auch besserer Tooltip
