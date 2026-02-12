@@ -37,6 +37,8 @@
 
 ## Bugs
 
+- [ ] Wird das kopieren und einfügen in Historie aufgenommen?
+
 ### Abgeschlossen
 
 - [x] Neuer Mitarbeiter -> Rolle festgelegt (defizite) Kontextmenür Qualifizierungsplan ausgegraut
