@@ -112,32 +112,38 @@ const NodeCard: React.FC<{
   }
 
   // Styles based on node type
-  let cardWidth = 100;
+  // Styles based on node type
+  let minWidth = 100;
+  let maxWidth = 200;
   let icon = IconBulb;
   let color = "gray";
   let labelSize = "sm";
 
   switch (node.type) {
     case "root":
-      cardWidth = 200;
+      minWidth = 150;
+      maxWidth = 300;
       icon = IconSitemap;
       color = "indigo";
       labelSize = "md";
       break;
     case "category":
-      cardWidth = 180;
+      minWidth = 120;
+      maxWidth = 260;
       icon = IconCategory;
       color = "blue";
       labelSize = "sm";
       break;
     case "subcategory":
-      cardWidth = 150;
+      minWidth = 100;
+      maxWidth = 240;
       icon = IconTags;
       color = "cyan";
       labelSize = "xs";
       break;
     case "skill":
-      cardWidth = 100;
+      minWidth = 80;
+      maxWidth = 200;
       icon = IconBulb;
       color = "teal";
       labelSize = "xs";
@@ -207,7 +213,9 @@ const NodeCard: React.FC<{
       p="xs"
       shadow="sm"
       style={{
-        width: cardWidth,
+        width: "auto",
+        minWidth,
+        maxWidth,
         cursor: node.type === "root" ? "default" : "pointer",
         display: "inline-block",
         backgroundColor: isDark ? "var(--mantine-color-dark-6)" : "white",

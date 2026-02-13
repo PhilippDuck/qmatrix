@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.9.7] - 2026-02-13
+
+### Verbesserungen & UI
+- **Organigramm-Kacheln**: Die Breite der Kacheln (Skills, Kategorien, Unterkategorien) passt sich nun dynamisch an die Länge des Titels an.
+  - Verhindert abgeschnittene Texte bei langen Bezeichnungen.
+  - Definiert sinnvolle Mindest- und Maximalbreiten für ein harmonisches Gesamtbild.
+
+### Behobene Fehler
+- **Historie bei Copy & Paste**: Kopiervorgänge im Organigramm (Skills, Unterkategorien) werden nun korrekt in der Änderungshistorie erfasst und können somit auch rückgängig gemacht werden.
+
 
 ## [2.9.6] - 2026-02-11
 
