@@ -60,6 +60,20 @@ import "@mantine/notifications/styles.css";
 
 const theme = createTheme({
   primaryColor: "blue",
+  colors: {
+    dark: [
+      "#C1C2C5", // 0 - Text
+      "#A6A7AB", // 1
+      "#909296", // 2
+      "#5c5f66", // 3
+      "#373A40", // 4
+      "#2C2E33", // 5
+      "#25262b", // 6
+      "#1A1B1E", // 7 - Surfaces
+      "#141517", // 8 - Background
+      "#101113", // 9 - Deep Background
+    ],
+  },
 });
 
 import packageJson from "../package.json";

@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.9.8] - 2026-02-13
+
+### Verbesserungen & UI
+- **Dark Mode Anpassung**: Das Farbschema im Dark Mode wurde von Standard-Grau auf ein tiefes "Marienblau" (Navy/Anthrazit) umgestellt, um die Ästhetik zu verbessern.
+
 ## [2.9.7] - 2026-02-13
 
 ### Verbesserungen & UI
