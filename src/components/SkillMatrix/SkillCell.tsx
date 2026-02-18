@@ -182,20 +182,34 @@ export const SkillCell: React.FC<SkillCellProps> = ({
             </Text>
             <Group gap="xs">
               {LEVELS.map((lvl) => (
-                <Badge
+                <Tooltip
                   key={lvl.value}
-                  color={lvl.value === -1 ? "gray.3" : lvl.color}
-                  variant={level === lvl.value ? "filled" : "light"}
-                  onClick={() => onLevelChange(lvl.value)}
-                  style={{
-                    cursor: "pointer",
-                    minWidth: 38,
-                    fontSize: "10px",
-                    opacity: lvl.value === -1 ? 0.7 : 1,
-                  }}
+                  label={
+                    <Stack gap={2}>
+                      <Text size="xs" fw={700}>
+                        {lvl.title}
+                      </Text>
+                      {lvl.description && <Text size="xs">{lvl.description}</Text>}
+                    </Stack>
+                  }
+                  position="top"
+                  withArrow
+                  openDelay={200}
                 >
-                  {lvl.label}
-                </Badge>
+                  <Badge
+                    color={lvl.value === -1 ? "gray.3" : lvl.color}
+                    variant={level === lvl.value ? "filled" : "light"}
+                    onClick={() => onLevelChange(lvl.value)}
+                    style={{
+                      cursor: "pointer",
+                      minWidth: 38,
+                      fontSize: "10px",
+                      opacity: lvl.value === -1 ? 0.7 : 1,
+                    }}
+                  >
+                    {lvl.label}
+                  </Badge>
+                </Tooltip>
               ))}
             </Group>
           </div>
@@ -205,24 +219,40 @@ export const SkillCell: React.FC<SkillCellProps> = ({
               Soll-Level
             </Text>
             <Group gap="xs">
-              <Badge
-                color="gray"
-                variant={targetLevel === undefined ? "filled" : "light"}
-                onClick={() => onTargetLevelChange(undefined)}
-                style={{ cursor: "pointer", minWidth: 38, fontSize: "10px" }}
-              >
-                Kein
-              </Badge>
-              {LEVELS.filter(l => l.value > 0).map((lvl) => (
+              <Tooltip label="Kein individuelles Ziel setzen" position="top" withArrow openDelay={200}>
                 <Badge
-                  key={lvl.value}
-                  color={lvl.color}
-                  variant={targetLevel === lvl.value ? "filled" : "light"}
-                  onClick={() => onTargetLevelChange(lvl.value)}
+                  color="gray"
+                  variant={targetLevel === undefined ? "filled" : "light"}
+                  onClick={() => onTargetLevelChange(undefined)}
                   style={{ cursor: "pointer", minWidth: 38, fontSize: "10px" }}
                 >
-                  {lvl.label}
+                  Kein
                 </Badge>
+              </Tooltip>
+              {LEVELS.filter(l => l.value > 0).map((lvl) => (
+                <Tooltip
+                  key={lvl.value}
+                  label={
+                    <Stack gap={2}>
+                      <Text size="xs" fw={700}>
+                        {lvl.title}
+                      </Text>
+                      {lvl.description && <Text size="xs">{lvl.description}</Text>}
+                    </Stack>
+                  }
+                  position="top"
+                  withArrow
+                  openDelay={200}
+                >
+                  <Badge
+                    color={lvl.color}
+                    variant={targetLevel === lvl.value ? "filled" : "light"}
+                    onClick={() => onTargetLevelChange(lvl.value)}
+                    style={{ cursor: "pointer", minWidth: 38, fontSize: "10px" }}
+                  >
+                    {lvl.label}
+                  </Badge>
+                </Tooltip>
               ))}
             </Group>
             {roleTargetLevel !== undefined && roleTargetLevel > 0 && (

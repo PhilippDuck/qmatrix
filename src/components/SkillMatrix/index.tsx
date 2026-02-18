@@ -87,6 +87,7 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
     deleteSkill,
     deleteEmployee,
     importData,
+    assessments,
   } = useData();
 
   const [focusEmployeeId, setFocusEmployeeId] = useState<string | null>(null);
@@ -428,6 +429,43 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
     return result;
   }, [employees, focusEmployeeId, filterDepartments, filterRoles, employeeSort, skills, departments, roles, showMaxValues, getAssessment, showInactive]);
 
+  const calculateAverage = (
+    skillIds: string[],
+    specificEmployeeId?: string
+  ): number | null => {
+    // Return null (N/A) if no skills - prevents confusing 0% display
+    if (skillIds.length === 0) return null;
+    if (employees.length === 0) return 0;
+    let totalScore = 0,
+      relevantCount = 0;
+    const targetEmps = specificEmployeeId
+      ? employees.filter((e) => e.id === specificEmployeeId)
+      : displayedEmployees;
+
+    skillIds.forEach((sId) => {
+      targetEmps.forEach((emp) => {
+        const assessment = getAssessment(emp.id!, sId);
+
+        // Logic sync with MatrixSkillRow:
+        // Default to -1 (N/A) if no assessment exists, unless a role target is set, then 0
+        // We need to fetch role target here to be accurate
+        const roleTarget = getMaxRoleTargetForSkill(emp.roles, sId, roles);
+        const rawLevel = assessment?.level ?? -1;
+        const val = (rawLevel === -1 && roleTarget !== undefined) ? 0 : rawLevel;
+
+        // Ignore N/A (-1)
+        if (val === -1) return;
+
+        totalScore += val;
+        relevantCount++;
+      });
+    });
+
+    // If no relevant assessments found (all N/A or empty), return null
+    if (relevantCount === 0) return null;
+    return Math.round(totalScore / relevantCount);
+  };
+
   const displayedCategories = useMemo(() => {
     let result = [...categories];
 
@@ -441,32 +479,50 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
       // Sort by value (average or max)
       result = result.sort((a, b) => {
         // Get all skill IDs for each category
+        // Get all skill IDs for each category (matching MatrixCategoryRow logic)
         const getSkillIds = (catId: string) => {
-          const subs = subcategories.filter(s => s.categoryId === catId);
-          const subIds = subs.map(s => s.id);
+          const getSubIdsRecursive = () => {
+            const ids: string[] = [];
+            // Get root-level subcategories
+            const roots = subcategories.filter(s => s.categoryId === catId && !s.parentSubCategoryId);
+
+            const collectChildren = (parentId: string) => {
+              const children = subcategories.filter(s => s.parentSubCategoryId === parentId);
+              children.forEach(child => {
+                ids.push(child.id!);
+                collectChildren(child.id!);
+              });
+            };
+
+            roots.forEach(root => {
+              ids.push(root.id!);
+              collectChildren(root.id!);
+            });
+            return ids;
+          };
+
+          // Fallback: if structure seems empty, try the direct filter method just in case data is flat but missing parentId logic? 
+          // Actually, let's trust the recursive logic first. If it returns keys, use them.
+          // But wait, what if the existing data relies on 'categoryId' being set on all subs?
+          // If I use recursive and it misses some 'orphaned' subs that have categoryId but no valid parent chain?
+          // The visual row uses recursive. So to match visual, we MUST use recursive.
+
+          const subIds = getSubIdsRecursive();
           return skills.filter(s => subIds.includes(s.subCategoryId)).map(s => s.id!);
         };
 
         if (showMaxValues) {
-          // Sort by "Max Average" (Best employee in this category)
+          // Sort by "Max Average" using shared calculation
           const calcMaxAvg = (catId: string) => {
             const catSkillIds = getSkillIds(catId);
             if (catSkillIds.length === 0) return 0;
 
-            // Find max avg among all displayed employees
-            let maxAvg = 0;
-            displayedEmployees.forEach(emp => {
-              let total = 0, count = 0;
-              catSkillIds.forEach(sId => {
-                const assessment = getAssessment(emp.id!, sId);
-                const roleTarget = getMaxRoleTargetForSkill(emp.roles, sId, roles);
-                const val = assessment?.level ?? (roleTarget !== undefined ? 0 : -1);
-                if (val !== -1) { total += val; count++; }
-              });
-              const avg = count > 0 ? total / count : 0;
-              if (avg > maxAvg) maxAvg = avg;
-            });
-            return maxAvg;
+            // Map over displayedEmployees and find max (non-null) average
+            const allAvgs = displayedEmployees
+              .map(emp => calculateAverage(catSkillIds, emp.id!))
+              .filter((v): v is number => v !== null);
+
+            return allAvgs.length > 0 ? Math.max(...allAvgs) : 0;
           };
 
           const valA = calcMaxAvg(a.id!);
@@ -474,22 +530,16 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
           return skillSort === 'asc' ? valA - valB : valB - valA;
 
         } else {
-          // Sort by "Overall Average"
+          // Sort by "Overall Average" using shared calculation
           const calcCatAvg = (catId: string) => {
             const catSkillIds = getSkillIds(catId);
             if (catSkillIds.length === 0) return 0;
-            let total = 0, count = 0;
-            catSkillIds.forEach(sId => {
-              displayedEmployees.forEach(emp => {
-                const assessment = getAssessment(emp.id!, sId);
-                const roleTarget = getMaxRoleTargetForSkill(emp.roles, sId, roles);
-                const rawLevel = assessment?.level ?? -1;
-                const val = (rawLevel === -1 && roleTarget !== undefined) ? 0 : rawLevel;
+            // Aggregate average across all employees (calculateAverage without specificId does this but usually for specific employee scope?)
+            // Wait, calculateAverage iterates displayedEmployees if specificId is missing.
+            // So calculateAverage(catSkillIds) performs exactly the aggregation we want!
 
-                if (val !== -1) { total += val; count++; }
-              });
-            });
-            return count > 0 ? total / count : 0;
+            const avg = calculateAverage(catSkillIds);
+            return avg !== null ? avg : 0;
           };
 
           const avgA = calcCatAvg(a.id!);
@@ -503,7 +553,7 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
     }
 
     return result;
-  }, [categories, filterCategories, skillSort, subcategories, skills, displayedEmployees, getAssessment, showMaxValues]);
+  }, [categories, filterCategories, skillSort, subcategories, skills, displayedEmployees, getAssessment, showMaxValues, assessments, roles]);
 
   const { colorScheme } = useMantineColorScheme();
 
@@ -662,42 +712,7 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
     }
   };
 
-  const calculateAverage = (
-    skillIds: string[],
-    specificEmployeeId?: string
-  ): number | null => {
-    // Return null (N/A) if no skills - prevents confusing 0% display
-    if (skillIds.length === 0) return null;
-    if (employees.length === 0) return 0;
-    let totalScore = 0,
-      relevantCount = 0;
-    const targetEmps = specificEmployeeId
-      ? employees.filter((e) => e.id === specificEmployeeId)
-      : displayedEmployees;
 
-    skillIds.forEach((sId) => {
-      targetEmps.forEach((emp) => {
-        const assessment = getAssessment(emp.id!, sId);
-
-        // Logic sync with MatrixSkillRow:
-        // Default to -1 (N/A) if no assessment exists, unless a role target is set, then 0
-        // We need to fetch role target here to be accurate
-        const roleTarget = getMaxRoleTargetForSkill(emp.roles, sId, roles);
-        const rawLevel = assessment?.level ?? -1;
-        const val = (rawLevel === -1 && roleTarget !== undefined) ? 0 : rawLevel;
-
-        // Ignore N/A (-1)
-        if (val === -1) return;
-
-        totalScore += val;
-        relevantCount++;
-      });
-    });
-
-    // If no relevant assessments found (all N/A or empty), return null
-    if (relevantCount === 0) return null;
-    return Math.round(totalScore / relevantCount);
-  };
 
   const bulkSetLevel = async (
     empId: string,

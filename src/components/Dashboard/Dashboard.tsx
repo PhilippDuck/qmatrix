@@ -222,10 +222,77 @@ export const Dashboard: React.FC = () => {
 
         const totalXP = activeAssessments.reduce((sum, a) => sum + (a.level > 0 ? a.level : 0), 0);
 
-        const assessmentsWithTargets = activeAssessments.filter(a => a.targetLevel && a.targetLevel > 0);
-        const achievedTargets = assessmentsWithTargets.filter(a => a.level >= (a.targetLevel || 0));
-        const goalFulfillment = assessmentsWithTargets.length > 0
-            ? Math.round((achievedTargets.length / assessmentsWithTargets.length) * 100)
+        // Goal Fulfillment (Role Targets + Individual Targets)
+        let totalTargets = 0;
+        let metTargets = 0;
+        const roleMap = new Map(roles.map(r => [r.name, r]));
+        // Track aggregated gaps per skill (consistent with Goal Fulfillment)
+        const skillGapDiffs = new Map<string, { totalGap: number, count: number }>();
+
+        activeEmployees.forEach(emp => {
+            const targets = new Map<string, number>();
+
+            // 1. Role Targets
+            if (emp.roles) {
+                emp.roles.forEach(rName => {
+                    const r = roleMap.get(rName);
+                    if (r?.requiredSkills) {
+                        r.requiredSkills.forEach(req => {
+                            const current = targets.get(req.skillId) || 0;
+                            if (req.level > current) targets.set(req.skillId, req.level);
+                        });
+                    }
+                });
+            }
+
+            // 2. Individual Targets (Merge with Role Targets using Max)
+            const empAssessments = activeAssessments.filter(a => a.employeeId === emp.id);
+            empAssessments.forEach(a => {
+                if (a.targetLevel && a.targetLevel > 0) {
+                    const current = targets.get(a.skillId) || 0;
+                    if (a.targetLevel > current) targets.set(a.skillId, a.targetLevel);
+                }
+            });
+
+            // 3. Calculate Fulfillment
+            targets.forEach((targetLvl, skillId) => {
+                if (targetLvl <= 0) return;
+
+                const assessment = empAssessments.find(a => a.skillId === skillId);
+                const currentLvl = assessment ? assessment.level : 0;
+
+                // Ignore explicit N/A for Goal Fulfillment stats?
+                // Logic: If N/A (-1), effective level is 0 for gap calculation purposes?
+                // But for "met vs total", we usually ignore N/A if it means "Not Applicable".
+                // HOWEVER, if a target is set (role or individual), "Not Applicable" is a contradiction.
+                // If target > 0, it IS applicable. So N/A means "Not Assessed" -> Level 0.
+
+                const effectiveLevel = currentLvl === -1 ? 0 : currentLvl;
+                const gap = Math.max(0, targetLvl - effectiveLevel);
+
+                if (gap > 0) {
+                    const current = skillGapDiffs.get(skillId) || { totalGap: 0, count: 0 };
+                    skillGapDiffs.set(skillId, {
+                        totalGap: current.totalGap + gap,
+                        count: current.count + 1
+                    });
+                }
+
+                // For "Goal Fulfillment" KPI, we stick to original logic:
+                // If it's -1, we usually ignore it in "Goal Fulfillment" count because it might skew stats if we treat N/A as 0.
+                // But strictly speaking, if target is set, it's a fail.
+                // Let's stick to previous behavior: Ignore N/A for KPI count to avoid sudden drop.
+                if (currentLvl !== -1) {
+                    totalTargets++;
+                    if (currentLvl >= targetLvl) {
+                        metTargets++;
+                    }
+                }
+            });
+        });
+
+        const goalFulfillment = totalTargets > 0
+            ? Math.round((metTargets / totalTargets) * 100)
             : 0;
 
         const previousXP = calculateHistoricalXP(
@@ -303,8 +370,8 @@ export const Dashboard: React.FC = () => {
         const totalAssessments = Object.values(levelDistribution).reduce((a, b) => a + b, 0);
 
         // Open learning goals
-        const openGoals = assessmentsWithTargets.filter(a => a.level < (a.targetLevel || 0));
-        const openGoalsCount = openGoals.length;
+        // Open learning goals (Calculated from Total Targets - Met Targets)
+        const openGoalsCount = totalTargets - metTargets;
 
         // Recently added (skills, categories in last 30 days - we'll show counts)
         const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
@@ -322,18 +389,14 @@ export const Dashboard: React.FC = () => {
         }).sort((a, b) => b.improvements - a.improvements);
 
         // Skills with biggest gaps
-        const skillGaps = skills.map(skill => {
-            const skillAssessments = assessments.filter(a => a.skillId === skill.id && a.targetLevel && a.targetLevel > 0);
-            if (skillAssessments.length === 0) return null;
-
-            const totalGap = skillAssessments.reduce((sum, a) => sum + ((a.targetLevel || 0) - a.level), 0);
-            const avgGap = totalGap / skillAssessments.length;
-
-            return { skill, avgGap, count: skillAssessments.length };
-        }).filter(Boolean) as { skill: typeof skills[0]; avgGap: number; count: number }[];
-
-        const biggestGaps = skillGaps
-            .filter(g => g.avgGap > 0)
+        // Skills with biggest gaps (Derived from consistent logic above)
+        const biggestGaps = Array.from(skillGapDiffs.entries())
+            .map(([skillId, data]) => ({
+                skill: skills.find(s => s.id === skillId),
+                avgGap: data.totalGap / data.count,
+                count: data.count
+            }))
+            .filter((item): item is { skill: NonNullable<typeof item.skill>, avgGap: number, count: number } => !!item.skill && item.avgGap > 0)
             .sort((a, b) => b.avgGap - a.avgGap)
             .slice(0, 5);
 
@@ -532,7 +595,7 @@ export const Dashboard: React.FC = () => {
                     <StatCard
                         title="Zielerfüllung"
                         value={`${kpis.goalFulfillment}%`}
-                        subtitle="Ziele erreicht"
+                        subtitle="Ziele erreicht (Individuell & Rolle)"
                         icon={<IconTarget size={24} />}
                         color={kpis.goalFulfillment >= 70 ? "teal" : kpis.goalFulfillment >= 40 ? "yellow" : "red"}
                     />
@@ -541,7 +604,7 @@ export const Dashboard: React.FC = () => {
 
             {/* Activity Card */}
             {visibleTiles.activity && !loadingHistory && (
-                <Card withBorder radius="md" p="md">
+                <Card withBorder radius="md" p="md" style={{ minHeight: '180px', display: 'flex', flexDirection: 'column' }}>
                     <Group justify="space-between" mb="xs">
                         <Tooltip label="Zusammenfassung der Aktivitäten und Entwicklungen im ausgewählten Zeitraum." withArrow>
                             <Text size="xs" c="dimmed" fw={700} tt="uppercase" style={{ cursor: 'help' }}>Aktivitäts-Übersicht</Text>

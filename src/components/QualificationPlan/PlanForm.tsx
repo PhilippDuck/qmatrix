@@ -25,6 +25,7 @@ interface PlanFormProps {
   onClose: () => void;
   editingPlan?: QualificationPlan | null;
   initialEmployeeId?: string | null;
+  onPlanCreated?: (planId: string) => void;
 }
 
 export const PlanForm: React.FC<PlanFormProps> = ({
@@ -32,6 +33,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({
   onClose,
   editingPlan,
   initialEmployeeId,
+  onPlanCreated,
 }) => {
   const {
     employees,
@@ -225,12 +227,16 @@ export const PlanForm: React.FC<PlanFormProps> = ({
           });
         }
 
-        await addQualificationPlan({
+        const planId = await addQualificationPlan({
           employeeId: formData.employeeId,
           targetRoleId: formData.targetRoleId || undefined,
           status: formData.status,
           notes: formData.notes || undefined,
         });
+
+        if (onPlanCreated) {
+          onPlanCreated(planId);
+        }
       }
       onClose();
     } catch (error) {

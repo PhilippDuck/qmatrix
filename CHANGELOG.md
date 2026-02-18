@@ -1,4 +1,17 @@
 
+## [2.9.10] - 2026-02-18
+
+### Behobene Fehler & Fixes
+- **Skill-Matrix Sortierung**: Ein Fehler bei der Sortierung nach "Maximaler Abdeckung" wurde behoben.
+  - Die Sortierlogik berücksichtigt nun korrekt auch tief verschachtelte Unterkategorien (rekursiv).
+  - Die Sortierung aktualisiert sich nun automatisch bei Änderungen an Bewertungen oder Rollenanforderungen (Behebung von "stale data" Problemen).
+  - Die Berechnungslogik für Anzeige und Sortierung wurde vereinheitlicht, um Diskrepanzen auszuschließen.
+- **Dashboard KPIs**:
+  - **Zielerfüllung**: Berücksichtigt nun korrekt sowohl individuelle Ziele als auch Rollen-Anforderungen.
+  - **Skill Gaps**: Berechnungsgrundlage vereinheitlicht mit der Zielerfüllung.
+  - **Aktivitäts-Übersicht**: Die Karte hat nun eine feste Mindesthöhe, um Layout-Sprünge zu vermeiden.
+- **Datenkonsistenz**: Diverse Berechnungen im Dashboard wurden gehärtet, um fehlende Ziele korrekt zu handhaben.
+
 ## [2.9.9] - 2026-02-18
 
 ### Neue Funktionen & Verbesserungen

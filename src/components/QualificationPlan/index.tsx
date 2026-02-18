@@ -75,6 +75,18 @@ export const QualificationPlan: React.FC<QualificationPlanProps> = ({ initialEmp
     setActiveTab("detail");
   };
 
+  const handlePlanCreated = (planId: string) => {
+    // Refresh data is handled by context, we just need to select local state
+    // Wait for the plan to be available in state? 
+    // Usually context update is fast but async. 
+    // However, since we just got the ID, setting it as selectedPlanId is safe.
+    // The PlanDetail component might render null briefly if plan is not in qualificationPlans yet.
+    // But since we await addQualificationPlan in PlanForm and it awaits refreshAllData, we should be good.
+    setSelectedPlanId(planId);
+    setActiveTab("detail");
+    closeDrawer();
+  };
+
   // Handle cross-module navigation
   useEffect(() => {
     if (initialEmployeeId) {
@@ -218,6 +230,7 @@ export const QualificationPlan: React.FC<QualificationPlanProps> = ({ initialEmp
             onClose={closeDrawer}
             editingPlan={editingPlan}
             initialEmployeeId={targetEmployeeId}
+            onPlanCreated={handlePlanCreated}
           />
         </>
       );
@@ -421,6 +434,7 @@ export const QualificationPlan: React.FC<QualificationPlanProps> = ({ initialEmp
         onClose={closeDrawer}
         editingPlan={editingPlan}
         initialEmployeeId={targetEmployeeId}
+        onPlanCreated={handlePlanCreated}
       />
     </Box>
   );
