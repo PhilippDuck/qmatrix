@@ -382,6 +382,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
               const sklId = parts.slice(5).join('-');
               await db.deleteAssessment(empId, sklId);
               break;
+            case 'savedView':
+              await db.deleteSavedView(entry.entityId);
+              break;
           }
           break;
 
@@ -419,6 +422,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
               case 'assessment':
                 // Restore the entire assessment object to preserve all fields including undefined values
                 await db.execute("assessments", "put", entry.previousData);
+                break;
+              case 'savedView':
+                await db.updateSavedView(entry.entityId, dataWithoutId);
                 break;
             }
           } else {
@@ -495,6 +501,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
                 break;
               case 'assessment':
                 await db.execute("assessments", "put", { ...mainData, id: entry.entityId });
+                break;
+              case 'savedView':
+                await db.execute("savedViews", "put", { ...mainData, id: entry.entityId });
                 break;
             }
           }
@@ -1129,6 +1138,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
   const addSavedView = async (view: Omit<SavedView, "id" | "updatedAt">) => {
     try {
       const id = await db.addSavedView(view);
+      await recordChange('savedView', id, view.name, 'create', null, { ...view, id });
       await refreshAllData();
       return id;
     } catch (err) {
@@ -1139,7 +1149,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
 
   const updateSavedView = async (id: string, view: Omit<SavedView, "id" | "updatedAt">) => {
     try {
+      const existing = savedViews.find(v => v.id === id);
       await db.updateSavedView(id, view);
+      await recordChange('savedView', id, view.name, 'update', existing, { ...view, id });
       await refreshAllData();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update saved view");
@@ -1149,7 +1161,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
 
   const deleteSavedView = async (id: string) => {
     try {
+      const existing = savedViews.find(v => v.id === id);
       await db.deleteSavedView(id);
+      await recordChange('savedView', id, existing?.name || id, 'delete', existing, null);
       await refreshAllData();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to delete saved view");

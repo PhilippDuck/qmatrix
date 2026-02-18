@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Badge, Text, HoverCard, Stack, Group, Divider, ThemeIcon, Box, SimpleGrid, Tooltip, ActionIcon, Menu } from "@mantine/core";
-import { IconBuilding, IconHistory, IconTrendingUp, IconTrendingDown, IconMinus, IconPencil, IconPlus, IconDotsVertical, IconCertificate } from "@tabler/icons-react";
+import { IconBuilding, IconHistory, IconTrendingUp, IconTrendingDown, IconMinus, IconPencil, IconPlus, IconDotsVertical, IconCertificate, IconInfoCircle, IconSortAscending, IconSortDescending, IconArrowsSort } from "@tabler/icons-react";
 import { MATRIX_LAYOUT } from "../../constants/skillLevels";
 import { getScoreColor } from "../../utils/skillCalculations";
 import { Employee, Skill, Assessment, useData, AssessmentLogEntry } from "../../context/DataContext";
@@ -9,6 +9,7 @@ import { usePrivacy } from "../../context/PrivacyContext";
 import { useEmployeeMetrics } from "../../hooks/useEmployeeMetrics";
 
 import { MatrixColumn } from "./types";
+import { MatrixLegend } from "./MatrixLegend";
 
 interface MatrixHeaderProps {
   columns: MatrixColumn[];
@@ -26,6 +27,10 @@ interface MatrixHeaderProps {
   onAddEmployee: () => void;
   onNavigate?: (tab: string, params?: any) => void;
   labelWidth?: number;
+  employeeSort: 'asc' | 'desc' | null;
+  onEmployeeSortChange: (sort: 'asc' | 'desc' | null) => void;
+  skillSort: 'asc' | 'desc' | null;
+  onSkillSortChange: (sort: 'asc' | 'desc' | null) => void;
 }
 
 const EmployeeInfoCard: React.FC<{
@@ -348,11 +353,39 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
   onAddEmployee,
   onNavigate,
   labelWidth,
+  employeeSort,
+  onEmployeeSortChange,
+  skillSort,
+  onSkillSortChange,
 }) => {
   const { anonymizeName } = usePrivacy();
   const { roles, qualificationPlans } = useData();
   const { cellSize, headerHeight } = MATRIX_LAYOUT;
   const effectiveLabelWidth = labelWidth || MATRIX_LAYOUT.labelWidth;
+
+  const cycleSortEmployee = () => {
+    if (employeeSort === null) onEmployeeSortChange('asc');
+    else if (employeeSort === 'asc') onEmployeeSortChange('desc');
+    else onEmployeeSortChange(null);
+  };
+
+  const cycleSortSkill = () => {
+    if (skillSort === null) onSkillSortChange('asc');
+    else if (skillSort === 'asc') onSkillSortChange('desc');
+    else onSkillSortChange(null);
+  };
+
+  const getSortIcon = (sort: 'asc' | 'desc' | null) => {
+    if (sort === 'asc') return <IconSortAscending size={12} />;
+    if (sort === 'desc') return <IconSortDescending size={12} />;
+    return <IconArrowsSort size={12} />;
+  };
+
+  const getSortLabel = (sort: 'asc' | 'desc' | null, label: string) => {
+    if (sort === 'asc') return `${label} ↑`;
+    if (sort === 'desc') return `${label} ↓`;
+    return label;
+  };
 
   return (
     <div
@@ -375,15 +408,78 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
           borderBottom: "2px solid var(--mantine-color-default-border)",
           display: "flex",
           alignItems: "center",
-          paddingLeft: "12px",
+          justifyContent: "center",
+          paddingLeft: "0",
           color: "var(--mantine-color-dimmed)",
           fontSize: "11px",
           fontWeight: 600,
           textTransform: "uppercase",
           transition: "width 0.2s ease",
+          flexDirection: "column",
+          gap: "2px"
         }}
       >
-        Struktur / Team
+        <Text size="xs" fw={700} tt="uppercase" c="dimmed">
+          Struktur / Team
+        </Text>
+        <Group gap={8} mt={2}>
+          <MatrixLegend
+            trigger={
+              <Group gap={4} style={{ cursor: "pointer" }}>
+                <IconInfoCircle size={12} />
+                <Text size="10px" td="underline">
+                  Legende
+                </Text>
+              </Group>
+            }
+          />
+        </Group>
+        <Group gap={6} mt={2}>
+          <Tooltip label={
+            employeeSort === null ? "Mitarbeiter sortieren (aufsteigend)" :
+              employeeSort === 'asc' ? "Mitarbeiter sortieren (absteigend)" :
+                "Mitarbeiter-Sortierung aufheben"
+          }>
+            <Group
+              gap={3}
+              onClick={cycleSortEmployee}
+              style={{
+                cursor: "pointer",
+                padding: "2px 4px",
+                borderRadius: "4px",
+                backgroundColor: employeeSort ? "var(--mantine-color-blue-light)" : "transparent",
+                transition: "background-color 0.15s ease",
+              }}
+            >
+              {getSortIcon(employeeSort)}
+              <Text size="10px" c={employeeSort ? "blue" : "dimmed"}>
+                {getSortLabel(employeeSort, "MA")}
+              </Text>
+            </Group>
+          </Tooltip>
+          <Tooltip label={
+            skillSort === null ? "Skills sortieren (aufsteigend)" :
+              skillSort === 'asc' ? "Skills sortieren (absteigend)" :
+                "Skill-Sortierung aufheben"
+          }>
+            <Group
+              gap={3}
+              onClick={cycleSortSkill}
+              style={{
+                cursor: "pointer",
+                padding: "2px 4px",
+                borderRadius: "4px",
+                backgroundColor: skillSort ? "var(--mantine-color-violet-light)" : "transparent",
+                transition: "background-color 0.15s ease",
+              }}
+            >
+              {getSortIcon(skillSort)}
+              <Text size="10px" c={skillSort ? "violet" : "dimmed"}>
+                {getSortLabel(skillSort, "Skills")}
+              </Text>
+            </Group>
+          </Tooltip>
+        </Group>
       </div>
       <div style={{ display: "flex", backgroundColor: "var(--mantine-color-body)" }}>
         {columns.map((col) => {

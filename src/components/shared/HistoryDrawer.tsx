@@ -26,6 +26,7 @@ import {
   IconTrendingUp,
   IconTrendingDown,
   IconMinus,
+  IconEye,
 } from '@tabler/icons-react';
 import { useData, ChangeHistoryEntry, EntityType, Employee, Skill, SubCategory, Category, Department, EmployeeRole } from '../../context/DataContext';
 
@@ -53,6 +54,7 @@ const entityTypeConfig: Record<EntityType, { icon: React.ElementType; label: str
   qualificationPlan: { icon: IconClipboardList, label: 'Qualifizierungsplan', color: 'pink' },
   qualificationMeasure: { icon: IconTargetArrow, label: 'Maßnahme', color: 'indigo' },
   assessment: { icon: IconCheck, label: 'Bewertung', color: 'green' },
+  savedView: { icon: IconEye, label: 'Ansicht', color: 'gray' },
 };
 
 const actionLabels: Record<string, { label: string; color: string }> = {
@@ -285,6 +287,12 @@ function generateDescription(entry: ChangeHistoryEntry, ctx: DataContext): { des
         };
       }
       return { description: skill ? `Skill: ${skill.name}` : 'Maßnahme aktualisiert' };
+    }
+
+    case 'savedView': {
+      if (action === 'create') return { description: 'Neue Ansicht erstellt' };
+      if (action === 'delete') return { description: 'Ansicht gelöscht' };
+      return { description: 'Ansicht aktualisiert' };
     }
 
     default:

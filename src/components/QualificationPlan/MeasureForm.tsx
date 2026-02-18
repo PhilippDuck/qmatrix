@@ -529,11 +529,39 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({
                     )}
                   </Group>
 
+                  {/* Warning for existing measures (general info) */}
                   {employeeMeasures.length > 0 && (
                     <Text size="xs" c="dimmed">
                       Rot markierte Bereiche sind bereits durch andere Maßnahmen belegt.
                     </Text>
                   )}
+
+                  {/* Specific Warning for Overlap */}
+                  {(() => {
+                    if (!formData.startDate || !formData.targetDate) return null;
+                    const startRaw = new Date(formData.startDate);
+                    const endRaw = new Date(formData.targetDate);
+                    const start = new Date(startRaw.getFullYear(), startRaw.getMonth(), startRaw.getDate());
+                    const end = new Date(endRaw.getFullYear(), endRaw.getMonth(), endRaw.getDate(), 23, 59, 59);
+
+                    const hasOverlap = employeeMeasures.some((m) => {
+                      const mStartRaw = new Date(m.startDate!);
+                      const mEndRaw = new Date(m.targetDate!);
+                      const mStart = new Date(mStartRaw.getFullYear(), mStartRaw.getMonth(), mStartRaw.getDate());
+                      const mEnd = new Date(mEndRaw.getFullYear(), mEndRaw.getMonth(), mEndRaw.getDate(), 23, 59, 59);
+
+                      return start <= mEnd && end >= mStart;
+                    });
+
+                    if (hasOverlap) {
+                      return (
+                        <Alert color="orange" variant="light" icon={<IconAlertCircle size={16} />} title="Zeitkonflikt">
+                          Der gewählte Zeitraum überschneidet sich mit bestehenden Maßnahmen. Parallele Maßnahmen sind möglich, erhöhen aber die Arbeitslast.
+                        </Alert>
+                      );
+                    }
+                    return null;
+                  })()}
 
                   <Box style={{ display: "flex", justifyContent: "center" }}>
                     <DatePicker
@@ -560,19 +588,52 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({
                           return checkDate >= start && checkDate <= end;
                         });
 
-                        return isOccupied
-                          ? {
-                            style: {
-                              backgroundColor: computedColorScheme === "dark"
-                                ? "rgba(250, 82, 82, 0.15)"
-                                : "var(--mantine-color-red-1)",
-                              color: computedColorScheme === "dark"
-                                ? "var(--mantine-color-red-5)"
-                                : "var(--mantine-color-red-9)",
-                              fontWeight: computedColorScheme === "dark" ? 600 : "normal",
-                            },
+                        // Check if date is selected (start, end, or in range)
+                        let isSelected = false;
+                        if (formData.startDate) {
+                          const s = new Date(formData.startDate);
+                          s.setHours(0, 0, 0, 0);
+                          const d = new Date(date);
+                          d.setHours(0, 0, 0, 0);
+                          if (d.getTime() === s.getTime()) isSelected = true;
+
+                          if (formData.targetDate) {
+                            const e = new Date(formData.targetDate);
+                            e.setHours(0, 0, 0, 0);
+                            if (d >= s && d <= e) isSelected = true;
                           }
-                          : {};
+                        }
+
+                        if (isOccupied) {
+                          if (isSelected) {
+                            // If occupied AND selected, show selection color (default handled by component)
+                            // but add a warning indicator (e.g. red border)
+                            return {
+                              style: {
+                                border: `2px solid ${computedColorScheme === "dark"
+                                    ? "var(--mantine-color-red-8)"
+                                    : "var(--mantine-color-red-6)"
+                                  }`,
+                                // We do NOT set backgroundColor here, so the selection blue shows up
+                              }
+                            };
+                          } else {
+                            // If occupied and NOT selected, show red background
+                            return {
+                              style: {
+                                backgroundColor: computedColorScheme === "dark"
+                                  ? "rgba(250, 82, 82, 0.15)"
+                                  : "var(--mantine-color-red-1)",
+                                color: computedColorScheme === "dark"
+                                  ? "var(--mantine-color-red-5)"
+                                  : "var(--mantine-color-red-9)",
+                                fontWeight: computedColorScheme === "dark" ? 600 : "normal",
+                              },
+                            };
+                          }
+                        }
+
+                        return {};
                       }}
                     />
                   </Box>

@@ -60,7 +60,8 @@ const GapChartRow: React.FC<{
     const maxPlannedLevel = activeMeasures.reduce((max, m) => Math.max(max, m.targetLevel), 0);
     const hasMeasure = activeMeasures.length > 0;
 
-    // Determine if planned level exceeds current level
+    // Determine if fully planned
+    const isFullyPlanned = maxPlannedLevel >= gap.targetLevel;
     const plannedGrowth = Math.max(0, maxPlannedLevel - gap.currentLevel);
 
     return (
@@ -87,7 +88,8 @@ const GapChartRow: React.FC<{
                 color="blue"
                 size="sm"
                 onClick={(e) => { e.stopPropagation(); onAddMeasure(gap.skillId); }}
-                title="Maßnahme hinzufügen"
+                title={isFullyPlanned ? "Bereits vollständig geplant" : "Maßnahme hinzufügen"}
+                disabled={isFullyPlanned}
               >
                 <IconPlus size={16} />
               </ActionIcon>

@@ -106,9 +106,18 @@ export const MeasureCard: React.FC<MeasureCardProps> = ({
               {isInternal ? <IconUsers size={18} /> : isSelfLearning ? <IconBook size={18} /> : <IconSchool size={18} />}
             </ThemeIcon>
             <div>
-              <Text fw={600} size="sm">
-                {skill?.name || "Unbekannter Skill"}
-              </Text>
+              <Tooltip
+                label={skill?.description || "Keine Beschreibung verfügbar"}
+                position="top-start"
+                withArrow
+                disabled={!skill?.description}
+                multiline
+                w={300}
+              >
+                <Text fw={600} size="sm" style={{ cursor: skill?.description ? "help" : "default" }}>
+                  {skill?.name || "Unbekannter Skill"}
+                </Text>
+              </Tooltip>
               <Text size="xs" c="dimmed">
                 {isInternal ? "Interne Schulung" : isSelfLearning ? "Selbststudium / Erfahrung" : "Externe Schulung"}
               </Text>
@@ -207,20 +216,36 @@ export const MeasureCard: React.FC<MeasureCardProps> = ({
               const isCurrent = localLevel === level.value;
 
               return (
-                <Button
+                <Tooltip
                   key={level.value}
-                  size="compact-xs"
-                  p={0}
-                  variant={isCurrent ? "filled" : "default"}
-                  color={level.color}
-                  onClick={() => handleLevelUpdate(level.value)}
-                  style={{
-                    borderColor: isCurrent ? undefined : `var(--mantine-color-${level.color}-4)`,
-                    color: isCurrent ? undefined : `var(--mantine-color-${level.color}-7)`,
-                  }}
+                  label={
+                    <Stack gap={2}>
+                      <Text size="xs" fw={700}>
+                        {level.title}
+                      </Text>
+                      {level.description && <Text size="xs">{level.description}</Text>}
+                    </Stack>
+                  }
+                  multiline
+                  w={200}
+                  position="top"
+                  withArrow
+                  openDelay={200}
                 >
-                  {level.value}%
-                </Button>
+                  <Button
+                    size="compact-xs"
+                    p={0}
+                    variant={isCurrent ? "filled" : "default"}
+                    color={level.color}
+                    onClick={() => handleLevelUpdate(level.value)}
+                    style={{
+                      borderColor: isCurrent ? undefined : `var(--mantine-color-${level.color}-4)`,
+                      color: isCurrent ? undefined : `var(--mantine-color-${level.color}-7)`,
+                    }}
+                  >
+                    {level.value}%
+                  </Button>
+                </Tooltip>
               );
             })}
           </Group>

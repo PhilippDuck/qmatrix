@@ -1,4 +1,23 @@
 
+## [2.9.11] - 2026-02-18
+
+### Neue Funktionen & Verbesserungen
+- **Legende in Header-Zelle integriert**: Die Matrix-Legende ist nun direkt in der „Struktur / Team"-Zelle als klickbarer „Legende"-Link verfügbar (statt als separater Button in der Toolbar).
+- **Sortierung in Header-Zelle integriert**: Die Sortier-Buttons für Mitarbeiter (MA ↑↓) und Skills (Skills ↑↓) wurden aus der Toolbar entfernt und als kompakte, klickbare Sortier-Indikatoren direkt in die Header-Zelle verschoben.
+  - Visuelles Feedback: Aktive Sortierung zeigt farbige Hinterlegung (blau für MA, violett für Skills).
+  - Dreistufiger Toggle: Klick wechselt zwischen aufsteigend → absteigend → keine Sortierung.
+- **Toolbar-Reorganisation**: Die verbleibenden Icon-Buttons wurden logisch neu gruppiert:
+  - **Ansicht**: Gruppierung, MA ein/ausblenden, Werte-Modus, Auf-/Zuklappen, Leere Spalten, Filter.
+  - **Aktionen**: Bearbeitungsmodus, Skill hinzufügen, Mitarbeiter hinzufügen.
+  - Überflüssige Gruppen-Wrapper und leere Kommentare entfernt.
+- **Änderungshistorie für Ansichten**: Erstellen, Ändern und Löschen von gespeicherten Ansichten wird nun in der Änderungshistorie protokolliert und kann rückgängig gemacht werden.
+  - Neuer Entity-Typ `savedView` mit Icon (Auge) und Beschreibungen im History-Drawer.
+- **Tooltips im Qualifizierungsplan**: Skill-Namen und Maßnahmen-Level-Buttons zeigen nun Beschreibungen als Tooltip beim Hover an.
+
+### Behobene Fehler & Fixes
+- **Dark Mode**: N/A-Badge in der Legenden-HoverCard war zu hell – Farbe von `gray.3` auf `gray.6` angepasst.
+- **MatrixLegend-Trigger**: Die Legende unterstützt nun ein individuelles `trigger`-Prop für flexible Einbindung an verschiedenen Stellen.
+
 ## [2.9.10] - 2026-02-18
 
 ### Behobene Fehler & Fixes

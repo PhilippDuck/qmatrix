@@ -106,6 +106,13 @@ export const PlanDetail: React.FC<PlanDetailProps> = ({
   const coveredSkillIds = new Set(planMeasures.map((m) => m.skillId));
   const uncoveredGaps = skillGaps.filter((g) => !coveredSkillIds.has(g.skillId));
 
+  // Check if all gaps are fully planned (target level reached by measures)
+  const allGapsFullyPlanned = skillGaps.length > 0 && skillGaps.every(gap => {
+    const gapMeasures = planMeasures.filter(m => m.skillId === gap.skillId);
+    const maxPlannedLevel = Math.max(0, ...gapMeasures.map(m => m.targetLevel));
+    return maxPlannedLevel >= gap.targetLevel;
+  });
+
   const handleAddMeasure = (skillId?: string) => {
     setEditingMeasure(null);
     setInitialSkillId(skillId || null);
@@ -345,7 +352,8 @@ export const PlanDetail: React.FC<PlanDetailProps> = ({
                 <Button
                   leftSection={<IconPlus size={16} />}
                   onClick={() => handleAddMeasure()}
-                  disabled={skillGaps.length === 0}
+                  disabled={skillGaps.length === 0 || allGapsFullyPlanned}
+                  title={allGapsFullyPlanned ? "Alle Skill-Defizite sind bereits durch Maßnahmen abgedeckt" : "Maßnahme hinzufügen"}
                 >
                   Maßnahme hinzufügen
                 </Button>
@@ -373,7 +381,12 @@ export const PlanDetail: React.FC<PlanDetailProps> = ({
                         : "Die Zielrolle hat keine Skill-Anforderungen definiert. Bitte definieren Sie zuerst Skill-Anforderungen unter Stammdaten > Rollen & Level."}
                   </Text>
                   {skillGaps.length > 0 && (
-                    <Button mt="md" onClick={() => handleAddMeasure()}>
+                    <Button
+                      mt="md"
+                      onClick={() => handleAddMeasure()}
+                      disabled={allGapsFullyPlanned}
+                      title={allGapsFullyPlanned ? "Alle Skill-Defizite sind bereits durch Maßnahmen abgedeckt" : "Erste Maßnahme hinzufügen"}
+                    >
                       Erste Maßnahme hinzufügen
                     </Button>
                   )}

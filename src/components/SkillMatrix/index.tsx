@@ -18,8 +18,6 @@ import {
   IconPlus,
   IconUserPlus,
   IconFilter,
-  IconSortAscending,
-  IconSortDescending,
   IconEdit,
   IconUsersGroup,
   IconBuilding,
@@ -1155,46 +1153,6 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
                     <IconColumnsOff size={20} />
                   </ActionIcon>
                 </Tooltip>
-              </Group>
-
-              {/* Sort & Filter Group */}
-              <Group gap="xs">
-                <Tooltip label={
-                  employeeSort === null ? "Mitarbeiter sortieren (aufsteigend)" :
-                    employeeSort === 'asc' ? "Mitarbeiter sortieren (absteigend)" :
-                      "Mitarbeiter-Sortierung aufheben"
-                }>
-                  <ActionIcon
-                    variant="light"
-                    color={employeeSort ? "blue" : "gray"}
-                    onClick={() => {
-                      if (employeeSort === null) setEmployeeSort('asc');
-                      else if (employeeSort === 'asc') setEmployeeSort('desc');
-                      else setEmployeeSort(null);
-                    }}
-                    size="lg"
-                  >
-                    {employeeSort === 'desc' ? <IconSortDescending size={20} /> : <IconSortAscending size={20} />}
-                  </ActionIcon>
-                </Tooltip>
-                <Tooltip label={
-                  skillSort === null ? "Skills sortieren (aufsteigend)" :
-                    skillSort === 'asc' ? "Skills sortieren (absteigend)" :
-                      "Skills-Sortierung aufheben"
-                }>
-                  <ActionIcon
-                    variant="light"
-                    color={skillSort ? "violet" : "gray"}
-                    onClick={() => {
-                      if (skillSort === null) setSkillSort('asc');
-                      else if (skillSort === 'asc') setSkillSort('desc');
-                      else setSkillSort(null);
-                    }}
-                    size="lg"
-                  >
-                    {skillSort === 'desc' ? <IconSortDescending size={20} /> : <IconSortAscending size={20} />}
-                  </ActionIcon>
-                </Tooltip>
 
                 <Popover
                   width={300}
@@ -1254,9 +1212,8 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
                 </Popover>
               </Group>
 
-              {/* Global Actions Group */}
+              {/* Actions Group */}
               <Group gap="xs" style={{ borderLeft: '1px solid var(--mantine-color-default-border)', paddingLeft: '12px' }}>
-
                 <Tooltip label={isEditMode ? "Bearbeitungsmodus beenden" : "Bearbeitungsmodus aktivieren"}>
                   <ActionIcon
                     variant="light"
@@ -1267,11 +1224,6 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
                     <IconEdit size={20} />
                   </ActionIcon>
                 </Tooltip>
-                <MatrixLegend />
-              </Group>
-
-              {/* Add Actions Group */}
-              <Group gap="xs">
                 <Tooltip label="Skill hinzufügen">
                   <ActionIcon
                     variant="light"
@@ -1465,6 +1417,10 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
                     onNavigate={onNavigate}
 
                     labelWidth={responsiveLabelWidth}
+                    employeeSort={employeeSort}
+                    onEmployeeSortChange={setEmployeeSort}
+                    skillSort={skillSort}
+                    onSkillSortChange={setSkillSort}
                   />
                 </div>
 

@@ -145,7 +145,7 @@ export interface SavedView {
 export type EntityType =
   | 'employee' | 'skill' | 'category' | 'subcategory'
   | 'department' | 'role' | 'qualificationPlan'
-  | 'qualificationMeasure' | 'assessment';
+  | 'qualificationMeasure' | 'assessment' | 'savedView';
 
 export type ChangeAction = 'create' | 'update' | 'delete';
 

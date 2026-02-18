@@ -39,13 +39,15 @@ const DotIndicator: React.FC<{ color: string }> = ({ color }) => (
   />
 );
 
-export const MatrixLegend: React.FC = () => {
+export const MatrixLegend: React.FC<{ trigger?: React.ReactNode }> = ({ trigger }) => {
   return (
     <HoverCard width={340} shadow="md" position="bottom-end" openDelay={200} closeDelay={150}>
       <HoverCard.Target>
-        <ActionIcon variant="light" color="gray" size="lg">
-          <IconInfoCircle size={20} />
-        </ActionIcon>
+        {trigger || (
+          <ActionIcon variant="light" color="gray" size="lg">
+            <IconInfoCircle size={20} />
+          </ActionIcon>
+        )}
       </HoverCard.Target>
       <HoverCard.Dropdown style={{ maxHeight: "70vh", overflowY: "auto" }}>
         <Stack gap="md">
@@ -99,7 +101,7 @@ export const MatrixLegend: React.FC = () => {
                 </Box>
               </Group>
               <Group wrap="nowrap" align="flex-start">
-                <Badge color="gray.3" size="sm" style={{ minWidth: "55px" }}>
+                <Badge color="gray.6" size="sm" style={{ minWidth: "55px" }}>
                   N/A
                 </Badge>
                 <Box>
