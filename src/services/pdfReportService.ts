@@ -238,3 +238,154 @@ export const generateQuarterlyReport = (
 
     doc.save(`Management_Summary_Q${quarter}_${year}.pdf`);
 };
+
+export const exportQualificationPlanPDF = (
+    plan: any, // Using any for now to avoid extensive type imports if not available, or I can try to import
+    employee: any,
+    role: any,
+
+    measures: any[],
+    skillGaps: any[],
+    skills: any[] // Pass all skills to lookup names
+) => {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.width;
+
+    // -- Header --
+    doc.setFillColor(41, 128, 185); // Blue header
+    doc.rect(0, 0, pageWidth, 40, "F");
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(22);
+    doc.text("Qualifizierungsplan", 14, 20);
+    doc.setFontSize(12);
+    doc.text(`Mitarbeiter: ${employee?.name || "Unbekannt"}`, 14, 30);
+
+    doc.setFontSize(10);
+    doc.text(`Erstellt: ${new Date().toLocaleDateString("de-DE")}`, pageWidth - 14, 20, { align: 'right' });
+    doc.text(`Status: ${plan.status === 'active' ? 'Aktiv' : plan.status === 'completed' ? 'Abgeschlossen' : 'Archiviert'}`, pageWidth - 14, 30, { align: 'right' });
+
+    // -- Info Section --
+    let yPos = 55;
+    doc.setTextColor(50, 50, 50);
+    doc.setFontSize(11);
+    doc.text(`Zielrolle: ${role?.name || "Keine Zielrolle definiert"}`, 14, yPos);
+
+    if (plan.notes) {
+        yPos += 10;
+        doc.setFontSize(10);
+        doc.setTextColor(100);
+        const notes = doc.splitTextToSize(`Notizen: ${plan.notes}`, pageWidth - 28);
+        doc.text(notes, 14, yPos);
+        yPos += (notes.length * 5) + 5;
+    } else {
+        yPos += 15;
+    }
+
+    // -- Skill Gaps --
+    doc.setTextColor(41, 128, 185);
+    doc.setFontSize(14);
+    doc.text("Aktuelle Skill-Defizite", 14, yPos);
+    yPos += 10;
+
+    const gapData = skillGaps.map(g => [
+        g.skillName,
+        `${g.currentLevel}%`,
+        `${g.targetLevel}%`,
+        `${g.targetLevel - g.currentLevel}% Diff`
+    ]);
+
+    if (gapData.length > 0) {
+        autoTable(doc, {
+            startY: yPos,
+            head: [["Skill", "Ist-Level", "Soll-Level", "Defizit"]],
+            body: gapData,
+            theme: 'striped',
+            headStyles: { fillColor: [231, 76, 60] }, // Red for deficits
+            styles: { fontSize: 10 },
+        });
+        yPos = (doc as any).lastAutoTable.finalY + 20;
+    } else {
+        doc.setFontSize(10);
+        doc.setTextColor(100);
+        doc.text("Keine Skill-Defizite vorhanden.", 14, yPos);
+        yPos += 20;
+    }
+
+    // -- Measures --
+    doc.setTextColor(41, 128, 185);
+    doc.setFontSize(14);
+    doc.text("Geplante Maßnahmen", 14, yPos);
+    yPos += 10;
+
+    const measureData = measures.map(m => {
+        let status = "Geplant";
+        if (m.status === "in_progress") status = "In Bearbeitung";
+        if (m.status === "completed") status = "Abgeschlossen";
+
+        // Derive Title
+        let measureTitle = "Unbekannt";
+        const skill = skills.find((s: any) => s.id === m.skillId);
+        const skillName = skill ? skill.name : "Unbekannter Skill";
+
+        if (m.type === 'external') {
+            measureTitle = m.externalCourse ? m.externalCourse : `Extern: ${skillName}`;
+        } else if (m.type === 'internal') {
+            measureTitle = `Internes Training: ${skillName}`;
+        } else if (m.type === 'self_learning') {
+            measureTitle = `Selbststudium: ${skillName}`;
+        }
+
+        return [
+            measureTitle,
+            status,
+            m.externalProvider || "-",
+            m.startDate ? new Date(m.startDate).toLocaleDateString("de-DE") : "-",
+            m.targetDate ? new Date(m.targetDate).toLocaleDateString("de-DE") : "-"
+        ];
+    });
+
+    if (measureData.length > 0) {
+        autoTable(doc, {
+            startY: yPos,
+            head: [["Maßnahme", "Status", "Anbieter", "Start", "Ziel"]],
+            body: measureData,
+            theme: 'striped',
+            headStyles: { fillColor: [41, 128, 185] }, // Blue for measures
+            styles: { fontSize: 10 },
+        });
+        yPos = (doc as any).lastAutoTable.finalY + 40; // Space for signatures
+    } else {
+        doc.setFontSize(10);
+        doc.setTextColor(100);
+        doc.text("Keine Maßnahmen definiert.", 14, yPos);
+        yPos += 40;
+    }
+
+    // -- Signatures --
+    // Check if we need a new page
+    if (yPos > doc.internal.pageSize.height - 40) {
+        doc.addPage();
+        yPos = 40;
+    }
+
+    doc.setDrawColor(150);
+    doc.line(14, yPos, 80, yPos); // Line 1
+    doc.line(110, yPos, 180, yPos); // Line 2
+
+    doc.setFontSize(10);
+    doc.setTextColor(50);
+    doc.text("Datum, Unterschrift Mitarbeiter", 14, yPos + 5);
+    doc.text("Datum, Unterschrift Führungskraft", 110, yPos + 5);
+
+    // Footer
+    const pageCount = (doc as any).internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(150);
+        doc.text(`Qualifizierungsplan ${employee?.name} - Seite ${i} von ${pageCount}`, pageWidth / 2, doc.internal.pageSize.height - 10, { align: 'center' });
+    }
+
+    doc.save(`Qualifizierungsplan_${employee?.name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`);
+};

@@ -47,7 +47,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({
   const [formData, setFormData] = useState({
     employeeId: "",
     targetRoleId: "",
-    status: "draft" as QualificationPlan["status"],
+    status: "active" as QualificationPlan["status"],
     notes: "",
   });
   const [loading, setLoading] = useState(false);
@@ -60,7 +60,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({
     // Exclude the current plan if we are editing
     const employeesWithActivePlans = new Set(
       qualificationPlans
-        .filter((p) => (p.status === "active" || p.status === "draft") && (!editingPlan || p.id !== editingPlan.id))
+        .filter((p) => (p.status === "active") && (!editingPlan || p.id !== editingPlan.id))
         .map((p) => p.employeeId)
     );
 
@@ -144,7 +144,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({
         const initial = {
           employeeId: initialEmployeeId || "",
           targetRoleId: "",
-          status: "draft" as QualificationPlan["status"],
+          status: "active" as QualificationPlan["status"],
           notes: "",
         };
         setFormData(initial);
@@ -318,7 +318,6 @@ export const PlanForm: React.FC<PlanFormProps> = ({
               <Select
                 label="Status"
                 data={[
-                  { value: "draft", label: "Entwurf" },
                   { value: "active", label: "Aktiv" },
                   { value: "completed", label: "Abgeschlossen" },
                   { value: "archived", label: "Archiviert" },
@@ -327,7 +326,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({
                 onChange={(value) =>
                   setFormData({
                     ...formData,
-                    status: (value as QualificationPlan["status"]) || "draft",
+                    status: (value as QualificationPlan["status"]) || "active",
                   })
                 }
               />

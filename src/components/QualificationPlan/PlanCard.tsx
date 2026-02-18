@@ -13,14 +13,12 @@ interface PlanCardProps {
 }
 
 const statusLabels: Record<QualificationPlan["status"], string> = {
-    draft: "Entwurf",
     active: "Aktiv",
     completed: "Abgeschlossen",
     archived: "Archiviert",
 };
 
 const statusColors: Record<QualificationPlan["status"], string> = {
-    draft: "gray",
     active: "blue",
     completed: "green",
     archived: "orange",

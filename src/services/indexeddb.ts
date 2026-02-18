@@ -83,7 +83,7 @@ export interface QualificationPlan {
   id?: string;
   employeeId: string;
   targetRoleId: string;      // Zielrolle (Standard: aktuelle Rolle des MA)
-  status: 'draft' | 'active' | 'completed' | 'archived';
+  status: 'active' | 'completed' | 'archived';
   createdAt: number;
   updatedAt: number;
   notes?: string;

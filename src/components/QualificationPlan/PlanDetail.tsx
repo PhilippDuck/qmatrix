@@ -28,12 +28,14 @@ import {
   IconArchive,
   IconCheck,
   IconAlertCircle,
+  IconDownload,
 } from "@tabler/icons-react";
 import {
   useData,
   QualificationPlan,
   QualificationMeasure,
 } from "../../context/DataContext";
+import { exportQualificationPlanPDF } from "../../services/pdfReportService";
 import { usePrivacy } from "../../context/PrivacyContext";
 import { SkillGapAnalysis } from "./SkillGapAnalysis";
 import { MeasureForm } from "./MeasureForm";
@@ -48,14 +50,12 @@ interface PlanDetailProps {
 }
 
 const statusLabels: Record<QualificationPlan["status"], string> = {
-  draft: "Entwurf",
   active: "Aktiv",
   completed: "Abgeschlossen",
   archived: "Archiviert",
 };
 
 const statusColors: Record<QualificationPlan["status"], string> = {
-  draft: "gray",
   active: "blue",
   completed: "green",
   archived: "orange",
@@ -77,6 +77,8 @@ export const PlanDetail: React.FC<PlanDetailProps> = ({
     updateQualificationMeasure,
     deleteQualificationMeasure,
     setAssessment,
+    categories,
+    subcategories,
   } = useData();
   const { anonymizeName } = usePrivacy();
 
@@ -210,6 +212,15 @@ export const PlanDetail: React.FC<PlanDetailProps> = ({
           >
             {statusLabels[plan.status]}
           </Badge>
+          <ActionIcon
+            variant="subtle"
+            color="gray"
+            size="lg"
+            onClick={() => exportQualificationPlanPDF(plan, employee, role, planMeasures, skillGaps, skills)}
+            title="Als PDF exportieren"
+          >
+            <IconDownload size={18} />
+          </ActionIcon>
           <Menu shadow="md" width={200}>
             <Menu.Target>
               <ActionIcon variant="subtle" color="gray" size="lg">
@@ -400,13 +411,20 @@ export const PlanDetail: React.FC<PlanDetailProps> = ({
           </Tabs.Panel>
 
           <Tabs.Panel value="timeline">
-            <Timeline measures={planMeasures} skills={skills} />
+            <Timeline
+              measures={planMeasures}
+              skills={skills}
+              categories={categories} // Added
+              subcategories={subcategories} // Added
+            />
           </Tabs.Panel>
 
           <Tabs.Panel value="gaps">
             <SkillGapAnalysis
               gaps={skillGaps}
               employeeId={plan.employeeId}
+              measures={planMeasures} // Pass measures
+              onAddMeasure={handleAddMeasure} // Pass add handler
             />
           </Tabs.Panel>
         </Tabs>
@@ -432,7 +450,7 @@ export const PlanDetail: React.FC<PlanDetailProps> = ({
         employeeId={plan.employeeId}
         skillGaps={skillGaps}
         editingMeasure={editingMeasure}
-        initialSkillId={initialSkillId} // [NEW]
+        initialSkillId={initialSkillId || undefined} // Fixed type mismatch
         onDelete={handleDeleteMeasure}
       />
     </Box>

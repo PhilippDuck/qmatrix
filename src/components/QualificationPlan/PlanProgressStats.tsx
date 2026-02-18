@@ -1,6 +1,6 @@
 import React from "react";
 import { Paper, SimpleGrid, Card, Group, ThemeIcon, Text, Stack, Progress } from "@mantine/core";
-import { IconList, IconTarget } from "@tabler/icons-react";
+import { IconList, IconCircleCheck, IconX, IconExclamationCircle } from "@tabler/icons-react";
 
 interface PlanProgressStatsProps {
     completedCount: number;
@@ -19,6 +19,7 @@ export const PlanProgressStats: React.FC<PlanProgressStatsProps> = ({
         totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
     const unaddressedCount = totalGaps - addressedGaps;
+    const deficitsPercent = totalGaps > 0 ? Math.round((addressedGaps / totalGaps) * 100) : 100;
 
     return (
         <Paper shadow="xs" p="md" radius="md" withBorder mb="lg">
@@ -45,9 +46,15 @@ export const PlanProgressStats: React.FC<PlanProgressStatsProps> = ({
                             variant="light"
                             size="lg"
                             radius="md"
-                            color={unaddressedCount > 0 ? "orange" : "green"}
+                            color={deficitsPercent === 100 ? "green" : deficitsPercent >= 50 ? "orange" : "red"}
                         >
-                            <IconTarget size={18} />
+                            {deficitsPercent === 100 ? (
+                                <IconCircleCheck size={18} />
+                            ) : deficitsPercent >= 50 ? (
+                                <IconExclamationCircle size={18} />
+                            ) : (
+                                <IconX size={18} />
+                            )}
                         </ThemeIcon>
                         <div>
                             <Text size="xl" fw={700}>

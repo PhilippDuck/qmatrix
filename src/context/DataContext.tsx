@@ -224,8 +224,37 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
       setAssessments(asms || []);
       setDepartments(depts || []);
       setRoles(rls || []);
-      setQualificationPlans(qPlans || []);
-      setQualificationMeasures(qMeasures || []);
+      // Process Qualification Plans (Migrate 'draft' to 'active')
+      const processedPlans = await Promise.all((qPlans || []).map(async (plan) => {
+        if ((plan.status as any) === 'draft') {
+          const updated = { ...plan, status: 'active' as const, updatedAt: Date.now() };
+          try {
+            await db.execute("qualificationPlans", "put", updated);
+          } catch (e) {
+            console.error("Failed to migrate draft plan", e);
+          }
+          return updated;
+        }
+        return plan;
+      }));
+      setQualificationPlans(processedPlans);
+
+      // Process Qualification Measures (Auto-start pending measures)
+      const nowTimestamp = Date.now();
+      const processedMeasures = await Promise.all((qMeasures || []).map(async (m) => {
+        if (m.status === 'pending' && m.startDate && m.startDate <= nowTimestamp) {
+          const updated = { ...m, status: 'in_progress' as const, updatedAt: nowTimestamp };
+          try {
+            await db.execute("qualificationMeasures", "put", updated);
+          } catch (e) {
+            console.error("Failed to auto-start measure", e);
+          }
+          return updated;
+        }
+        return m;
+      }));
+
+      setQualificationMeasures(processedMeasures);
       setSavedViews(views || []);
       setChangeHistory(history || []);
       setProjectTitle(settings?.projectTitle || "");

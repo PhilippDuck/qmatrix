@@ -209,10 +209,24 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({
   }, [formData.skillId, employeeId, getPotentialMentors, editingMeasure, formData.type]);
 
   const handleSave = async () => {
-    if (!formData.skillId) return;
+    if (!formData.skillId || !formData.startDate || !formData.targetDate) return;
 
     setLoading(true);
     try {
+      // Calculate status based on date
+      const now = new Date();
+      now.setHours(0, 0, 0, 0); // Start of today
+
+      const start = new Date(formData.startDate!);
+      start.setHours(0, 0, 0, 0);
+
+      let status: QualificationMeasure["status"] = editingMeasure?.status || "pending";
+
+      // Auto-update status if not final (completed/cancelled)
+      if (!editingMeasure || (editingMeasure.status !== 'completed' && editingMeasure.status !== 'cancelled')) {
+        status = start <= now ? 'in_progress' : 'pending';
+      }
+
       const measureData: Omit<QualificationMeasure, "id" | "updatedAt"> = {
         planId,
         skillId: formData.skillId,
@@ -220,7 +234,7 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({
         startLevel: formData.measureStartLevel, // [NEW]
         targetLevel: formData.measureTargetLevel, // Use User defined target
         type: formData.type,
-        status: editingMeasure?.status || "pending",
+        status: status,
         ...(formData.type === "internal" && formData.mentorId
           ? { mentorId: formData.mentorId }
           : {}),
@@ -231,8 +245,8 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({
             estimatedCost: formData.estimatedCost,
           }
           : {}),
-        startDate: formData.startDate ? new Date(formData.startDate).getTime() : undefined,
-        targetDate: formData.targetDate ? new Date(formData.targetDate).getTime() : undefined,
+        startDate: new Date(formData.startDate!).getTime(),
+        targetDate: new Date(formData.targetDate!).getTime(),
         notes: formData.notes || undefined,
       };
 
@@ -592,7 +606,7 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({
               <Button
                 onClick={handleSave}
                 loading={loading}
-                disabled={!formData.skillId}
+                disabled={!formData.skillId || !formData.startDate || !formData.targetDate}
                 leftSection={<IconPlus size={16} />}
               >
                 {isEditing ? "Aktualisieren" : "Maßnahme hinzufügen"}

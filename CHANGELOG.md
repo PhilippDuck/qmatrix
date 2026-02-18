@@ -1,4 +1,20 @@
-# Changelog
+
+## [2.9.9] - 2026-02-18
+
+### Neue Funktionen & Verbesserungen
+- **PDF-Export für Qualifizierungspläne**:
+  - Im Header jedes Qualifizierungsplans kann nun ein PDF-Report generiert und heruntergeladen werden.
+  - Der Report enthält Mitarbeiter- und Plan-Daten, eine Übersicht der aktuellen Skill-Defizite sowie eine Tabelle aller geplanten Maßnahmen.
+  - Unterschriftenfelder für Mitarbeiter und Führungskraft ermöglichen die direkte Nutzung als offizielles Dokument.
+  - Maßennamen werden im PDF automatisch generiert (z.B. "Internes Training: [Skill Name]"), falls kein expliziter Titel vorhanden ist.
+
+### Behobene Fehler & Fixes
+- **UI-Stabilität**: Ein Fehler im Aktions-Menü ("Menu.Target component children...") wurde behoben, indem der PDF-Download-Button als eigenständige Aktion platziert wurde.
+- **Defizit-Visualisierung**: Die Indikatoren für "adressierte Defizite" wurden verfeinert:
+  - < 50% abgedeckt: Rotes Kreuz
+  - 50-99% abgedeckt: Orangenes Ausrufezeichen
+  - 100% abgedeckt: Grüner Haken
+
 
 ## [2.9.8] - 2026-02-13
 

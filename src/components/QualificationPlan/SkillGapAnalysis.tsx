@@ -11,6 +11,7 @@ import {
   ActionIcon,
   Tooltip,
   Box,
+  useMantineColorScheme,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import {
@@ -18,13 +19,16 @@ import {
   IconChevronRight,
   IconArrowRight,
   IconTrendingUp,
+  IconPlus, // Added import
 } from "@tabler/icons-react";
-import { SkillGap } from "../../context/DataContext";
+import { SkillGap, QualificationMeasure } from "../../context/DataContext";
 
 interface SkillGapAnalysisProps {
   gaps: SkillGap[];
   employeeId: string;
   compact?: boolean;
+  measures?: QualificationMeasure[];
+  onAddMeasure?: (skillId: string) => void;
 }
 
 interface GroupedGaps {
@@ -37,60 +41,162 @@ interface GroupedGaps {
   }[];
 }
 
-const GapProgressBar: React.FC<{ gap: SkillGap; compact?: boolean }> = ({
+const GapChartRow: React.FC<{
+  gap: SkillGap;
+  compact?: boolean;
+  measures?: QualificationMeasure[];
+  onAddMeasure?: (skillId: string) => void;
+}> = ({
   gap,
   compact,
+  measures = [],
+  onAddMeasure,
 }) => {
-  const currentPercent = gap.currentLevel;
-  const targetPercent = gap.targetLevel;
+    const { colorScheme } = useMantineColorScheme();
+    const isDark = colorScheme === 'dark';
 
-  return (
-    <Paper p={compact ? "xs" : "sm"} radius="sm" withBorder>
-      <Group justify="space-between" mb={compact ? 4 : 8}>
-        <Text size={compact ? "xs" : "sm"} fw={500}>
-          {gap.skillName}
-        </Text>
-        <Group gap={4}>
-          <Badge size="xs" color="gray" variant="light">
-            {gap.currentLevel}%
-          </Badge>
-          <IconArrowRight size={12} />
-          <Badge size="xs" color="blue" variant="light">
-            {gap.targetLevel}%
-          </Badge>
-          <Badge size="xs" color="red" variant="outline">
-            +{gap.gap}%
-          </Badge>
+    // Find the highest target level among active/pending measures
+    const activeMeasures = measures.filter(m => m.status === 'in_progress' || m.status === 'pending');
+    const maxPlannedLevel = activeMeasures.reduce((max, m) => Math.max(max, m.targetLevel), 0);
+    const hasMeasure = activeMeasures.length > 0;
+
+    // Determine if planned level exceeds current level
+    const plannedGrowth = Math.max(0, maxPlannedLevel - gap.currentLevel);
+
+    return (
+      <Paper withBorder p="sm" radius="md" mb="xs" bg={isDark ? "var(--mantine-color-dark-6)" : "var(--mantine-color-body)"}>
+        <Group justify="space-between" mb="xs">
+          <Group gap="xs">
+            <Text size="sm" fw={700}>{gap.skillName}</Text>
+            {hasMeasure && (
+              <Badge size="xs" variant="light" color="blue" leftSection={<IconTrendingUp size={10} />}>
+                Geplant: {maxPlannedLevel}%
+              </Badge>
+            )}
+          </Group>
+          <Group gap="xs">
+            <Badge size="sm" variant="dot" color={gap.currentLevel >= gap.targetLevel ? 'green' : 'blue'}>
+              Ist: {gap.currentLevel}%
+            </Badge>
+            <Badge size="sm" variant="outline" color="blue">
+              Soll: {gap.targetLevel}%
+            </Badge>
+            {!compact && onAddMeasure && (
+              <ActionIcon
+                variant="subtle"
+                color="blue"
+                size="sm"
+                onClick={(e) => { e.stopPropagation(); onAddMeasure(gap.skillId); }}
+                title="Maßnahme hinzufügen"
+              >
+                <IconPlus size={16} />
+              </ActionIcon>
+            )}
+          </Group>
         </Group>
-      </Group>
 
-      <Box pos="relative">
-        {/* Background (Target) */}
-        <Progress
-          value={targetPercent}
-          color="blue"
-          size={compact ? "sm" : "md"}
-          radius="xl"
-          style={{ opacity: 0.3 }}
-        />
-        {/* Foreground (Current) */}
-        <Progress
-          value={currentPercent}
-          color="green"
-          size={compact ? "sm" : "md"}
-          radius="xl"
-          style={{ position: "absolute", top: 0, left: 0, right: 0 }}
-        />
-      </Box>
-    </Paper>
-  );
-};
+        <Box pos="relative" h={32} mt={8} style={{ borderRadius: 8, overflow: 'hidden', backgroundColor: isDark ? 'var(--mantine-color-dark-8)' : 'var(--mantine-color-gray-1)' }}>
+          {/* Grid Lines */}
+          {[25, 50, 75].map((tick) => (
+            <Box
+              key={tick}
+              pos="absolute"
+              left={`${tick}%`}
+              h="100%"
+              w={1}
+              bg={isDark ? "var(--mantine-color-dark-4)" : "var(--mantine-color-gray-3)"}
+              style={{ zIndex: 1, opacity: 0.5 }}
+            />
+          ))}
+
+          {/* Bars Container */}
+          <Box pos="absolute" top={0} left={0} right={0} bottom={0}>
+            {/* Target Bar (Background/Marker) */}
+            <Box
+              pos="absolute"
+              left={0}
+              top={0}
+              bottom={0}
+              w={`${gap.targetLevel}%`}
+              style={{
+                borderRight: '2px dashed var(--mantine-color-blue-5)',
+                backgroundColor: isDark ? 'rgba(34, 139, 230, 0.2)' : 'rgba(34, 139, 230, 0.1)',
+                zIndex: 2,
+              }}
+            />
+
+            {/* Planned Growth Bar (Ghost bar) */}
+            {plannedGrowth > 0 && (
+              <Box
+                pos="absolute"
+                left={`${gap.currentLevel}%`}
+                top={4}
+                bottom={4}
+                w={`${plannedGrowth}%`}
+                style={{
+                  zIndex: 2, // Behind current bar if overlap, but actually current is start point
+                  borderRadius: '0 4px 4px 0',
+                  background: `repeating-linear-gradient(
+                    45deg,
+                    var(--mantine-color-blue-1),
+                    var(--mantine-color-blue-1) 10px,
+                    var(--mantine-color-blue-2) 10px,
+                    var(--mantine-color-blue-2) 20px
+                  )`,
+                  opacity: 0.8
+                }}
+              />
+            )}
+
+            {/* Current Bar (Foreground) */}
+            <Box
+              pos="absolute"
+              left={0}
+              top={4}
+              bottom={4}
+              w={`${gap.currentLevel}%`}
+              style={{
+                zIndex: 3,
+                borderRadius: '0 4px 4px 0',
+                transition: 'width 0.5s cubic-bezier(0.4, 0.0, 0.2, 1)',
+                background: gap.currentLevel >= gap.targetLevel
+                  ? 'linear-gradient(90deg, var(--mantine-color-green-4), var(--mantine-color-green-6))'
+                  : 'linear-gradient(90deg, var(--mantine-color-blue-4), var(--mantine-color-blue-6))',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+              }}
+            />
+          </Box>
+        </Box>
+
+        {/* Scale Labels */}
+        <Box pos="relative" h={20} mt={4}>
+          {[0, 25, 50, 75, 100].map((tick) => (
+            <Text
+              key={tick}
+              pos="absolute"
+              left={`${tick}%`}
+              size="xs"
+              c="dimmed"
+              fw={500}
+              style={{ transform: 'translateX(-50%)', fontSize: '11px' }}
+            >
+              {tick}%
+            </Text>
+          ))}
+        </Box>
+      </Paper>
+    );
+  };
+
+
 
 const CategoryGroup: React.FC<{
   group: GroupedGaps;
   compact?: boolean;
   defaultExpanded?: boolean;
-}> = ({ group, compact, defaultExpanded = true }) => {
+  measures: QualificationMeasure[];
+  onAddMeasure?: (skillId: string) => void;
+}> = ({ group, compact, defaultExpanded = true, measures, onAddMeasure }) => {
   const [opened, { toggle }] = useDisclosure(defaultExpanded);
   const totalGaps = group.subCategories.reduce(
     (acc, sub) => acc + sub.gaps.length,
@@ -128,10 +234,12 @@ const CategoryGroup: React.FC<{
               )}
               <Stack gap="xs">
                 {subCat.gaps.map((gap) => (
-                  <GapProgressBar
+                  <GapChartRow
                     key={gap.skillId}
                     gap={gap}
                     compact={compact}
+                    measures={measures.filter(m => m.skillId === gap.skillId)}
+                    onAddMeasure={onAddMeasure}
                   />
                 ))}
               </Stack>
@@ -147,6 +255,8 @@ export const SkillGapAnalysis: React.FC<SkillGapAnalysisProps> = ({
   gaps,
   employeeId,
   compact = false,
+  measures = [],
+  onAddMeasure,
 }) => {
   // Group gaps by category and subcategory
   const groupedGaps: GroupedGaps[] = [];
@@ -213,11 +323,20 @@ export const SkillGapAnalysis: React.FC<SkillGapAnalysisProps> = ({
       {!compact && (
         <Group justify="space-between">
           <Text fw={600}>Skill-Defizite</Text>
-          <Tooltip label="Gesamtzahl der Skill-Lücken">
-            <Badge color="red" size="lg">
-              {gaps.length} Defizit{gaps.length !== 1 ? "e" : ""}
+          <Group gap="xs">
+            <Badge color="blue" variant="light" size="lg">
+              {(() => {
+                const allSkillIds = new Set(gaps.map(g => g.skillId));
+                const plannedCount = measures.filter(m => allSkillIds.has(m.skillId) && (m.status === 'pending' || m.status === 'in_progress')).length;
+                return `${plannedCount} Geplant`;
+              })()}
             </Badge>
-          </Tooltip>
+            <Tooltip label="Gesamtzahl der Skill-Lücken">
+              <Badge color="red" size="lg">
+                {gaps.length} Defizit{gaps.length !== 1 ? "e" : ""}
+              </Badge>
+            </Tooltip>
+          </Group>
         </Group>
       )}
 
@@ -227,6 +346,8 @@ export const SkillGapAnalysis: React.FC<SkillGapAnalysisProps> = ({
           group={group}
           compact={compact}
           defaultExpanded={!compact || groupedGaps.length === 1}
+          measures={measures}
+          onAddMeasure={onAddMeasure}
         />
       ))}
     </Stack>

@@ -28,6 +28,8 @@ import {
   IconCertificate,
   IconTarget,
   IconUser,
+  IconAlertTriangle, // Added icon
+  IconAlertCircle,   // Added icon
 } from "@tabler/icons-react";
 import { useData, QualificationPlan as QualificationPlanType } from "../../context/DataContext";
 import { usePrivacy } from "../../context/PrivacyContext";
@@ -48,6 +50,8 @@ export const QualificationPlan: React.FC<QualificationPlanProps> = ({ initialEmp
     roles,
     deleteQualificationPlan,
     updateQualificationPlan,
+    getSkillGapsForEmployee,
+    assessments, // Import this
   } = useData();
   const { anonymizeName } = usePrivacy();
 
@@ -75,7 +79,7 @@ export const QualificationPlan: React.FC<QualificationPlanProps> = ({ initialEmp
   useEffect(() => {
     if (initialEmployeeId) {
       // Check if active plan exists
-      const activePlan = qualificationPlans.find(p => p.employeeId === initialEmployeeId && (p.status === 'active' || p.status === 'draft'));
+      const activePlan = qualificationPlans.find(p => p.employeeId === initialEmployeeId && p.status === 'active');
       if (activePlan) {
         handleViewPlan(activePlan.id!);
       } else {
@@ -156,26 +160,66 @@ export const QualificationPlan: React.FC<QualificationPlanProps> = ({ initialEmp
   }, [qualificationPlans, filterStatus, filterEmployee, searchTerm, employees, roles]);
 
   const activePlans = useMemo(() =>
-    filteredPlans.filter(p => p.status === 'active' || p.status === 'draft'),
+    filteredPlans.filter(p => p.status === 'active'),
     [filteredPlans]);
 
   const archivedPlans = useMemo(() =>
     filteredPlans.filter(p => p.status === 'archived' || p.status === 'completed'),
     [filteredPlans]);
 
+  // Calculate deficit statistics
+  const deficitStats = useMemo(() => {
+    let employeesWithDeficit = 0;
+    let employeesWithDeficitNoPlan = 0;
+
+    employees.forEach(emp => {
+      // Check if employee has any active plan
+      const hasActivePlan = qualificationPlans.some(p => p.employeeId === emp.id && p.status === 'active');
+
+      // Check for deficits (gaps)
+      // We need to use the getSkillGapsForEmployee helper, but it's not directly exposed as a pure function we can call in loop easily without context overhead?
+      // Actually it is exposed from useData. Let's use the one from context if available or recreate logic.
+      // The one in context `getSkillGapsForEmployee` is available.
+      // However, calling it for every employee might be heavy if not optimized.
+      // Let's assume it's fast enough for client-side < 100 employees.
+
+      // We check against the employee's primary role (first role in the list)
+      const primaryRoleId = emp.roles && emp.roles.length > 0 ? emp.roles[0] : null;
+      const gaps = getSkillGapsForEmployee(emp.id!, primaryRoleId);
+
+      if (gaps && gaps.length > 0) {
+        employeesWithDeficit++;
+        if (!hasActivePlan) {
+          employeesWithDeficitNoPlan++;
+        }
+      }
+    });
+
+    return { employeesWithDeficit, employeesWithDeficitNoPlan };
+  }, [employees, qualificationPlans, assessments, roles]); // Add dependencies
+
+
   // If a plan is selected for detail view, show the detail component
   if (activeTab === "detail" && selectedPlanId) {
     const selectedPlan = qualificationPlans.find((p) => p.id === selectedPlanId);
     if (selectedPlan) {
       return (
-        <PlanDetail
-          plan={selectedPlan}
-          onBack={() => {
-            setSelectedPlanId(null);
-            setActiveTab("active");
-          }}
-          onEdit={() => handleEditPlan(selectedPlan)}
-        />
+        <>
+          <PlanDetail
+            plan={selectedPlan}
+            onBack={() => {
+              setSelectedPlanId(null);
+              setActiveTab("active");
+            }}
+            onEdit={() => handleEditPlan(selectedPlan)}
+          />
+          <PlanForm
+            opened={drawerOpened}
+            onClose={closeDrawer}
+            editingPlan={editingPlan}
+            initialEmployeeId={targetEmployeeId}
+          />
+        </>
       );
     }
   }
@@ -192,19 +236,22 @@ export const QualificationPlan: React.FC<QualificationPlanProps> = ({ initialEmp
       <Paper shadow="xs" p="md" radius="md" withBorder>
         <Tabs value={activeTab} onChange={setActiveTab} keepMounted={false}>
           <Tabs.List mb="lg">
-            <Tabs.Tab value="overview" leftSection={<IconChartBar size={16} />}>
+            <Tabs.Tab
+              value="overview"
+              leftSection={<IconChartBar size={16} />}
+              rightSection={
+                qualificationPlans.filter((p) => p.status === "active").length > 0 && (
+                  <Badge size="xs" variant="filled" color="blue">
+                    {qualificationPlans.filter((p) => p.status === "active").length}
+                  </Badge>
+                )
+              }
+            >
               Übersicht
             </Tabs.Tab>
             <Tabs.Tab
               value="active"
               leftSection={<IconList size={16} />}
-              rightSection={
-                activePlans.length > 0 && (
-                  <Badge size="xs" variant="filled" color="blue">
-                    {activePlans.length}
-                  </Badge>
-                )
-              }
             >
               Aktive Pläne
             </Tabs.Tab>
@@ -215,18 +262,23 @@ export const QualificationPlan: React.FC<QualificationPlanProps> = ({ initialEmp
 
           <Tabs.Panel value="overview">
             <Stack gap="lg">
-              <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="md">
+              <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
                 <Card shadow="sm" padding="lg" radius="md" withBorder>
                   <Group>
-                    <ThemeIcon variant="light" size="xl" radius="md" color="blue">
-                      <IconCertificate size={24} />
+                    <ThemeIcon
+                      variant="light"
+                      size="xl"
+                      radius="md"
+                      color={deficitStats.employeesWithDeficit > 0 ? "orange" : "green"}
+                    >
+                      {deficitStats.employeesWithDeficit > 0 ? <IconAlertTriangle size={24} /> : <IconCertificate size={24} />}
                     </ThemeIcon>
                     <div>
                       <Text size="xl" fw={700}>
-                        {qualificationPlans.length}
+                        {deficitStats.employeesWithDeficit}
                       </Text>
                       <Text size="sm" c="dimmed">
-                        Gesamte Pläne
+                        MA im Defizit
                       </Text>
                     </div>
                   </Group>
@@ -234,47 +286,20 @@ export const QualificationPlan: React.FC<QualificationPlanProps> = ({ initialEmp
 
                 <Card shadow="sm" padding="lg" radius="md" withBorder>
                   <Group>
-                    <ThemeIcon variant="light" size="xl" radius="md" color="green">
-                      <IconTarget size={24} />
+                    <ThemeIcon
+                      variant="light"
+                      size="xl"
+                      radius="md"
+                      color={deficitStats.employeesWithDeficitNoPlan > 0 ? "red" : "green"}
+                    >
+                      {deficitStats.employeesWithDeficitNoPlan > 0 ? <IconAlertCircle size={24} /> : <IconCertificate size={24} />}
                     </ThemeIcon>
                     <div>
                       <Text size="xl" fw={700}>
-                        {qualificationPlans.filter((p) => p.status === "active").length}
+                        {deficitStats.employeesWithDeficitNoPlan}
                       </Text>
                       <Text size="sm" c="dimmed">
-                        Aktive Pläne
-                      </Text>
-                    </div>
-                  </Group>
-                </Card>
-
-                <Card shadow="sm" padding="lg" radius="md" withBorder>
-                  <Group>
-                    <ThemeIcon variant="light" size="xl" radius="md" color="teal">
-                      <IconList size={24} />
-                    </ThemeIcon>
-                    <div>
-                      <Text size="xl" fw={700}>
-                        {qualificationMeasures.length}
-                      </Text>
-                      <Text size="sm" c="dimmed">
-                        Maßnahmen
-                      </Text>
-                    </div>
-                  </Group>
-                </Card>
-
-                <Card shadow="sm" padding="lg" radius="md" withBorder>
-                  <Group>
-                    <ThemeIcon variant="light" size="xl" radius="md" color="orange">
-                      <IconUser size={24} />
-                    </ThemeIcon>
-                    <div>
-                      <Text size="xl" fw={700}>
-                        {new Set(qualificationPlans.map((p) => p.employeeId)).size}
-                      </Text>
-                      <Text size="sm" c="dimmed">
-                        Mitarbeiter
+                        Defizit ohne Plan
                       </Text>
                     </div>
                   </Group>
@@ -337,7 +362,6 @@ export const QualificationPlan: React.FC<QualificationPlanProps> = ({ initialEmp
                   placeholder="Status filtern"
                   clearable
                   data={[
-                    { value: "draft", label: "Entwurf" },
                     { value: "active", label: "Aktiv" },
                   ]}
                   value={filterStatus}
