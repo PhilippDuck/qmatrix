@@ -1,4 +1,15 @@
 
+## [2.9.12] - 2026-02-18
+
+### Neue Funktionen & Verbesserungen
+- **Gantt-Timeline für Qualifizierungsmaßnahmen**: Neue kalenderartige Timeline-Ansicht mit Wochen-Grid, farbcodierten Balken nach Status, Heute-Markierung und Navigation.
+  - **Übersichts-Tab**: Neuer „Timeline"-Tab in der Qualifizierungsplan-Übersicht zeigt alle Maßnahmen gruppiert nach Mitarbeiter.
+  - **Plan-Detail**: Die alte vertikale Timeline im Plan-Detail wurde durch die Gantt-Ansicht ersetzt (nur Maßnahmen des jeweiligen Plans).
+  - **Dynamische Breite**: Die Timeline füllt den gesamten verfügbaren Platz aus (responsive via ResizeObserver).
+  - **Kategorie-Pfad**: Tooltip auf Balken und Skill-Labels zeigt den vollständigen Kategorie-Baum (z.B. „IBV › Sicherheitstechnik › Skill").
+  - **Status-Balken**: Verbesserte Farben für „Geplant"-Balken (`gray-6` statt `gray-3`) für besseren Kontrast in Dark & Light Mode.
+  - **Tooltip-Badges**: Status-Badges im Tooltip verwenden `variant="filled"` für optimale Lesbarkeit.
+
 ## [2.9.11] - 2026-02-18
 
 ### Neue Funktionen & Verbesserungen

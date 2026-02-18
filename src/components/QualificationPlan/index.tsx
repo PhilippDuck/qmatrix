@@ -28,14 +28,16 @@ import {
   IconCertificate,
   IconTarget,
   IconUser,
-  IconAlertTriangle, // Added icon
-  IconAlertCircle,   // Added icon
+  IconAlertTriangle,
+  IconAlertCircle,
+  IconCalendar,
 } from "@tabler/icons-react";
 import { useData, QualificationPlan as QualificationPlanType } from "../../context/DataContext";
 import { usePrivacy } from "../../context/PrivacyContext";
 import { PlanForm } from "./PlanForm";
 import { PlanDetail } from "./PlanDetail";
 import { PlanCard } from "./PlanCard";
+import { GanttTimeline } from "./GanttTimeline";
 
 interface QualificationPlanProps {
   initialEmployeeId?: string | null;
@@ -263,6 +265,12 @@ export const QualificationPlan: React.FC<QualificationPlanProps> = ({ initialEmp
               Übersicht
             </Tabs.Tab>
             <Tabs.Tab
+              value="timeline"
+              leftSection={<IconCalendar size={16} />}
+            >
+              Timeline
+            </Tabs.Tab>
+            <Tabs.Tab
               value="active"
               leftSection={<IconList size={16} />}
             >
@@ -350,6 +358,10 @@ export const QualificationPlan: React.FC<QualificationPlanProps> = ({ initialEmp
                 </Button>
               )}
             </Stack>
+          </Tabs.Panel>
+
+          <Tabs.Panel value="timeline">
+            <GanttTimeline onViewPlan={handleViewPlan} />
           </Tabs.Panel>
 
           <Tabs.Panel value="active">

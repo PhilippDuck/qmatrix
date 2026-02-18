@@ -39,7 +39,7 @@ import { exportQualificationPlanPDF } from "../../services/pdfReportService";
 import { usePrivacy } from "../../context/PrivacyContext";
 import { SkillGapAnalysis } from "./SkillGapAnalysis";
 import { MeasureForm } from "./MeasureForm";
-import { Timeline } from "./Timeline";
+import { GanttTimeline } from "./GanttTimeline";
 import { PlanProgressStats } from "./PlanProgressStats";
 import { SkillMeasureGroup } from "./SkillMeasureGroup";
 
@@ -77,8 +77,6 @@ export const PlanDetail: React.FC<PlanDetailProps> = ({
     updateQualificationMeasure,
     deleteQualificationMeasure,
     setAssessment,
-    categories,
-    subcategories,
   } = useData();
   const { anonymizeName } = usePrivacy();
 
@@ -424,12 +422,7 @@ export const PlanDetail: React.FC<PlanDetailProps> = ({
           </Tabs.Panel>
 
           <Tabs.Panel value="timeline">
-            <Timeline
-              measures={planMeasures}
-              skills={skills}
-              categories={categories} // Added
-              subcategories={subcategories} // Added
-            />
+            <GanttTimeline planId={plan.id!} />
           </Tabs.Panel>
 
           <Tabs.Panel value="gaps">
