@@ -1,4 +1,13 @@
 
+## [2.11.1] - 2026-02-19
+
+### Bugfixes
+- **Prognose-Berechnung korrigiert**:
+  - Die Berechnung des Erfüllungsgrades in der Prognose (Tabelle & KPIs) wurde an die Logik der Skill-Matrix angeglichen (Weighted Average).
+  - Unbewertete Skills mit Soll-Vorgabe zählen nun korrekt als 0% (statt ignoriert zu werden).
+  - Überqualifikation in einem Skill kann Unterqualifikation in einem anderen Skill ausgleichen.
+  - Beseitigt Diskrepanzen zwischen Matrix-Header und Prognose-Startwert.
+
 ## [2.11.0] - 2026-02-19
 
 ### Neue Funktionen & Verbesserungen

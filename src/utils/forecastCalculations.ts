@@ -519,11 +519,21 @@ export function generateForecastWithPlans(
         if (!measuresByEmployee.has(empId)) measuresByEmployee.set(empId, []);
         measuresByEmployee.get(empId)!.push(m);
     }
+
     for (const m of completingMeasures) {
         const empId = planToEmployee.get(m.planId);
         if (!empId) continue;
         if (!completingByEmployee.has(empId)) completingByEmployee.set(empId, []);
         completingByEmployee.get(empId)!.push(m);
+    }
+
+    // Pre-process forecast updates to identify affected skills per employee
+    // This ensures we include skills that don't have an existing assessment yet
+    const forecastSkillsByEmp = new Map<string, Set<string>>();
+    for (const key of forecastAssessmentMap.keys()) {
+        const [eId, sId] = key.split('::');
+        if (!forecastSkillsByEmp.has(eId)) forecastSkillsByEmp.set(eId, new Set());
+        forecastSkillsByEmp.get(eId)!.add(sId);
     }
 
     // Build skill name lookup
@@ -533,52 +543,90 @@ export function generateForecastWithPlans(
     }
 
     const employeeRows: ForecastEmployeeRow[] = currentActiveEmployees.map(emp => {
-        const empAssessments = assessments.filter(a => a.employeeId === emp.id);
-        // Only skills WITH Soll count for the fulfillment average
-        // For Soll-skills: include level=0 (0% fulfillment), exclude level=-1 (N/A)
-        const curWithSoll = empAssessments
-            .filter(a => a.level >= 0 && effectiveTarget(emp.id!, a.skillId) > 0)
-            .map(a => fulfillmentScore(a.level, effectiveTarget(emp.id!, a.skillId)));
-        const curWithoutSoll = empAssessments
-            .filter(a => a.level > 0 && effectiveTarget(emp.id!, a.skillId) <= 0)
-            .map(a => a.level);
-        const currentAvg = (curWithSoll.length > 0 ? avgFulfillment(curWithSoll) : avgScore(curWithoutSoll));
+        // Fast lookup for current assessments
+        const empAssMap = new Map<string, number>();
+        assessments
+            .filter(a => a.employeeId === emp.id)
+            .forEach(a => empAssMap.set(a.skillId, a.level));
 
         const fWithSoll: number[] = [];
         const fWithoutSoll: number[] = [];
         const breakdown: ForecastSkillBreakdown[] = [];
 
-        for (const a of empAssessments) {
-            const key = `${a.employeeId}::${a.skillId}`;
-            const fl = forecastAssessmentMap.get(key) ?? a.level;
-            const target = effectiveTarget(emp.id!, a.skillId);
-            const curFul = fulfillmentScore(a.level, target || undefined);
-            const fcFul = fulfillmentScore(fl, target || undefined);
+        // Calculate Current and Forecast metrics by iterating ALL skills
+        // Logic matched to useEmployeeMetrics (Matrix Header):
+        // Total Actual Level / Total Target Level * 100
+        let currentLevelSum = 0;
+        let forecastLevelSum = 0;
+        let targetSum = 0;
 
+        // For non-targeted skills (Average Score metric)
+        let currentNoSollSum = 0;
+        let currentNoSollCount = 0;
+        let forecastNoSollSum = 0;
+        let forecastNoSollCount = 0;
+
+        for (const skill of skills) {
+            if (!skill.id) continue;
+
+            const currentLevelRaw = empAssMap.get(skill.id);
+            // Treat undefined/-1 as 0 for summation
+            const currentLevel = (currentLevelRaw !== undefined && currentLevelRaw >= 0) ? currentLevelRaw : 0;
+            const isAssessed = currentLevelRaw !== undefined && currentLevelRaw > 0;
+
+            const key = `${emp.id}::${skill.id}`;
+            const forecastLevelRaw = forecastAssessmentMap.get(key) ?? currentLevelRaw;
+            const forecastLevel = (forecastLevelRaw !== undefined && forecastLevelRaw >= 0) ? forecastLevelRaw : 0;
+
+            const target = effectiveTarget(emp.id!, skill.id);
+
+            // Metrics Calculation
             if (target > 0) {
-                if (fl >= 0) fWithSoll.push(fcFul);
+                targetSum += target;
+                currentLevelSum += currentLevel;
+                forecastLevelSum += forecastLevel;
+
+                fWithSoll.push(0); // Dummy push to indicate we have Soll-skills
             } else {
-                if (fl > 0) fWithoutSoll.push(fl);
+                // No Soll - only count if assessed/active > 0
+                if (isAssessed) {
+                    currentNoSollSum += currentLevel;
+                    currentNoSollCount++;
+                }
+                if (forecastLevel > 0) { // Forecasted to be > 0 (or stays > 0)
+                    fWithoutSoll.push(forecastLevel);
+                    forecastNoSollSum += forecastLevel;
+                    forecastNoSollCount++;
+                }
             }
 
-            // Include in breakdown if level >= 0 (has Soll) or level > 0 (any rating)
-            if (a.level > 0 || (a.level >= 0 && target > 0)) {
+            // Breakdown Population
+            if (target > 0 || currentLevel > 0 || forecastLevel > 0) {
                 breakdown.push({
-                    skillId: a.skillId,
-                    skillName: skillNameMap.get(a.skillId) ?? a.skillId,
-                    currentLevel: a.level,
+                    skillId: skill.id,
+                    skillName: skillNameMap.get(skill.id) ?? skill.id,
+                    currentLevel: currentLevelRaw ?? 0,
                     targetLevel: target || undefined,
-                    currentFulfillment: Math.max(0, curFul),
-                    forecastLevel: fl,
-                    forecastFulfillment: Math.max(0, fcFul),
+                    currentFulfillment: target > 0 ? Math.min(100, Math.round((currentLevel / target) * 100)) : 0, // Breakdown keeps % for readability
+                    forecastLevel: forecastLevelRaw ?? 0,
+                    forecastFulfillment: target > 0 ? Math.min(100, Math.round((forecastLevel / target) * 100)) : 0,
                 });
             }
         }
 
+        // Calculate Weighted Averages
+        const currentAvg = targetSum > 0
+            ? Math.round((currentLevelSum / targetSum) * 100)
+            : (currentNoSollCount > 0 ? currentNoSollSum / currentNoSollCount : 0);
+
+        const forecastAvgCalc = targetSum > 0
+            ? Math.round((forecastLevelSum / targetSum) * 100)
+            : (forecastNoSollCount > 0 ? forecastNoSollSum / forecastNoSollCount : 0);
+
+        const forecastAvg = departingIds.has(emp.id!) ? null : forecastAvgCalc;
+
         // Sort breakdown: by fulfillment ascending (lowest first)
         breakdown.sort((a, b) => a.currentFulfillment - b.currentFulfillment);
-
-        const forecastAvg = departingIds.has(emp.id!) ? null : (fWithSoll.length > 0 ? avgFulfillment(fWithSoll) : avgScore(fWithoutSoll));
 
         const departure = futureDepartures.find(d => d.id === emp.id);
 
@@ -598,6 +646,25 @@ export function generateForecastWithPlans(
     });
 
     employeeRows.sort((a, b) => b.delta - a.delta);
+
+    // ── Update KPIs based on weighted employee averages ────────────────
+    const validCurrentRows = employeeRows.filter(r => r.currentAvgScore !== null);
+    const validForecastRows = employeeRows.filter(r => r.forecastAvgScore !== null);
+
+    const newCurrentAvg = validCurrentRows.length > 0
+        ? Math.round(validCurrentRows.reduce((s, r) => s + (r.currentAvgScore || 0), 0) / validCurrentRows.length)
+        : 0;
+
+    const newForecastAvg = validForecastRows.length > 0
+        ? Math.round(validForecastRows.reduce((s, r) => s + (r.forecastAvgScore || 0), 0) / validForecastRows.length)
+        : 0;
+
+    const finalKPIs: ForecastKPIs = {
+        ...kpis,
+        currentAvgScore: newCurrentAvg,
+        forecastAvgScore: newForecastAvg,
+        scoreDelta: newForecastAvg - newCurrentAvg,
+    };
 
     // ── Category bars ──────────────────────────────────────────────
     const categoryBars: ForecastCategoryBar[] = categories.map(cat => {
@@ -638,5 +705,5 @@ export function generateForecastWithPlans(
         };
     });
 
-    return { kpis, employeeRows, categoryBars, scenario };
+    return { kpis: finalKPIs, employeeRows, categoryBars, scenario };
 }
