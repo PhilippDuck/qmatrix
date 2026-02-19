@@ -3,6 +3,8 @@ import React, {
   useContext,
   useState,
   useEffect,
+  useMemo,
+  useCallback,
   ReactNode,
 } from "react";
 import {
@@ -182,6 +184,15 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
   const [dataHash, setDataHash] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Optimization: O(1) lookup map for assessments
+  const assessmentMap = useMemo(() => {
+    const map = new Map<string, Assessment>();
+    for (const a of assessments) {
+      map.set(`${a.employeeId}-${a.skillId}`, a);
+    }
+    return map;
+  }, [assessments]);
 
   // Initialize DB and load all data
   useEffect(() => {
@@ -746,30 +757,53 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
     level: -1 | 0 | 25 | 50 | 75 | 100,
   ) => {
     try {
-      const existing = assessments.find(a => a.employeeId === employeeId && a.skillId === skillId);
+      const existingKey = `${employeeId}-${skillId}`;
+      const existing = assessmentMap.get(existingKey);
+
       const skill = skills.find(s => s.id === skillId);
       const employee = employees.find(e => e.id === employeeId);
-      const assessmentId = `${employeeId}-${skillId}`;
+      const assessmentId = existing?.id || existingKey;
 
+      // Optimistic Update
+      const newAssessment: Assessment = {
+        id: assessmentId,
+        employeeId,
+        skillId,
+        level,
+        targetLevel: existing?.targetLevel
+      };
+
+      setAssessments(prev => {
+        const index = prev.findIndex(a => a.employeeId === employeeId && a.skillId === skillId);
+        if (index >= 0) {
+          const newArr = [...prev];
+          newArr[index] = newAssessment;
+          return newArr;
+        } else {
+          return [...prev, newAssessment];
+        }
+      });
+
+      // Background DB Update
       await db.setAssessment(employeeId, skillId, level);
 
-      // Ensure previousData has complete assessment object with id
-      const previousData = existing ? {
-        ...existing,
-        id: existing.id || assessmentId  // Ensure id is present
-      } : null;
+      // Async record change (non-blocking for UI, but good to await for error handling)
+      // We rely on optimistic update, so we don't call refreshAllData()
 
       await recordChange(
         'assessment',
         assessmentId,
         `${employee?.name || employeeId}: ${skill?.name || skillId}`,
         existing ? 'update' : 'create',
-        previousData,
-        { id: assessmentId, employeeId, skillId, level, targetLevel: existing?.targetLevel }
+        existing || null,
+        newAssessment
       );
-      await refreshAllData();
+
     } catch (err) {
+      // Rollback on error would go here (omitted for brevity, but recommended for production)
+      console.error("Failed to set assessment optimistically", err);
       setError(err instanceof Error ? err.message : "Failed to set assessment");
+      await refreshAllData(); // Fallback to full refresh on error
       throw err;
     }
   };
@@ -780,32 +814,45 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
     targetLevel: number | undefined,
   ) => {
     try {
-      const existing = assessments.find(a => a.employeeId === employeeId && a.skillId === skillId);
+      const existingKey = `${employeeId}-${skillId}`;
+      const existing = assessmentMap.get(existingKey);
+
       const skill = skills.find(s => s.id === skillId);
       const employee = employees.find(e => e.id === employeeId);
-      await db.setTargetLevel(employeeId, skillId, targetLevel);
-      const assessmentId = `${employeeId}-${skillId}`;
+      const assessmentId = existing?.id || existingKey;
 
-      // Create a default previousData if no existing assessment
-      const previousData = existing || {
-        id: assessmentId,
-        employeeId,
-        skillId,
-        level: 0,
-        targetLevel: undefined
+      // Optimistic Update
+      const newAssessment: Assessment = {
+        ...(existing || { id: assessmentId, employeeId, skillId, level: 0 }),
+        targetLevel
       };
+
+      setAssessments(prev => {
+        const index = prev.findIndex(a => a.employeeId === employeeId && a.skillId === skillId);
+        if (index >= 0) {
+          const newArr = [...prev];
+          newArr[index] = newAssessment;
+          return newArr;
+        } else {
+          return [...prev, newAssessment];
+        }
+      });
+
+      await db.setTargetLevel(employeeId, skillId, targetLevel);
 
       await recordChange(
         'assessment',
         assessmentId,
         `Ziel: ${employee?.name || employeeId} - ${skill?.name || skillId}`,
         'update',
-        previousData,
-        { employeeId, skillId, level: existing?.level ?? 0, targetLevel }
+        existing || { id: assessmentId, employeeId, skillId, level: 0, targetLevel: undefined },
+        newAssessment
       );
-      await refreshAllData();
+
     } catch (err) {
+      console.error("Failed to set target level optimistically", err);
       setError(err instanceof Error ? err.message : "Failed to set target level");
+      await refreshAllData(); // Fallback
       throw err;
     }
   };
@@ -814,14 +861,12 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({
     return assessments.filter((a) => a.employeeId === employeeId);
   };
 
-  const getAssessment = (
+  const getAssessment = useCallback((
     employeeId: string,
     skillId: string,
   ): Assessment | undefined => {
-    return assessments.find(
-      (a) => a.employeeId === employeeId && a.skillId === skillId,
-    );
-  };
+    return assessmentMap.get(`${employeeId}-${skillId}`);
+  }, [assessmentMap]);
 
   const getHistory = async (employeeId: string): Promise<AssessmentLogEntry[]> => {
     try {

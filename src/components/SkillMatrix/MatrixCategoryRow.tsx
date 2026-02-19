@@ -40,6 +40,7 @@ interface MatrixCategoryRowProps {
   skillSort: 'asc' | 'desc' | null;
   labelWidth?: number;
   onNavigate?: (tab: string, params?: any) => void;
+  renderChildren?: boolean;
 }
 
 
@@ -71,7 +72,8 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = ({
   onAddSkill,
   skillSort,
   labelWidth,
-  onNavigate
+  onNavigate,
+  renderChildren = true
 }) => {
   const { anonymizeName } = usePrivacy();
   const isCatCollapsed = collapsedStates[category.id!];
@@ -387,7 +389,7 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = ({
         )}
       </div >
 
-      {!isCatCollapsed && (
+      {renderChildren && !isCatCollapsed && (
         <>
           {categorySubcategories.map((sub) => {
             const subSkills = skills.filter((s) => s.subCategoryId === sub.id);

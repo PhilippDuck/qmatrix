@@ -40,7 +40,9 @@ interface MatrixSubcategoryRowProps {
   onAddSubcategory: (parentSubId?: string) => void;
   labelWidth?: number;
   onNavigate?: (tab: string, params?: any) => void;
+  renderChildren?: boolean;
 }
+
 export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
   columns,
   subcategory,
@@ -69,7 +71,8 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
   depth = 0,
   onAddSubcategory,
   labelWidth,
-  onNavigate
+  onNavigate,
+  renderChildren = true
 }) => {
   const { anonymizeName } = usePrivacy();
   const { cellSize } = MATRIX_LAYOUT;
@@ -352,7 +355,7 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
         )}
       </div>
 
-      {!isCollapsed && (
+      {renderChildren && !isCollapsed && (
         <>
           {sortedSkills.map((skill) => (
             <MatrixSkillRow
@@ -361,7 +364,7 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
               columns={columns}
               employees={employees}
               roles={roles}
-              hoveredSkillId={hoveredSkillId}
+              isHovered={hoveredSkillId === skill.id}
               hoveredEmployeeId={hoveredEmployeeId}
               onSkillHover={onSkillHover}
               onEmployeeHover={onEmployeeHover}

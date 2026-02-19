@@ -13,7 +13,7 @@ interface MatrixSkillRowProps {
   skill: Skill;
   employees: Employee[];
   roles: EmployeeRole[];
-  hoveredSkillId: string | null;
+  isHovered: boolean;
   hoveredEmployeeId: string | null;
   onSkillHover: (skillId: string | null) => void;
   onEmployeeHover: (employeeId: string | null) => void;
@@ -28,12 +28,12 @@ interface MatrixSkillRowProps {
   labelWidth?: number;
 }
 
-export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = ({
+export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = React.memo(({
   columns,
   skill,
   employees,
   roles,
-  hoveredSkillId,
+  isHovered,
   hoveredEmployeeId,
   onSkillHover,
   onEmployeeHover,
@@ -50,7 +50,7 @@ export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = ({
   const { qualificationMeasures, qualificationPlans } = useData();
   const { cellSize } = MATRIX_LAYOUT;
   const effectiveLabelWidth = labelWidth || MATRIX_LAYOUT.labelWidth;
-  const isRowHovered = hoveredSkillId === skill.id;
+  const isRowHovered = isHovered;
   const skillAvg = calculateSkillAverage(skill.id!);
 
   // Pre-filter measures for this skill
@@ -281,4 +281,4 @@ export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = ({
       )}
     </div>
   );
-};
+});

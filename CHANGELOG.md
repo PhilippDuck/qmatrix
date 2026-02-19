@@ -1,4 +1,12 @@
 
+## [2.11.2] - 2026-02-19
+
+### Performance
+- **Optimierte Datennutzung**:
+  - Zugriff auf Assessments via O(1) Map statt O(N) Array-Suche.
+  - Implementierung von Optimistic Updates für sofortige UI-Reaktion beim Setzen von Leveln.
+  - Reduktion von unnötigen Re-Renders in der Matrix durch differenziertes Hover-State-Management.
+
 ## [2.11.1] - 2026-02-19
 
 ### Bugfixes
