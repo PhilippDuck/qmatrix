@@ -63,6 +63,8 @@ export interface ForecastKPIs {
     currentTotalXP: number;
     forecastTotalXP: number;
     xpDelta: number;
+    currentEmployeeCount: number;
+    forecastEmployeeCount: number;
 }
 
 export interface ForecastResult {
@@ -251,6 +253,8 @@ export function generateForecast(
         currentTotalXP: 0,
         forecastTotalXP: 0,
         xpDelta: 0,
+        currentEmployeeCount: 0,
+        forecastEmployeeCount: 0,
     };
 
     // ── Employee rows ──────────────────────────────────────────────
@@ -454,12 +458,7 @@ export function generateForecastWithPlans(
     const currentDeficits = countDeficits(assessments, measures, currentActiveIds, effectiveTarget);
 
     // Calculate Current Total XP
-    let currentTotalXP = 0;
-    for (const a of assessments) {
-        if (currentActiveIds.has(a.employeeId) && a.level > 0) {
-            currentTotalXP += a.level;
-        }
-    }
+    const currentTotalXP = assessments.reduce((sum, a) => (currentActiveIds.has(a.employeeId) && a.level > 0) ? sum + a.level : sum, 0);
 
     const forecastWithSoll: number[] = [];
     const forecastWithoutSoll: number[] = [];
@@ -506,6 +505,8 @@ export function generateForecastWithPlans(
         currentTotalXP,
         forecastTotalXP,
         xpDelta: forecastTotalXP - currentTotalXP,
+        currentEmployeeCount: currentActiveIds.size,
+        forecastEmployeeCount: forecastActiveIds.size,
     };
 
     // ── Employee rows ──────────────────────────────────────────────

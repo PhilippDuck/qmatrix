@@ -1,4 +1,18 @@
 
+## [2.11.0] - 2026-02-19
+
+### Neue Funktionen & Verbesserungen
+- **Erweiterte Prognose-Visualisierung**:
+  - **Neuer Line-Chart**: Visualisiert den Verlauf der prognostizierten Gesamt-XP und der durchschnittlichen Soll-Erfüllung über den gewählten Zeitraum.
+  - **Mitarbeiter-Entwicklung**: Zeigt zusätzlich die Entwicklung der Mitarbeiterzahl (inkl. geplanter Abgänge) im Chart.
+  - **Langzeit-Prognose**: Der Prognose-Zeitraum wurde um eine 2-Jahres-Option erweitert.
+  - **Kapazitäts-Metrik**: Neue KPI-Karte "Gesamt-XP" zeigt den absoluten Verlust/Gewinn an Qualifikationskapazität.
+
+- **Optimierung der Qualifizierungsplan-Übersicht**:
+  - **Zusammenführung**: Der Reiter "Aktive Pläne" wurde vollständig in die "Übersicht" integriert.
+  - **Erweiterte Filterung**: Die Übersicht bietet nun direkt Such- und Filter-Möglichkeiten für alle aktiven Pläne.
+  - **Layout-Verbesserungen**: Optimierte Abstände und responsive Darstellung der KPI-Karten (5 Spalten auf großen Bildschirmen).
+
 ## [2.10.0] - 2026-02-19
 
 ### Neue Funktionen

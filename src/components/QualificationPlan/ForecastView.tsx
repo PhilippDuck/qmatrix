@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import { LineChart } from "@mantine/charts";
 import {
     Stack,
     Group,
@@ -491,6 +492,50 @@ export const ForecastView: React.FC = () => {
         horizonMonths,
     ]);
 
+    const chartData = useMemo(() => {
+        const horizon = parseInt(horizonMonths, 10);
+        const data = [];
+        const today = new Date();
+
+        for (let m = 0; m <= horizon; m++) {
+            // Optimization: If 12 months, maybe skip some? No, 13 points is fine.
+            const res = generateForecastWithPlans(
+                employees,
+                assessments,
+                qualificationMeasures,
+                qualificationPlans,
+                skills,
+                categories,
+                subcategories,
+                roles,
+                m
+            );
+
+            const d = new Date(today);
+            d.setMonth(d.getMonth() + m);
+            const label = d.toLocaleDateString('de-DE', { month: 'short', year: '2-digit' });
+
+            data.push({
+                label,
+                month: m,
+                xp: res.kpis.forecastTotalXP,
+                fulfillment: res.kpis.forecastAvgScore,
+                employees: res.kpis.forecastEmployeeCount
+            });
+        }
+        return data;
+    }, [
+        employees,
+        assessments,
+        qualificationMeasures,
+        qualificationPlans,
+        skills,
+        categories,
+        subcategories,
+        roles,
+        horizonMonths
+    ]);
+
     const horizonLabel = new Date(forecast.scenario.horizonDate).toLocaleDateString("de-DE", {
         month: "long",
         year: "numeric",
@@ -521,13 +566,14 @@ export const ForecastView: React.FC = () => {
                         { value: "3", label: "3 Mon." },
                         { value: "6", label: "6 Mon." },
                         { value: "12", label: "1 Jahr" },
+                        { value: "24", label: "2 Jahre" },
                     ]}
                     size="sm"
                 />
             </Group>
 
             {/* KPI Cards */}
-            <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="md">
+            <SimpleGrid cols={{ base: 1, sm: 2, lg: 5 }} spacing="md">
                 {/* Avg Score */}
                 <Card shadow="sm" padding="lg" radius="md" withBorder>
                     <Group justify="space-between" mb="xs">
@@ -669,6 +715,27 @@ export const ForecastView: React.FC = () => {
                     </Text>
                 </Card>
             </SimpleGrid>
+
+            {/* Forecast Trend Chart */}
+            <Paper shadow="xs" p="md" radius="md" withBorder>
+                <Text fw={600} mb="md">Prognose-Verlauf</Text>
+                <LineChart
+                    h={300}
+                    data={chartData}
+                    dataKey="label"
+                    withLegend
+                    withYAxis={false}
+                    yAxisProps={{ domain: [0, 'auto'] }}
+                    rightYAxisProps={{ domain: [0, 100] }}
+                    series={[
+                        { name: 'xp', label: 'Gesamt-XP', color: 'blue.6', yAxisId: 'left' },
+                        { name: 'fulfillment', label: 'Soll-Erfüllung (%)', color: 'teal.6', yAxisId: 'right' },
+                        { name: 'employees', label: 'Mitarbeiter', color: 'gray.6', yAxisId: 'right', strokeDasharray: '5 5' },
+                    ]}
+                    curveType="monotone"
+                    tickLine="y"
+                />
+            </Paper>
 
             {/* Category Comparison */}
             <Paper shadow="xs" p="md" radius="md" withBorder>

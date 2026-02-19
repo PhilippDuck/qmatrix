@@ -1,7 +1,7 @@
 {
   "name": "skillgrid",
   "private": true,
-  "version": "2.10.0",
+  "version": "2.11.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -17,6 +17,7 @@
     "e2e:ui": "playwright test --ui"
   },
   "dependencies": {
+    "@mantine/charts": "^8.3.14",
     "@mantine/core": "^8.3.14",
     "@mantine/dates": "^8.3.14",
     "@mantine/dropzone": "^8.3.14",
@@ -31,7 +32,8 @@
     "lucide-react": "^0.563.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "react-organizational-chart": "^2.2.1"
+    "react-organizational-chart": "^2.2.1",
+    "recharts": "^3.7.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",

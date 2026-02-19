@@ -242,7 +242,7 @@ export const QualificationPlan: React.FC<QualificationPlanProps> = ({ initialEmp
   }
 
   return (
-    <Box style={{ width: "100%", maxWidth: "100%" }}>
+    <Box style={{ width: "100%", maxWidth: "100%" }} pr="md">
       <Group justify="space-between" mb="lg">
         <Title order={2}>Qualifizierungspläne</Title>
         <Button leftSection={<IconPlus size={16} />} onClick={handleNewPlan}>
@@ -278,12 +278,7 @@ export const QualificationPlan: React.FC<QualificationPlanProps> = ({ initialEmp
             >
               Prognose
             </Tabs.Tab>
-            <Tabs.Tab
-              value="active"
-              leftSection={<IconList size={16} />}
-            >
-              Aktive Pläne
-            </Tabs.Tab>
+
             <Tabs.Tab value="archived" leftSection={<IconArchive size={16} />}>
               Archiv
             </Tabs.Tab>
@@ -337,47 +332,6 @@ export const QualificationPlan: React.FC<QualificationPlanProps> = ({ initialEmp
 
               <Divider label="Aktuelle Pläne" labelPosition="left" />
 
-              {activePlans.length === 0 ? (
-                <Text c="dimmed" ta="center" py="xl">
-                  Keine aktiven Qualifizierungspläne vorhanden.
-                </Text>
-              ) : (
-                <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="md">
-                  {activePlans.slice(0, 6).map((plan) => (
-                    <PlanCard
-                      key={plan.id}
-                      plan={plan}
-                      onView={handleViewPlan}
-                      onEdit={handleEditPlan}
-                      onArchive={handleArchivePlan}
-                      onDelete={handleDeletePlan}
-                    />
-                  ))}
-                </SimpleGrid>
-              )}
-
-              {activePlans.length > 6 && (
-                <Button
-                  variant="subtle"
-                  onClick={() => setActiveTab("active")}
-                  mx="auto"
-                >
-                  Alle {activePlans.length} aktiven Pläne anzeigen
-                </Button>
-              )}
-            </Stack>
-          </Tabs.Panel>
-
-          <Tabs.Panel value="timeline">
-            <GanttTimeline onViewPlan={handleViewPlan} />
-          </Tabs.Panel>
-
-          <Tabs.Panel value="forecast">
-            <ForecastView />
-          </Tabs.Panel>
-
-          <Tabs.Panel value="active">
-            <Stack gap="md">
               <Group>
                 <TextInput
                   placeholder="Suchen..."
@@ -427,6 +381,16 @@ export const QualificationPlan: React.FC<QualificationPlanProps> = ({ initialEmp
               )}
             </Stack>
           </Tabs.Panel>
+
+          <Tabs.Panel value="timeline">
+            <GanttTimeline onViewPlan={handleViewPlan} />
+          </Tabs.Panel>
+
+          <Tabs.Panel value="forecast">
+            <ForecastView />
+          </Tabs.Panel>
+
+
 
           <Tabs.Panel value="archived">
             <Stack gap="md">
