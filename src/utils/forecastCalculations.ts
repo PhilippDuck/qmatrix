@@ -60,6 +60,9 @@ export interface ForecastKPIs {
     departureNames: string[];
     completingMeasureCount: number;
     totalPlannedMeasureCount: number;
+    currentTotalXP: number;
+    forecastTotalXP: number;
+    xpDelta: number;
 }
 
 export interface ForecastResult {
@@ -245,6 +248,9 @@ export function generateForecast(
         departureNames: departures.map(e => e.name),
         completingMeasureCount: completingMeasures.length,
         totalPlannedMeasureCount: pendingOrInProgress.length,
+        currentTotalXP: 0,
+        forecastTotalXP: 0,
+        xpDelta: 0,
     };
 
     // ── Employee rows ──────────────────────────────────────────────
@@ -447,12 +453,25 @@ export function generateForecastWithPlans(
     const currentAvgScoreVal = (currentWithSoll.length > 0 ? avgFulfillment(currentWithSoll) : avgScore(currentWithoutSoll)) ?? 0;
     const currentDeficits = countDeficits(assessments, measures, currentActiveIds, effectiveTarget);
 
+    // Calculate Current Total XP
+    let currentTotalXP = 0;
+    for (const a of assessments) {
+        if (currentActiveIds.has(a.employeeId) && a.level > 0) {
+            currentTotalXP += a.level;
+        }
+    }
+
     const forecastWithSoll: number[] = [];
     const forecastWithoutSoll: number[] = [];
+    let forecastTotalXP = 0;
     for (const [key, level] of forecastAssessmentMap) {
         const empId = key.split("::")[0];
         const skillId = key.split("::")[1];
         if (!forecastActiveIds.has(empId)) continue;
+
+        // XP Calculation
+        if (level > 0) forecastTotalXP += level;
+
         const target = effectiveTarget(empId, skillId);
         if (target > 0) {
             if (level >= 0) forecastWithSoll.push(fulfillmentScore(level, target));
@@ -484,6 +503,9 @@ export function generateForecastWithPlans(
         departureNames: futureDepartures.map(e => e.name),
         completingMeasureCount: completingMeasures.length,
         totalPlannedMeasureCount: pendingOrInProgress.length,
+        currentTotalXP,
+        forecastTotalXP,
+        xpDelta: forecastTotalXP - currentTotalXP,
     };
 
     // ── Employee rows ──────────────────────────────────────────────

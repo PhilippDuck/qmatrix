@@ -26,6 +26,7 @@ import {
     IconArrowDownRight,
     IconMinus,
     IconCalendarStats,
+    IconSum,
 } from "@tabler/icons-react";
 import { useData } from "../../context/DataContext";
 import { usePrivacy } from "../../context/PrivacyContext";
@@ -555,6 +556,34 @@ export const ForecastView: React.FC = () => {
                     </Group>
                     <Text size="sm" c="dimmed" mt={4}>
                         Ø Soll-Erfüllung
+                    </Text>
+                </Card>
+
+                {/* Total XP */}
+                <Card shadow="sm" padding="lg" radius="md" withBorder>
+                    <Group justify="space-between" mb="xs">
+                        <ThemeIcon
+                            variant="light"
+                            size="xl"
+                            radius="md"
+                            color={forecast.kpis.xpDelta >= 0 ? "blue" : "orange"}
+                        >
+                            <IconSum size={24} />
+                        </ThemeIcon>
+                        <DeltaBadge delta={forecast.kpis.xpDelta} />
+                    </Group>
+                    <Group gap="xs" align="baseline">
+                        <Text size="xl" fw={700}>
+                            {forecast.kpis.currentTotalXP}
+                        </Text>
+                        <Text size="sm" c="dimmed">→</Text>
+                        <Text size="xl" fw={700} c={forecast.kpis.xpDelta >= 0 ? "blue" : "orange"}>
+                            {forecast.kpis.forecastTotalXP}
+                        </Text>
+                        <Text size="xs" c="dimmed">XP</Text>
+                    </Group>
+                    <Text size="sm" c="dimmed" mt={4}>
+                        Gesamt-Qualifikation
                     </Text>
                 </Card>
 
