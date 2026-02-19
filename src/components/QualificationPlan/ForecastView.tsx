@@ -458,6 +458,7 @@ export const ForecastView: React.FC = () => {
         skills,
         categories,
         subcategories,
+        roles,
     } = useData();
     const { anonymizeName } = usePrivacy();
     const computedColorScheme = useComputedColorScheme("light");
@@ -474,6 +475,7 @@ export const ForecastView: React.FC = () => {
             skills,
             categories,
             subcategories,
+            roles,
             parseInt(horizonMonths, 10)
         );
     }, [
@@ -484,6 +486,7 @@ export const ForecastView: React.FC = () => {
         skills,
         categories,
         subcategories,
+        roles,
         horizonMonths,
     ]);
 

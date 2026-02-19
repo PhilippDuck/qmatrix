@@ -6,7 +6,8 @@
  * - Mitarbeiter-Abgänge (deactivationDate in der Zukunft)
  */
 
-import type { Employee, Assessment, QualificationMeasure, Skill, Category, SubCategory } from "../services/indexeddb";
+import type { Employee, Assessment, QualificationMeasure, Skill, Category, SubCategory, EmployeeRole } from "../services/indexeddb";
+import { getMaxRoleTargetForSkill } from "./skillCalculations";
 
 // ── Types ────────────────────────────────────────────────────────────
 
@@ -104,13 +105,13 @@ function countDeficits(
     assessments: Assessment[],
     measures: QualificationMeasure[],
     activeEmployeeIds: Set<string>,
+    effectiveTarget: (empId: string, skillId: string) => number,
 ): number {
-    // A deficit = an assessment where level < targetLevel for an active employee
-    // Also count measures whose skill gap is not yet resolved
     let deficits = 0;
     for (const a of assessments) {
         if (!activeEmployeeIds.has(a.employeeId)) continue;
-        if (a.targetLevel && a.targetLevel > 0 && a.level < a.targetLevel) {
+        const target = effectiveTarget(a.employeeId, a.skillId);
+        if (target > 0 && a.level < target) {
             deficits++;
         }
     }
@@ -205,7 +206,10 @@ export function generateForecast(
         .filter(a => currentActiveIds.has(a.employeeId) && a.level > 0)
         .map(a => a.level);
     const currentAvgScore = avgScore(currentLevels) ?? 0;
-    const currentDeficits = countDeficits(assessments, measures, currentActiveIds);
+    const currentDeficits = countDeficits(assessments, measures, currentActiveIds, (empId, skillId) => {
+        const found = assessments.find(x => x.employeeId === empId && x.skillId === skillId);
+        return found?.targetLevel || 0;
+    });
 
     // ── Calculate forecast KPIs ────────────────────────────────────
     const forecastLevels: number[] = [];
@@ -339,6 +343,7 @@ export function generateForecastWithPlans(
     skills: Skill[],
     categories: Category[],
     subcategories: SubCategory[],
+    roles: EmployeeRole[],
     horizonMonths: number,
 ): ForecastResult {
     const now = new Date();
@@ -410,33 +415,46 @@ export function generateForecastWithPlans(
         }
     }
 
-    // ── Build target level lookup ─────────────────────────────────
-    // Used by fulfillmentScore to determine Soll-relative %
-    const targetMap = new Map<string, number | undefined>();
-    for (const a of assessments) {
-        targetMap.set(`${a.employeeId}::${a.skillId}`, a.targetLevel);
-    }
+    // ── Build effective target lookup ──────────────────────────────
+    // Math.max(individualTarget, roleTarget) for each employee-skill pair
+    const employeeMap = new Map<string, Employee>();
+    for (const emp of employees) { if (emp.id) employeeMap.set(emp.id, emp); }
+
+    const effectiveTargetCache = new Map<string, number>();
+    const effectiveTarget = (empId: string, skillId: string): number => {
+        const key = `${empId}::${skillId}`;
+        const cached = effectiveTargetCache.get(key);
+        if (cached !== undefined) return cached;
+        const emp = employeeMap.get(empId);
+        const asm = assessments.find(a => a.employeeId === empId && a.skillId === skillId);
+        const individualTarget = asm?.targetLevel || 0;
+        const roleTarget = getMaxRoleTargetForSkill(emp?.roles, skillId, roles) || 0;
+        const target = Math.max(individualTarget, roleTarget);
+        effectiveTargetCache.set(key, target);
+        return target;
+    };
 
     // ── KPIs ───────────────────────────────────────────────────────
     // Only skills WITH Soll count for fulfillment average.
     // For Soll-skills: include level=0 (0% fulfillment), exclude level=-1 (N/A)
     // Fallback to raw levels if no Soll-skills exist.
     const currentWithSoll = assessments
-        .filter(a => currentActiveIds.has(a.employeeId) && a.level >= 0 && a.targetLevel && a.targetLevel > 0)
-        .map(a => fulfillmentScore(a.level, a.targetLevel));
+        .filter(a => currentActiveIds.has(a.employeeId) && a.level >= 0 && effectiveTarget(a.employeeId, a.skillId) > 0)
+        .map(a => fulfillmentScore(a.level, effectiveTarget(a.employeeId, a.skillId)));
     const currentWithoutSoll = assessments
-        .filter(a => currentActiveIds.has(a.employeeId) && a.level > 0 && (!a.targetLevel || a.targetLevel <= 0))
+        .filter(a => currentActiveIds.has(a.employeeId) && a.level > 0 && effectiveTarget(a.employeeId, a.skillId) <= 0)
         .map(a => a.level);
     const currentAvgScoreVal = (currentWithSoll.length > 0 ? avgFulfillment(currentWithSoll) : avgScore(currentWithoutSoll)) ?? 0;
-    const currentDeficits = countDeficits(assessments, measures, currentActiveIds);
+    const currentDeficits = countDeficits(assessments, measures, currentActiveIds, effectiveTarget);
 
     const forecastWithSoll: number[] = [];
     const forecastWithoutSoll: number[] = [];
     for (const [key, level] of forecastAssessmentMap) {
         const empId = key.split("::")[0];
+        const skillId = key.split("::")[1];
         if (!forecastActiveIds.has(empId)) continue;
-        const target = targetMap.get(key);
-        if (target && target > 0) {
+        const target = effectiveTarget(empId, skillId);
+        if (target > 0) {
             if (level >= 0) forecastWithSoll.push(fulfillmentScore(level, target));
         } else {
             if (level > 0) forecastWithoutSoll.push(level);
@@ -447,10 +465,11 @@ export function generateForecastWithPlans(
     let forecastDeficits = 0;
     for (const a of assessments) {
         if (!forecastActiveIds.has(a.employeeId)) continue;
-        if (a.targetLevel && a.targetLevel > 0) {
+        const target = effectiveTarget(a.employeeId, a.skillId);
+        if (target > 0) {
             const key = `${a.employeeId}::${a.skillId}`;
             const fl = forecastAssessmentMap.get(key) ?? a.level;
-            if (fl < a.targetLevel) forecastDeficits++;
+            if (fl < target) forecastDeficits++;
         }
     }
 
@@ -495,10 +514,10 @@ export function generateForecastWithPlans(
         // Only skills WITH Soll count for the fulfillment average
         // For Soll-skills: include level=0 (0% fulfillment), exclude level=-1 (N/A)
         const curWithSoll = empAssessments
-            .filter(a => a.level >= 0 && a.targetLevel && a.targetLevel > 0)
-            .map(a => fulfillmentScore(a.level, a.targetLevel));
+            .filter(a => a.level >= 0 && effectiveTarget(emp.id!, a.skillId) > 0)
+            .map(a => fulfillmentScore(a.level, effectiveTarget(emp.id!, a.skillId)));
         const curWithoutSoll = empAssessments
-            .filter(a => a.level > 0 && (!a.targetLevel || a.targetLevel <= 0))
+            .filter(a => a.level > 0 && effectiveTarget(emp.id!, a.skillId) <= 0)
             .map(a => a.level);
         const currentAvg = (curWithSoll.length > 0 ? avgFulfillment(curWithSoll) : avgScore(curWithoutSoll));
 
@@ -509,23 +528,23 @@ export function generateForecastWithPlans(
         for (const a of empAssessments) {
             const key = `${a.employeeId}::${a.skillId}`;
             const fl = forecastAssessmentMap.get(key) ?? a.level;
-            const target = targetMap.get(key);
-            const curFul = fulfillmentScore(a.level, a.targetLevel);
-            const fcFul = fulfillmentScore(fl, target);
+            const target = effectiveTarget(emp.id!, a.skillId);
+            const curFul = fulfillmentScore(a.level, target || undefined);
+            const fcFul = fulfillmentScore(fl, target || undefined);
 
-            if (target && target > 0) {
+            if (target > 0) {
                 if (fl >= 0) fWithSoll.push(fcFul);
             } else {
                 if (fl > 0) fWithoutSoll.push(fl);
             }
 
             // Include in breakdown if level >= 0 (has Soll) or level > 0 (any rating)
-            if (a.level > 0 || (a.level >= 0 && a.targetLevel && a.targetLevel > 0)) {
+            if (a.level > 0 || (a.level >= 0 && target > 0)) {
                 breakdown.push({
                     skillId: a.skillId,
                     skillName: skillNameMap.get(a.skillId) ?? a.skillId,
                     currentLevel: a.level,
-                    targetLevel: a.targetLevel,
+                    targetLevel: target || undefined,
                     currentFulfillment: Math.max(0, curFul),
                     forecastLevel: fl,
                     forecastFulfillment: Math.max(0, fcFul),
@@ -565,10 +584,10 @@ export function generateForecastWithPlans(
         const catSkillIds = new Set(catSkills.map(s => s.id!));
 
         const catCurWithSoll = assessments
-            .filter(a => catSkillIds.has(a.skillId) && currentActiveIds.has(a.employeeId) && a.level >= 0 && a.targetLevel && a.targetLevel > 0)
-            .map(a => fulfillmentScore(a.level, a.targetLevel));
+            .filter(a => catSkillIds.has(a.skillId) && currentActiveIds.has(a.employeeId) && a.level >= 0 && effectiveTarget(a.employeeId, a.skillId) > 0)
+            .map(a => fulfillmentScore(a.level, effectiveTarget(a.employeeId, a.skillId)));
         const catCurWithoutSoll = assessments
-            .filter(a => catSkillIds.has(a.skillId) && currentActiveIds.has(a.employeeId) && a.level > 0 && (!a.targetLevel || a.targetLevel <= 0))
+            .filter(a => catSkillIds.has(a.skillId) && currentActiveIds.has(a.employeeId) && a.level > 0 && effectiveTarget(a.employeeId, a.skillId) <= 0)
             .map(a => a.level);
         const catCurAvg = (catCurWithSoll.length > 0 ? avgFulfillment(catCurWithSoll) : avgScore(catCurWithoutSoll)) ?? 0;
 
@@ -578,8 +597,8 @@ export function generateForecastWithPlans(
             if (!catSkillIds.has(a.skillId) || !forecastActiveIds.has(a.employeeId)) continue;
             const key = `${a.employeeId}::${a.skillId}`;
             const fl = forecastAssessmentMap.get(key) ?? a.level;
-            const target = targetMap.get(key);
-            if (target && target > 0) {
+            const target = effectiveTarget(a.employeeId, a.skillId);
+            if (target > 0) {
                 if (fl >= 0) catFWithSoll.push(fulfillmentScore(fl, target));
             } else {
                 if (fl > 0) catFWithoutSoll.push(fl);
