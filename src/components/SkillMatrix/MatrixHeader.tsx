@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Badge, Text, HoverCard, Stack, Group, Divider, ThemeIcon, Box, SimpleGrid, Tooltip, ActionIcon, Menu } from "@mantine/core";
 import { IconBuilding, IconHistory, IconTrendingUp, IconTrendingDown, IconMinus, IconPencil, IconPlus, IconDotsVertical, IconCertificate, IconInfoCircle, IconSortAscending, IconSortDescending, IconArrowsSort } from "@tabler/icons-react";
 import { MATRIX_LAYOUT } from "../../constants/skillLevels";
-import { getScoreColor } from "../../utils/skillCalculations";
+import { getScoreColor, getMaxRoleTargetForSkill } from "../../utils/skillCalculations";
 import { Employee, Skill, Assessment, useData, AssessmentLogEntry } from "../../context/DataContext";
 import { getIconByName } from "../shared/RoleIconPicker";
 import { usePrivacy } from "../../context/PrivacyContext";
@@ -538,8 +538,10 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
                       let total = 0, targets = 0;
                       skills.forEach(s => {
                         const asm = getAssessment(e.id!, s.id!);
-                        const t = asm?.targetLevel || 0;
-                        if (t > 0) { targets += t; total += (asm?.level || 0); }
+                        const individualT = asm?.targetLevel || 0;
+                        const roleT = getMaxRoleTargetForSkill(e.roles, s.id!, roles) || 0;
+                        const t = Math.max(individualT, roleT);
+                        if (t > 0) { targets += t; total += Math.max(asm?.level || 0, 0); }
                       });
                       return targets > 0 ? Math.round((total / targets) * 100) : null;
                     }).filter((v): v is number => v !== null);
@@ -632,8 +634,10 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
                       let total = 0, targets = 0;
                       skills.forEach(s => {
                         const asm = getAssessment(emp.id!, s.id!);
-                        const t = asm?.targetLevel || 0;
-                        if (t > 0) { targets += t; total += (asm?.level || 0); }
+                        const individualT = asm?.targetLevel || 0;
+                        const roleT = getMaxRoleTargetForSkill(emp.roles, s.id!, roles) || 0;
+                        const t = Math.max(individualT, roleT);
+                        if (t > 0) { targets += t; total += Math.max(asm?.level || 0, 0); }
                       });
                       const ful = targets > 0 ? Math.round((total / targets) * 100) : null;
                       return (

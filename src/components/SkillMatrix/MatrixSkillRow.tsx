@@ -144,9 +144,12 @@ export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = ({
                 const scores: number[] = [];
                 employees.forEach(e => {
                   const asm = getAssessment(e.id!, skill.id!);
-                  const target = asm?.targetLevel;
-                  if (target && target > 0 && asm && asm.level >= 0) {
-                    scores.push(Math.min(100, Math.round((asm.level / target) * 100)));
+                  const individualTarget = asm?.targetLevel || 0;
+                  const roleTarget = getMaxRoleTargetForSkill(e.roles, skill.id!, roles) || 0;
+                  const target = Math.max(individualTarget, roleTarget);
+                  if (target > 0) {
+                    const level = asm?.level ?? (roleTarget ? 0 : -1);
+                    if (level >= 0) scores.push(Math.min(100, Math.round((level / target) * 100)));
                   }
                 });
                 const ful = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
@@ -200,10 +203,14 @@ export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = ({
                 (() => {
                   const scores: number[] = [];
                   col.employeeIds.forEach(eId => {
+                    const emp = employees.find(e => e.id === eId);
                     const asm = getAssessment(eId, skill.id!);
-                    const target = asm?.targetLevel;
-                    if (target && target > 0 && asm && asm.level >= 0) {
-                      scores.push(Math.min(100, Math.round((asm.level / target) * 100)));
+                    const individualTarget = asm?.targetLevel || 0;
+                    const roleTarget = getMaxRoleTargetForSkill(emp?.roles, skill.id!, roles) || 0;
+                    const target = Math.max(individualTarget, roleTarget);
+                    if (target > 0) {
+                      const level = asm?.level ?? (roleTarget ? 0 : -1);
+                      if (level >= 0) scores.push(Math.min(100, Math.round((level / target) * 100)));
                     }
                   });
                   const ful = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;

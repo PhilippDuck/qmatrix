@@ -233,9 +233,12 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = ({
                 employees.forEach(emp => {
                   catSkillIds.forEach(sId => {
                     const asm = getAssessment(emp.id!, sId);
-                    const target = asm?.targetLevel;
-                    if (target && target > 0 && asm && asm.level >= 0) {
-                      scores.push(Math.min(100, Math.round((asm.level / target) * 100)));
+                    const individualTarget = asm?.targetLevel || 0;
+                    const roleTarget = getMaxRoleTargetForSkill(emp.roles, sId, roles) || 0;
+                    const target = Math.max(individualTarget, roleTarget);
+                    if (target > 0) {
+                      const level = asm?.level ?? (roleTarget ? 0 : -1);
+                      if (level >= 0) scores.push(Math.min(100, Math.round((level / target) * 100)));
                     }
                   });
                 });
@@ -321,11 +324,15 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = ({
                     (() => {
                       const scores: number[] = [];
                       col.employeeIds.forEach(eId => {
+                        const emp = employees.find(e => e.id === eId);
                         catSkillIds.forEach(sId => {
                           const asm = getAssessment(eId, sId);
-                          const target = asm?.targetLevel;
-                          if (target && target > 0 && asm && asm.level >= 0) {
-                            scores.push(Math.min(100, Math.round((asm.level / target) * 100)));
+                          const individualTarget = asm?.targetLevel || 0;
+                          const roleTarget = getMaxRoleTargetForSkill(emp?.roles, sId, roles) || 0;
+                          const target = Math.max(individualTarget, roleTarget);
+                          if (target > 0) {
+                            const level = asm?.level ?? (roleTarget ? 0 : -1);
+                            if (level >= 0) scores.push(Math.min(100, Math.round((level / target) * 100)));
                           }
                         });
                       });
