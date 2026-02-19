@@ -1,4 +1,10 @@
 
+## [2.9.13] - 2026-02-19
+
+### Behobene Fehler & Fixes
+- **Dark Mode Timeline**: Leerer Zustand der Timeline-Komponente im Qualifizierungsplan war im Dark Mode hell statt dunkel – hartcodierte `gray-0` Hintergrundfarbe entfernt, nutzt nun theme-aware Standardfarbe.
+- **Standard-View Aufklapp-Zustand**: Beim Wechsel von einer individuellen Ansicht zurück zur Standard-Ansicht wurden die Aufklapp-/Zuklapp-Einstellungen der zuletzt gewählten individuellen Ansicht übernommen. Die Standard-Ansicht merkt sich nun ihren eigenen unabhängigen Aufklapp-Zustand.
+
 ## [2.9.12] - 2026-02-18
 
 ### Neue Funktionen & Verbesserungen

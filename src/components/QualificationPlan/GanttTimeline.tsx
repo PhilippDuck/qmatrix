@@ -296,7 +296,7 @@ export const GanttTimeline: React.FC<GanttTimelineProps> = ({ onViewPlan, planId
 
     if (filteredMeasures.length === 0) {
         return (
-            <Paper p="xl" radius="md" withBorder ta="center" bg="var(--mantine-color-gray-0)">
+            <Paper p="xl" radius="md" withBorder ta="center">
                 <ThemeIcon variant="light" size={50} radius="xl" color="gray" mx="auto" mb="md">
                     <IconCalendar size={30} />
                 </ThemeIcon>

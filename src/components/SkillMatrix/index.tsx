@@ -210,6 +210,11 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
 
   // Apply a Saved View
   const handleSelectView = (view: SavedView) => {
+    // Save standard view's collapsed states before switching away
+    if (!activeViewId) {
+      localStorage.setItem("skill-matrix-collapsed-standard", JSON.stringify(collapsedStates));
+    }
+
     setActiveViewId(view.id!);
 
     // Apply filters
@@ -328,10 +333,6 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
 
   const handleClearView = () => {
     setActiveViewId(null);
-    // Optionally reset filters to defaults?
-    // Or just "deselect" the pill.
-    // User requested "different views for different purposes".
-    // "Default" button usually means "Reset everything".
     setFilterDepartments([]);
     setFilterRoles([]);
     setFilterCategories([]);
@@ -343,6 +344,14 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
     setShowInactive(false);
     setEmployeeSort(null);
     setSkillSort(null);
+
+    // Restore standard view's own collapsed states
+    const savedStandard = localStorage.getItem("skill-matrix-collapsed-standard");
+    if (savedStandard) {
+      setCollapsedStates(JSON.parse(savedStandard));
+    } else {
+      setCollapsedStates({});
+    }
   };
 
   const handleDeleteView = async (id: string) => {
