@@ -24,6 +24,7 @@ import {
   IconUserCircle,
   IconSum,
   IconPercentage,
+  IconTargetArrow,
   IconEye,
   IconEyeOff,
   IconDeviceFloppy,
@@ -157,11 +158,16 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
     defaultValue: [],
   });
 
-  // Toggle for Max Values vs Aggregation
-  const [showMaxValues, setShowMaxValues] = useLocalStorage<boolean>({
-    key: 'skill-matrix-show-max-values',
-    defaultValue: false,
+  // Toggle metric mode: avg → max → fulfillment
+  type MetricMode = 'avg' | 'max' | 'fulfillment';
+  const [metricMode, setMetricMode] = useLocalStorage<MetricMode>({
+    key: 'skill-matrix-metric-mode',
+    defaultValue: 'avg',
   });
+  const showMaxValues = metricMode === 'max';
+  const nextMetricMode = () => {
+    setMetricMode(prev => prev === 'avg' ? 'max' : prev === 'max' ? 'fulfillment' : 'avg');
+  };
 
   // Sorting state: 'asc' | 'desc' | null
   const [employeeSort, setEmployeeSort] = useLocalStorage<'asc' | 'desc' | null>({
@@ -226,7 +232,7 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
     setGroupingMode(view.config.groupingMode);
 
     // Apply settings
-    setShowMaxValues(view.config.settings.showMaxValues);
+    setMetricMode(view.config.settings.metricMode ?? (view.config.settings.showMaxValues ? 'max' : 'avg'));
     setHideEmployees(view.config.settings.hideEmployees);
     setHideEmployees(view.config.settings.hideEmployees);
     setHideNaColumns(view.config.settings.hideNaColumns || false);
@@ -254,7 +260,7 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
         },
         groupingMode: groupingMode,
         settings: {
-          showMaxValues: showMaxValues,
+          metricMode: metricMode,
           hideEmployees: hideEmployees,
           hideNaColumns: hideNaColumns,
           showInactive: showInactive,
@@ -287,7 +293,7 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
       JSON.stringify(config.filters.roles) !== JSON.stringify(filterRoles) ||
       JSON.stringify(config.filters.categories) !== JSON.stringify(filterCategories) ||
       config.groupingMode !== groupingMode ||
-      config.settings.showMaxValues !== showMaxValues ||
+      (config.settings.metricMode ?? (config.settings.showMaxValues ? 'max' : 'avg')) !== metricMode ||
       config.settings.hideEmployees !== hideEmployees ||
       config.settings.hideNaColumns !== hideNaColumns ||
       config.settings.showInactive !== showInactive ||
@@ -295,7 +301,7 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
       config.sort.skill !== skillSort ||
       JSON.stringify(config.collapsedStates || {}) !== JSON.stringify(collapsedStates)
     );
-  }, [activeViewId, savedViews, filterDepartments, filterRoles, filterCategories, groupingMode, showMaxValues, hideEmployees, hideNaColumns, employeeSort, skillSort, collapsedStates]);
+  }, [activeViewId, savedViews, filterDepartments, filterRoles, filterCategories, groupingMode, metricMode, hideEmployees, hideNaColumns, employeeSort, skillSort, collapsedStates]);
 
   // Update the current active view with current settings
   const handleUpdateCurrentView = async () => {
@@ -314,7 +320,7 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
           },
           groupingMode: groupingMode,
           settings: {
-            showMaxValues: showMaxValues,
+            metricMode: metricMode,
             hideEmployees: hideEmployees,
             hideNaColumns: hideNaColumns,
             showInactive: showInactive,
@@ -337,7 +343,7 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
     setFilterRoles([]);
     setFilterCategories([]);
     setGroupingMode("none");
-    setShowMaxValues(false);
+    setMetricMode('avg');
     setHideEmployees(false);
     setHideEmployees(false);
     setHideNaColumns(false);
@@ -434,7 +440,7 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
     }
 
     return result;
-  }, [employees, focusEmployeeId, filterDepartments, filterRoles, employeeSort, skills, departments, roles, showMaxValues, getAssessment, showInactive]);
+  }, [employees, focusEmployeeId, filterDepartments, filterRoles, employeeSort, skills, departments, roles, metricMode, getAssessment, showInactive]);
 
   const calculateAverage = (
     skillIds: string[],
@@ -560,7 +566,7 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
     }
 
     return result;
-  }, [categories, filterCategories, skillSort, subcategories, skills, displayedEmployees, getAssessment, showMaxValues, assessments, roles]);
+  }, [categories, filterCategories, skillSort, subcategories, skills, displayedEmployees, getAssessment, metricMode, assessments, roles]);
 
   const { colorScheme } = useMantineColorScheme();
 
@@ -1131,14 +1137,14 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
                   </Tooltip>
                 )}
 
-                <Tooltip label={showMaxValues ? "Zeige Durchschnittswerte" : "Zeige Max-Werte"}>
+                <Tooltip label={metricMode === 'avg' ? "Zeige Max-Werte" : metricMode === 'max' ? "Zeige Erfüllungsgrad" : "Zeige Durchschnittswerte"}>
                   <ActionIcon
                     variant="light"
-                    color="gray"
-                    onClick={() => setShowMaxValues(!showMaxValues)}
+                    color={metricMode === 'fulfillment' ? 'teal' : 'gray'}
+                    onClick={nextMetricMode}
                     size="lg"
                   >
-                    {showMaxValues ? <IconSum size={20} /> : <IconPercentage size={20} />}
+                    {metricMode === 'avg' ? <IconPercentage size={20} /> : metricMode === 'max' ? <IconSum size={20} /> : <IconTargetArrow size={20} />}
                   </ActionIcon>
                 </Tooltip>
 
@@ -1417,7 +1423,7 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
                     skills={skills}
                     getAssessment={getAssessment}
                     onEditEmployee={handleEditEmployee}
-                    showMaxValues={showMaxValues}
+                    showMaxValues={metricMode}
                     isEditMode={isEditMode}
                     onAddEmployee={() => {
                       setEditingEmployeeId(null);
@@ -1484,7 +1490,7 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
                       onBulkSetLevel={bulkSetLevel}
                       onLevelChange={handleLevelChange}
                       onTargetLevelChange={handleTargetLevelChange}
-                      showMaxValues={showMaxValues}
+                      showMaxValues={metricMode}
                       onEditSkill={handleEditSkill}
                       roles={roles}
                       onEditCategory={handleEditCategory}

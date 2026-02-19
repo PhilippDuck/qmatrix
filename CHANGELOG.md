@@ -1,4 +1,29 @@
 
+## [2.10.0] - 2026-02-19
+
+### Neue Funktionen
+
+- **Prognose-Tab im Qualifizierungsplan**: Neuer „Prognose"-Tab zeigt eine Vorschau, wie sich die Team-Qualifikation entwickelt, wenn alle geplanten Maßnahmen umgesetzt werden.
+  - **KPI-Karten**: Vergleich von Ist- und Prognose-Werten für Ø Soll-Erfüllung, Defizite und abgedeckte Skills.
+  - **Mitarbeiter-Tabelle**: Zeigt je Mitarbeiter den aktuellen und prognostizierten Erfüllungsgrad mit farbcodierter Veränderung (grün = Verbesserung, rot = Verschlechterung).
+  - **Kategorie-Balken**: Horizontale Fortschrittsbalken pro Kategorie mit Ist- und Prognose-Overlay.
+  - **Skill-Breakdown-Tooltips**: Hover über eine Zelle zeigt die Einzelbewertung jedes Skills (Ist-Level, Soll, Erfüllungsgrad).
+  - **Soll-basierte Durchschnitte**: Nur Skills mit definiertem Soll-Wert fließen in die Durchschnittsberechnung ein – Skills ohne Ziel verfälschen das Ergebnis nicht.
+  - **Abgangs-Erkennung**: Mitarbeiter mit zukünftigem Deaktivierungsdatum oder inaktivem Status werden in der Prognose ausgeschlossen.
+  - **Visuelle Unterscheidung**: In Tooltips werden Skills ohne Soll-Wert kursiv/gedimmt dargestellt.
+
+- **Drei-Wege-Metrik-Toggle in der Skill Matrix**: Der bisherige Umschalter zwischen Durchschnitt und Maximum wurde zu einem dreistufigen Toggle erweitert:
+  - **Durchschnitt (%)**: Zeigt den arithmetischen Mittelwert der Skill-Level (bisheriges Verhalten).
+  - **Maximum (XP)**: Zeigt den höchsten Wert bzw. Gesamt-XP (bisheriges Verhalten).
+  - **Erfüllungsgrad (Ist/Soll)**: Neuer Modus – zeigt den durchschnittlichen Erfüllungsgrad (min(100%, Ist/Soll × 100%)) für alle Assessments mit definiertem Soll-Wert.
+  - Farbcodierung: Teal (≥ 100%), Orange (< 100%), Grau (kein Soll definiert).
+  - Durchgängig implementiert: Header, Kategorie-, Unterkategorie-, Skill-Zeilen und Gruppen-Zusammenfassungen.
+
+### Technische Details
+- Neue Datei `forecastCalculations.ts` mit dem Berechnungs-Engine für die Prognose (fulfillmentScore, avgFulfillment, generateForecastWithPlans).
+- Neue Komponente `ForecastView.tsx` für die Prognose-Ansicht.
+- `showMaxValues: boolean` → `metricMode: 'avg' | 'max' | 'fulfillment'` in der Skill-Matrix und gespeicherten Ansichten (abwärtskompatibel).
+
 ## [2.9.13] - 2026-02-19
 
 ### Behobene Fehler & Fixes

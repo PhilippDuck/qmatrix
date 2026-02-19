@@ -30,7 +30,7 @@ interface MatrixCategoryRowProps {
   onBulkSetLevel: (employeeId: string, skillIds: string[], level: number) => void;
   onLevelChange: (employeeId: string, skillId: string, newLevel: number) => void;
   onTargetLevelChange: (employeeId: string, skillId: string, targetLevel: number | undefined) => void;
-  showMaxValues: boolean;
+  showMaxValues: 'avg' | 'max' | 'fulfillment';
   onEditSkill: (skillId: string) => void;
   onEditCategory: (categoryId: string) => void;
   onEditSubcategory: (subcategoryId: string) => void;
@@ -212,21 +212,42 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = ({
             </HoverCard>
           </Group>
           <Group gap={4} align="center">
-            {/* Toggle based on showMaxValues */}
-            {!showMaxValues ? (
+            {showMaxValues === 'avg' ? (
               // Average Bubble
               <Tooltip label="Durchschnittliche Abdeckung" withArrow>
                 <Badge size="xs" variant={catAvg === null ? "outline" : "filled"} color={catAvg === null ? "gray" : getScoreColor(catAvg)}>
                   {catAvg === null ? "N/A" : `${catAvg}%`}
                 </Badge>
               </Tooltip>
-            ) : (
+            ) : showMaxValues === 'max' ? (
               // Max Percentage Bubble
               <Tooltip label={`Max. Abdeckung: ${maxAvg !== null ? maxAvg : "N/A"}%`} withArrow>
                 <Badge size="xs" variant={maxAvg === null ? "outline" : "filled"} color={maxAvg === null ? "gray" : getScoreColor(maxAvg)} style={{ border: maxAvg === null ? undefined : '1px solid currentColor' }}>
                   {maxAvg !== null ? `${maxAvg}%` : "N/A"}
                 </Badge>
               </Tooltip>
+            ) : (
+              // Fulfillment Bubble
+              (() => {
+                const scores: number[] = [];
+                employees.forEach(emp => {
+                  catSkillIds.forEach(sId => {
+                    const asm = getAssessment(emp.id!, sId);
+                    const target = asm?.targetLevel;
+                    if (target && target > 0 && asm && asm.level >= 0) {
+                      scores.push(Math.min(100, Math.round((asm.level / target) * 100)));
+                    }
+                  });
+                });
+                const ful = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
+                return (
+                  <Tooltip label="Erfüllungsgrad (Ist/Soll)" withArrow>
+                    <Badge size="xs" variant={ful === null ? "outline" : "filled"} color={ful === null ? "gray" : ful >= 100 ? "teal" : "orange"}>
+                      {ful === null ? "N/A" : `${ful}%`}
+                    </Badge>
+                  </Tooltip>
+                );
+              })()
             )}
           </Group>
         </div >
@@ -290,12 +311,28 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = ({
                   key={col.id}
                   style={cellStyle}
                 >
-                  {showMaxValues ? (
+                  {showMaxValues === 'max' ? (
                     maxAvg !== null ? (
                       <Badge size="xs" variant="filled" color={getScoreColor(maxAvg)} style={{ border: '1px solid currentColor' }}>
                         {maxAvg}%
                       </Badge>
                     ) : <Text fw={700} size="xs" c="dimmed">-</Text>
+                  ) : showMaxValues === 'fulfillment' ? (
+                    (() => {
+                      const scores: number[] = [];
+                      col.employeeIds.forEach(eId => {
+                        catSkillIds.forEach(sId => {
+                          const asm = getAssessment(eId, sId);
+                          const target = asm?.targetLevel;
+                          if (target && target > 0 && asm && asm.level >= 0) {
+                            scores.push(Math.min(100, Math.round((asm.level / target) * 100)));
+                          }
+                        });
+                      });
+                      const ful = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
+                      const fulColor = ful === null ? 'dimmed' : ful >= 100 ? 'teal' : 'orange';
+                      return <Text fw={700} size="xs" c={fulColor}>{ful === null ? '-' : `${ful}%`}</Text>;
+                    })()
                   ) : (
                     <Text fw={700} size="xs" c={avg === 0 ? "dimmed" : getScoreColor(avg)}>
                       {avg === 0 ? "-" : `${avg}%`}

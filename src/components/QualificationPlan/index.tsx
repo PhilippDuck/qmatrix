@@ -31,6 +31,7 @@ import {
   IconAlertTriangle,
   IconAlertCircle,
   IconCalendar,
+  IconTrendingUp,
 } from "@tabler/icons-react";
 import { useData, QualificationPlan as QualificationPlanType } from "../../context/DataContext";
 import { usePrivacy } from "../../context/PrivacyContext";
@@ -38,6 +39,7 @@ import { PlanForm } from "./PlanForm";
 import { PlanDetail } from "./PlanDetail";
 import { PlanCard } from "./PlanCard";
 import { GanttTimeline } from "./GanttTimeline";
+import { ForecastView } from "./ForecastView";
 
 interface QualificationPlanProps {
   initialEmployeeId?: string | null;
@@ -271,6 +273,12 @@ export const QualificationPlan: React.FC<QualificationPlanProps> = ({ initialEmp
               Timeline
             </Tabs.Tab>
             <Tabs.Tab
+              value="forecast"
+              leftSection={<IconTrendingUp size={16} />}
+            >
+              Prognose
+            </Tabs.Tab>
+            <Tabs.Tab
               value="active"
               leftSection={<IconList size={16} />}
             >
@@ -362,6 +370,10 @@ export const QualificationPlan: React.FC<QualificationPlanProps> = ({ initialEmp
 
           <Tabs.Panel value="timeline">
             <GanttTimeline onViewPlan={handleViewPlan} />
+          </Tabs.Panel>
+
+          <Tabs.Panel value="forecast">
+            <ForecastView />
           </Tabs.Panel>
 
           <Tabs.Panel value="active">

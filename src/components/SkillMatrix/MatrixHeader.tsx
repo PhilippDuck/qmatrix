@@ -22,7 +22,7 @@ interface MatrixHeaderProps {
   skills: Skill[];
   getAssessment: (empId: string, skillId: string) => Assessment | undefined;
   onEditEmployee: (employeeId: string) => void;
-  showMaxValues: boolean;
+  showMaxValues: 'avg' | 'max' | 'fulfillment';
   isEditMode: boolean;
   onAddEmployee: () => void;
   onNavigate?: (tab: string, params?: any) => void;
@@ -526,12 +526,30 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
                   backgroundColor: col.backgroundColor || "var(--mantine-color-body)",
                 }}
               >
-                {showMaxValues ? (
+                {showMaxValues === 'max' ? (
                   <Tooltip label={`Ø XP: ${avgXP}`} withArrow>
                     <Badge size="xs" variant="light" color="blue" mb="xs" mt={8} style={{ cursor: 'help' }}>
                       Ø {avgXP} XP
                     </Badge>
                   </Tooltip>
+                ) : showMaxValues === 'fulfillment' ? (
+                  (() => {
+                    const fuls = groupEmployees.map(e => {
+                      let total = 0, targets = 0;
+                      skills.forEach(s => {
+                        const asm = getAssessment(e.id!, s.id!);
+                        const t = asm?.targetLevel || 0;
+                        if (t > 0) { targets += t; total += (asm?.level || 0); }
+                      });
+                      return targets > 0 ? Math.round((total / targets) * 100) : null;
+                    }).filter((v): v is number => v !== null);
+                    const gFul = fuls.length > 0 ? Math.round(fuls.reduce((a, b) => a + b, 0) / fuls.length) : null;
+                    return (
+                      <Badge size="xs" variant="light" color={gFul === null ? 'gray' : gFul >= 100 ? 'teal' : 'orange'} mb="xs" mt={8}>
+                        {gFul === null ? 'N/A' : `Ø ${gFul}%`}
+                      </Badge>
+                    );
+                  })()
                 ) : (
                   <Badge
                     size="xs"
@@ -594,8 +612,7 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
                     transition: "background-color 0.15s ease",
                   }}
                 >
-                  {/* Toggle between Total XP and Average based on showMaxValues */}
-                  {showMaxValues ? (
+                  {showMaxValues === 'max' ? (
                     (() => {
                       const totalXP = skills.reduce((sum, skill) => {
                         const assessment = getAssessment(emp.id!, skill.id!);
@@ -608,6 +625,26 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
                             {totalXP} XP
                           </Badge>
                         </Tooltip>
+                      );
+                    })()
+                  ) : showMaxValues === 'fulfillment' ? (
+                    (() => {
+                      let total = 0, targets = 0;
+                      skills.forEach(s => {
+                        const asm = getAssessment(emp.id!, s.id!);
+                        const t = asm?.targetLevel || 0;
+                        if (t > 0) { targets += t; total += (asm?.level || 0); }
+                      });
+                      const ful = targets > 0 ? Math.round((total / targets) * 100) : null;
+                      return (
+                        <Badge
+                          size="xs"
+                          variant="outline"
+                          color={ful === null ? 'gray' : ful >= 100 ? 'teal' : 'orange'}
+                          mb="xs"
+                        >
+                          {ful === null ? '-' : `${ful}%`}
+                        </Badge>
                       );
                     })()
                   ) : (

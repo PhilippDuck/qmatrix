@@ -127,7 +127,8 @@ export interface SavedView {
     };
     groupingMode: 'none' | 'department' | 'role';
     settings: {
-      showMaxValues: boolean;
+      showMaxValues?: boolean; // DEPRECATED – kept for backward compatibility
+      metricMode?: 'avg' | 'max' | 'fulfillment';
       hideEmployees: boolean;
       hideNaColumns?: boolean; // Optional for backward compatibility
       showInactive?: boolean; // [NEW] Optional for backward compatibility

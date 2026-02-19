@@ -21,7 +21,7 @@ interface MatrixSkillRowProps {
   calculateSkillAverage: (skillId: string) => number | null;
   onLevelChange: (employeeId: string, skillId: string, newLevel: number) => void;
   onTargetLevelChange: (employeeId: string, skillId: string, targetLevel: number | undefined) => void;
-  showMaxValues: boolean;
+  showMaxValues: 'avg' | 'max' | 'fulfillment';
   onEditSkill: (skillId: string) => void;
   isEditMode: boolean;
   depth?: number;
@@ -122,12 +122,12 @@ export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = ({
 
         <Group gap={4} align="center">
           <Group gap={4} align="center">
-            {!showMaxValues ? (
+            {showMaxValues === 'avg' ? (
               // Average Display
               <Text style={{ fontSize: "10px" }} c={getScoreColor(skillAvg)}>
                 {skillAvg === null ? "N/A" : `${skillAvg}%`}
               </Text>
-            ) : (
+            ) : showMaxValues === 'max' ? (
               // Max Value Display
               maxLevelVal > 0 ? (
                 <Tooltip label={`Höchstes Level: ${maxLabel}`} withArrow>
@@ -138,6 +138,25 @@ export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = ({
               ) : (
                 <Text style={{ fontSize: "10px" }} c="dimmed">-</Text>
               )
+            ) : (
+              // Fulfillment Display
+              (() => {
+                const scores: number[] = [];
+                employees.forEach(e => {
+                  const asm = getAssessment(e.id!, skill.id!);
+                  const target = asm?.targetLevel;
+                  if (target && target > 0 && asm && asm.level >= 0) {
+                    scores.push(Math.min(100, Math.round((asm.level / target) * 100)));
+                  }
+                });
+                const ful = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
+                const fulColor = ful === null ? 'dimmed' : ful >= 100 ? 'teal' : ful >= 67 ? 'yellow' : 'red';
+                return (
+                  <Text style={{ fontSize: "10px" }} c={fulColor}>
+                    {ful === null ? "-" : `${ful}%`}
+                  </Text>
+                );
+              })()
             )}
           </Group>
         </Group>
@@ -169,7 +188,7 @@ export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = ({
                 borderBottom: "1px solid var(--mantine-color-default-border)",
               }}
             >
-              {showMaxValues ? (
+              {showMaxValues === 'max' ? (
                 max > 0 ? (
                   <Badge size="xs" variant="outline" color={getScoreColor(max)} style={{ padding: '0 4px', height: '16px' }}>
                     {max}%
@@ -177,6 +196,20 @@ export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = ({
                 ) : (
                   <Text size="xs" c="dimmed">-</Text>
                 )
+              ) : showMaxValues === 'fulfillment' ? (
+                (() => {
+                  const scores: number[] = [];
+                  col.employeeIds.forEach(eId => {
+                    const asm = getAssessment(eId, skill.id!);
+                    const target = asm?.targetLevel;
+                    if (target && target > 0 && asm && asm.level >= 0) {
+                      scores.push(Math.min(100, Math.round((asm.level / target) * 100)));
+                    }
+                  });
+                  const ful = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
+                  const fulColor = ful === null ? 'dimmed' : ful >= 100 ? 'teal' : ful >= 67 ? 'yellow' : 'red';
+                  return <Text size="xs" fw={500} c={fulColor}>{ful === null ? "-" : `${ful}%`}</Text>;
+                })()
               ) : (
                 <Text size="xs" fw={500} c={getScoreColor(avg)}>
                   {avg === 0 ? "-" : `${avg}%`}
