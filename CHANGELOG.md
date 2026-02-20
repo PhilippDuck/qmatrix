@@ -1,4 +1,11 @@
 
+## [2.12.1] - 2026-02-20
+
+### UI & Layout Anpassungen
+- **Dashboard**: Layout-Korrektur für die Dashboard-Kacheln, sodass diese im Grid die volle Höhe einnehmen und Lücken vermieden werden.
+- **Skill-Matrix**: Änderung der Gruppen-XP-Anzeige im Spaltenkopf von einem Durchschnitt auf die Gesamtsumme (∑) zur besseren Erkennbarkeit der "Skill-Masse". Vertikale Ausrichtung des Summensymbols optimiert.
+- **Skill-Matrix**: Bugfix bei der Mitarbeiterfilterung nach Rollen durch Behebung einer fehlerhaften Objekt-vs-String-Abfrage.
+
 ## [2.12.0] - 2026-02-20
 
 ### Architektur & Refactoring (Performance & Wartbarkeit)

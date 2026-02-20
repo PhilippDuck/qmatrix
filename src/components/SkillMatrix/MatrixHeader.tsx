@@ -529,7 +529,8 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
                 {showMaxValues === 'max' ? (
                   <Tooltip label={`Gesamt-XP der Gruppe: ${totalXP}`} withArrow>
                     <Badge size="xs" variant="light" color="blue" mb="xs" mt={8} style={{ cursor: 'help' }}>
-                      ∑ {totalXP} XP
+                      <span style={{ position: 'relative', bottom: '1px', marginRight: '3px', fontSize: '12px' }}>∑</span>
+                      {totalXP} XP
                     </Badge>
                   </Tooltip>
                 ) : showMaxValues === 'fulfillment' ? (
@@ -684,7 +685,7 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
                     </Text>
                     {emp.roles && emp.roles.length > 0 && (
                       <Group gap={2} wrap="nowrap" style={{ flexShrink: 0 }}>
-                        {emp.roles.slice(0, 3).map((roleName, idx) => {
+                        {emp.roles.slice(0, 3).map((roleName: string, idx: number) => {
                           const role = roles.find(r => r.name === roleName);
                           const RoleIcon = getIconByName(role?.icon);
                           return (
