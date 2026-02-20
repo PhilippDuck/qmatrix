@@ -42,7 +42,7 @@ import {
   IconHistory,
 } from "@tabler/icons-react";
 
-import { DataProvider, useData } from "./context/DataContext";
+import { useStore } from "./store/useStore";
 import { UnifiedDataView } from "./components/UnifiedDataView";
 import { SkillMatrix } from "./components/SkillMatrix";
 import { DataManagement } from "./components/DataManagement";
@@ -115,7 +115,11 @@ function AnonymousToggle() {
 }
 
 function AppContent() {
-  const { loading, exportData, projectTitle, updateProjectTitle, changeHistory, undoChange } = useData();
+  const { loading, exportData, projectTitle, updateProjectTitle, changeHistory, undoChange, initDb } = useStore();
+
+  useEffect(() => {
+    initDb();
+  }, [initDb]);
   const computedColorScheme = useComputedColorScheme("light");
   const [activeTab, setActiveTab] = useLocalStorage({
     key: 'skillgrid-active-tab',
@@ -500,9 +504,7 @@ function App() {
       <Notifications />
       <ModalsProvider>
         <PrivacyProvider>
-          <DataProvider>
-            <AppContent />
-          </DataProvider>
+          <AppContent />
         </PrivacyProvider>
       </ModalsProvider>
     </MantineProvider>

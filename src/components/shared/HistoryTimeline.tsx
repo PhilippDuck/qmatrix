@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from "react";
 import { Timeline, Text, ThemeIcon, Loader, Center } from "@mantine/core";
 import { IconArrowUp, IconArrowDown, IconStar } from "@tabler/icons-react";
-import { useData, AssessmentLogEntry } from "../../context/DataContext";
+import { AssessmentLogEntry } from "../../context/DataContext";
+import { useStore } from "../../store/useStore";
 
 interface HistoryTimelineProps {
     employeeId: string;
 }
 
 export const HistoryTimeline: React.FC<HistoryTimelineProps> = ({ employeeId }) => {
-    const { getHistory, skills, categories, subcategories } = useData();
+    const { getHistory, skills, categories, subcategories } = useStore();
     const [history, setHistory] = useState<AssessmentLogEntry[]>([]);
     const [loading, setLoading] = useState(true);
 

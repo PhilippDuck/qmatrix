@@ -3,7 +3,8 @@ import { Badge, Text, HoverCard, Stack, Group, Divider, ThemeIcon, Box, SimpleGr
 import { IconBuilding, IconHistory, IconTrendingUp, IconTrendingDown, IconMinus, IconPencil, IconPlus, IconDotsVertical, IconCertificate, IconInfoCircle, IconSortAscending, IconSortDescending, IconArrowsSort } from "@tabler/icons-react";
 import { MATRIX_LAYOUT } from "../../constants/skillLevels";
 import { getScoreColor, getMaxRoleTargetForSkill } from "../../utils/skillCalculations";
-import { Employee, Skill, Assessment, useData, AssessmentLogEntry } from "../../context/DataContext";
+import { Employee, Skill, Assessment, AssessmentLogEntry } from "../../context/DataContext";
+import { useStore } from "../../store/useStore";
 import { getIconByName } from "../shared/RoleIconPicker";
 import { usePrivacy } from "../../context/PrivacyContext";
 import { useEmployeeMetrics } from "../../hooks/useEmployeeMetrics";
@@ -41,7 +42,7 @@ const EmployeeInfoCard: React.FC<{
   onEdit: () => void;
   onNavigate?: (tab: string, params?: any) => void;
 }> = ({ emp, avg, skills, getAssessment, onEdit, onNavigate }) => {
-  const { getHistory, categories, subcategories, roles, qualificationMeasures, qualificationPlans } = useData();
+  const { getHistory, categories, subcategories, roles, qualificationMeasures, qualificationPlans } = useStore();
   const { anonymizeName } = usePrivacy();
   const [history, setHistory] = useState<AssessmentLogEntry[]>([]);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -359,7 +360,7 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
   onSkillSortChange,
 }) => {
   const { anonymizeName } = usePrivacy();
-  const { roles, qualificationPlans } = useData();
+  const { roles, qualificationPlans } = useStore();
   const { cellSize, headerHeight } = MATRIX_LAYOUT;
   const effectiveLabelWidth = labelWidth || MATRIX_LAYOUT.labelWidth;
 

@@ -3,7 +3,7 @@ import { Box, Group, Title, Tabs, Badge, ActionIcon, Tooltip, Text } from "@mant
 import { useDisclosure } from "@mantine/hooks";
 import { modals } from "@mantine/modals";
 import { IconList, IconHierarchy, IconClipboardOff } from "@tabler/icons-react";
-import { useData } from "../../context/DataContext";
+import { useStore } from "../../store/useStore";
 import { CategoryColumn } from "./CategoryColumn";
 import { SubcategoryColumn } from "./SubcategoryColumn";
 import { SkillColumn } from "./SkillColumn";
@@ -28,7 +28,7 @@ export const CategoryManager: React.FC = () => {
     roles,
     skills,
     subcategories,
-  } = useData();
+  } = useStore();
 
   const [opened, { open, close }] = useDisclosure(false);
   const [formMode, setFormMode] = useState<FormMode>("category");
@@ -412,7 +412,7 @@ export const CategoryManager: React.FC = () => {
               subcategories={subcategories}
               skills={skills}
               roles={roles}
-              projectTitle={useData().projectTitle} // Pass projectTitle
+              projectTitle={useStore().projectTitle} // Pass projectTitle
               onEditCategory={(cat) => openForm("category", cat.id!, cat.name, cat.description || "")}
               onEditSubCategory={(sub) => {
                 setSelectedCategory(sub.categoryId);

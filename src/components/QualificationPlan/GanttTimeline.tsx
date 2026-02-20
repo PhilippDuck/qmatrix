@@ -22,15 +22,8 @@ import {
     IconPlayerPlay,
     IconCircleX,
 } from "@tabler/icons-react";
-import {
-    useData,
-    QualificationMeasure,
-    QualificationPlan,
-    Employee,
-    Skill,
-    Category,
-    SubCategory,
-} from "../../context/DataContext";
+import { QualificationMeasure, QualificationPlan, Employee, Skill, Category, SubCategory } from "../../context/DataContext";
+import { useStore } from "../../store/useStore";
 import { usePrivacy } from "../../context/PrivacyContext";
 
 // ─── Helpers ────────────────────────────────────────────────
@@ -132,7 +125,7 @@ export const GanttTimeline: React.FC<GanttTimelineProps> = ({ onViewPlan, planId
         skills,
         categories,
         subcategories,
-    } = useData();
+    } = useStore();
     const { anonymizeName } = usePrivacy();
 
     const [monthOffset, setMonthOffset] = useState(0);

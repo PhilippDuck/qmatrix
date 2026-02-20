@@ -30,11 +30,8 @@ import {
   IconAlertCircle,
   IconDownload,
 } from "@tabler/icons-react";
-import {
-  useData,
-  QualificationPlan,
-  QualificationMeasure,
-} from "../../context/DataContext";
+import { QualificationPlan, QualificationMeasure } from "../../context/DataContext";
+import { useStore } from "../../store/useStore";
 import { exportQualificationPlanPDF } from "../../services/pdfReportService";
 import { usePrivacy } from "../../context/PrivacyContext";
 import { SkillGapAnalysis } from "./SkillGapAnalysis";
@@ -77,7 +74,7 @@ export const PlanDetail: React.FC<PlanDetailProps> = ({
     updateQualificationMeasure,
     deleteQualificationMeasure,
     setAssessment,
-  } = useData();
+  } = useStore();
   const { anonymizeName } = usePrivacy();
 
   const [activeTab, setActiveTab] = useState<string | null>("measures");

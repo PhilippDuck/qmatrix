@@ -22,7 +22,7 @@ import { modals } from "@mantine/modals";
 import { notifications } from "@mantine/notifications";
 import { IconPlus, IconHistory, IconUser } from "@tabler/icons-react";
 import { HistoryTimeline } from "./HistoryTimeline";
-import { useData } from "../../context/DataContext";
+import { useStore } from "../../store/useStore";
 
 interface EmployeeDrawerProps {
   opened: boolean;
@@ -43,7 +43,7 @@ export const EmployeeDrawer: React.FC<EmployeeDrawerProps> = ({
   isEditing = false,
   employeeId,
 }) => {
-  const { employees, departments, roles, addDepartment, addRole } = useData();
+  const { employees, departments, roles, addDepartment, addRole } = useStore();
   const [formData, setFormData] = useState({
     name: "",
     department: "",

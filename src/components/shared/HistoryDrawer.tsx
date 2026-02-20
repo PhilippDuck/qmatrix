@@ -28,7 +28,8 @@ import {
   IconMinus,
   IconEye,
 } from '@tabler/icons-react';
-import { useData, ChangeHistoryEntry, EntityType, Employee, Skill, SubCategory, Category, Department, EmployeeRole } from '../../context/DataContext';
+import { ChangeHistoryEntry, EntityType, Employee, Skill, SubCategory, Category, Department, EmployeeRole } from "../../context/DataContext";
+import { useStore } from "../../store/useStore";
 
 interface HistoryDrawerProps {
   opened: boolean;
@@ -389,7 +390,7 @@ function HistoryEntryCard({ entry, onUndo, ctx }: { entry: ChangeHistoryEntry; o
 }
 
 export function HistoryDrawer({ opened, onClose }: HistoryDrawerProps) {
-  const { changeHistory, undoChange, employees, skills, subcategories, categories, departments, roles } = useData();
+  const { changeHistory, undoChange, employees, skills, subcategories, categories, departments, roles } = useStore();
 
   const ctx: DataContext = { employees, skills, subcategories, categories, departments, roles };
 

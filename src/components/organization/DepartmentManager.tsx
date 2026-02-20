@@ -17,12 +17,12 @@ import {
 } from "@mantine/core";
 import { IconPlus, IconTrash, IconBuilding, IconEdit } from "@tabler/icons-react";
 import { useDisclosure } from "@mantine/hooks";
-import { useData } from "../../context/DataContext";
+import { useStore } from "../../store/useStore";
 import { usePrivacy } from "../../context/PrivacyContext";
 import { Department } from "../../services/indexeddb";
 
 export const DepartmentManager: React.FC = () => {
-    const { departments, employees, addDepartment, deleteDepartment, updateDepartment } = useData();
+    const { departments, employees, addDepartment, deleteDepartment, updateDepartment } = useStore();
     const { anonymizeName, anonymizeInitials } = usePrivacy();
     const [opened, { open, close }] = useDisclosure(false);
     const [editingId, setEditingId] = useState<string | null>(null);

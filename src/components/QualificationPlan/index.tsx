@@ -33,7 +33,8 @@ import {
   IconCalendar,
   IconTrendingUp,
 } from "@tabler/icons-react";
-import { useData, QualificationPlan as QualificationPlanType } from "../../context/DataContext";
+import { QualificationPlan as QualificationPlanType } from "../../context/DataContext";
+import { useStore } from "../../store/useStore";
 import { usePrivacy } from "../../context/PrivacyContext";
 import { PlanForm } from "./PlanForm";
 import { PlanDetail } from "./PlanDetail";
@@ -56,7 +57,7 @@ export const QualificationPlan: React.FC<QualificationPlanProps> = ({ initialEmp
     updateQualificationPlan,
     getSkillGapsForEmployee,
     assessments, // Import this
-  } = useData();
+  } = useStore();
   const { anonymizeName } = usePrivacy();
 
   const [activeTab, setActiveTab] = useState<string | null>(() => {

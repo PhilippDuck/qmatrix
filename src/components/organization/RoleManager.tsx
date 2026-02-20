@@ -24,7 +24,7 @@ import {
 } from "@mantine/core";
 import { IconPlus, IconTrash, IconBadge, IconArrowUpRight, IconEdit, IconList, IconHierarchy, IconX } from "@tabler/icons-react";
 import { useDisclosure } from "@mantine/hooks";
-import { useData } from "../../context/DataContext";
+import { useStore } from "../../store/useStore";
 import { EmployeeRole } from "../../services/indexeddb";
 import { RoleOrgChart } from "./RoleOrgChart";
 import { RoleIconPicker, getIconByName } from "../shared/RoleIconPicker";
@@ -62,7 +62,7 @@ const sliderMarksWithTooltips = [0, 25, 50, 75, 100].map(val => {
 });
 
 export const RoleManager: React.FC = () => {
-    const { roles, skills, employees, categories, subcategories, addRole, updateRole, deleteRole, updateSkillsForRole } = useData();
+    const { roles, skills, employees, categories, subcategories, addRole, updateRole, deleteRole, updateSkillsForRole } = useStore();
     const [opened, { open, close }] = useDisclosure(false);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [name, setName] = useState("");

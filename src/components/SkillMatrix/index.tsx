@@ -31,7 +31,8 @@ import {
   IconColumnsOff,
   IconUserOff,
 } from "@tabler/icons-react";
-import { useData, Employee, SavedView } from "../../context/DataContext";
+import { Employee, SavedView } from "../../context/DataContext";
+import { useStore } from "../../store/useStore";
 import { ViewTabs } from "./ViewTabs";
 import { SaveViewModal } from "./SaveViewModal";
 import { CreateContextMenu } from "../shared/CreateContextMenu";
@@ -90,7 +91,7 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
     deleteEmployee,
     importData,
     assessments,
-  } = useData();
+  } = useStore();
 
   const [focusEmployeeId, setFocusEmployeeId] = useState<string | null>(null);
   const [hoveredSkillId, setHoveredSkillId] = useState<string | null>(null);

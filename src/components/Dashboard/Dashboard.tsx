@@ -43,7 +43,8 @@ import {
     IconEyeOff,
     IconSettings,
 } from "@tabler/icons-react";
-import { useData, AssessmentLogEntry } from "../../context/DataContext";
+import { AssessmentLogEntry } from "../../context/DataContext";
+import { useStore } from "../../store/useStore";
 import { getScoreColor } from "../../utils/skillCalculations";
 import { getIconByName } from "../shared/RoleIconPicker";
 import {
@@ -141,7 +142,7 @@ export const Dashboard: React.FC = () => {
         departments,
         roles,
         getAllHistory
-    } = useData();
+    } = useStore();
     const { colorScheme } = useMantineColorScheme();
     const isDark = colorScheme === 'dark';
 

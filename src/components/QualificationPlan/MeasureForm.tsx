@@ -30,11 +30,8 @@ import {
   IconUser,
   IconBook,
 } from "@tabler/icons-react";
-import {
-  useData,
-  QualificationMeasure,
-  SkillGap,
-} from "../../context/DataContext";
+import { QualificationMeasure, SkillGap } from "../../context/DataContext";
+import { useStore } from "../../store/useStore";
 import { usePrivacy } from "../../context/PrivacyContext";
 import { MentorSuggestion } from "./MentorSuggestion";
 
@@ -66,7 +63,7 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({
     getPotentialMentors,
     qualificationMeasures,
     qualificationPlans,
-  } = useData();
+  } = useStore();
   const { anonymizeName } = usePrivacy();
   const computedColorScheme = useComputedColorScheme("light");
 
