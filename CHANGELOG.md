@@ -1,4 +1,11 @@
 
+## [2.11.3] - 2026-02-20
+
+### Neue Funktionen & Benutzeroberfläche
+- **Rollen-Manager**: Die Detailbeschreibungen ("Legende") für die einzelnen Soll-Level wurden direkt als anschauliche Hover-Tooltips an den Schiebereglern integriert, was separaten Legenden-Platz spart.
+- **Rollen-Icons**: Die Auswahl an Icons für Rollen wurde deutlich ausgebaut, u.a. um technische (Roboter, Motor, Werkzeug, Anlage, Netzwerk) und geschäftliche (Finanzen, Chart) Symbole.
+- **Navigation (Qualifizierungsplan)**: Der Zurück-Pfeil aus der Detailansicht springt nun korrekt auf den Tab "Übersicht" anstatt kurzfristig die Navigation zu verwirren.
+
 ## [2.11.2] - 2026-02-19
 
 ### Performance

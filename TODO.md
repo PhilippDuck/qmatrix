@@ -2,12 +2,14 @@
 
 ## Verbesserungen
 
-- [ ] Rollen anlegen und Soll definieren Legende in tooltip integrieren (hovern)
-- [ ] Orgaqnigramm kacheln passen sich nach Inhalt an.
+- [x] Rollen anlegen und Soll definieren Legende in tooltip integrieren (hovern)
+- [x] Orgaqnigramm kacheln passen sich nach Inhalt an.
 - [ ] Dashboard überarbeiten?
-- [ ] Metrik Matrix, Rollensoll erfüllung
-- [ ] Demodaten?
+- [x] Metrik Matrix, Rollensoll erfüllung
 - [ ] Erstellen mehrerer gleicher Unterkategorien in Unterkategrien
+- [ ] Assestiertes Anlegen einer Qualimatrix
+- [ ] Dokumentation integriert
+- [ ] Alertsystem, hinweise über potentielle Optimierungen, Missstände
 
 ### Abgeschlossen
 
@@ -38,7 +40,7 @@
 
 ## Bugs
 
-- [ ] Wird das kopieren und einfügen in Historie aufgenommen?
+- [x] Wird das kopieren und einfügen in Historie aufgenommen?
 
 ### Abgeschlossen
 

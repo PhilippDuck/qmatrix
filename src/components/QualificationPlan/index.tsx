@@ -225,7 +225,7 @@ export const QualificationPlan: React.FC<QualificationPlanProps> = ({ initialEmp
             plan={selectedPlan}
             onBack={() => {
               setSelectedPlanId(null);
-              setActiveTab("active");
+              setActiveTab("overview");
             }}
             onEdit={() => handleEditPlan(selectedPlan)}
           />

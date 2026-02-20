@@ -20,6 +20,7 @@ import {
     Badge,
     Modal,
     Box,
+    Tooltip,
 } from "@mantine/core";
 import { IconPlus, IconTrash, IconBadge, IconArrowUpRight, IconEdit, IconList, IconHierarchy, IconX } from "@tabler/icons-react";
 import { useDisclosure } from "@mantine/hooks";
@@ -27,14 +28,42 @@ import { useData } from "../../context/DataContext";
 import { EmployeeRole } from "../../services/indexeddb";
 import { RoleOrgChart } from "./RoleOrgChart";
 import { RoleIconPicker, getIconByName } from "../shared/RoleIconPicker";
-import { MatrixLegend } from "../SkillMatrix/MatrixLegend";
 import { LEVELS } from "../../constants/skillLevels";
 
+const sliderMarksWithTooltips = [0, 25, 50, 75, 100].map(val => {
+    const lvl = LEVELS.find((l) => l.value === val);
+    return {
+        value: val,
+        label: (
+            <Tooltip
+                label={
+                    lvl ? (
+                        <Stack gap={2}>
+                            <Text size="xs" fw={700}>
+                                {lvl.title}
+                            </Text>
+                            {lvl.description && <Text size="xs">{lvl.description}</Text>}
+                        </Stack>
+                    ) : (
+                        `${val}%`
+                    )
+                }
+                position="top"
+                withArrow
+                multiline
+                w={200}
+                withinPortal
+                openDelay={200}
+            >
+                <div style={{ cursor: "help", padding: "4px", pointerEvents: "auto" }}>{val}</div>
+            </Tooltip>
+        )
+    };
+});
 
 export const RoleManager: React.FC = () => {
     const { roles, skills, employees, categories, subcategories, addRole, updateRole, deleteRole, updateSkillsForRole } = useData();
     const [opened, { open, close }] = useDisclosure(false);
-    const [legendOpened, { toggle: toggleLegend }] = useDisclosure(false);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [name, setName] = useState("");
     const [inheritsFrom, setInheritsFrom] = useState<string | null>(null);
@@ -441,18 +470,12 @@ export const RoleManager: React.FC = () => {
                                                                             max={100}
                                                                             step={25}
                                                                             color={LEVELS.find(l => l.value === req.level)?.color || "gray"}
-                                                                            marks={[
-                                                                                { value: 0, label: '0' },
-                                                                                { value: 25, label: '25' },
-                                                                                { value: 50, label: '50' },
-                                                                                { value: 75, label: '75' },
-                                                                                { value: 100, label: '100' },
-                                                                            ]}
+                                                                            marks={sliderMarksWithTooltips}
                                                                             value={req.level}
                                                                             onChange={(val) => {
                                                                                 setRequiredSkills(prev => prev.map(p => p.skillId === req.skillId ? { ...p, level: val } : p));
                                                                             }}
-                                                                            label={(val) => LEVELS.find((l) => l.value === val)?.title || `${val}%`}
+                                                                            label={null}
                                                                         />
                                                                         <ActionIcon
                                                                             color="red" variant="subtle" size="sm"
@@ -502,13 +525,7 @@ export const RoleManager: React.FC = () => {
                                                                                 max={100}
                                                                                 step={25}
                                                                                 color="gray"
-                                                                                marks={[
-                                                                                    { value: 0, label: '0' },
-                                                                                    { value: 25, label: '25' },
-                                                                                    { value: 50, label: '50' },
-                                                                                    { value: 75, label: '75' },
-                                                                                    { value: 100, label: '100' },
-                                                                                ]}
+                                                                                marks={sliderMarksWithTooltips}
                                                                                 value={req.level}
                                                                                 onChange={(val) => {
                                                                                     // Adding or updating in direct skills as an override
@@ -521,7 +538,7 @@ export const RoleManager: React.FC = () => {
                                                                                         }
                                                                                     });
                                                                                 }}
-                                                                                label={(val) => LEVELS.find((l) => l.value === val)?.title || `${val}%`}
+                                                                                label={null}
                                                                             />
                                                                             <div style={{ width: 28 }} /> {/* Spacer for symmetry */}
                                                                         </div>
@@ -539,8 +556,6 @@ export const RoleManager: React.FC = () => {
                                         Wähle oben Skills aus oder nutze die Vererbung, um Soll-Level zu definieren.
                                     </Text>
                                 )}
-
-                                <MatrixLegend opened={legendOpened} onToggle={toggleLegend} />
                             </Stack>
 
                             <Stack gap={4}>
