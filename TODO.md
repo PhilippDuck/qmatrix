@@ -2,6 +2,7 @@
 
 ## Verbesserungen
 
+- [ ] Rollen anlegen und Soll definieren Legende in tooltip integrieren (hovern)
 - [ ] Orgaqnigramm kacheln passen sich nach Inhalt an.
 - [ ] Dashboard überarbeiten?
 - [ ] Metrik Matrix, Rollensoll erfüllung
