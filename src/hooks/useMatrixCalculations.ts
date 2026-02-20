@@ -23,7 +23,7 @@ export interface UseMatrixCalculationsProps {
     employeeSort: 'asc' | 'desc' | null;
     skillSort: 'asc' | 'desc' | null;
     metricMode: MetricMode;
-    showMaxValues: boolean;
+    showMaxValues: MetricMode;
     groupingMode: 'none' | 'department' | 'role';
     hideEmployees: boolean;
 }
@@ -66,7 +66,7 @@ export function useMatrixCalculations({
         if (employeeSort) {
             const allSkillIds = skills.map(s => s.id!);
             result = [...result].sort((a, b) => {
-                if (showMaxValues) {
+                if (showMaxValues === 'max') {
                     const calcXP = (empId: string, empRoles: string[] | undefined) => {
                         let total = 0;
                         allSkillIds.forEach(sId => {
@@ -81,6 +81,24 @@ export function useMatrixCalculations({
                     const valA = calcXP(a.id!, a.roles);
                     const valB = calcXP(b.id!, b.roles);
                     return employeeSort === 'asc' ? valA - valB : valB - valA;
+                } else if (showMaxValues === 'fulfillment') {
+                    const calcFulfillment = (empId: string, empRoles: string[] | undefined) => {
+                        let total = 0, targets = 0;
+                        allSkillIds.forEach(sId => {
+                            const asm = getAssessment(empId, sId);
+                            const individualT = asm?.targetLevel || 0;
+                            const roleT = getMaxRoleTargetForSkill(empRoles, sId, roles) || 0;
+                            const t = Math.max(individualT, roleT);
+                            if (t > 0) {
+                                targets += t;
+                                total += Math.max(asm?.level || 0, 0);
+                            }
+                        });
+                        return targets > 0 ? (total / targets) * 100 : -1;
+                    };
+                    const fulA = calcFulfillment(a.id!, a.roles);
+                    const fulB = calcFulfillment(b.id!, b.roles);
+                    return employeeSort === 'asc' ? fulA - fulB : fulB - fulA;
                 } else {
                     const calcAvg = (empId: string, empRoles: string[] | undefined) => {
                         let total = 0, count = 0;
@@ -149,7 +167,7 @@ export function useMatrixCalculations({
 
         if (skillSort) {
             result = result.sort((a, b) => {
-                if (showMaxValues) {
+                if (showMaxValues === 'max') {
                     const calcMaxAvg = (catId: string) => {
                         const catSkillIds = getAllSkillIdsForCategory(catId, subcategories, skills);
                         if (catSkillIds.length === 0) return 0;
@@ -164,6 +182,29 @@ export function useMatrixCalculations({
                     const valA = calcMaxAvg(a.id!);
                     const valB = calcMaxAvg(b.id!);
                     return skillSort === 'asc' ? valA - valB : valB - valA;
+                } else if (showMaxValues === 'fulfillment') {
+                    const calcCatFulfillment = (catId: string) => {
+                        const catSkillIds = getAllSkillIdsForCategory(catId, subcategories, skills);
+                        if (catSkillIds.length === 0) return 0;
+
+                        let total = 0, targets = 0;
+                        displayedEmployees.forEach(emp => {
+                            catSkillIds.forEach(sId => {
+                                const asm = getAssessment(emp.id!, sId);
+                                const individualT = asm?.targetLevel || 0;
+                                const roleT = getMaxRoleTargetForSkill(emp.roles, sId, roles) || 0;
+                                const t = Math.max(individualT, roleT);
+                                if (t > 0) {
+                                    targets += t;
+                                    total += Math.max(asm?.level || 0, 0);
+                                }
+                            });
+                        });
+                        return targets > 0 ? (total / targets) * 100 : -1;
+                    };
+                    const fulA = calcCatFulfillment(a.id!);
+                    const fulB = calcCatFulfillment(b.id!);
+                    return skillSort === 'asc' ? fulA - fulB : fulB - fulA;
                 } else {
                     const calcCatAvg = (catId: string) => {
                         const catSkillIds = getAllSkillIdsForCategory(catId, subcategories, skills);
@@ -191,32 +232,87 @@ export function useMatrixCalculations({
         }
 
         const groups = new Map<string, Employee[]>();
-        const noGroup: Employee[] = [];
 
         displayedEmployees.forEach(e => {
             if (groupingMode === 'department') {
-                const key = e.department;
-                if (key) {
-                    if (!groups.has(key)) groups.set(key, []);
-                    groups.get(key)!.push(e);
-                } else {
-                    noGroup.push(e);
-                }
+                const key = e.department || 'Sonstige';
+                if (!groups.has(key)) groups.set(key, []);
+                groups.get(key)!.push(e);
             } else {
                 const employeeRoles = e.roles || [];
-                if (employeeRoles.length > 0) {
-                    const primaryRole = employeeRoles[0];
-                    if (!groups.has(primaryRole)) groups.set(primaryRole, []);
-                    groups.get(primaryRole)!.push(e);
-                } else {
-                    noGroup.push(e);
-                }
+                const key = employeeRoles.length > 0 ? employeeRoles[0] : 'Sonstige';
+                if (!groups.has(key)) groups.set(key, []);
+                groups.get(key)!.push(e);
             }
         });
 
+        const allSkillIds = skills.map(s => s.id!);
+
         const sortedKeys = Array.from(groups.keys()).sort((a, b) => {
-            if (employeeSort === 'desc') return a.localeCompare(b, 'de');
-            return b.localeCompare(a, 'de');
+            if (!employeeSort) {
+                return a.localeCompare(b, 'de');
+            }
+
+            const empsA = groups.get(a) || [];
+            const empsB = groups.get(b) || [];
+
+            if (showMaxValues === 'max') {
+                const getXP = (emps: Employee[]) => {
+                    let totalXP = 0;
+                    emps.forEach(e => {
+                        let eXP = 0;
+                        allSkillIds.forEach(sId => {
+                            const asm = getAssessment(e.id!, sId);
+                            const val = asm?.level;
+                            if (val && val > 0) eXP += val;
+                        });
+                        totalXP += eXP;
+                    });
+                    return totalXP;
+                };
+                const valA = getXP(empsA);
+                const valB = getXP(empsB);
+                return employeeSort === 'asc' ? valA - valB : valB - valA;
+
+            } else if (showMaxValues === 'fulfillment') {
+                const getFul = (emps: Employee[]) => {
+                    const fuls = emps.map(e => {
+                        let total = 0, targets = 0;
+                        allSkillIds.forEach(sId => {
+                            const asm = getAssessment(e.id!, sId);
+                            const individualT = asm?.targetLevel || 0;
+                            const roleT = getMaxRoleTargetForSkill(e.roles, sId, roles) || 0;
+                            const t = Math.max(individualT, roleT);
+                            if (t > 0) {
+                                targets += t;
+                                total += Math.max(asm?.level || 0, 0);
+                            }
+                        });
+                        return targets > 0 ? (total / targets) * 100 : null;
+                    }).filter((v): v is number => v !== null);
+
+                    return fuls.length > 0 ? fuls.reduce((a, b) => a + b, 0) / fuls.length : -1;
+                };
+                const fulA = getFul(empsA);
+                const fulB = getFul(empsB);
+                return employeeSort === 'asc' ? fulA - fulB : fulB - fulA;
+
+            } else {
+                const getAvg = (emps: Employee[]) => {
+                    let totalAvg = 0, countAvg = 0;
+                    emps.forEach(e => {
+                        const val = calculateAverage(allSkillIds, e.id!);
+                        if (val !== null) {
+                            totalAvg += val;
+                            countAvg++;
+                        }
+                    });
+                    return countAvg > 0 ? totalAvg / countAvg : -1;
+                };
+                const avgA = getAvg(empsA);
+                const avgB = getAvg(empsB);
+                return employeeSort === 'asc' ? avgA - avgB : avgB - avgA;
+            }
         });
         const columns: MatrixColumn[] = [];
 
@@ -231,35 +327,14 @@ export function useMatrixCalculations({
             isDark ? 'rgba(21, 170, 191, 0.15)' : 'var(--mantine-color-cyan-0)',
         ];
 
-        if (noGroup.length > 0) {
-            const key = 'Sonstige';
-            const bgColor = isDark ? 'rgba(255, 255, 255, 0.05)' : 'var(--mantine-color-gray-0)';
-
-            if (!hideEmployees) {
-                noGroup.forEach(e => columns.push({
-                    type: 'employee',
-                    id: e.id!,
-                    employee: e,
-                    groupId: key,
-                    backgroundColor: bgColor
-                }));
-            }
-
-            columns.push({
-                type: 'group-summary',
-                id: `summary-${key}`,
-                label: key,
-                employeeIds: noGroup.map(e => e.id!),
-                groupId: key,
-                backgroundColor: bgColor
-            });
-        }
-
         let colorIndex = 0;
         sortedKeys.forEach(key => {
             const groupEmps = groups.get(key)!;
-            const bgColor = backgroundColors[colorIndex % backgroundColors.length];
-            colorIndex++;
+            const bgColor = key === 'Sonstige'
+                ? (isDark ? 'rgba(255, 255, 255, 0.05)' : 'var(--mantine-color-gray-0)')
+                : backgroundColors[colorIndex % backgroundColors.length];
+
+            if (key !== 'Sonstige') colorIndex++;
 
             if (!hideEmployees) {
                 groupEmps.forEach(e => columns.push({

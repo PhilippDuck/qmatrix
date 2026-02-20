@@ -161,7 +161,6 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
     handleDeleteView,
   } = matrixState;
 
-  const showMaxValues = metricMode === 'max';
   const [saveViewModalOpened, setSaveViewModalOpened] = useState(false);
   const [filtersOpened, setFiltersOpened] = useState(false);
 
@@ -174,7 +173,7 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
   } = useMatrixCalculations({
     employees, categories, subcategories, skills, departments, roles, getAssessment, assessments,
     focusEmployeeId, showInactive, filterDepartments, filterRoles, employeeSort,
-    filterCategories, skillSort, metricMode, showMaxValues, groupingMode, hideEmployees
+    filterCategories, skillSort, metricMode, showMaxValues: metricMode, groupingMode, hideEmployees
   });
 
   const getGroupingLabel = (mode: 'none' | 'department' | 'role') => {

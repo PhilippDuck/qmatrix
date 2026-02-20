@@ -1,4 +1,11 @@
 
+## [2.12.2] - 2026-02-20
+
+### Skill-Matrix Bugfixes
+- **Sortierung**: Korrektur der Sortierlogik für den "Ziel-Erfüllungsgrad" (Fulfillment), sowohl bei aufsteigender als auch absteigender Sortierung.
+- **Gruppierte Ansicht**: Fix der Spalten-Sortierung (Abteilungen & Rollen). Gruppen werden nun basierend auf ihrer Performance (Ø, XP oder Erfüllungsgrad) sortiert, anstatt rein alphabetisch.
+- **Gruppierte Ansicht**: Integration der Gruppe "Sonstige" in die dynamische Sortierung, sodass diese nun passend zu ihren Metrik-Werten in der Matrix positioniert wird.
+
 ## [2.12.1] - 2026-02-20
 
 ### UI & Layout Anpassungen
