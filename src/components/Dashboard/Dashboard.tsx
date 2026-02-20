@@ -666,7 +666,7 @@ export const Dashboard: React.FC = () => {
             <SimpleGrid cols={{ base: 1, md: 2, lg: 3 }} spacing="md">
                 {/* Most Improved Skills */}
                 {visibleTiles.improvedSkills && (
-                    <Card withBorder radius="md" p="md">
+                    <Card withBorder radius="md" p="md" h="100%">
                         <Group justify="space-between" mb="md">
                             <Text fw={700} size="sm">
                                 <Tooltip label="Skills mit dem größten Zuwachs an Erfahrungspunkten (XP) im aktuellen Zeitraum." withArrow>
@@ -707,7 +707,7 @@ export const Dashboard: React.FC = () => {
 
                 {/* Skill Coverage */}
                 {visibleTiles.coverage && (
-                    <Card withBorder radius="md" p="md">
+                    <Card withBorder radius="md" p="md" h="100%">
                         <Group justify="space-between" mb="md">
                             <Text fw={700} size="sm">
                                 <Tooltip label="Skills, die von den meisten Mitarbeitern auf einem Level von mindestens 50% beherrscht werden." withArrow>
@@ -758,7 +758,7 @@ export const Dashboard: React.FC = () => {
 
                 {/* Low Coverage Skills */}
                 {visibleTiles.lowCoverage && (
-                    <Card withBorder radius="md" p="md">
+                    <Card withBorder radius="md" p="md" h="100%">
                         <Group justify="space-between" mb="md">
                             <Text fw={700} size="sm">
                                 <Tooltip label="Kritische Skills, die von weniger als 30% der Belegschaft beherrscht werden (Level ≥ 50%)." withArrow>
@@ -809,7 +809,7 @@ export const Dashboard: React.FC = () => {
 
                 {/* Skill Level Distribution */}
                 {visibleTiles.distribution && (
-                    <Card withBorder radius="md" p="md">
+                    <Card withBorder radius="md" p="md" h="100%">
                         <Group justify="space-between" mb="md">
                             <Text fw={700} size="sm">
                                 <Tooltip label="Verteilung der aktuellen Skill-Level über alle Bewertungen hinweg." withArrow>
@@ -855,7 +855,7 @@ export const Dashboard: React.FC = () => {
 
                 {/* Open Learning Goals */}
                 {visibleTiles.learningGoals && (
-                    <Card withBorder radius="md" p="md">
+                    <Card withBorder radius="md" p="md" h="100%">
                         <Group justify="space-between" mb="md">
                             <Text fw={700} size="sm">
                                 <Tooltip label="Offene Lernziele, bei denen das Ist-Level (noch) unter dem Soll-Level liegt." withArrow>
@@ -888,7 +888,7 @@ export const Dashboard: React.FC = () => {
 
                 {/* Department Progress */}
                 {visibleTiles.deptProgress && (
-                    <Card withBorder radius="md" p="md">
+                    <Card withBorder radius="md" p="md" h="100%">
                         <Group justify="space-between" mb="md">
                             <Text fw={700} size="sm">
                                 <Tooltip label="Anzahl der Verbesserungen (Skill-Level Erhöhungen) pro Abteilung im aktuellen Zeitraum." withArrow>
@@ -929,7 +929,7 @@ export const Dashboard: React.FC = () => {
 
                 {/* Biggest Skill Gaps */}
                 {visibleTiles.skillGaps && (
-                    <Card withBorder radius="md" p="md">
+                    <Card withBorder radius="md" p="md" h="100%">
                         <Group justify="space-between" mb="md">
                             <Text fw={700} size="sm">
                                 <Tooltip label="Größte Differenzen zwischen definiertem Soll-Level und aktuellem Ist-Level." withArrow>
@@ -975,7 +975,7 @@ export const Dashboard: React.FC = () => {
 
                 {/* Role Distribution */}
                 {visibleTiles.roleDist && (
-                    <Card withBorder radius="md" p="md">
+                    <Card withBorder radius="md" p="md" h="100%">
                         <Group justify="space-between" mb="md">
                             <Text fw={700} size="sm">
                                 <Tooltip label="Anzahl der Mitarbeiter, die der jeweiligen Rolle zugeordnet sind." withArrow>
@@ -1019,7 +1019,7 @@ export const Dashboard: React.FC = () => {
 
                 {/* Category Performance */}
                 {visibleTiles.catPerformance && (
-                    <Card withBorder radius="md" p="md" style={{ gridColumn: 'span 2' }}>
+                    <Card withBorder radius="md" p="md" style={{ gridColumn: 'span 2', height: '100%' }}>
                         <Group justify="space-between" mb="md">
                             <Text fw={700} size="sm">
                                 <Tooltip label="Durchschnittlicher Erfüllungsgrad (Level) aller Skills innerhalb einer Kategorie." withArrow>
