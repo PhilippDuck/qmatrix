@@ -17,7 +17,7 @@ import {
   IconCategory,
   IconInfoCircle,
 } from "@tabler/icons-react";
-import { Category } from "../../context/DataContext";
+import { Category } from "../../store/useStore";
 
 interface CategoryColumnProps {
   categories: Category[];

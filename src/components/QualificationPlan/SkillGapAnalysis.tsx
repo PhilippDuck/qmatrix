@@ -21,7 +21,7 @@ import {
   IconTrendingUp,
   IconPlus, // Added import
 } from "@tabler/icons-react";
-import { SkillGap, QualificationMeasure } from "../../context/DataContext";
+import { SkillGap, QualificationMeasure } from "../../store/useStore";
 
 interface SkillGapAnalysisProps {
   gaps: SkillGap[];

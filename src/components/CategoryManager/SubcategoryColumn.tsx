@@ -17,7 +17,7 @@ import {
   IconArrowRight,
   IconInfoCircle,
 } from "@tabler/icons-react";
-import { SubCategory } from "../../context/DataContext";
+import { SubCategory } from "../../store/useStore";
 
 interface SubcategoryColumnProps {
   subcategories: SubCategory[];

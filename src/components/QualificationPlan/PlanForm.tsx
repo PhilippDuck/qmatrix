@@ -16,7 +16,7 @@ import {
 } from "@mantine/core";
 import { useHotkeys } from "@mantine/hooks";
 import { IconPlus, IconAlertCircle, IconTarget, IconUser } from "@tabler/icons-react";
-import { QualificationPlan, SkillGap } from "../../context/DataContext";
+import { QualificationPlan, SkillGap } from "../../store/useStore";
 import { useStore } from "../../store/useStore";
 import { usePrivacy } from "../../context/PrivacyContext";
 import { SkillGapAnalysis } from "./SkillGapAnalysis";

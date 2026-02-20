@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { Paper, Group, ThemeIcon, Text, Button, SimpleGrid, Stack } from "@mantine/core";
 import { IconTarget, IconPlus } from "@tabler/icons-react";
-import { QualificationMeasure, SkillGap } from "../../context/DataContext";
+import { QualificationMeasure, SkillGap } from "../../store/useStore";
 import { useStore } from "../../store/useStore";
 import { MeasureCard } from "./MeasureCard";
 

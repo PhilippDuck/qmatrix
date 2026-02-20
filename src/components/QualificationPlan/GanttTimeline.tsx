@@ -22,7 +22,7 @@ import {
     IconPlayerPlay,
     IconCircleX,
 } from "@tabler/icons-react";
-import { QualificationMeasure, QualificationPlan, Employee, Skill, Category, SubCategory } from "../../context/DataContext";
+import { QualificationMeasure, QualificationPlan, Employee, Skill, Category, SubCategory } from "../../store/useStore";
 import { useStore } from "../../store/useStore";
 import { usePrivacy } from "../../context/PrivacyContext";
 

@@ -20,6 +20,25 @@ import {
     ChangeAction,
 } from "../services/indexeddb";
 
+export type {
+    Employee,
+    Category,
+    SubCategory,
+    Skill,
+    Assessment,
+    AssessmentLogEntry,
+    Department,
+    EmployeeRole,
+    ExportData,
+    MergeReport,
+    MergeDiff,
+    QualificationMeasure,
+    SavedView,
+    ChangeHistoryEntry,
+    EntityType,
+    ChangeAction,
+};
+
 export interface QualificationPlan extends Omit<DBQualificationPlan, 'targetRoleId'> {
     targetRoleId?: string;
 }

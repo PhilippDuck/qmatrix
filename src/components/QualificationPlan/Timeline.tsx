@@ -25,7 +25,7 @@ import {
   IconBook,
   IconTarget,
 } from "@tabler/icons-react";
-import { QualificationMeasure, Skill, Category, SubCategory } from "../../context/DataContext";
+import { QualificationMeasure, Skill, Category, SubCategory } from "../../store/useStore";
 
 interface TimelineProps {
   measures: QualificationMeasure[];

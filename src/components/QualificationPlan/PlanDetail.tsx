@@ -30,7 +30,7 @@ import {
   IconAlertCircle,
   IconDownload,
 } from "@tabler/icons-react";
-import { QualificationPlan, QualificationMeasure } from "../../context/DataContext";
+import { QualificationPlan, QualificationMeasure } from "../../store/useStore";
 import { useStore } from "../../store/useStore";
 import { exportQualificationPlanPDF } from "../../services/pdfReportService";
 import { usePrivacy } from "../../context/PrivacyContext";

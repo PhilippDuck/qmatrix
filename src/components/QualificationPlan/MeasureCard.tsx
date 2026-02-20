@@ -26,7 +26,7 @@ import {
   IconPlayerPlay,
   IconBook,
 } from "@tabler/icons-react";
-import { QualificationMeasure, Employee, Skill } from "../../context/DataContext";
+import { QualificationMeasure, Employee, Skill } from "../../store/useStore";
 import { usePrivacy } from "../../context/PrivacyContext";
 import { LEVELS } from "../../constants/skillLevels";
 

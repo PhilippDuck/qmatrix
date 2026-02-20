@@ -3,10 +3,11 @@ import { Text, Group, ActionIcon, Badge, Stack, Tooltip, HoverCard, Button } fro
 import { IconPlus, IconMinus, IconTrophy, IconPencil, IconInfoCircle, IconFolderPlus } from "@tabler/icons-react";
 import { MATRIX_LAYOUT } from "../../constants/skillLevels";
 import { getScoreColor, getMaxRoleTargetForSkill } from "../../utils/skillCalculations";
+import { getAllSkillIdsForSubcategory } from "../../utils/hierarchyUtils";
 import { InfoTooltip } from "../shared/InfoTooltip";
 import { BulkLevelMenu } from "./BulkLevelMenu";
 import { MatrixSkillRow } from "./MatrixSkillRow";
-import { Employee, SubCategory, Skill, Assessment, EmployeeRole } from "../../context/DataContext";
+import { Employee, SubCategory, Skill, Assessment, EmployeeRole } from "../../store/useStore";
 import { usePrivacy } from "../../context/PrivacyContext";
 
 import { MatrixColumn } from "./types";
@@ -83,15 +84,7 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
   const childSubcategories = allSubcategories.filter(s => s.parentSubCategoryId === subcategory.id)
     .sort((a, b) => a.name.localeCompare(b.name, 'de'));
 
-  // Collect all skill IDs recursively (direct + descendants)
-  const getAllSkillIds = (subId: string): string[] => {
-    const directSkills = allSkills.filter(s => s.subCategoryId === subId).map(s => s.id!);
-    const children = allSubcategories.filter(s => s.parentSubCategoryId === subId);
-    const childSkills = children.flatMap(child => getAllSkillIds(child.id!));
-    return [...directSkills, ...childSkills];
-  };
-
-  const allDescendantSkillIds = getAllSkillIds(subcategory.id!);
+  const allDescendantSkillIds = getAllSkillIdsForSubcategory(subcategory.id!, allSubcategories, allSkills);
 
   // Use all descendants for average calculation
   const subAvg = calculateAverage(allDescendantSkillIds);

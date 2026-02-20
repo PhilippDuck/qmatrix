@@ -4,7 +4,7 @@ import { IconPencil } from "@tabler/icons-react";
 import { MATRIX_LAYOUT, LEVELS } from "../../constants/skillLevels";
 import { getScoreColor, getMaxRoleTargetForSkill } from "../../utils/skillCalculations";
 import { SkillCell } from "./SkillCell";
-import { Employee, Skill, Assessment, EmployeeRole } from "../../context/DataContext";
+import { Employee, Skill, Assessment, EmployeeRole } from "../../store/useStore";
 import { useStore } from "../../store/useStore";
 
 import { MatrixColumn } from "./types";

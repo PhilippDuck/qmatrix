@@ -1,9 +1,10 @@
 import { useMemo, useCallback } from "react";
-import { Employee, Category, SubCategory, Skill, Assessment, Department, EmployeeRole } from "../context/DataContext";
+import { Employee, Category, SubCategory, Skill, Assessment, Department, EmployeeRole } from "../store/useStore";
 import { getMaxRoleTargetForSkill } from "../utils/skillCalculations";
 import { MatrixColumn } from "../components/SkillMatrix/types";
 import { MetricMode } from "./useMatrixState";
 import { useMantineColorScheme } from "@mantine/core";
+import { getAllSkillIdsForCategory } from "../utils/hierarchyUtils";
 
 export interface UseMatrixCalculationsProps {
     employees: Employee[];
@@ -56,9 +57,8 @@ export function useMatrixCalculations({
         if (filterRoles.length > 0) {
             const selectedRoleNames = roles
                 .filter(r => filterRoles.includes(r.id!))
-                .map(r => r.name);
             result = result.filter((e) =>
-                e.roles && e.roles.some(role => selectedRoleNames.includes(role))
+                e.roles && e.roles.some((role: string) => selectedRoleNames.includes(role))
             );
         }
 
@@ -148,33 +148,9 @@ export function useMatrixCalculations({
 
         if (skillSort) {
             result = result.sort((a, b) => {
-                const getSkillIds = (catId: string) => {
-                    const getSubIdsRecursive = () => {
-                        const ids: string[] = [];
-                        const roots = subcategories.filter(s => s.categoryId === catId && !s.parentSubCategoryId);
-
-                        const collectChildren = (parentId: string) => {
-                            const children = subcategories.filter(s => s.parentSubCategoryId === parentId);
-                            children.forEach(child => {
-                                ids.push(child.id!);
-                                collectChildren(child.id!);
-                            });
-                        };
-
-                        roots.forEach(root => {
-                            ids.push(root.id!);
-                            collectChildren(root.id!);
-                        });
-                        return ids;
-                    };
-
-                    const subIds = getSubIdsRecursive();
-                    return skills.filter(s => subIds.includes(s.subCategoryId)).map(s => s.id!);
-                };
-
                 if (showMaxValues) {
                     const calcMaxAvg = (catId: string) => {
-                        const catSkillIds = getSkillIds(catId);
+                        const catSkillIds = getAllSkillIdsForCategory(catId, subcategories, skills);
                         if (catSkillIds.length === 0) return 0;
 
                         const allAvgs = displayedEmployees
@@ -189,7 +165,7 @@ export function useMatrixCalculations({
                     return skillSort === 'asc' ? valA - valB : valB - valA;
                 } else {
                     const calcCatAvg = (catId: string) => {
-                        const catSkillIds = getSkillIds(catId);
+                        const catSkillIds = getAllSkillIdsForCategory(catId, subcategories, skills);
                         if (catSkillIds.length === 0) return 0;
 
                         const avg = calculateAverage(catSkillIds);

@@ -31,7 +31,7 @@ import {
   IconColumnsOff,
   IconUserOff,
 } from "@tabler/icons-react";
-import { Employee, SavedView } from "../../context/DataContext";
+import { Employee, SavedView } from "../../store/useStore";
 import { useStore } from "../../store/useStore";
 import { ViewTabs } from "./ViewTabs";
 import { SaveViewModal } from "./SaveViewModal";

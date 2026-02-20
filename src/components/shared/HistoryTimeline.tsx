@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Timeline, Text, ThemeIcon, Loader, Center } from "@mantine/core";
 import { IconArrowUp, IconArrowDown, IconStar } from "@tabler/icons-react";
-import { AssessmentLogEntry } from "../../context/DataContext";
+import { AssessmentLogEntry } from "../../store/useStore";
 import { useStore } from "../../store/useStore";
 
 interface HistoryTimelineProps {

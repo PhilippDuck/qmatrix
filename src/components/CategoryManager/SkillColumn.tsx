@@ -16,7 +16,7 @@ import {
   IconTarget,
   IconInfoCircle,
 } from "@tabler/icons-react";
-import { Skill } from "../../context/DataContext";
+import { Skill } from "../../store/useStore";
 
 interface SkillColumnProps {
   skills: Skill[];

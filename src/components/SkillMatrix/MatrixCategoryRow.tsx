@@ -3,10 +3,11 @@ import { Text, Group, ActionIcon, Badge, Stack, Tooltip, HoverCard, Button } fro
 import { IconPlus, IconMinus, IconTrophy, IconPencil, IconInfoCircle } from "@tabler/icons-react";
 import { MATRIX_LAYOUT } from "../../constants/skillLevels";
 import { getScoreColor, getMaxRoleTargetForSkill } from "../../utils/skillCalculations";
+import { getAllSubcategoryIdsForCategory, getAllSkillIdsForCategory, getAllSkillIdsForSubcategory } from "../../utils/hierarchyUtils";
 import { InfoTooltip } from "../shared/InfoTooltip";
 import { BulkLevelMenu } from "./BulkLevelMenu";
 import { MatrixSubcategoryRow } from "./MatrixSubcategoryRow";
-import { Employee, Category, SubCategory, Skill, Assessment, EmployeeRole } from "../../context/DataContext";
+import { Employee, Category, SubCategory, Skill, Assessment, EmployeeRole } from "../../store/useStore";
 import { usePrivacy } from "../../context/PrivacyContext";
 
 import { MatrixColumn } from "./types";
@@ -81,50 +82,17 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = ({
   const effectiveLabelWidth = labelWidth || MATRIX_LAYOUT.labelWidth;
   const [isLabelHovered, setIsLabelHovered] = useState(false);
 
-  // Helper function to recursively get all subcategory IDs (including nested ones)
-  const getAllSubcategoryIds = (categoryId: string): string[] => {
-    const ids: string[] = [];
-
-    // Get root-level subcategories for this category
-    const rootSubs = subcategories.filter(s =>
-      s.categoryId === categoryId && !s.parentSubCategoryId
-    );
-
-    // Recursive helper to collect children
-    const collectChildren = (parentId: string) => {
-      const children = subcategories.filter(s => s.parentSubCategoryId === parentId);
-      children.forEach(child => {
-        ids.push(child.id!);
-        collectChildren(child.id!); // Recurse into deeper levels
-      });
-    };
-
-    // Add root subs and their descendants
-    rootSubs.forEach(sub => {
-      ids.push(sub.id!);
-      collectChildren(sub.id!);
-    });
-
-    return ids;
-  };
-
   // Get ALL subcategory IDs for this category (including nested ones)
-  const allSubIds = getAllSubcategoryIds(category.id!);
+  const allSubIds = getAllSubcategoryIdsForCategory(category.id!, subcategories);
 
   // Get subcategories for this category and sort them (only root level for display)
   const categorySubcategories = [...subcategories.filter(
     (s) => s.categoryId === category.id && !s.parentSubCategoryId
   )].sort((a, b) => {
     if (skillSort) {
-      // Sort by value - use recursive skill collection
-      const getSubSkillIdsRecursive = (subId: string): string[] => {
-        const directSkills = skills.filter(s => s.subCategoryId === subId).map(s => s.id!);
-        const childSubs = subcategories.filter(s => s.parentSubCategoryId === subId);
-        const childSkills = childSubs.flatMap(child => getSubSkillIdsRecursive(child.id!));
-        return [...directSkills, ...childSkills];
-      };
-      const avgA = calculateAverage(getSubSkillIdsRecursive(a.id!)) || 0;
-      const avgB = calculateAverage(getSubSkillIdsRecursive(b.id!)) || 0;
+      // Sort by value - use extracted recursive skill collection
+      const avgA = calculateAverage(getAllSkillIdsForSubcategory(a.id!, subcategories, skills)) || 0;
+      const avgB = calculateAverage(getAllSkillIdsForSubcategory(b.id!, subcategories, skills)) || 0;
       return skillSort === 'asc' ? avgA - avgB : avgB - avgA;
     }
     // Default: alphabetical
@@ -132,9 +100,7 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = ({
   });
 
   // Get all skills for this category (from ALL subcategories including nested)
-  const catSkillIds = skills
-    .filter((s) => allSubIds.includes(s.subCategoryId))
-    .map((s) => s.id!);
+  const catSkillIds = getAllSkillIdsForCategory(category.id!, subcategories, skills);
 
   const catAvg = calculateAverage(catSkillIds);
 

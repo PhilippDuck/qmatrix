@@ -3,7 +3,7 @@ import { Badge, Text, HoverCard, Stack, Group, Divider, ThemeIcon, Box, SimpleGr
 import { IconBuilding, IconHistory, IconTrendingUp, IconTrendingDown, IconMinus, IconPencil, IconPlus, IconDotsVertical, IconCertificate, IconInfoCircle, IconSortAscending, IconSortDescending, IconArrowsSort } from "@tabler/icons-react";
 import { MATRIX_LAYOUT } from "../../constants/skillLevels";
 import { getScoreColor, getMaxRoleTargetForSkill } from "../../utils/skillCalculations";
-import { Employee, Skill, Assessment, AssessmentLogEntry } from "../../context/DataContext";
+import { Employee, Skill, Assessment, AssessmentLogEntry } from "../../store/useStore";
 import { useStore } from "../../store/useStore";
 import { getIconByName } from "../shared/RoleIconPicker";
 import { usePrivacy } from "../../context/PrivacyContext";

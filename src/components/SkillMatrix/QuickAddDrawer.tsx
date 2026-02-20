@@ -14,7 +14,7 @@ import {
 } from "@mantine/core";
 import { useHotkeys } from "@mantine/hooks";
 import { IconPlus, IconX } from "@tabler/icons-react";
-import { Category, SubCategory } from "../../context/DataContext";
+import { Category, SubCategory } from "../../store/useStore";
 
 export type QuickAddMode = "employee" | "skill";
 

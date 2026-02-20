@@ -30,7 +30,7 @@ import {
   IconUser,
   IconBook,
 } from "@tabler/icons-react";
-import { QualificationMeasure, SkillGap } from "../../context/DataContext";
+import { QualificationMeasure, SkillGap } from "../../store/useStore";
 import { useStore } from "../../store/useStore";
 import { usePrivacy } from "../../context/PrivacyContext";
 import { MentorSuggestion } from "./MentorSuggestion";
