@@ -1,4 +1,14 @@
 
+## [2.12.0] - 2026-02-20
+
+### Architektur & Refactoring (Performance & Wartbarkeit)
+- **State-Management Migration (Zustand)**: Ablösung des bisherigen monolithischen "God Context" (`DataContext.tsx`) durch den performanten Zustand-Store (`useStore.ts`). Komponenten abonnieren nur noch die Daten-Slices, die sie wirklich benötigen, was unnötige, app-weite Re-Renders verhindert.
+- **SkillMatrix Modularisierung**:
+  - Extraktion der komplexen Toolbar in eine dedizierte `MatrixToolbar`-Komponente (Bundle-Size & Lesbarkeit verbessert).
+  - Auslagerung des UI-Status (Filter, Ansichten) in einen neuen Hook `useMatrixState`.
+  - Auslagerung der Kernberechnungen für Sortierung, Filterung und Durchschnittsbildung in den Hook `useMatrixCalculations`.
+  - Saubere Trennung von UI- und Business-Logik durch Auslagerung komplexer, rekursiver Skill-Aggregationsfunktionen aus den Matrix-Komponenten in `src/utils/hierarchyUtils.ts`.
+
 ## [2.11.3] - 2026-02-20
 
 ### Neue Funktionen & Benutzeroberfläche
