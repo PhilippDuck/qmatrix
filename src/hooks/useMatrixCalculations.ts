@@ -57,6 +57,7 @@ export function useMatrixCalculations({
         if (filterRoles.length > 0) {
             const selectedRoleNames = roles
                 .filter(r => filterRoles.includes(r.id!))
+                .map(r => r.name);
             result = result.filter((e) =>
                 e.roles && e.roles.some((role: string) => selectedRoleNames.includes(role))
             );
