@@ -499,7 +499,7 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
             });
             const groupAvg = countAvg > 0 ? Math.round(totalAvg / countAvg) : null;
 
-            // Calculate Group Average XP
+            // Calculate Group Total XP
             let totalXP = 0;
             groupEmployees.forEach(e => {
               const eXP = skills.reduce((sum, skill) => {
@@ -509,7 +509,6 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
               }, 0);
               totalXP += eXP;
             });
-            const avgXP = groupEmployees.length > 0 ? Math.round(totalXP / groupEmployees.length) : 0;
 
             return (
               <div
@@ -528,9 +527,9 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
                 }}
               >
                 {showMaxValues === 'max' ? (
-                  <Tooltip label={`Ø XP: ${avgXP}`} withArrow>
+                  <Tooltip label={`Gesamt-XP der Gruppe: ${totalXP}`} withArrow>
                     <Badge size="xs" variant="light" color="blue" mb="xs" mt={8} style={{ cursor: 'help' }}>
-                      Ø {avgXP} XP
+                      ∑ {totalXP} XP
                     </Badge>
                   </Tooltip>
                 ) : showMaxValues === 'fulfillment' ? (
