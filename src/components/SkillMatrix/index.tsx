@@ -50,6 +50,9 @@ import { MatrixCategoryRow } from "./MatrixCategoryRow";
 import { MatrixLegend } from "./MatrixLegend";
 import { QuickAddDrawer } from "./QuickAddDrawer";
 import { EntityFormDrawer, FormMode, EntityFormValues } from "../CategoryManager/EntityFormDrawer";
+import { useMatrixState } from "../../hooks/useMatrixState";
+import { useMatrixCalculations } from "../../hooks/useMatrixCalculations";
+import { MatrixToolbar } from "./MatrixToolbar";
 
 import { SegmentedControl } from "@mantine/core";
 import { MatrixColumn } from "./types";
@@ -135,558 +138,43 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
     }]
   ], ['INPUT', 'TEXTAREA', 'SELECT']);
 
-  const [collapsedStates, setCollapsedStates] = useState<Record<string, boolean>>(() => {
-    const saved = localStorage.getItem("skill-matrix-collapsed");
-    return saved ? JSON.parse(saved) : {};
-  });
+  const matrixState = useMatrixState(savedViews, addSavedView, updateSavedView, deleteSavedView);
+  const {
+    collapsedStates, updateCollapsedStates, toggleItem,
+    filterDepartments, setFilterDepartments,
+    filterRoles, setFilterRoles,
+    filterCategories, setFilterCategories,
+    metricMode, setMetricMode, nextMetricMode,
+    employeeSort, setEmployeeSort,
+    skillSort, setSkillSort,
+    groupingMode, setGroupingMode, nextGroupingMode,
+    hideEmployees, setHideEmployees,
+    hideNaColumns, setHideNaColumns,
+    showInactive, setShowInactive,
+    activeViewId, setActiveViewId,
+    isViewDirty,
+    handleSelectView,
+    handleSaveView,
+    handleUpdateCurrentView,
+    handleClearView,
+    handleDeleteView,
+  } = matrixState;
 
-  useEffect(() => {
-    localStorage.setItem("skill-matrix-collapsed", JSON.stringify(collapsedStates));
-  }, [collapsedStates]);
-
-  // Filters
-  const [filterDepartments, setFilterDepartments] = useLocalStorage<string[]>({
-    key: 'skill-matrix-filter-departments',
-    defaultValue: [],
-  });
-  const [filterRoles, setFilterRoles] = useLocalStorage<string[]>({
-    key: 'skill-matrix-filter-roles',
-    defaultValue: [],
-  });
-  const [filterCategories, setFilterCategories] = useLocalStorage<string[]>({
-    key: 'skill-matrix-filter-categories',
-    defaultValue: [],
-  });
-
-  // Toggle metric mode: avg → max → fulfillment
-  type MetricMode = 'avg' | 'max' | 'fulfillment';
-  const [metricMode, setMetricMode] = useLocalStorage<MetricMode>({
-    key: 'skill-matrix-metric-mode',
-    defaultValue: 'avg',
-  });
   const showMaxValues = metricMode === 'max';
-  const nextMetricMode = () => {
-    setMetricMode(prev => prev === 'avg' ? 'max' : prev === 'max' ? 'fulfillment' : 'avg');
-  };
-
-  // Sorting state: 'asc' | 'desc' | null
-  const [employeeSort, setEmployeeSort] = useLocalStorage<'asc' | 'desc' | null>({
-    key: 'skill-matrix-sort-employee',
-    defaultValue: null,
-  });
-  const [skillSort, setSkillSort] = useLocalStorage<'asc' | 'desc' | null>({
-    key: 'skill-matrix-sort-skill',
-    defaultValue: null,
-  });
-
-  // Grouping mode
-  const [groupingMode, setGroupingMode] = useLocalStorage<'none' | 'department' | 'role'>({
-    key: 'skill-matrix-grouping-mode',
-    defaultValue: 'none',
-  });
-
-  // State to toggle employee visibility in grouped mode
-  const [hideEmployees, setHideEmployees] = useLocalStorage<boolean>({
-    key: 'skill-matrix-hide-employees',
-    defaultValue: false,
-  });
-
-  // Toggle for hiding N/A columns
-  const [hideNaColumns, setHideNaColumns] = useLocalStorage<boolean>({
-    key: 'skill-matrix-hide-na-columns',
-    defaultValue: false,
-  });
-
-  // Toggle for showing inactive employees
-  const [showInactive, setShowInactive] = useLocalStorage<boolean>({
-    key: 'skill-matrix-show-inactive',
-    defaultValue: false,
-  });
-
-
-
+  const [saveViewModalOpened, setSaveViewModalOpened] = useState(false);
   const [filtersOpened, setFiltersOpened] = useState(false);
 
-  // Saved View State
-  const [activeViewId, setActiveViewId] = useLocalStorage<string | null>({
-    key: 'skill-matrix-active-view-id',
-    defaultValue: null,
+  const {
+    displayedEmployees,
+    displayedCategories,
+    matrixColumns,
+    calculateAverage,
+    calculateEmployeeAverage
+  } = useMatrixCalculations({
+    employees, categories, subcategories, skills, departments, roles, getAssessment, assessments,
+    focusEmployeeId, showInactive, filterDepartments, filterRoles, employeeSort,
+    filterCategories, skillSort, metricMode, showMaxValues, groupingMode, hideEmployees
   });
-  const [saveViewModalOpened, setSaveViewModalOpened] = useState(false);
-
-  // Apply a Saved View
-  const handleSelectView = (view: SavedView) => {
-    // Save standard view's collapsed states before switching away
-    if (!activeViewId) {
-      localStorage.setItem("skill-matrix-collapsed-standard", JSON.stringify(collapsedStates));
-    }
-
-    setActiveViewId(view.id!);
-
-    // Apply filters
-    setFilterDepartments(view.config.filters.departments);
-    setFilterRoles(view.config.filters.roles);
-    setFilterCategories(view.config.filters.categories);
-
-    // Apply grouping
-    setGroupingMode(view.config.groupingMode);
-
-    // Apply settings
-    setMetricMode(view.config.settings.metricMode ?? (view.config.settings.showMaxValues ? 'max' : 'avg'));
-    setHideEmployees(view.config.settings.hideEmployees);
-    setHideEmployees(view.config.settings.hideEmployees);
-    setHideNaColumns(view.config.settings.hideNaColumns || false);
-    setShowInactive(view.config.settings.showInactive || false);
-
-    // Apply sort
-    setEmployeeSort(view.config.sort.employee);
-    setSkillSort(view.config.sort.skill);
-
-    // Apply collapsed states
-    if (view.config.collapsedStates) {
-      setCollapsedStates(view.config.collapsedStates);
-    }
-  };
-
-  const handleSaveView = async (name: string) => {
-    // Construct the view object
-    const newView: Omit<SavedView, "id" | "updatedAt"> = {
-      name: name,
-      config: {
-        filters: {
-          departments: filterDepartments,
-          roles: filterRoles,
-          categories: filterCategories,
-        },
-        groupingMode: groupingMode,
-        settings: {
-          metricMode: metricMode,
-          hideEmployees: hideEmployees,
-          hideNaColumns: hideNaColumns,
-          showInactive: showInactive,
-        },
-        sort: {
-          employee: employeeSort,
-          skill: skillSort,
-        },
-        collapsedStates: collapsedStates,
-      },
-    };
-
-    try {
-      const id = await addSavedView(newView);
-      setActiveViewId(id);
-    } catch (error) {
-      console.error("Failed to save view:", error);
-    }
-  };
-
-  // Check if current settings differ from active view
-  const isViewDirty = useMemo(() => {
-    if (!activeViewId) return false;
-    const activeView = savedViews?.find(v => v.id === activeViewId);
-    if (!activeView) return false;
-
-    const config = activeView.config;
-    return (
-      JSON.stringify(config.filters.departments) !== JSON.stringify(filterDepartments) ||
-      JSON.stringify(config.filters.roles) !== JSON.stringify(filterRoles) ||
-      JSON.stringify(config.filters.categories) !== JSON.stringify(filterCategories) ||
-      config.groupingMode !== groupingMode ||
-      (config.settings.metricMode ?? (config.settings.showMaxValues ? 'max' : 'avg')) !== metricMode ||
-      config.settings.hideEmployees !== hideEmployees ||
-      config.settings.hideNaColumns !== hideNaColumns ||
-      config.settings.showInactive !== showInactive ||
-      config.sort.employee !== employeeSort ||
-      config.sort.skill !== skillSort ||
-      JSON.stringify(config.collapsedStates || {}) !== JSON.stringify(collapsedStates)
-    );
-  }, [activeViewId, savedViews, filterDepartments, filterRoles, filterCategories, groupingMode, metricMode, hideEmployees, hideNaColumns, employeeSort, skillSort, collapsedStates]);
-
-  // Update the current active view with current settings
-  const handleUpdateCurrentView = async () => {
-    if (!activeViewId) return;
-    const activeView = savedViews?.find(v => v.id === activeViewId);
-    if (!activeView) return;
-
-    try {
-      await updateSavedView(activeViewId, {
-        name: activeView.name,
-        config: {
-          filters: {
-            departments: filterDepartments,
-            roles: filterRoles,
-            categories: filterCategories,
-          },
-          groupingMode: groupingMode,
-          settings: {
-            metricMode: metricMode,
-            hideEmployees: hideEmployees,
-            hideNaColumns: hideNaColumns,
-            showInactive: showInactive,
-          },
-          sort: {
-            employee: employeeSort,
-            skill: skillSort,
-          },
-          collapsedStates: collapsedStates,
-        },
-      });
-    } catch (error) {
-      console.error("Failed to update view:", error);
-    }
-  };
-
-  const handleClearView = () => {
-    setActiveViewId(null);
-    setFilterDepartments([]);
-    setFilterRoles([]);
-    setFilterCategories([]);
-    setGroupingMode("none");
-    setMetricMode('avg');
-    setHideEmployees(false);
-    setHideEmployees(false);
-    setHideNaColumns(false);
-    setShowInactive(false);
-    setEmployeeSort(null);
-    setSkillSort(null);
-
-    // Restore standard view's own collapsed states
-    const savedStandard = localStorage.getItem("skill-matrix-collapsed-standard");
-    if (savedStandard) {
-      setCollapsedStates(JSON.parse(savedStandard));
-    } else {
-      setCollapsedStates({});
-    }
-  };
-
-  const handleDeleteView = async (id: string) => {
-    // If deleting the active view, switch to default view first
-    if (activeViewId === id) {
-      handleClearView();
-    }
-    await deleteSavedView(id);
-  };
-
-  const displayedEmployees = useMemo(() => {
-    let result = employees;
-
-    // Focus filter
-    if (focusEmployeeId) {
-      result = result.filter((e) => e.id === focusEmployeeId);
-    }
-
-    // Filter Inactive
-    if (!showInactive) {
-      result = result.filter(e => e.isActive !== false);
-    }
-
-    // Department filter - filterDepartments contains IDs, e.department contains name
-    if (filterDepartments.length > 0) {
-      const selectedDeptNames = departments
-        .filter(d => filterDepartments.includes(d.id!))
-        .map(d => d.name);
-      result = result.filter((e) => selectedDeptNames.includes(e.department || ''));
-    }
-
-    // Role filter - filterRoles contains IDs, e.roles contains names
-    if (filterRoles.length > 0) {
-      const selectedRoleNames = roles
-        .filter(r => filterRoles.includes(r.id!))
-        .map(r => r.name);
-      result = result.filter((e) =>
-        e.roles && e.roles.some(role => selectedRoleNames.includes(role))
-      );
-    }
-
-    // Sorting
-    if (employeeSort) {
-      const allSkillIds = skills.map(s => s.id!);
-      result = [...result].sort((a, b) => {
-        if (showMaxValues) {
-          // Sort by Total XP
-          const calcXP = (empId: string, empRoles: string[] | undefined) => {
-            let total = 0;
-            allSkillIds.forEach(sId => {
-              const assessment = getAssessment(empId, sId);
-              const roleTarget = getMaxRoleTargetForSkill(empRoles, sId, roles);
-              const rawLevel = assessment?.level ?? -1;
-              const val = (rawLevel === -1 && roleTarget !== undefined) ? 0 : rawLevel;
-              if (val > 0) total += val;
-            });
-            return total;
-          };
-          const valA = calcXP(a.id!, a.roles);
-          const valB = calcXP(b.id!, b.roles);
-          return employeeSort === 'asc' ? valA - valB : valB - valA;
-        } else {
-          // Sort by Average
-          const calcAvg = (empId: string, empRoles: string[] | undefined) => {
-            let total = 0, count = 0;
-            allSkillIds.forEach(sId => {
-              const assessment = getAssessment(empId, sId);
-              const roleTarget = getMaxRoleTargetForSkill(empRoles, sId, roles);
-              const rawLevel = assessment?.level ?? -1;
-              const val = (rawLevel === -1 && roleTarget !== undefined) ? 0 : rawLevel;
-              if (val !== -1) { total += val; count++; }
-            });
-            return count > 0 ? total / count : 0;
-          };
-          const avgA = calcAvg(a.id!, a.roles);
-          const avgB = calcAvg(b.id!, b.roles);
-          return employeeSort === 'asc' ? avgA - avgB : avgB - avgA;
-        }
-      });
-    }
-
-    return result;
-  }, [employees, focusEmployeeId, filterDepartments, filterRoles, employeeSort, skills, departments, roles, metricMode, getAssessment, showInactive]);
-
-  const calculateAverage = (
-    skillIds: string[],
-    specificEmployeeId?: string
-  ): number | null => {
-    // Return null (N/A) if no skills - prevents confusing 0% display
-    if (skillIds.length === 0) return null;
-    if (employees.length === 0) return 0;
-    let totalScore = 0,
-      relevantCount = 0;
-    const targetEmps = specificEmployeeId
-      ? employees.filter((e) => e.id === specificEmployeeId)
-      : displayedEmployees;
-
-    skillIds.forEach((sId) => {
-      targetEmps.forEach((emp) => {
-        const assessment = getAssessment(emp.id!, sId);
-
-        // Logic sync with MatrixSkillRow:
-        // Default to -1 (N/A) if no assessment exists, unless a role target is set, then 0
-        // We need to fetch role target here to be accurate
-        const roleTarget = getMaxRoleTargetForSkill(emp.roles, sId, roles);
-        const rawLevel = assessment?.level ?? -1;
-        const val = (rawLevel === -1 && roleTarget !== undefined) ? 0 : rawLevel;
-
-        // Ignore N/A (-1)
-        if (val === -1) return;
-
-        totalScore += val;
-        relevantCount++;
-      });
-    });
-
-    // If no relevant assessments found (all N/A or empty), return null
-    if (relevantCount === 0) return null;
-    return Math.round(totalScore / relevantCount);
-  };
-
-  const displayedCategories = useMemo(() => {
-    let result = [...categories];
-
-    // Filter by selected categories
-    if (filterCategories.length > 0) {
-      result = result.filter((c) => filterCategories.includes(c.id!));
-    }
-
-    // Sorting
-    if (skillSort) {
-      // Sort by value (average or max)
-      result = result.sort((a, b) => {
-        // Get all skill IDs for each category
-        // Get all skill IDs for each category (matching MatrixCategoryRow logic)
-        const getSkillIds = (catId: string) => {
-          const getSubIdsRecursive = () => {
-            const ids: string[] = [];
-            // Get root-level subcategories
-            const roots = subcategories.filter(s => s.categoryId === catId && !s.parentSubCategoryId);
-
-            const collectChildren = (parentId: string) => {
-              const children = subcategories.filter(s => s.parentSubCategoryId === parentId);
-              children.forEach(child => {
-                ids.push(child.id!);
-                collectChildren(child.id!);
-              });
-            };
-
-            roots.forEach(root => {
-              ids.push(root.id!);
-              collectChildren(root.id!);
-            });
-            return ids;
-          };
-
-          // Fallback: if structure seems empty, try the direct filter method just in case data is flat but missing parentId logic? 
-          // Actually, let's trust the recursive logic first. If it returns keys, use them.
-          // But wait, what if the existing data relies on 'categoryId' being set on all subs?
-          // If I use recursive and it misses some 'orphaned' subs that have categoryId but no valid parent chain?
-          // The visual row uses recursive. So to match visual, we MUST use recursive.
-
-          const subIds = getSubIdsRecursive();
-          return skills.filter(s => subIds.includes(s.subCategoryId)).map(s => s.id!);
-        };
-
-        if (showMaxValues) {
-          // Sort by "Max Average" using shared calculation
-          const calcMaxAvg = (catId: string) => {
-            const catSkillIds = getSkillIds(catId);
-            if (catSkillIds.length === 0) return 0;
-
-            // Map over displayedEmployees and find max (non-null) average
-            const allAvgs = displayedEmployees
-              .map(emp => calculateAverage(catSkillIds, emp.id!))
-              .filter((v): v is number => v !== null);
-
-            return allAvgs.length > 0 ? Math.max(...allAvgs) : 0;
-          };
-
-          const valA = calcMaxAvg(a.id!);
-          const valB = calcMaxAvg(b.id!);
-          return skillSort === 'asc' ? valA - valB : valB - valA;
-
-        } else {
-          // Sort by "Overall Average" using shared calculation
-          const calcCatAvg = (catId: string) => {
-            const catSkillIds = getSkillIds(catId);
-            if (catSkillIds.length === 0) return 0;
-            // Aggregate average across all employees (calculateAverage without specificId does this but usually for specific employee scope?)
-            // Wait, calculateAverage iterates displayedEmployees if specificId is missing.
-            // So calculateAverage(catSkillIds) performs exactly the aggregation we want!
-
-            const avg = calculateAverage(catSkillIds);
-            return avg !== null ? avg : 0;
-          };
-
-          const avgA = calcCatAvg(a.id!);
-          const avgB = calcCatAvg(b.id!);
-          return skillSort === 'asc' ? avgA - avgB : avgB - avgA;
-        }
-      });
-    } else {
-      // Default: alphabetical sorting
-      result = result.sort((a, b) => a.name.localeCompare(b.name, 'de'));
-    }
-
-    return result;
-  }, [categories, filterCategories, skillSort, subcategories, skills, displayedEmployees, getAssessment, metricMode, assessments, roles]);
-
-  const { colorScheme } = useMantineColorScheme();
-
-  const matrixColumns = useMemo<MatrixColumn[]>(() => {
-    // Define simple darker colors for dark mode context or translucent ones
-    const isDark = colorScheme === 'dark';
-
-    if (groupingMode === 'none') {
-      const cols: MatrixColumn[] = displayedEmployees.map(e => ({ type: 'employee', id: e.id!, employee: e }));
-      // No summary column needed for "No Grouping" view as aggregated values are in row headers
-      return cols;
-    }
-
-    const groups = new Map<string, Employee[]>();
-    const noGroup: Employee[] = [];
-
-    displayedEmployees.forEach(e => {
-      if (groupingMode === 'department') {
-        const key = e.department;
-        if (key) {
-          if (!groups.has(key)) groups.set(key, []);
-          groups.get(key)!.push(e);
-        } else {
-          noGroup.push(e);
-        }
-      } else {
-        // Grouping by role - employee appears only in their first/primary role
-        const employeeRoles = e.roles || [];
-        if (employeeRoles.length > 0) {
-          const primaryRole = employeeRoles[0]; // Use first role as primary
-          if (!groups.has(primaryRole)) groups.set(primaryRole, []);
-          groups.get(primaryRole)!.push(e);
-        } else {
-          noGroup.push(e);
-        }
-      }
-    });
-
-    const sortedKeys = Array.from(groups.keys()).sort((a, b) => {
-      if (employeeSort === 'desc') return a.localeCompare(b, 'de');
-      return b.localeCompare(a, 'de');
-    });
-    const columns: MatrixColumn[] = [];
-
-    // Define colors for groups (rotating pastel colors)
-    // In dark mode, we use very low opacity colors to just tint the background
-    const backgroundColors = [
-      isDark ? 'rgba(34, 139, 230, 0.15)' : 'var(--mantine-color-blue-0)',
-      isDark ? 'rgba(64, 192, 87, 0.15)' : 'var(--mantine-color-green-0)',
-      isDark ? 'rgba(121, 80, 242, 0.15)' : 'var(--mantine-color-violet-0)',
-      isDark ? 'rgba(253, 126, 20, 0.15)' : 'var(--mantine-color-orange-0)',
-      isDark ? 'rgba(18, 184, 134, 0.15)' : 'var(--mantine-color-teal-0)',
-      isDark ? 'rgba(224, 49, 140, 0.15)' : 'var(--mantine-color-pink-0)',
-      isDark ? 'rgba(250, 204, 21, 0.15)' : 'var(--mantine-color-yellow-0)',
-      isDark ? 'rgba(21, 170, 191, 0.15)' : 'var(--mantine-color-cyan-0)',
-    ];
-
-    // Handle "No Group" (Sonstige)
-    if (noGroup.length > 0) {
-      const key = 'Sonstige';
-      const bgColor = isDark ? 'rgba(255, 255, 255, 0.05)' : 'var(--mantine-color-gray-0)';
-
-      // Employees
-      if (!hideEmployees) {
-        noGroup.forEach(e => columns.push({
-          type: 'employee',
-          id: e.id!,
-          employee: e,
-          groupId: key,
-          backgroundColor: bgColor
-        }));
-      }
-
-      // Summary
-      columns.push({
-        type: 'group-summary',
-        id: `summary-${key}`,
-        label: key,
-        employeeIds: noGroup.map(e => e.id!),
-        groupId: key,
-        backgroundColor: bgColor
-      });
-    }
-
-    let colorIndex = 0;
-    sortedKeys.forEach(key => {
-      const groupEmps = groups.get(key)!;
-      const bgColor = backgroundColors[colorIndex % backgroundColors.length];
-      colorIndex++;
-
-      // Employees
-      if (!hideEmployees) {
-        groupEmps.forEach(e => columns.push({
-          type: 'employee',
-          id: e.id!,
-          employee: e,
-          groupId: key,
-          backgroundColor: bgColor
-        }));
-      }
-
-      // Summaries
-      columns.push({
-        type: 'group-summary',
-        id: `summary-${key}`,
-        label: key,
-        employeeIds: groupEmps.map(e => e.id!),
-        groupId: key,
-        backgroundColor: bgColor
-      });
-    });
-
-    return columns;
-  }, [displayedEmployees, groupingMode, colorScheme, hideEmployees, employeeSort]);
-
-  const nextGroupingMode = () => {
-    const modes: ('none' | 'department' | 'role')[] = ['none', 'department', 'role'];
-    const currentIndex = modes.indexOf(groupingMode);
-    setGroupingMode(modes[(currentIndex + 1) % modes.length]);
-  };
 
   const getGroupingLabel = (mode: 'none' | 'department' | 'role') => {
     switch (mode) {
@@ -695,9 +183,6 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
       case 'role': return 'Nach Rolle';
     }
   };
-
-  const toggleItem = (id: string) =>
-    setCollapsedStates((prev) => ({ ...prev, [id]: !prev[id] }));
 
   const handleGlobalToggle = () => {
     const categoryIds = categories.map((c) => c.id!);
@@ -711,15 +196,15 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
 
     if (allCollapsed) {
       // State 1 -> State 2: Open categories, keep subcategories collapsed
-      setCollapsedStates(
+      updateCollapsedStates(
         Object.fromEntries(subcategoryIds.map((id) => [id, true]))
       );
     } else if (onlySubsCollapsed) {
       // State 2 -> State 3: Expand everything
-      setCollapsedStates({});
+      updateCollapsedStates({});
     } else {
       // State 3 (or any other) -> State 1: Collapse everything
-      setCollapsedStates(
+      updateCollapsedStates(
         Object.fromEntries([...categoryIds, ...subcategoryIds].map((id) => [id, true]))
       );
     }
@@ -743,13 +228,6 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
 
   const handleTargetLevelChange = async (empId: string, sId: string, target: number | undefined) => {
     await setTargetLevel(empId, sId, target);
-  };
-
-  const calculateEmployeeAverage = (employeeId: string): number | null => {
-    return calculateAverage(
-      skills.map((s) => s.id!),
-      employeeId
-    );
   };
 
   const handleEditEmployee = (id: string) => {
@@ -1105,284 +583,44 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
         />
       ) : (
         <Stack gap="md" h="100%" style={{ overflow: "hidden", minHeight: 0 }}>
-          <Group justify="space-between" align="center">
-            <Group gap="md" align="center">
-              <Title order={2}>Skill-Matrix</Title>
-
-              {/* View Controls Group */}
-              <Group gap="xs" style={{ borderLeft: '1px solid var(--mantine-color-default-border)', paddingLeft: '12px' }}>
-                <Tooltip label={`Gruppierung: ${getGroupingLabel(groupingMode)}`}>
-                  <ActionIcon
-                    variant="light"
-                    color={groupingMode === "none" ? "gray" : "blue"}
-                    onClick={nextGroupingMode}
-                    size="lg"
-                  >
-                    {groupingMode === 'none' ? <IconUsersGroup size={20} /> :
-                      groupingMode === 'department' ? <IconBuilding size={20} /> :
-                        <IconUserCircle size={20} />}
-                  </ActionIcon>
-                </Tooltip>
-
-                {groupingMode !== 'none' && (
-                  <Tooltip label={hideEmployees ? "Mitarbeiter einblenden" : "Mitarbeiter ausblenden"}>
-                    <ActionIcon
-                      variant="light"
-                      color={hideEmployees ? "blue" : "gray"}
-                      onClick={() => setHideEmployees(!hideEmployees)}
-                      size="lg"
-                    >
-                      {hideEmployees ? <IconEyeOff size={20} /> : <IconEye size={20} />}
-                    </ActionIcon>
-                  </Tooltip>
-                )}
-
-                <Tooltip label={metricMode === 'avg' ? "Zeige Max-Werte" : metricMode === 'max' ? "Zeige Erfüllungsgrad" : "Zeige Durchschnittswerte"}>
-                  <ActionIcon
-                    variant="light"
-                    color={metricMode === 'fulfillment' ? 'teal' : 'gray'}
-                    onClick={nextMetricMode}
-                    size="lg"
-                  >
-                    {metricMode === 'avg' ? <IconPercentage size={20} /> : metricMode === 'max' ? <IconSum size={20} /> : <IconTargetArrow size={20} />}
-                  </ActionIcon>
-                </Tooltip>
-
-                <Tooltip label="Alle ein-/ausklappen">
-                  <ActionIcon
-                    variant="light"
-                    color="gray"
-                    onClick={handleGlobalToggle}
-                    size="lg"
-                  >
-                    <IconLayoutNavbarCollapse size={20} />
-                  </ActionIcon>
-                </Tooltip>
-                <Tooltip label={hideNaColumns ? "Leere Spalten (N/A) anzeigen" : "Leere Spalten (N/A) ausblenden"}>
-                  <ActionIcon
-                    variant="light"
-                    color={hideNaColumns ? "blue" : "gray"}
-                    onClick={() => setHideNaColumns(!hideNaColumns)}
-                    size="lg"
-                  >
-                    <IconColumnsOff size={20} />
-                  </ActionIcon>
-                </Tooltip>
-
-                <Popover
-                  width={300}
-                  position="bottom"
-                  withArrow
-                  shadow="md"
-                  opened={filtersOpened}
-                  onChange={setFiltersOpened}
-                >
-                  <Popover.Target>
-                    <Tooltip label="Filter">
-                      <ActionIcon
-                        variant="light"
-                        color={filtersOpened || filterDepartments.length > 0 || filterRoles.length > 0 || filterCategories.length > 0 ? "blue" : "gray"}
-                        size="lg"
-                        aria-label="Filter"
-                        onClick={() => setFiltersOpened((o) => !o)}
-                      >
-                        <IconFilter size={20} />
-                      </ActionIcon>
-                    </Tooltip>
-                  </Popover.Target>
-                  <Popover.Dropdown>
-                    <Stack>
-                      <MultiSelect
-                        comboboxProps={{ withinPortal: false }}
-                        label="Abteilungen"
-                        placeholder="Wähle Abteilungen"
-                        data={departments.map(d => ({ value: d.id!, label: d.name }))}
-                        value={filterDepartments}
-                        onChange={setFilterDepartments}
-                        clearable
-                        searchable
-                      />
-                      <MultiSelect
-                        comboboxProps={{ withinPortal: false }}
-                        label="Rollen / Level"
-                        placeholder="Wähle Rollen"
-                        data={roles.map(r => ({ value: r.id!, label: r.name }))}
-                        value={filterRoles}
-                        onChange={setFilterRoles}
-                        clearable
-                        searchable
-                      />
-                      <MultiSelect
-                        comboboxProps={{ withinPortal: false }}
-                        label="Hauptkategorien"
-                        placeholder="Wähle Kategorien"
-                        data={categories.map(c => ({ value: c.id!, label: c.name }))}
-                        value={filterCategories}
-                        onChange={setFilterCategories}
-                        clearable
-                        searchable
-                      />
-                    </Stack>
-                  </Popover.Dropdown>
-                </Popover>
-              </Group>
-
-              {/* Actions Group */}
-              <Group gap="xs" style={{ borderLeft: '1px solid var(--mantine-color-default-border)', paddingLeft: '12px' }}>
-                <Tooltip label={isEditMode ? "Bearbeitungsmodus beenden" : "Bearbeitungsmodus aktivieren"}>
-                  <ActionIcon
-                    variant="light"
-                    color={isEditMode ? "blue" : "gray"}
-                    onClick={() => setIsEditMode(!isEditMode)}
-                    size="lg"
-                  >
-                    <IconEdit size={20} />
-                  </ActionIcon>
-                </Tooltip>
-                <Tooltip label="Skill hinzufügen">
-                  <ActionIcon
-                    variant="light"
-                    color="gray"
-                    onClick={() => setSkillDrawerOpened(true)}
-                    size="lg"
-                  >
-                    <IconPlus size={20} />
-                  </ActionIcon>
-                </Tooltip>
-                <Tooltip label="Mitarbeiter hinzufügen">
-                  <ActionIcon
-                    variant="light"
-                    color="gray"
-                    onClick={() => setEmployeeDrawerOpened(true)}
-                    size="lg"
-                  >
-                    <IconUserPlus size={20} />
-                  </ActionIcon>
-                </Tooltip>
-              </Group>
-
-              {/* Saved Views Tabs */}
-              <ViewTabs
-                savedViews={savedViews || []}
-                activeViewId={activeViewId}
-                isViewDirty={isViewDirty}
-                onSelectView={handleSelectView}
-                onDeleteView={handleDeleteView}
-                onUpdateViewName={(id, name) => updateSavedView(id, { ...savedViews.find(v => v.id === id)!, name })}
-                onSaveCurrentView={handleUpdateCurrentView}
-                onClearView={handleClearView}
-                onCreateNewView={() => setSaveViewModalOpened(true)}
-              />
-            </Group>
-            {focusEmployeeId && (
-              <Button
-                leftSection={<IconX size={16} />}
-                variant="filled"
-                color="red"
-                onClick={() => setFocusEmployeeId(null)}
-              >
-                Fokus beenden
-              </Button>
-            )}
-          </Group>
-
-          {
-            (filterDepartments.length > 0 || filterRoles.length > 0 || filterCategories.length > 0) && (
-              <Group mb="md" gap="xs">
-                {filterDepartments.map((id) => {
-                  const item = departments.find((d) => d.id === id);
-                  return item ? (
-                    <Badge
-                      key={id}
-                      size="lg"
-                      variant="light"
-                      color="blue"
-                      rightSection={
-                        <ActionIcon
-                          size="xs"
-                          color="blue"
-                          variant="transparent"
-                          onClick={() =>
-                            setFilterDepartments((prev) => prev.filter((x) => x !== id))
-                          }
-                        >
-                          <IconX size={12} />
-                        </ActionIcon>
-                      }
-                    >
-                      {item.name}
-                    </Badge>
-                  ) : null;
-                })}
-
-                {filterRoles.map((id) => {
-                  const item = roles.find((r) => r.id === id);
-                  return item ? (
-                    <Badge
-                      key={id}
-                      size="lg"
-                      variant="light"
-                      color="green"
-                      rightSection={
-                        <ActionIcon
-                          size="xs"
-                          color="green"
-                          variant="transparent"
-                          onClick={() =>
-                            setFilterRoles((prev) => prev.filter((x) => x !== id))
-                          }
-                        >
-                          <IconX size={12} />
-                        </ActionIcon>
-                      }
-                    >
-                      {item.name}
-                    </Badge>
-                  ) : null;
-                })}
-
-                {filterCategories.map((id) => {
-                  const item = categories.find((c) => c.id === id);
-                  return item ? (
-                    <Badge
-                      key={id}
-                      size="lg"
-                      variant="light"
-                      color="grape"
-                      rightSection={
-                        <ActionIcon
-                          size="xs"
-                          color="grape"
-                          variant="transparent"
-                          onClick={() =>
-                            setFilterCategories((prev) => prev.filter((x) => x !== id))
-                          }
-                        >
-                          <IconX size={12} />
-                        </ActionIcon>
-                      }
-                    >
-                      {item.name}
-                    </Badge>
-                  ) : null;
-                })}
-
-                <Badge
-                  size="lg"
-                  variant="light"
-                  color="gray"
-                  style={{ cursor: "pointer" }}
-                  onClick={() => {
-                    setFilterDepartments([]);
-                    setFilterRoles([]);
-                    setFilterCategories([]);
-                  }}
-                >
-                  Alle Filter entfernen
-                </Badge>
-              </Group>
-            )
-          }
+          <MatrixToolbar
+            groupingMode={groupingMode}
+            nextGroupingMode={nextGroupingMode}
+            getGroupingLabel={getGroupingLabel}
+            hideEmployees={hideEmployees}
+            setHideEmployees={setHideEmployees}
+            metricMode={metricMode}
+            nextMetricMode={nextMetricMode}
+            handleGlobalToggle={handleGlobalToggle}
+            hideNaColumns={hideNaColumns}
+            setHideNaColumns={setHideNaColumns}
+            filtersOpened={filtersOpened}
+            setFiltersOpened={setFiltersOpened}
+            filterDepartments={filterDepartments}
+            setFilterDepartments={setFilterDepartments}
+            filterRoles={filterRoles}
+            setFilterRoles={setFilterRoles}
+            filterCategories={filterCategories}
+            setFilterCategories={setFilterCategories}
+            departments={departments}
+            roles={roles}
+            categories={categories}
+            isEditMode={isEditMode}
+            setIsEditMode={setIsEditMode}
+            setSkillDrawerOpened={setSkillDrawerOpened}
+            setEmployeeDrawerOpened={setEmployeeDrawerOpened}
+            savedViews={savedViews}
+            activeViewId={activeViewId}
+            isViewDirty={isViewDirty}
+            handleSelectView={handleSelectView}
+            handleDeleteView={handleDeleteView}
+            updateSavedView={updateSavedView}
+            handleUpdateCurrentView={handleUpdateCurrentView}
+            handleClearView={handleClearView}
+            setSaveViewModalOpened={setSaveViewModalOpened}
+            focusEmployeeId={focusEmployeeId}
+            setFocusEmployeeId={setFocusEmployeeId}
+          />
 
 
           <Card
