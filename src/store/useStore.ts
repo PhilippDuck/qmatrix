@@ -381,8 +381,9 @@ export const useStore = create<AppState>((set, get) => ({
     addEmployee: async (employee) => {
         try {
             const id = await db.addEmployee(employee);
-            await recordChangeHelper('employee', id, employee.name, 'create', null, { ...employee, id });
-            await get().refreshAllData();
+            const newEmployee = { ...employee, id, updatedAt: Date.now() };
+            set(state => ({ employees: [...state.employees, newEmployee] }));
+            await recordChangeHelper('employee', id, employee.name, 'create', null, newEmployee);
         } catch (err) {
             set({ error: err instanceof Error ? err.message : "Failed to add employee" }); throw err;
         }
@@ -391,11 +392,18 @@ export const useStore = create<AppState>((set, get) => ({
     updateEmployee: async (id, employee) => {
         try {
             const existing = get().employees.find(e => e.id === id);
+            const updatedEmployee = { ...existing, ...employee, id, updatedAt: Date.now() };
+
+            set(state => ({
+                employees: state.employees.map(e => e.id === id ? updatedEmployee : e)
+            }));
+
             await db.updateEmployee(id, employee);
-            await recordChangeHelper('employee', id, employee.name, 'update', existing, { ...employee, id });
-            await get().refreshAllData();
+            await recordChangeHelper('employee', id, employee.name, 'update', existing, updatedEmployee);
         } catch (err) {
-            set({ error: err instanceof Error ? err.message : "Failed to update employee" }); throw err;
+            set({ error: err instanceof Error ? err.message : "Failed to update employee" });
+            await get().refreshAllData(); // Revert on failure
+            throw err;
         }
     },
 
@@ -408,19 +416,28 @@ export const useStore = create<AppState>((set, get) => ({
             const cascadeMeasures = state.qualificationMeasures.filter(m => cascadePlans.some(p => p.id === m.planId));
             const _cascade = { assessments: cascadeAssessments, qualificationPlans: cascadePlans, qualificationMeasures: cascadeMeasures };
 
+            set(state => ({
+                employees: state.employees.filter(e => e.id !== id),
+                assessments: state.assessments.filter(a => a.employeeId !== id),
+                qualificationPlans: state.qualificationPlans.filter(p => p.employeeId !== id),
+                qualificationMeasures: state.qualificationMeasures.filter(m => !cascadePlans.some(p => p.id === m.planId))
+            }));
+
             await db.deleteEmployee(id);
             await recordChangeHelper('employee', id, existing?.name || id, 'delete', { ...existing, _cascade }, null);
-            await get().refreshAllData();
         } catch (err) {
-            set({ error: err instanceof Error ? err.message : "Failed to delete employee" }); throw err;
+            set({ error: err instanceof Error ? err.message : "Failed to delete employee" });
+            await get().refreshAllData(); // Revert on failure
+            throw err;
         }
     },
 
     addCategory: async (category) => {
         try {
             const id = await db.addCategory(category);
-            await recordChangeHelper('category', id, category.name, 'create', null, { ...category, id });
-            await get().refreshAllData();
+            const newCategory = { ...category, id, updatedAt: Date.now() };
+            set(state => ({ categories: [...state.categories, newCategory] }));
+            await recordChangeHelper('category', id, category.name, 'create', null, newCategory);
             return id;
         } catch (err) { set({ error: err instanceof Error ? err.message : "Failed to add category" }); throw err; }
     },
@@ -428,10 +445,19 @@ export const useStore = create<AppState>((set, get) => ({
     updateCategory: async (id, category) => {
         try {
             const existing = get().categories.find(c => c.id === id);
+            const updatedCategory = { ...existing, ...category, id, updatedAt: Date.now() };
+
+            set(state => ({
+                categories: state.categories.map(c => c.id === id ? updatedCategory : c)
+            }));
+
             await db.updateCategory(id, category);
-            await recordChangeHelper('category', id, category.name, 'update', existing, { ...category, id });
-            await get().refreshAllData();
-        } catch (err) { set({ error: err instanceof Error ? err.message : "Failed to update category" }); throw err; }
+            await recordChangeHelper('category', id, category.name, 'update', existing, updatedCategory);
+        } catch (err) {
+            set({ error: err instanceof Error ? err.message : "Failed to update category" });
+            await get().refreshAllData(); // Revert on error
+            throw err;
+        }
     },
 
     deleteCategory: async (id) => {
@@ -439,21 +465,34 @@ export const useStore = create<AppState>((set, get) => ({
             const state = get();
             const existing = state.categories.find(c => c.id === id);
             const cascadeSubcategories = state.subcategories.filter(sc => sc.categoryId === id);
-            const cascadeSkills = state.skills.filter(s => cascadeSubcategories.some(sc => sc.id === s.subCategoryId));
-            const cascadeAssessments = state.assessments.filter(a => cascadeSkills.some(s => s.id === a.skillId));
+            const cascadeSubIds = cascadeSubcategories.map(s => s.id!);
+            const cascadeSkills = state.skills.filter(s => cascadeSubIds.includes(s.subCategoryId));
+            const cascadeSkillIds = cascadeSkills.map(s => s.id!);
+            const cascadeAssessments = state.assessments.filter(a => cascadeSkillIds.includes(a.skillId));
             const _cascade = { subcategories: cascadeSubcategories, skills: cascadeSkills, assessments: cascadeAssessments };
+
+            set(state => ({
+                categories: state.categories.filter(c => c.id !== id),
+                subcategories: state.subcategories.filter(sc => sc.categoryId !== id),
+                skills: state.skills.filter(s => !cascadeSubIds.includes(s.subCategoryId)),
+                assessments: state.assessments.filter(a => !cascadeSkillIds.includes(a.skillId))
+            }));
 
             await db.deleteCategory(id);
             await recordChangeHelper('category', id, existing?.name || id, 'delete', { ...existing, _cascade }, null);
-            await get().refreshAllData();
-        } catch (err) { set({ error: err instanceof Error ? err.message : "Failed to delete category" }); throw err; }
+        } catch (err) {
+            set({ error: err instanceof Error ? err.message : "Failed to delete category" });
+            await get().refreshAllData(); // Revert on error
+            throw err;
+        }
     },
 
     addSubCategory: async (subCategory) => {
         try {
             const id = await db.addSubCategory(subCategory);
-            await recordChangeHelper('subcategory', id, subCategory.name, 'create', null, { ...subCategory, id });
-            await get().refreshAllData();
+            const newSubCategory = { ...subCategory, id, updatedAt: Date.now() };
+            set(state => ({ subcategories: [...state.subcategories, newSubCategory] }));
+            await recordChangeHelper('subcategory', id, subCategory.name, 'create', null, newSubCategory);
             return id;
         } catch (err) { set({ error: err instanceof Error ? err.message : "Failed to add subcategory" }); throw err; }
     },
@@ -461,10 +500,19 @@ export const useStore = create<AppState>((set, get) => ({
     updateSubCategory: async (id, subCategory) => {
         try {
             const existing = get().subcategories.find(sc => sc.id === id);
+            const updatedSubCategory = { ...existing, ...subCategory, id, updatedAt: Date.now() };
+
+            set(state => ({
+                subcategories: state.subcategories.map(sc => sc.id === id ? updatedSubCategory : sc)
+            }));
+
             await db.updateSubCategory(id, subCategory);
-            await recordChangeHelper('subcategory', id, subCategory.name, 'update', existing, { ...subCategory, id });
-            await get().refreshAllData();
-        } catch (err) { set({ error: err instanceof Error ? err.message : "Failed to update subcategory" }); throw err; }
+            await recordChangeHelper('subcategory', id, subCategory.name, 'update', existing, updatedSubCategory);
+        } catch (err) {
+            set({ error: err instanceof Error ? err.message : "Failed to update subcategory" });
+            await get().refreshAllData(); // Revert on failure
+            throw err;
+        }
     },
 
     deleteSubCategory: async (id) => {
@@ -479,12 +527,22 @@ export const useStore = create<AppState>((set, get) => ({
             const cascadeSubcategories = collectChildren(id);
             const allSubcategoryIds = [id, ...cascadeSubcategories.map(sc => sc.id!)];
             const cascadeSkills = state.skills.filter(s => allSubcategoryIds.includes(s.subCategoryId));
-            const cascadeAssessments = state.assessments.filter(a => cascadeSkills.some(s => s.id === a.skillId));
+            const cascadeSkillIds = cascadeSkills.map(s => s.id!);
+            const cascadeAssessments = state.assessments.filter(a => cascadeSkillIds.includes(a.skillId));
+
+            set(state => ({
+                subcategories: state.subcategories.filter(sc => !allSubcategoryIds.includes(sc.id!)),
+                skills: state.skills.filter(s => !allSubcategoryIds.includes(s.subCategoryId)),
+                assessments: state.assessments.filter(a => !cascadeSkillIds.includes(a.skillId))
+            }));
 
             await db.deleteSubCategory(id);
             await recordChangeHelper('subcategory', id, existing?.name || id, 'delete', { ...existing, _cascade: { subcategories: cascadeSubcategories, skills: cascadeSkills, assessments: cascadeAssessments } }, null);
-            await get().refreshAllData();
-        } catch (err) { set({ error: err instanceof Error ? err.message : "Failed to delete subcategory" }); throw err; }
+        } catch (err) {
+            set({ error: err instanceof Error ? err.message : "Failed to delete subcategory" });
+            await get().refreshAllData(); // Revert on failure
+            throw err;
+        }
     },
 
     getSubCategoriesByCategory: (categoryId) => get().subcategories.filter(sc => sc.categoryId === categoryId && !sc.parentSubCategoryId),
@@ -493,28 +551,47 @@ export const useStore = create<AppState>((set, get) => ({
     addSkill: async (skill) => {
         try {
             const id = await db.addSkill(skill);
-            await recordChangeHelper('skill', id, skill.name, 'create', null, { ...skill, id });
-            await get().refreshAllData();
+            const newSkill = { ...skill, id, updatedAt: Date.now() };
+            set(state => ({ skills: [...state.skills, newSkill] }));
+            await recordChangeHelper('skill', id, skill.name, 'create', null, newSkill);
         } catch (err) { set({ error: err instanceof Error ? err.message : "Failed to add skill" }); throw err; }
     },
 
     updateSkill: async (id, skill) => {
         try {
             const existing = get().skills.find(s => s.id === id);
+            const updatedSkill = { ...existing, ...skill, id, updatedAt: Date.now() };
+
+            set(state => ({
+                skills: state.skills.map(s => s.id === id ? updatedSkill : s)
+            }));
+
             await db.updateSkill(id, skill);
-            await recordChangeHelper('skill', id, skill.name, 'update', existing, { ...skill, id });
-            await get().refreshAllData();
-        } catch (err) { set({ error: err instanceof Error ? err.message : "Failed to update skill" }); throw err; }
+            await recordChangeHelper('skill', id, skill.name, 'update', existing, updatedSkill);
+        } catch (err) {
+            set({ error: err instanceof Error ? err.message : "Failed to update skill" });
+            await get().refreshAllData(); // Revert on failure
+            throw err;
+        }
     },
 
     deleteSkill: async (id) => {
         try {
             const existing = get().skills.find(s => s.id === id);
             const cascadeAssessments = get().assessments.filter(a => a.skillId === id);
+
+            set(state => ({
+                skills: state.skills.filter(s => s.id !== id),
+                assessments: state.assessments.filter(a => a.skillId !== id)
+            }));
+
             await db.deleteSkill(id);
             await recordChangeHelper('skill', id, existing?.name || id, 'delete', { ...existing, _cascade: { assessments: cascadeAssessments } }, null);
-            await get().refreshAllData();
-        } catch (err) { set({ error: err instanceof Error ? err.message : "Failed to delete skill" }); throw err; }
+        } catch (err) {
+            set({ error: err instanceof Error ? err.message : "Failed to delete skill" });
+            await get().refreshAllData(); // Revert on failure
+            throw err;
+        }
     },
 
     getSkillsBySubCategory: (subCategoryId) => get().skills.filter(s => s.subCategoryId === subCategoryId),
@@ -590,8 +667,9 @@ export const useStore = create<AppState>((set, get) => ({
     addDepartment: async (name) => {
         try {
             const id = await db.addDepartment(name);
-            await recordChangeHelper('department', id, name, 'create', null, { name, id });
-            await get().refreshAllData();
+            const newDept = { name, id, updatedAt: Date.now() };
+            set(state => ({ departments: [...state.departments, newDept] }));
+            await recordChangeHelper('department', id, name, 'create', null, newDept);
             return id;
         } catch (err) { set({ error: err instanceof Error ? err.message : "Failed" }); throw err; }
     },
@@ -599,26 +677,46 @@ export const useStore = create<AppState>((set, get) => ({
     updateDepartment: async (id, department) => {
         try {
             const existing = get().departments.find(d => d.id === id);
+            const updatedDept = { ...existing, ...department, id, updatedAt: Date.now() };
+
+            set(state => ({
+                departments: state.departments.map(d => d.id === id ? updatedDept : d)
+            }));
+
             await db.updateDepartment(id, department);
-            await recordChangeHelper('department', id, department.name, 'update', existing, { ...department, id });
+            await recordChangeHelper('department', id, department.name, 'update', existing, updatedDept);
+        } catch (err) {
+            set({ error: err instanceof Error ? err.message : "Failed" });
             await get().refreshAllData();
-        } catch (err) { set({ error: err instanceof Error ? err.message : "Failed" }); throw err; }
+            throw err;
+        }
     },
 
     deleteDepartment: async (id) => {
         try {
             const existing = get().departments.find(d => d.id === id);
+
+            set(state => ({
+                departments: state.departments.filter(d => d.id !== id)
+            }));
+
             await db.deleteDepartment(id);
             await recordChangeHelper('department', id, existing?.name || id, 'delete', existing, null);
+        } catch (err) {
+            set({ error: err instanceof Error ? err.message : "Failed" });
             await get().refreshAllData();
-        } catch (err) { set({ error: err instanceof Error ? err.message : "Failed" }); throw err; }
+            throw err;
+        }
     },
 
     addRole: async (role) => {
         try {
             const id = await db.addRole(role);
-            await recordChangeHelper('role', id, role.name, 'create', null, { ...role, id });
-            await get().refreshAllData();
+            const newRole = { ...role, id, updatedAt: Date.now() };
+
+            set(state => ({ roles: [...state.roles, newRole] }));
+
+            await recordChangeHelper('role', id, role.name, 'create', null, newRole);
             return id;
         } catch (err) { set({ error: err instanceof Error ? err.message : "Failed" }); throw err; }
     },
@@ -626,19 +724,36 @@ export const useStore = create<AppState>((set, get) => ({
     updateRole: async (id, role) => {
         try {
             const existing = get().roles.find(r => r.id === id);
+            const updatedRole = { ...existing, ...role, id, updatedAt: Date.now() };
+
+            set(state => ({
+                roles: state.roles.map(r => r.id === id ? updatedRole : r)
+            }));
+
             await db.updateRole(id, role);
-            await recordChangeHelper('role', id, role.name, 'update', existing, { ...role, id });
+            await recordChangeHelper('role', id, role.name, 'update', existing, updatedRole);
+        } catch (err) {
+            set({ error: err instanceof Error ? err.message : "Failed" });
             await get().refreshAllData();
-        } catch (err) { set({ error: err instanceof Error ? err.message : "Failed" }); throw err; }
+            throw err;
+        }
     },
 
     deleteRole: async (id) => {
         try {
             const existing = get().roles.find(r => r.id === id);
+
+            set(state => ({
+                roles: state.roles.filter(r => r.id !== id)
+            }));
+
             await db.deleteRole(id);
             await recordChangeHelper('role', id, existing?.name || id, 'delete', existing, null);
+        } catch (err) {
+            set({ error: err instanceof Error ? err.message : "Failed" });
             await get().refreshAllData();
-        } catch (err) { set({ error: err instanceof Error ? err.message : "Failed" }); throw err; }
+            throw err;
+        }
     },
 
     updateSkillsForRole: async (roleId, skillIds) => {
@@ -660,8 +775,12 @@ export const useStore = create<AppState>((set, get) => ({
         try {
             const id = await db.addQualificationPlan(plan as any);
             const emp = get().employees.find(e => e.id === plan.employeeId);
-            await recordChangeHelper('qualificationPlan', id, `Plan für ${emp?.name || plan.employeeId}`, 'create', null, { ...plan, id });
-            await get().refreshAllData();
+            const now = Date.now();
+            const newPlan = { ...plan, id, createdAt: now, updatedAt: now } as QualificationPlan;
+
+            set(state => ({ qualificationPlans: [...state.qualificationPlans, newPlan] }));
+
+            await recordChangeHelper('qualificationPlan', id, `Plan für ${emp?.name || plan.employeeId}`, 'create', null, newPlan);
             return id;
         } catch (err) { set({ error: err instanceof Error ? err.message : "Failed" }); throw err; }
     },
@@ -670,20 +789,38 @@ export const useStore = create<AppState>((set, get) => ({
         try {
             const existing = get().qualificationPlans.find(p => p.id === id);
             const emp = get().employees.find(e => e.id === existing?.employeeId);
+            const updatedPlan = { ...existing, ...plan, id, updatedAt: Date.now() } as QualificationPlan;
+
+            set(state => ({
+                qualificationPlans: state.qualificationPlans.map(p => p.id === id ? updatedPlan : p)
+            }));
+
             await db.updateQualificationPlan(id, plan);
-            await recordChangeHelper('qualificationPlan', id, `Plan für ${emp?.name || existing?.employeeId || id}`, 'update', existing, { ...existing, ...plan, id });
+            await recordChangeHelper('qualificationPlan', id, `Plan für ${emp?.name || existing?.employeeId || id}`, 'update', existing, updatedPlan);
+        } catch (err) {
+            set({ error: err instanceof Error ? err.message : "Failed" });
             await get().refreshAllData();
-        } catch (err) { set({ error: err instanceof Error ? err.message : "Failed" }); throw err; }
+            throw err;
+        }
     },
 
     deleteQualificationPlan: async (id) => {
         try {
             const existing = get().qualificationPlans.find(p => p.id === id);
             const cascadeMeasures = get().qualificationMeasures.filter(m => m.planId === id);
+
+            set(state => ({
+                qualificationPlans: state.qualificationPlans.filter(p => p.id !== id),
+                qualificationMeasures: state.qualificationMeasures.filter(m => m.planId !== id)
+            }));
+
             await db.deleteQualificationPlan(id);
             await recordChangeHelper('qualificationPlan', id, `Plan für ${existing?.employeeId || id}`, 'delete', { ...existing, _cascade: { qualificationMeasures: cascadeMeasures } }, null);
+        } catch (err) {
+            set({ error: err instanceof Error ? err.message : "Failed" });
             await get().refreshAllData();
-        } catch (err) { set({ error: err instanceof Error ? err.message : "Failed" }); throw err; }
+            throw err;
+        }
     },
 
     getQualificationPlansForEmployee: (employeeId) => get().qualificationPlans.filter(p => p.employeeId === employeeId),
@@ -692,8 +829,11 @@ export const useStore = create<AppState>((set, get) => ({
         try {
             const id = await db.addQualificationMeasure(measure);
             const skill = get().skills.find(s => s.id === measure.skillId);
-            await recordChangeHelper('qualificationMeasure', id, `Maßnahme: ${skill?.name || measure.skillId}`, 'create', null, { ...measure, id });
-            await get().refreshAllData();
+            const newMeasure = { ...measure, id, updatedAt: Date.now() };
+
+            set(state => ({ qualificationMeasures: [...state.qualificationMeasures, newMeasure] }));
+
+            await recordChangeHelper('qualificationMeasure', id, `Maßnahme: ${skill?.name || measure.skillId}`, 'create', null, newMeasure);
             return id;
         } catch (err) { set({ error: err instanceof Error ? err.message : "Failed" }); throw err; }
     },
@@ -702,20 +842,37 @@ export const useStore = create<AppState>((set, get) => ({
         try {
             const existing = get().qualificationMeasures.find(m => m.id === id);
             const skill = get().skills.find(s => s.id === existing?.skillId);
+            const updatedMeasure = { ...existing, ...measure, id, updatedAt: Date.now() } as QualificationMeasure;
+
+            set(state => ({
+                qualificationMeasures: state.qualificationMeasures.map(m => m.id === id ? updatedMeasure : m)
+            }));
+
             await db.updateQualificationMeasure(id, measure);
-            await recordChangeHelper('qualificationMeasure', id, `Maßnahme: ${skill?.name || existing?.skillId || id}`, 'update', existing, { ...existing, ...measure, id });
+            await recordChangeHelper('qualificationMeasure', id, `Maßnahme: ${skill?.name || existing?.skillId || id}`, 'update', existing, updatedMeasure);
+        } catch (err) {
+            set({ error: err instanceof Error ? err.message : "Failed" });
             await get().refreshAllData();
-        } catch (err) { set({ error: err instanceof Error ? err.message : "Failed" }); throw err; }
+            throw err;
+        }
     },
 
     deleteQualificationMeasure: async (id) => {
         try {
             const existing = get().qualificationMeasures.find(m => m.id === id);
             const skill = get().skills.find(s => s.id === existing?.skillId);
+
+            set(state => ({
+                qualificationMeasures: state.qualificationMeasures.filter(m => m.id !== id)
+            }));
+
             await db.deleteQualificationMeasure(id);
             await recordChangeHelper('qualificationMeasure', id, `Maßnahme: ${skill?.name || existing?.skillId || id}`, 'delete', existing, null);
+        } catch (err) {
+            set({ error: err instanceof Error ? err.message : "Failed" });
             await get().refreshAllData();
-        } catch (err) { set({ error: err instanceof Error ? err.message : "Failed" }); throw err; }
+            throw err;
+        }
     },
 
     getQualificationMeasuresForPlan: (planId) => get().qualificationMeasures.filter(m => m.planId === planId),
@@ -723,8 +880,9 @@ export const useStore = create<AppState>((set, get) => ({
     addSavedView: async (view) => {
         try {
             const id = await db.addSavedView(view);
-            await recordChangeHelper('savedView', id, view.name, 'create', null, { ...view, id });
-            await get().refreshAllData();
+            const newView = { ...view, id, updatedAt: Date.now() };
+            set(state => ({ savedViews: [...state.savedViews, newView] }));
+            await recordChangeHelper('savedView', id, view.name, 'create', null, newView);
             return id;
         } catch (err) { set({ error: err instanceof Error ? err.message : "Failed" }); throw err; }
     },
@@ -732,19 +890,36 @@ export const useStore = create<AppState>((set, get) => ({
     updateSavedView: async (id, view) => {
         try {
             const existing = get().savedViews.find(v => v.id === id);
+            const updatedView = { ...existing, ...view, id, updatedAt: Date.now() } as SavedView;
+
+            set(state => ({
+                savedViews: state.savedViews.map(v => v.id === id ? updatedView : v)
+            }));
+
             await db.updateSavedView(id, view);
-            await recordChangeHelper('savedView', id, view.name, 'update', existing, { ...view, id });
+            await recordChangeHelper('savedView', id, view.name, 'update', existing, updatedView);
+        } catch (err) {
+            set({ error: err instanceof Error ? err.message : "Failed" });
             await get().refreshAllData();
-        } catch (err) { set({ error: err instanceof Error ? err.message : "Failed" }); throw err; }
+            throw err;
+        }
     },
 
     deleteSavedView: async (id) => {
         try {
             const existing = get().savedViews.find(v => v.id === id);
+
+            set(state => ({
+                savedViews: state.savedViews.filter(v => v.id !== id)
+            }));
+
             await db.deleteSavedView(id);
             await recordChangeHelper('savedView', id, existing?.name || id, 'delete', existing, null);
+        } catch (err) {
+            set({ error: err instanceof Error ? err.message : "Failed" });
             await get().refreshAllData();
-        } catch (err) { set({ error: err instanceof Error ? err.message : "Failed" }); throw err; }
+            throw err;
+        }
     },
 
     getSkillGapsForEmployee: (employeeId, targetRoleId) => {
