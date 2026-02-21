@@ -154,6 +154,9 @@ interface AppState {
     // Change History
     undoChange: (historyEntryId: string) => Promise<void>;
     refreshChangeHistory: () => Promise<void>;
+
+    hasUnsavedChanges: boolean;
+    setHasUnsavedChanges: (val: boolean) => void;
 }
 
 // Helper to record changes inside the store
@@ -176,6 +179,10 @@ const recordChangeHelper = async (
             timestamp: Date.now(),
             undone: false,
         });
+        const state = useStore.getState();
+        if (!state.hasUnsavedChanges) {
+            state.setHasUnsavedChanges(true);
+        }
     } catch (err) {
         console.error("Failed to record change", err);
     }
@@ -197,6 +204,11 @@ export const useStore = create<AppState>((set, get) => ({
     dataHash: "",
     loading: true,
     error: null,
+    hasUnsavedChanges: localStorage.getItem('skillgrid-has-unsaved-changes') === 'true',
+    setHasUnsavedChanges: (val) => {
+        localStorage.setItem('skillgrid-has-unsaved-changes', val.toString());
+        set({ hasUnsavedChanges: val });
+    },
 
     initDb: async () => {
         try {
@@ -1027,6 +1039,8 @@ export const useStore = create<AppState>((set, get) => ({
             a.download = `${safeTitle}_Backup_${dateStr}_${timeStr}.json`;
             a.click();
             URL.revokeObjectURL(url);
+
+            set({ hasUnsavedChanges: false });
 
             return data;
         } catch (err) {

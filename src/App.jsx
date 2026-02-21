@@ -115,7 +115,7 @@ function AnonymousToggle() {
 }
 
 function AppContent() {
-  const { loading, exportData, projectTitle, updateProjectTitle, changeHistory, undoChange, initDb } = useStore();
+  const { loading, exportData, projectTitle, updateProjectTitle, changeHistory, undoChange, initDb, hasUnsavedChanges } = useStore();
 
   useEffect(() => {
     initDb();
@@ -137,6 +137,47 @@ function AppContent() {
   // Title edit state
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [tempTitle, setTempTitle] = useState("");
+
+  // Wiggle Animation State
+  const [wiggleAngle, setWiggleAngle] = useState(0);
+
+  useEffect(() => {
+    let outerInterval;
+    let wiggleSequence;
+    if (hasUnsavedChanges) {
+      const angles = [-15, 15, -10, 10, -5, 5, 0];
+
+      const playWiggle = () => {
+        let index = 0;
+        setWiggleAngle(angles[index]);
+        index++;
+
+        wiggleSequence = setInterval(() => {
+          if (index < angles.length) {
+            setWiggleAngle(angles[index]);
+            index++;
+          } else {
+            clearInterval(wiggleSequence);
+          }
+        }, 120);
+      };
+
+      // Play initially
+      playWiggle();
+
+      // Trigger sequence every 3 seconds
+      outerInterval = setInterval(() => {
+        playWiggle();
+      }, 3000);
+    } else {
+      setWiggleAngle(0);
+    }
+
+    return () => {
+      clearInterval(outerInterval);
+      clearInterval(wiggleSequence);
+    };
+  }, [hasUnsavedChanges]);
 
   // Changelog modal state
   const [changelogOpened, { open: openChangelog, close: closeChangelog }] = useDisclosure(false);
@@ -332,8 +373,24 @@ function AppContent() {
                 color="gray"
                 size="md"
                 onClick={() => exportData()}
+                style={{ position: "relative" }}
               >
-                <IconDeviceFloppy size={18} />
+                <div className={hasUnsavedChanges ? "forced-wiggle-animation" : ""} style={{ transform: `rotate(${wiggleAngle}deg)`, transition: "transform 0.15s ease-in-out" }}>
+                  <IconDeviceFloppy size={18} />
+                </div>
+                {hasUnsavedChanges && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: 4,
+                      right: 4,
+                      width: 8,
+                      height: 8,
+                      backgroundColor: "var(--mantine-color-red-6)",
+                      borderRadius: "50%",
+                    }}
+                  />
+                )}
               </ActionIcon>
             </Tooltip>
             <Tooltip label="Änderungshistorie">

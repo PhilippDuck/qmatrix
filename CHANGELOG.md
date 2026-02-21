@@ -1,4 +1,9 @@
 
+## [2.14.0] - 2026-02-21
+
+### Neue Funktionen & Benutzeroberfläche
+- **Ungespeicherte Änderungen**: Die Anwendung warnt nun detaillierter vor ungespeicherten Änderungen. Das Speichern-Icon in der oberen Navigationsleiste erhält einen roten Indikator-Punkt und wackelt im 3-Sekunden-Takt, solange Änderungen nicht ins Backup exportiert wurden. Diese Warnung bleibt auch bei einem Seiten-Reload bestehen.
+
 ## [2.13.0] - 2026-02-21
 
 ### Neue Funktionen & Benutzeroberfläche

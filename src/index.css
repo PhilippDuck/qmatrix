@@ -69,3 +69,29 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
+@keyframes forced-wiggle {
+
+  0%,
+  100% {
+    transform: rotate(0deg) !important;
+  }
+
+  25% {
+    transform: rotate(-15deg) !important;
+  }
+
+  50% {
+    transform: rotate(15deg) !important;
+  }
+
+  75% {
+    transform: rotate(-15deg) !important;
+  }
+}
+
+.forced-wiggle-animation {
+  animation: forced-wiggle 1s ease-in-out infinite !important;
+  transform-origin: center center !important;
+  display: inline-flex !important;
+}
