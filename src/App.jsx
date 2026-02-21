@@ -165,10 +165,10 @@ function AppContent() {
       // Play initially
       playWiggle();
 
-      // Trigger sequence every 3 seconds
+      // Trigger sequence every 10 seconds
       outerInterval = setInterval(() => {
         playWiggle();
-      }, 3000);
+      }, 10000);
     } else {
       setWiggleAngle(0);
     }
