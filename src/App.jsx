@@ -494,7 +494,7 @@ function App() {
     }
   }, []);
 
-  const [colorScheme, setColorScheme] = useLocalStorage({
+  const [colorScheme] = useLocalStorage({
     key: "skillgrid-color-scheme",
     defaultValue: "light",
   });

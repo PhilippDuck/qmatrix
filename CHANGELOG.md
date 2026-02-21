@@ -1,4 +1,14 @@
 
+## [2.13.0] - 2026-02-21
+
+### Neue Funktionen & Benutzeroberfläche
+- **Skill Drawer Redesign (QuickAddDrawer)**: Die Erstellung von neuen Skills und den dazugehörigen Gruppen wurde komplett überarbeitet.
+  - **Kaskadierende Auswahlfelder (Cascading Selects)**: Das UI generiert nun stufenweise für jede Hierarchieebene ein eigenes Dropdown (Hauptkategorie → Unterkategorie 1 → Unterkategorie 2...).
+  - **Unendliche Tiefe**: Es können direkt im Drawer beliebig tief verschachtelte Unterkategorien angelegt werden.
+  - **Nahtloses "Creatable" Design**: Anstelle von dedizierten "+"-Buttons zum Anlegen neuer Gruppen können neue Namen nun einfach in das Auswahlfeld getippt und mit `Enter` bestätigt werden. Die nächste Ebene öffnet sich daraufhin automatisch.
+  - **Striktere Validierung**: Ein Skill kann nun erst gespeichert werden, wenn neben der Hauptkategorie auch mindestens eine Unterkategorie ausgewählt oder erstellt wurde (verhindert unstrukturierte Skills direkt auf Root-Ebene).
+  - **Vereinfachte Tooltips**: Der Tooltip für den "Hinzufügen"-Button in der Matrix-Toolbar wurde sprechender auf "Skill erstellen" vereinfacht.
+
 ## [2.12.2] - 2026-02-20
 
 ### Skill-Matrix Bugfixes

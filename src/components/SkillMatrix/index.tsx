@@ -850,8 +850,8 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
         onAddCategory={async (name) => {
           return await addCategory({ name });
         }}
-        onAddSubCategory={async (categoryId, name) => {
-          return await addSubCategory({ categoryId, name });
+        onAddSubCategory={async (categoryId, name, parentSubCategoryId) => {
+          return await addSubCategory({ categoryId, name, parentSubCategoryId });
         }}
       />
 

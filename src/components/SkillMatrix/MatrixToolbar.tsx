@@ -3,10 +3,10 @@ import { Group, Title, Tooltip, ActionIcon, Popover, Stack, MultiSelect, Button,
 import {
     IconLayoutNavbarCollapse, IconPlus, IconUserPlus, IconFilter, IconEdit, IconUsersGroup,
     IconBuilding, IconUserCircle, IconSum, IconPercentage, IconTargetArrow, IconEye,
-    IconEyeOff, IconColumnsOff, IconX
+    IconEyeOff, IconColumnsOff, IconX, IconCubePlus
 } from '@tabler/icons-react';
 import { ViewTabs } from './ViewTabs';
-import { Department, EmployeeRole, Category, SavedView } from '../../context/DataContext';
+import { Department, EmployeeRole, Category, SavedView } from '../../store/useStore';
 import { MetricMode } from '../../hooks/useMatrixState';
 
 interface MatrixToolbarProps {
@@ -193,14 +193,14 @@ export const MatrixToolbar: React.FC<MatrixToolbarProps> = ({
                                 <IconEdit size={20} />
                             </ActionIcon>
                         </Tooltip>
-                        <Tooltip label="Skill hinzufügen">
+                        <Tooltip label="Skill erstellen">
                             <ActionIcon
                                 variant="light"
                                 color="gray"
                                 onClick={() => setSkillDrawerOpened(true)}
                                 size="lg"
                             >
-                                <IconPlus size={20} />
+                                <IconCubePlus size={20} />
                             </ActionIcon>
                         </Tooltip>
                         <Tooltip label="Mitarbeiter hinzufügen">
