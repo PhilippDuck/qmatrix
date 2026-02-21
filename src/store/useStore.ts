@@ -183,6 +183,7 @@ const recordChangeHelper = async (
         if (!state.hasUnsavedChanges) {
             state.setHasUnsavedChanges(true);
         }
+        await state.refreshChangeHistory();
     } catch (err) {
         console.error("Failed to record change", err);
     }
