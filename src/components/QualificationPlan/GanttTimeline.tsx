@@ -137,17 +137,31 @@ export const GanttTimeline: React.FC<GanttTimelineProps> = ({ onViewPlan, planId
 
     const updateWeekWidth = useCallback(() => {
         if (containerRef.current) {
-            const available = containerRef.current.offsetWidth - LABEL_WIDTH - 2; // 2px border
-            const dynamic = Math.floor(available / WEEK_COUNT);
-            setWeekWidth(Math.max(dynamic, MIN_WEEK_WIDTH));
+            const update = () => {
+                if (!containerRef.current) return;
+                const width = containerRef.current.offsetWidth;
+                if (width > 0) {
+                    const available = width - LABEL_WIDTH - 2; // 2px border
+                    const dynamic = Math.floor(available / WEEK_COUNT);
+                    setWeekWidth(Math.max(dynamic, MIN_WEEK_WIDTH));
+                } else {
+                    // Retry once after a short delay if width is 0 (e.g. during tab switch)
+                    setTimeout(update, 50);
+                }
+            };
+            requestAnimationFrame(update);
         }
     }, []);
 
     useEffect(() => {
         updateWeekWidth();
+        window.addEventListener('resize', updateWeekWidth);
         const observer = new ResizeObserver(updateWeekWidth);
         if (containerRef.current) observer.observe(containerRef.current);
-        return () => observer.disconnect();
+        return () => {
+            window.removeEventListener('resize', updateWeekWidth);
+            observer.disconnect();
+        };
     }, [updateWeekWidth]);
 
     // ── Filter measures ─────────────────────────────────────
@@ -328,7 +342,7 @@ export const GanttTimeline: React.FC<GanttTimelineProps> = ({ onViewPlan, planId
     }
 
     return (
-        <Stack gap="md">
+        <Stack gap="md" style={{ width: "100%" }}>
             {/* Controls */}
             <Group justify="space-between">
                 <Group gap="xs">
@@ -375,7 +389,7 @@ export const GanttTimeline: React.FC<GanttTimelineProps> = ({ onViewPlan, planId
             </Group>
 
             {/* Gantt Chart */}
-            <Paper ref={containerRef} withBorder radius="md" style={{ overflow: "hidden" }}>
+            <Paper ref={containerRef} withBorder radius="md" style={{ overflow: "hidden", width: "100%" }}>
                 <ScrollArea scrollbars="x" type="hover">
                     <div style={{ display: "flex", minWidth: LABEL_WIDTH + weeks.length * weekWidth }}>
                         {/* ── Left: Employee labels ── */}
