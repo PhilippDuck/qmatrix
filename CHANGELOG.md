@@ -1,4 +1,13 @@
 
+## [2.16.2] - 2026-02-23
+
+### Neue Funktionen (Skill-Organigramm)
+- **Copy/Cut/Paste für Hauptkategorien**: Hauptkategorien können nun im Organigramm kopiert und ausgeschnitten werden.
+  - **Kategorie → einfügen in Kategorie/Unterkategorie**: Die Hauptkategorie wird mit ihrem gesamten Unterbaum als neue Unterkategorie eingefügt.
+  - **Unterkategorie → einfügen in Root-Knoten**: Eine Unterkategorie (inkl. Unterbaum) wird zu einer neuen Hauptkategorie konvertiert. Direkte Skills werden dabei in eine gleichnamige Unterkategorie verpackt.
+  - **Root-Knoten zeigt Drei-Punkte-Menü**: Sobald eine passende Zwischenablage aktiv ist, erscheint am Root-Knoten ein blaues Dots-Icon, das das Paste-Menü öffnet.
+- **Bugfix Copy SubKategorie**: Beim Kopieren einer Unterkategorie wurden bisher keine verschachtelten Sub-Unterkategorien mit übertragen. Dies ist nun behoben — der gesamte Teilbaum wird rekursiv geklont.
+
 ## [2.16.0] - 2026-02-23
 
 ### Benutzeroberfläche & Anzeige (Skill-Matrix)

@@ -213,88 +213,203 @@ export const CategoryManager: React.FC = () => {
       items: items.sort((a: any, b: any) => a.label.localeCompare(b.label))
     }));
 
-  const handlePaste = async (targetId: string, targetType: "category" | "subcategory") => {
+  const handlePaste = async (targetId: string, targetType: "category" | "subcategory" | "root") => {
     if (!clipboardItem) return;
 
     try {
+      // Recursive helper: clone a subcategory subtree under a new parent category
+      const cloneSubtree = async (srcSubId: string, newCategoryId: string, newParentSubId?: string): Promise<string> => {
+        const srcSub = subcategories.find(s => s.id === srcSubId);
+        if (!srcSub) return "";
+        const { id: _, ...subData } = srcSub;
+        const newSubId = await addSubCategory({ ...subData, categoryId: newCategoryId, parentSubCategoryId: newParentSubId });
+        const directSkills = skills.filter(s => s.subCategoryId === srcSubId);
+        await Promise.all(directSkills.map(s => { const { id: sId, ...sData } = s; return addSkill({ ...sData, subCategoryId: newSubId }); }));
+        const childSubs = subcategories.filter(s => s.parentSubCategoryId === srcSubId);
+        await Promise.all(childSubs.map(child => cloneSubtree(child.id!, newCategoryId, newSubId)));
+        return newSubId;
+      };
+
+      // Collect all descendant subcategories of a subcategory (snapshot of current state)
+      const collectDescendants = (subId: string): typeof subcategories => {
+        const children = subcategories.filter(s => s.parentSubCategoryId === subId);
+        return children.concat(children.flatMap(c => collectDescendants(c.id!)));
+      };
+
       if (clipboardItem.mode === "cut") {
         if (clipboardItem.type === "skill" && targetType === "subcategory") {
           if (clipboardItem.data.subCategoryId === targetId) return;
           await updateSkill(clipboardItem.id, { ...clipboardItem.data, subCategoryId: targetId });
 
-        } else if (clipboardItem.type === "subcategory") {
-          // Handle Cut for Subcategory
-          if (targetType === "category") {
-            // Move to root of category
-            await updateSubCategory(clipboardItem.id, {
-              ...clipboardItem.data,
-              categoryId: targetId,
-              parentSubCategoryId: undefined // Clear parent if moving to root
-            });
-          } else if (targetType === "subcategory") {
-            // Move into another subcategory (Nest)
-            // Prevent pasting into itself
-            if (clipboardItem.id === targetId) return;
+        } else if (clipboardItem.type === "subcategory" && targetType === "root") {
+          // CUT subcategory → root: convert to new top-level category
+          const srcSub = subcategories.find(s => s.id === clipboardItem.id);
+          if (!srcSub) return;
+          const newCatId = await addCategory({ name: srcSub.name, description: srcSub.description });
 
+          const allDescendants = collectDescendants(clipboardItem.id);
+          const directChildren = subcategories.filter(s => s.parentSubCategoryId === clipboardItem.id);
+          const deeperDescendants = allDescendants.filter(d => !directChildren.find(c => c.id === d.id));
+
+          // Update deeper descendants: only change categoryId
+          await Promise.all(deeperDescendants.map(d =>
+            updateSubCategory(d.id!, { ...d, categoryId: newCatId })
+          ));
+          // Update direct children: new categoryId + clear parentSubCategoryId
+          await Promise.all(directChildren.map(c =>
+            updateSubCategory(c.id!, { ...c, categoryId: newCatId, parentSubCategoryId: undefined })
+          ));
+
+          // Direct skills on source sub → wrap in new subcategory under new category
+          const directSkills = skills.filter(s => s.subCategoryId === clipboardItem.id);
+          if (directSkills.length > 0) {
+            const wrapperSubId = await addSubCategory({ name: srcSub.name, description: srcSub.description, categoryId: newCatId });
+            await Promise.all(directSkills.map(s =>
+              updateSkill(s.id!, { ...s, subCategoryId: wrapperSubId })
+            ));
+          }
+
+          await deleteSubCategory(clipboardItem.id);
+
+        } else if (clipboardItem.type === "subcategory" && targetType === "category") {
+          // Move to root of category
+          await updateSubCategory(clipboardItem.id, {
+            ...clipboardItem.data,
+            categoryId: targetId,
+            parentSubCategoryId: undefined,
+          });
+
+        } else if (clipboardItem.type === "subcategory" && targetType === "subcategory") {
+          // Move into another subcategory (nest)
+          if (clipboardItem.id === targetId) return;
+          const targetSub = subcategories.find(s => s.id === targetId);
+          if (!targetSub) return;
+          await updateSubCategory(clipboardItem.id, {
+            ...clipboardItem.data,
+            categoryId: targetSub.categoryId,
+            parentSubCategoryId: targetId,
+          });
+
+        } else if (clipboardItem.type === "category" && (targetType === "category" || targetType === "subcategory")) {
+          // CUT category → category/subcategory: convert to subcategory
+          const srcCat = categories.find(c => c.id === clipboardItem.id);
+          if (!srcCat) return;
+
+          let targetCategoryId: string;
+          let targetParentSubId: string | undefined;
+
+          if (targetType === "category") {
+            targetCategoryId = targetId;
+            targetParentSubId = undefined;
+          } else {
             const targetSub = subcategories.find(s => s.id === targetId);
             if (!targetSub) return;
-
-            await updateSubCategory(clipboardItem.id, {
-              ...clipboardItem.data,
-              categoryId: targetSub.categoryId, // Adopt target's category
-              parentSubCategoryId: targetId
-            });
+            targetCategoryId = targetSub.categoryId;
+            targetParentSubId = targetId;
           }
+
+          const newSubId = await addSubCategory({
+            name: srcCat.name,
+            description: srcCat.description,
+            categoryId: targetCategoryId,
+            parentSubCategoryId: targetParentSubId,
+          });
+
+          const allCatSubcats = subcategories.filter(s => s.categoryId === clipboardItem.id);
+          const rootSubcats = allCatSubcats.filter(s => !s.parentSubCategoryId);
+          const deeperSubcats = allCatSubcats.filter(s => !!s.parentSubCategoryId);
+
+          // Update all: deeper subcats get new categoryId only; root subcats get new categoryId + newSubId as parent
+          await Promise.all([
+            ...deeperSubcats.map(s => updateSubCategory(s.id!, { ...s, categoryId: targetCategoryId })),
+            ...rootSubcats.map(s => updateSubCategory(s.id!, { ...s, categoryId: targetCategoryId, parentSubCategoryId: newSubId })),
+          ]);
+
+          await deleteCategory(clipboardItem.id);
         }
       } else {
         // Copy Mode
         if (clipboardItem.type === "skill" && targetType === "subcategory") {
           const { id, ...skillData } = clipboardItem.data;
-          await addSkill({
-            ...skillData,
-            subCategoryId: targetId,
-            name: skillData.name,
-          });
-        } else if (clipboardItem.type === "subcategory") {
-          // Paste Subcategory (Copy)
-          const { id, ...subData } = clipboardItem.data;
-          const newSubName = subData.name;
+          await addSkill({ ...skillData, subCategoryId: targetId });
 
+        } else if (clipboardItem.type === "subcategory" && targetType === "root") {
+          // COPY subcategory → root: create new top-level category
+          const srcSub = subcategories.find(s => s.id === clipboardItem.id);
+          if (!srcSub) return;
+          const newCatId = await addCategory({ name: srcSub.name, description: srcSub.description });
+
+          const directChildren = subcategories.filter(s => s.parentSubCategoryId === clipboardItem.id);
+          await Promise.all(directChildren.map(child => cloneSubtree(child.id!, newCatId, undefined)));
+
+          // Direct skills on source sub → wrap in a new subcategory
+          const directSkills = skills.filter(s => s.subCategoryId === clipboardItem.id);
+          if (directSkills.length > 0) {
+            const wrapperSubId = await addSubCategory({ name: srcSub.name, description: srcSub.description, categoryId: newCatId });
+            await Promise.all(directSkills.map(s => {
+              const { id: sId, ...sData } = s;
+              return addSkill({ ...sData, subCategoryId: wrapperSubId });
+            }));
+          }
+
+        } else if (clipboardItem.type === "subcategory" && (targetType === "category" || targetType === "subcategory")) {
+          // COPY subcategory → category/subcategory (with full subtree via cloneSubtree)
+          const { id, ...subData } = clipboardItem.data;
+          let targetCategoryId: string;
           let newSubId: string;
 
           if (targetType === "category") {
-            // Paste as root in category
-            newSubId = await addSubCategory({
-              ...subData,
-              categoryId: targetId,
-              parentSubCategoryId: undefined,
-              name: newSubName,
-            });
+            targetCategoryId = targetId;
+            newSubId = await addSubCategory({ ...subData, categoryId: targetId, parentSubCategoryId: undefined });
           } else {
-            // Paste as child of another subcategory
             const targetSub = subcategories.find(s => s.id === targetId);
             if (!targetSub) return;
-
-            newSubId = await addSubCategory({
-              ...subData,
-              categoryId: targetSub.categoryId,
-              parentSubCategoryId: targetId,
-              name: newSubName,
-            });
+            targetCategoryId = targetSub.categoryId;
+            newSubId = await addSubCategory({ ...subData, categoryId: targetSub.categoryId, parentSubCategoryId: targetId });
           }
 
-          // Copy children skills
-          const skillsToCopy = getSkillsBySubCategory(clipboardItem.id);
-          await Promise.all(skillsToCopy.map(s => {
+          // Copy direct skills
+          const directSkills = skills.filter(s => s.subCategoryId === clipboardItem.id);
+          await Promise.all(directSkills.map(s => {
             const { id: sId, ...sData } = s;
-            return addSkill({
-              ...sData,
-              subCategoryId: newSubId,
-            });
+            return addSkill({ ...sData, subCategoryId: newSubId });
           }));
+
+          // Clone child subtrees (fixes previously missing sub-subcategory copying)
+          const childSubs = subcategories.filter(s => s.parentSubCategoryId === clipboardItem.id);
+          await Promise.all(childSubs.map(child => cloneSubtree(child.id!, targetCategoryId, newSubId)));
+
+        } else if (clipboardItem.type === "category" && (targetType === "category" || targetType === "subcategory")) {
+          // COPY category → category/subcategory: become a subcategory
+          const srcCat = categories.find(c => c.id === clipboardItem.id);
+          if (!srcCat) return;
+
+          let targetCategoryId: string;
+          let targetParentSubId: string | undefined;
+
+          if (targetType === "category") {
+            targetCategoryId = targetId;
+            targetParentSubId = undefined;
+          } else {
+            const targetSub = subcategories.find(s => s.id === targetId);
+            if (!targetSub) return;
+            targetCategoryId = targetSub.categoryId;
+            targetParentSubId = targetId;
+          }
+
+          const newSubId = await addSubCategory({
+            name: srcCat.name,
+            description: srcCat.description,
+            categoryId: targetCategoryId,
+            parentSubCategoryId: targetParentSubId,
+          });
+
+          // Clone all root-level subcategories of source category
+          const rootSubcats = subcategories.filter(s => s.categoryId === clipboardItem.id && !s.parentSubCategoryId);
+          await Promise.all(rootSubcats.map(sub => cloneSubtree(sub.id!, targetCategoryId, newSubId)));
         }
       }
-      setClipboardItem(null); // Clear clipboard after paste
+      setClipboardItem(null);
     } catch (e) {
       console.error("Paste failed:", e);
     }

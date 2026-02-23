@@ -39,7 +39,7 @@ import {
 // ----------------------------------------------------------------------------
 
 export interface ClipboardItem {
-  type: "skill" | "subcategory";
+  type: "skill" | "subcategory" | "category";
   id: string;
   data: any; // Skill or SubCategory object
   mode: "cut" | "copy";
@@ -72,7 +72,7 @@ interface SkillOrgChartProps {
   clipboardItem?: ClipboardItem | null;
   onCopy?: (item: ClipboardItem) => void;
   onCut?: (item: ClipboardItem) => void;
-  onPaste?: (targetId: string, targetType: "category" | "subcategory") => void;
+  onPaste?: (targetId: string, targetType: "category" | "subcategory" | "root") => void;
 }
 
 // ----------------------------------------------------------------------------
@@ -86,7 +86,7 @@ const NodeCard: React.FC<{
   clipboardItem?: ClipboardItem | null;
   onCopy?: (item: ClipboardItem) => void;
   onCut?: (item: ClipboardItem) => void;
-  onPaste?: (targetId: string, targetType: "category" | "subcategory") => void;
+  onPaste?: (targetId: string, targetType: "category" | "subcategory" | "root") => void;
 }> = ({ node, roles, onClick, clipboardItem, onCopy, onCut, onPaste }) => {
   const { colorScheme } = useMantineColorScheme();
   const isDark = colorScheme === "dark";
@@ -168,11 +168,13 @@ const NodeCard: React.FC<{
 
   // Check if paste is valid here
   // Paste Skill -> into SubCategory
-  // Paste SubCategory -> into Category
+  // Paste SubCategory -> into Category, SubCategory, or Root (becomes new Category)
+  // Paste Category -> into Category or SubCategory (becomes SubCategory)
   const canPaste =
     clipboardItem &&
     ((clipboardItem.type === "skill" && node.type === "subcategory") ||
-      (clipboardItem.type === "subcategory" && (node.type === "category" || node.type === "subcategory")));
+      (clipboardItem.type === "subcategory" && (node.type === "category" || node.type === "subcategory" || node.type === "root")) ||
+      (clipboardItem.type === "category" && (node.type === "category" || node.type === "subcategory")));
 
   // Construct Tooltip Label
   const tooltipLabel = (
@@ -275,10 +277,37 @@ const NodeCard: React.FC<{
     </Paper>
   );
 
-  // If root, just return card (no menu usually needed for root unless we want to paste categories into root?)
-  // Requirement says: Paste SubCategory -> into Category. Paste Skill -> into SubCategory.
-  // It doesn't mention moving Categories themselves.
-  if (node.type === "root") return mainContent;
+  // Root node: show paste menu only when something can be pasted as new category
+  if (node.type === "root") {
+    if (!canPaste) return mainContent;
+    return (
+      <Menu shadow="md" width={220} withArrow position="bottom">
+        <Menu.Target>
+          <Box style={{ display: 'inline-block', position: 'relative' }}>
+            {mainContent}
+            <ActionIcon
+              variant="light"
+              size="sm"
+              color="blue"
+              style={{ position: 'absolute', top: 2, right: 2, zIndex: 10 }}
+            >
+              <IconDotsVertical size={14} />
+            </ActionIcon>
+          </Box>
+        </Menu.Target>
+        <Menu.Dropdown>
+          <Menu.Label>Aktionen</Menu.Label>
+          <Menu.Item
+            leftSection={<IconClipboard size={14} />}
+            color="blue"
+            onClick={() => onPaste && onPaste(node.id, 'root')}
+          >
+            Einfügen ({clipboardItem!.type === 'skill' ? 'Skill' : clipboardItem!.type === 'subcategory' ? 'Bereich' : 'Kategorie'})
+          </Menu.Item>
+        </Menu.Dropdown>
+      </Menu>
+    );
+  }
 
   return (
     <Menu shadow="md" width={200} withArrow position="bottom">
@@ -323,7 +352,7 @@ const NodeCard: React.FC<{
         </Menu.Item>
 
         {/* Copy/Cut/Paste */}
-        {(node.type === 'skill' || node.type === 'subcategory') && (
+        {(node.type === 'skill' || node.type === 'subcategory' || node.type === 'category') && (
           <>
             <Menu.Divider />
             <Menu.Item
@@ -349,7 +378,7 @@ const NodeCard: React.FC<{
               color="blue"
               onClick={() => onPaste && onPaste(node.id, node.type as any)}
             >
-              Einfügen ({clipboardItem.type === 'skill' ? 'Skill' : 'Bereich'})
+              Einfügen ({clipboardItem.type === 'skill' ? 'Skill' : clipboardItem.type === 'subcategory' ? 'Bereich' : 'Kategorie'})
             </Menu.Item>
           </>
         )}
@@ -369,7 +398,7 @@ const RenderTreeNode: React.FC<{
   clipboardItem?: ClipboardItem | null;
   onCopy?: (item: ClipboardItem) => void;
   onCut?: (item: ClipboardItem) => void;
-  onPaste?: (targetId: string, targetType: "category" | "subcategory") => void;
+  onPaste?: (targetId: string, targetType: "category" | "subcategory" | "root") => void;
 }> = ({ node, roles, onNodeClick, clipboardItem, onCopy, onCut, onPaste }) => {
   return (
     <TreeNode
