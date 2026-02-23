@@ -48,10 +48,7 @@ export function useMatrixCalculations({
         }
 
         if (filterDepartments.length > 0) {
-            const selectedDeptNames = departments
-                .filter(d => filterDepartments.includes(d.id!))
-                .map(d => d.name);
-            result = result.filter((e) => selectedDeptNames.includes(e.department || ''));
+            result = result.filter((e) => filterDepartments.includes(e.department || ''));
         }
 
         if (filterRoles.length > 0) {
@@ -235,7 +232,7 @@ export function useMatrixCalculations({
 
         displayedEmployees.forEach(e => {
             if (groupingMode === 'department') {
-                const key = e.department || 'Sonstige';
+                const key = departments.find(d => d.id === e.department)?.name || e.department || 'Sonstige';
                 if (!groups.has(key)) groups.set(key, []);
                 groups.get(key)!.push(e);
             } else {

@@ -222,7 +222,7 @@ export const useStore = create<AppState>((set, get) => ({
 
     refreshAllData: async () => {
         try {
-            const [emps, cats, subcats, sks, asms, depts, rls, qPlans, qMeasures, settings, views, history, hash] = await Promise.all([
+            let [emps, cats, subcats, sks, asms, depts, rls, qPlans, qMeasures, settings, views, history, hash] = await Promise.all([
                 db.getEmployees(),
                 db.getCategories(),
                 db.getSubCategories(),
@@ -257,10 +257,42 @@ export const useStore = create<AppState>((set, get) => ({
                 return m;
             }));
 
-            const now = new Date();
+            const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+            // Cleanup corrupted departments where name is a UUID
+            const corruptedDepts = depts?.filter(d => uuidRegex.test(d.name)) || [];
+            for (const badDept of corruptedDepts) {
+                await db.deleteDepartment(badDept.id!);
+            }
+            if (corruptedDepts.length > 0) {
+                depts = await db.getDepartments();
+            }
+
             const updatedEmps = await Promise.all((emps || []).map(async (emp) => {
                 let modified = false;
                 let finalEmp = { ...emp };
+                const now = new Date();
+
+                // Migrate department name to ID
+                if (finalEmp.department && !depts?.some(d => d.id === finalEmp.department)) {
+                    if (uuidRegex.test(finalEmp.department)) {
+                        // It's a UUID, but not in depts. The department was deleted.
+                        finalEmp.department = undefined;
+                        modified = true;
+                    } else {
+                        // It looks like a name (or a missing ID)
+                        let deptId = depts?.find(d => d.name === finalEmp.department)?.id;
+                        if (!deptId) {
+                            // Department doesn't exist, create it
+                            deptId = await db.addDepartment(finalEmp.department);
+                            // Refresh departments so subsequent missing ones find it
+                            depts = await db.getDepartments();
+                        }
+                        finalEmp.department = deptId;
+                        modified = true;
+                    }
+                }
+
                 if (finalEmp.isActive !== false && finalEmp.deactivationDate && new Date(finalEmp.deactivationDate) <= now) {
                     finalEmp.isActive = false;
                     modified = true;

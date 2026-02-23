@@ -112,7 +112,7 @@ export const DepartmentManager: React.FC = () => {
                     <Table.Tbody>
                         {departments.length > 0 ? (
                             departments.map((dept) => {
-                                const deptEmployees = employees.filter(e => e.department === dept.name);
+                                const deptEmployees = employees.filter(e => e.department === dept.id);
 
                                 return (
                                     <Table.Tr key={dept.id}>

@@ -42,7 +42,7 @@ const EmployeeInfoCard: React.FC<{
   onEdit: () => void;
   onNavigate?: (tab: string, params?: any) => void;
 }> = ({ emp, avg, skills, getAssessment, onEdit, onNavigate }) => {
-  const { getHistory, categories, subcategories, roles, qualificationMeasures, qualificationPlans } = useStore();
+  const { getHistory, categories, subcategories, roles, departments, qualificationMeasures, qualificationPlans } = useStore();
   const { anonymizeName } = usePrivacy();
   const [history, setHistory] = useState<AssessmentLogEntry[]>([]);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -93,7 +93,7 @@ const EmployeeInfoCard: React.FC<{
             {emp.department && (
               <Group gap={6}>
                 <IconBuilding size={12} color="gray" />
-                <Text size="xs" c="dimmed">{emp.department}</Text>
+                <Text size="xs" c="dimmed">{departments.find(d => d.id === emp.department)?.name || emp.department}</Text>
               </Group>
             )}
             {emp.roles && emp.roles.length > 0 && (

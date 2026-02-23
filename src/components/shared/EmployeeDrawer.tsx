@@ -59,7 +59,7 @@ export const EmployeeDrawer: React.FC<EmployeeDrawerProps> = ({
     if (opened) {
       setFormData({
         name: initialData?.name || "",
-        department: initialData?.department || "",
+        department: departments.find(d => d.id === initialData?.department)?.name || initialData?.department || "",
         roles: initialData?.roles || [],
         isActive: initialData?.isActive !== undefined ? initialData.isActive : true,
         deactivationDate: initialData?.deactivationDate ? new Date(initialData.deactivationDate) : null,
@@ -94,8 +94,14 @@ export const EmployeeDrawer: React.FC<EmployeeDrawerProps> = ({
       }
 
       // Check and create Department if new
-      if (trimmedDept && !departments.some(d => d.name === trimmedDept)) {
-        await addDepartment(trimmedDept);
+      let finalDeptId = "";
+      if (trimmedDept) {
+        const existingDept = departments.find(d => d.name === trimmedDept);
+        if (existingDept && existingDept.id) {
+          finalDeptId = existingDept.id;
+        } else {
+          finalDeptId = await addDepartment(trimmedDept);
+        }
       }
 
       // Check and create Roles if new
@@ -107,7 +113,7 @@ export const EmployeeDrawer: React.FC<EmployeeDrawerProps> = ({
 
       await onSave(
         formData.name.trim(),
-        trimmedDept,
+        finalDeptId,
         trimmedRoles,
         formData.isActive,
         formData.deactivationDate,
@@ -179,7 +185,8 @@ export const EmployeeDrawer: React.FC<EmployeeDrawerProps> = ({
 
   const hasChanges = () => {
     const initName = initialData?.name || "";
-    const initDept = initialData?.department || "";
+    const initDeptId = initialData?.department || "";
+    const initDeptName = departments.find(d => d.id === initDeptId)?.name || initDeptId || "";
     const initRoles = (initialData?.roles || []).slice().sort();
     const initActive = initialData?.isActive !== undefined ? initialData.isActive : true;
 
@@ -192,7 +199,7 @@ export const EmployeeDrawer: React.FC<EmployeeDrawerProps> = ({
 
 
     if (formData.name !== initName) return true;
-    if (formData.department !== initDept) return true;
+    if (formData.department !== initDeptName) return true;
     if (formData.isActive !== initActive) return true;
     if (initDeact !== currDeact) return true;
     if (initReact !== currReact) return true;

@@ -11,7 +11,7 @@ import {
   ThemeIcon,
 } from "@mantine/core";
 import { IconCheck, IconUser, IconStar } from "@tabler/icons-react";
-import { Employee } from "../../store/useStore";
+import { Employee, useStore } from "../../store/useStore";
 
 import { usePrivacy } from "../../context/PrivacyContext";
 
@@ -27,6 +27,7 @@ export const MentorSuggestion: React.FC<MentorSuggestionProps> = ({
   onSelect,
 }) => {
   const { anonymizeName, anonymizeInitials } = usePrivacy();
+  const { departments } = useStore();
 
   if (mentors.length === 0) {
     return null;
@@ -75,7 +76,7 @@ export const MentorSuggestion: React.FC<MentorSuggestionProps> = ({
                     </Text>
                     {mentor.department && (
                       <Text size="xs" c="dimmed">
-                        {mentor.department}
+                        {departments.find(d => d.id === mentor.department)?.name || mentor.department}
                       </Text>
                     )}
                   </div>

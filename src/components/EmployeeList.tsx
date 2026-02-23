@@ -157,7 +157,7 @@ export const EmployeeList: React.FC = () => {
           <Select
             label="Filter nach Abteilung"
             placeholder="Alle Abteilungen"
-            data={departments.map(d => d.name)}
+            data={departments.map(d => ({ value: d.id!, label: d.name }))}
             value={filterDepartment}
             onChange={setFilterDepartment}
             clearable
@@ -202,7 +202,7 @@ export const EmployeeList: React.FC = () => {
                       size="sm"
                       c={employee.department ? "inherit" : "dimmed"}
                     >
-                      {employee.department || "Keine Abteilung"}
+                      {departments.find(d => d.id === employee.department)?.name || "Keine Abteilung"}
                     </Text>
                   </Table.Td>
                   <Table.Td>

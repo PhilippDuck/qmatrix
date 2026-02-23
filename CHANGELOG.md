@@ -1,4 +1,12 @@
 
+## [2.15.0] - 2026-02-23
+
+### Architektur & Refactoring (Datenintegrität)
+- **Abteilungs-Verknüpfung**: Tiefergreifendes Refactoring der Mitarbeiterdaten-Struktur. Mitarbeiter sind nun nicht mehr über den fehleranfälligen String-Namen mit Abteilungen verknüpft, sondern über die eindeutige ID der Abteilung.
+  - Verhindert das Aufbrechen von Verknüpfungen, wenn eine Abteilung umbenannt wird.
+  - Beinhaltet eine automatische Migrations-Logik in der Datenbank zur Reparatur verwaister Einträge.
+  - Alle zugehörigen UI-Komponenten (Filter, Matrix, Listen, Historie, Prognosen) wurden auf ID-basiertes Mapping aktualisiert.
+
 ## [2.14.0] - 2026-02-21
 
 ### Neue Funktionen & Benutzeroberfläche
