@@ -1,4 +1,12 @@
 
+## [2.16.3] - 2026-02-23
+
+### Performance (Skill-Matrix)
+- **Assessment-Lookup O(1)**: Assessments werden einmalig in eine `Map<empId-skillId, Assessment>` geladen. Vorher hat jeder Zellen-Render die gesamte Assessments-Liste linear durchsucht (O(n)); bei 80 Mitarbeitern × 300 Skills waren das hunderte Millionen Operationen pro Seitenaufruf.
+- **Measures-Lookup O(1)**: `QualificationMeasure`-Daten werden ebenfalls als Map vorberechnet und als Prop durchgereicht. `MatrixSkillRow` ruft nicht mehr `useStore()` direkt auf und ist damit nicht mehr für jeden Store-Update verantwortlich für Re-Renders.
+- **React.memo für `MatrixCategoryRow` und `MatrixSubcategoryRow`**: Beide Komponenten sind jetzt mit `React.memo` gewrappt — unnötige Re-Renders bei Hover-State-Änderungen oder anderen nicht-relevanten State-Updates werden vermieden.
+- **useMemo für teure Berechnungen**: `catSkillIds`, `categorySubcategories`, `allDescendantSkillIds`, `sortedSkills`, `maxAvg` und der Erfüllungsgrad-Badge werden jetzt nur neu berechnet wenn sich ihre Inputs wirklich ändern (statt bei jedem Render).
+
 ## [2.16.2] - 2026-02-23
 
 ### Neue Funktionen (Skill-Organigramm)

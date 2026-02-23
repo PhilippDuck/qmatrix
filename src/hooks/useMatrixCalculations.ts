@@ -29,12 +29,25 @@ export interface UseMatrixCalculationsProps {
 }
 
 export function useMatrixCalculations({
-    employees, categories, subcategories, skills, departments, roles, getAssessment, assessments,
+    employees, categories, subcategories, skills, departments, roles, getAssessment: _getAssessment, assessments,
     focusEmployeeId, showInactive, filterDepartments, filterRoles, employeeSort,
     filterCategories, skillSort, metricMode, showMaxValues, groupingMode, hideEmployees
 }: UseMatrixCalculationsProps) {
     const { colorScheme } = useMantineColorScheme();
     const isDark = colorScheme === 'dark';
+
+    // O(1) assessment lookup map — replaces repeated O(n) .find() across the entire assessments array
+    const assessmentMap = useMemo(() => {
+        const map = new Map<string, Assessment>();
+        assessments.forEach(a => map.set(`${a.employeeId}-${a.skillId}`, a));
+        return map;
+    }, [assessments]);
+
+    const getAssessmentFast = useCallback(
+        (employeeId: string, skillId: string): Assessment | undefined =>
+            assessmentMap.get(`${employeeId}-${skillId}`),
+        [assessmentMap]
+    );
 
     const displayedEmployees = useMemo(() => {
         let result = employees;
@@ -67,7 +80,7 @@ export function useMatrixCalculations({
                     const calcXP = (empId: string, empRoles: string[] | undefined) => {
                         let total = 0;
                         allSkillIds.forEach(sId => {
-                            const assessment = getAssessment(empId, sId);
+                            const assessment = getAssessmentFast(empId, sId);
                             const roleTarget = getMaxRoleTargetForSkill(empRoles, sId, roles);
                             const rawLevel = assessment?.level ?? -1;
                             const val = (rawLevel === -1 && roleTarget !== undefined) ? 0 : rawLevel;
@@ -82,7 +95,7 @@ export function useMatrixCalculations({
                     const calcFulfillment = (empId: string, empRoles: string[] | undefined) => {
                         let total = 0, targets = 0;
                         allSkillIds.forEach(sId => {
-                            const asm = getAssessment(empId, sId);
+                            const asm = getAssessmentFast(empId, sId);
                             const individualT = asm?.targetLevel || 0;
                             const roleT = getMaxRoleTargetForSkill(empRoles, sId, roles) || 0;
                             const t = Math.max(individualT, roleT);
@@ -100,7 +113,7 @@ export function useMatrixCalculations({
                     const calcAvg = (empId: string, empRoles: string[] | undefined) => {
                         let total = 0, count = 0;
                         allSkillIds.forEach(sId => {
-                            const assessment = getAssessment(empId, sId);
+                            const assessment = getAssessmentFast(empId, sId);
                             const roleTarget = getMaxRoleTargetForSkill(empRoles, sId, roles);
                             const rawLevel = assessment?.level ?? -1;
                             const val = (rawLevel === -1 && roleTarget !== undefined) ? 0 : rawLevel;
@@ -116,7 +129,7 @@ export function useMatrixCalculations({
         }
 
         return result;
-    }, [employees, focusEmployeeId, showInactive, filterDepartments, filterRoles, employeeSort, skills, departments, roles, metricMode, getAssessment, showMaxValues]);
+    }, [employees, focusEmployeeId, showInactive, filterDepartments, filterRoles, employeeSort, skills, departments, roles, metricMode, getAssessmentFast, showMaxValues]);
 
     const calculateAverage = useCallback((
         skillIds: string[],
@@ -132,7 +145,7 @@ export function useMatrixCalculations({
 
         skillIds.forEach((sId) => {
             targetEmps.forEach((emp) => {
-                const assessment = getAssessment(emp.id!, sId);
+                const assessment = getAssessmentFast(emp.id!, sId);
                 const roleTarget = getMaxRoleTargetForSkill(emp.roles, sId, roles);
                 const rawLevel = assessment?.level ?? -1;
                 const val = (rawLevel === -1 && roleTarget !== undefined) ? 0 : rawLevel;
@@ -146,7 +159,7 @@ export function useMatrixCalculations({
 
         if (relevantCount === 0) return null;
         return Math.round(totalScore / relevantCount);
-    }, [employees, displayedEmployees, getAssessment, roles]);
+    }, [employees, displayedEmployees, getAssessmentFast, roles]);
 
     const calculateEmployeeAverage = useCallback((employeeId: string): number | null => {
         return calculateAverage(
@@ -187,7 +200,7 @@ export function useMatrixCalculations({
                         let total = 0, targets = 0;
                         displayedEmployees.forEach(emp => {
                             catSkillIds.forEach(sId => {
-                                const asm = getAssessment(emp.id!, sId);
+                                const asm = getAssessmentFast(emp.id!, sId);
                                 const individualT = asm?.targetLevel || 0;
                                 const roleT = getMaxRoleTargetForSkill(emp.roles, sId, roles) || 0;
                                 const t = Math.max(individualT, roleT);
@@ -259,7 +272,7 @@ export function useMatrixCalculations({
                     emps.forEach(e => {
                         let eXP = 0;
                         allSkillIds.forEach(sId => {
-                            const asm = getAssessment(e.id!, sId);
+                            const asm = getAssessmentFast(e.id!, sId);
                             const val = asm?.level;
                             if (val && val > 0) eXP += val;
                         });
@@ -276,7 +289,7 @@ export function useMatrixCalculations({
                     const fuls = emps.map(e => {
                         let total = 0, targets = 0;
                         allSkillIds.forEach(sId => {
-                            const asm = getAssessment(e.id!, sId);
+                            const asm = getAssessmentFast(e.id!, sId);
                             const individualT = asm?.targetLevel || 0;
                             const roleT = getMaxRoleTargetForSkill(e.roles, sId, roles) || 0;
                             const t = Math.max(individualT, roleT);
@@ -361,6 +374,7 @@ export function useMatrixCalculations({
         displayedCategories,
         matrixColumns,
         calculateAverage,
-        calculateEmployeeAverage
+        calculateEmployeeAverage,
+        getAssessment: getAssessmentFast,
     };
 }

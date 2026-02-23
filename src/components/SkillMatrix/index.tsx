@@ -77,6 +77,8 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
     setAssessment,
     setTargetLevel,
     getAssessment,
+    qualificationMeasures,
+    qualificationPlans,
     addEmployee,
     updateEmployee,
     addSkill,
@@ -164,12 +166,24 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
   const [saveViewModalOpened, setSaveViewModalOpened] = useState(false);
   const [filtersOpened, setFiltersOpened] = useState(false);
 
+  // Pre-compute measures lookup map once — eliminates O(n) .filter() per skill row
+  const measuresMap = useMemo(() => {
+    const map = new Map<string, typeof qualificationMeasures>();
+    qualificationMeasures.forEach(m => {
+      const list = map.get(m.skillId) ?? [];
+      list.push(m);
+      map.set(m.skillId, list);
+    });
+    return map;
+  }, [qualificationMeasures]);
+
   const {
     displayedEmployees,
     displayedCategories,
     matrixColumns,
     calculateAverage,
-    calculateEmployeeAverage
+    calculateEmployeeAverage,
+    getAssessment: getAssessmentFast,
   } = useMatrixCalculations({
     employees, categories, subcategories, skills, departments, roles, getAssessment, assessments,
     focusEmployeeId, showInactive, filterDepartments, filterRoles, employeeSort,
@@ -659,7 +673,7 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
                     onHoverChange={setHoveredEmployeeId}
                     calculateEmployeeAverage={calculateEmployeeAverage}
                     skills={skills}
-                    getAssessment={getAssessment}
+                    getAssessment={getAssessmentFast}
                     onEditEmployee={handleEditEmployee}
                     showMaxValues={metricMode}
                     isEditMode={isEditMode}
@@ -724,7 +738,7 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
                       onSkillHover={setHoveredSkillId}
                       onEmployeeHover={setHoveredEmployeeId}
                       calculateAverage={calculateAverage}
-                      getAssessment={getAssessment}
+                      getAssessment={getAssessmentFast}
                       onBulkSetLevel={bulkSetLevel}
                       onLevelChange={handleLevelChange}
                       onTargetLevelChange={handleTargetLevelChange}
@@ -739,6 +753,8 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
                       skillSort={skillSort}
                       labelWidth={responsiveLabelWidth}
                       onNavigate={onNavigate}
+                      measuresMap={measuresMap}
+                      qualificationPlans={qualificationPlans}
                     />
                   );
                 })}

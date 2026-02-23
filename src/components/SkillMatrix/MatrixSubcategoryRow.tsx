@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Text, Group, ActionIcon, Badge, Stack, Tooltip, HoverCard, Button } from "@mantine/core";
 import { IconPlus, IconMinus, IconTrophy, IconPencil, IconInfoCircle, IconFolderPlus } from "@tabler/icons-react";
 import { MATRIX_LAYOUT } from "../../constants/skillLevels";
@@ -7,7 +7,7 @@ import { getAllSkillIdsForSubcategory } from "../../utils/hierarchyUtils";
 import { InfoTooltip } from "../shared/InfoTooltip";
 import { BulkLevelMenu } from "./BulkLevelMenu";
 import { MatrixSkillRow } from "./MatrixSkillRow";
-import { Employee, SubCategory, Skill, Assessment, EmployeeRole } from "../../store/useStore";
+import { Employee, SubCategory, Skill, Assessment, EmployeeRole, QualificationMeasure, QualificationPlan } from "../../store/useStore";
 import { usePrivacy } from "../../context/PrivacyContext";
 
 import { MatrixColumn } from "./types";
@@ -42,9 +42,11 @@ interface MatrixSubcategoryRowProps {
   labelWidth?: number;
   onNavigate?: (tab: string, params?: any) => void;
   renderChildren?: boolean;
+  measuresMap?: Map<string, QualificationMeasure[]>;
+  qualificationPlans?: QualificationPlan[];
 }
 
-export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
+export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = React.memo(({
   columns,
   subcategory,
   allSubcategories,
@@ -73,7 +75,9 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
   onAddSubcategory,
   labelWidth,
   onNavigate,
-  renderChildren = true
+  renderChildren = true,
+  measuresMap,
+  qualificationPlans,
 }) => {
   const { anonymizeName } = usePrivacy();
   const { cellSize } = MATRIX_LAYOUT;
@@ -81,30 +85,59 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
   const isCollapsed = collapsedStates[subcategory.id!] || false;
 
   // Find child subcategories
-  const childSubcategories = allSubcategories.filter(s => s.parentSubCategoryId === subcategory.id)
-    .sort((a, b) => a.name.localeCompare(b.name, 'de'));
+  const childSubcategories = useMemo(() =>
+    allSubcategories
+      .filter(s => s.parentSubCategoryId === subcategory.id)
+      .sort((a, b) => a.name.localeCompare(b.name, 'de')),
+    [allSubcategories, subcategory.id]
+  );
 
-  const allDescendantSkillIds = getAllSkillIdsForSubcategory(subcategory.id!, allSubcategories, allSkills);
+  const allDescendantSkillIds = useMemo(
+    () => getAllSkillIdsForSubcategory(subcategory.id!, allSubcategories, allSkills),
+    [subcategory.id, allSubcategories, allSkills]
+  );
 
   // Use all descendants for average calculation
-  const subAvg = calculateAverage(allDescendantSkillIds);
+  const subAvg = useMemo(() => calculateAverage(allDescendantSkillIds), [calculateAverage, allDescendantSkillIds]);
   const [isLabelHovered, setIsLabelHovered] = useState(false);
 
   // Sort skills
-  const sortedSkills = [...skills].sort((a, b) => {
-    if (skillSort) {
-      // Sort by average value
-      const avgA = calculateAverage([a.id!]) || 0;
-      const avgB = calculateAverage([b.id!]) || 0;
-      return skillSort === 'asc' ? avgA - avgB : avgB - avgA;
-    }
-    // Default: alphabetical
-    return a.name.localeCompare(b.name, 'de');
-  });
+  const sortedSkills = useMemo(() =>
+    [...skills].sort((a, b) => {
+      if (skillSort) {
+        const avgA = calculateAverage([a.id!]) || 0;
+        const avgB = calculateAverage([b.id!]) || 0;
+        return skillSort === 'asc' ? avgA - avgB : avgB - avgA;
+      }
+      return a.name.localeCompare(b.name, 'de');
+    }),
+    [skills, skillSort, calculateAverage]
+  );
 
   // Calculate Max Percentage across all employees (Highest Average) using all descendants
-  const validAvgs = employees.map(e => calculateAverage(allDescendantSkillIds, e.id)).filter((a): a is number => a !== null);
-  const maxAvg = validAvgs.length > 0 ? Math.max(...validAvgs) : null;
+  const maxAvg = useMemo(() => {
+    const validAvgs = employees.map(e => calculateAverage(allDescendantSkillIds, e.id)).filter((a): a is number => a !== null);
+    return validAvgs.length > 0 ? Math.max(...validAvgs) : null;
+  }, [employees, allDescendantSkillIds, calculateAverage]);
+
+  // Pre-compute fulfillment for the label badge
+  const fulfillmentPct = useMemo(() => {
+    if (showMaxValues !== 'fulfillment') return null;
+    const scores: number[] = [];
+    employees.forEach(emp => {
+      allDescendantSkillIds.forEach(sId => {
+        const asm = getAssessment(emp.id!, sId);
+        const individualTarget = asm?.targetLevel || 0;
+        const roleTarget = getMaxRoleTargetForSkill(emp.roles, sId, roles) || 0;
+        const target = Math.max(individualTarget, roleTarget);
+        if (target > 0) {
+          const level = asm?.level ?? (roleTarget ? 0 : -1);
+          if (level >= 0) scores.push(Math.min(100, Math.round((level / target) * 100)));
+        }
+      });
+    });
+    return scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
+  }, [showMaxValues, employees, allDescendantSkillIds, getAssessment, roles]);
 
   return (
     <div>
@@ -191,29 +224,11 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
               </Tooltip>
             ) : (
               // Fulfillment Bubble
-              (() => {
-                const scores: number[] = [];
-                employees.forEach(emp => {
-                  allDescendantSkillIds.forEach(sId => {
-                    const asm = getAssessment(emp.id!, sId);
-                    const individualTarget = asm?.targetLevel || 0;
-                    const roleTarget = getMaxRoleTargetForSkill(emp.roles, sId, roles) || 0;
-                    const target = Math.max(individualTarget, roleTarget);
-                    if (target > 0) {
-                      const level = asm?.level ?? (roleTarget ? 0 : -1);
-                      if (level >= 0) scores.push(Math.min(100, Math.round((level / target) * 100)));
-                    }
-                  });
-                });
-                const ful = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
-                return (
-                  <Tooltip label="Erfüllungsgrad (Ist/Soll)" withArrow>
-                    <Badge size="xs" w={46} variant={ful === null ? "outline" : "light"} color={ful === null ? "gray" : ful >= 100 ? "teal" : "orange"}>
-                      {ful === null ? "N/A" : `${ful}%`}
-                    </Badge>
-                  </Tooltip>
-                );
-              })()
+              <Tooltip label="Erfüllungsgrad (Ist/Soll)" withArrow>
+                <Badge size="xs" w={46} variant={fulfillmentPct === null ? "outline" : "light"} color={fulfillmentPct === null ? "gray" : fulfillmentPct >= 100 ? "teal" : "orange"}>
+                  {fulfillmentPct === null ? "N/A" : `${fulfillmentPct}%`}
+                </Badge>
+              </Tooltip>
             )}
           </Group>
         </div>
@@ -362,9 +377,7 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
               onSkillHover={onSkillHover}
               onEmployeeHover={onEmployeeHover}
               getAssessment={getAssessment}
-              calculateSkillAverage={(skillId) =>
-                calculateAverage([skillId]) ?? null
-              }
+              calculateSkillAverage={(skillId) => calculateAverage([skillId]) ?? null}
               onLevelChange={onLevelChange}
               onTargetLevelChange={onTargetLevelChange}
               showMaxValues={showMaxValues}
@@ -372,6 +385,8 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
               isEditMode={isEditMode}
               depth={depth}
               labelWidth={effectiveLabelWidth}
+              measuresMap={measuresMap}
+              qualificationPlans={qualificationPlans}
             />
           ))}
           {isEditMode && (
@@ -492,6 +507,8 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
                 onAddSubcategory={onAddSubcategory}
                 labelWidth={labelWidth}
                 onNavigate={onNavigate}
+                measuresMap={measuresMap}
+                qualificationPlans={qualificationPlans}
               />
             );
           })}
@@ -499,4 +516,4 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
       )}
     </div>
   );
-};
+});

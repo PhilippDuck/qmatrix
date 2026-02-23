@@ -4,8 +4,7 @@ import { IconPencil } from "@tabler/icons-react";
 import { MATRIX_LAYOUT, LEVELS } from "../../constants/skillLevels";
 import { getScoreColor, getMaxRoleTargetForSkill } from "../../utils/skillCalculations";
 import { SkillCell } from "./SkillCell";
-import { Employee, Skill, Assessment, EmployeeRole } from "../../store/useStore";
-import { useStore } from "../../store/useStore";
+import { Employee, Skill, Assessment, EmployeeRole, QualificationMeasure, QualificationPlan } from "../../store/useStore";
 
 import { MatrixColumn } from "./types";
 
@@ -27,6 +26,8 @@ interface MatrixSkillRowProps {
   isEditMode: boolean;
   depth?: number;
   labelWidth?: number;
+  measuresMap?: Map<string, QualificationMeasure[]>;
+  qualificationPlans?: QualificationPlan[];
 }
 
 export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = React.memo(({
@@ -47,15 +48,16 @@ export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = React.memo(({
   isEditMode,
   depth = 0,
   labelWidth,
+  measuresMap,
+  qualificationPlans = [],
 }) => {
-  const { qualificationMeasures, qualificationPlans } = useStore();
   const { cellSize } = MATRIX_LAYOUT;
   const effectiveLabelWidth = labelWidth || MATRIX_LAYOUT.labelWidth;
   const isRowHovered = isHovered;
   const skillAvg = calculateSkillAverage(skill.id!);
 
-  // Pre-filter measures for this skill
-  const skillMeasures = qualificationMeasures.filter(m => m.skillId === skill.id);
+  // O(1) lookup via pre-computed map instead of O(n) filter
+  const skillMeasures = measuresMap?.get(skill.id!) ?? [];
 
   // Calculate Max Level for this skill across all employees
   const maxLevelVal = Math.max(...employees.map(e => {
