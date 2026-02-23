@@ -140,7 +140,7 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
             <Text
               fw={500}
               size="xs"
-              style={{ cursor: "pointer" }}
+              style={{ cursor: "pointer", whiteSpace: "nowrap" }}
               onClick={() => onToggleSubcategory(subcategory.id!)}
             >
               {subcategory.name}
@@ -178,14 +178,14 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
             {showMaxValues === 'avg' ? (
               // Average Bubble
               <Tooltip label="Durchschnittliche Abdeckung" withArrow>
-                <Badge size="xs" variant={subAvg === null ? "outline" : "light"} color={getScoreColor(subAvg)}>
+                <Badge size="xs" w={46} variant={subAvg === null ? "outline" : "light"} color={getScoreColor(subAvg)}>
                   {subAvg === null ? "N/A" : `${subAvg}%`}
                 </Badge>
               </Tooltip>
             ) : showMaxValues === 'max' ? (
               // Max Percentage Bubble
               <Tooltip label={`Max. Abdeckung: ${maxAvg !== null ? maxAvg : "N/A"}%`} withArrow>
-                <Badge size="xs" variant={maxAvg === null ? "outline" : "light"} color={maxAvg === null ? "gray" : getScoreColor(maxAvg)} style={{ border: maxAvg === null ? undefined : '1px solid currentColor' }}>
+                <Badge size="xs" w={46} variant={maxAvg === null ? "outline" : "light"} color={maxAvg === null ? "gray" : getScoreColor(maxAvg)} style={{ border: maxAvg === null ? undefined : '1px solid currentColor' }}>
                   {maxAvg !== null ? `${maxAvg}%` : "N/A"}
                 </Badge>
               </Tooltip>
@@ -208,7 +208,7 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = ({
                 const ful = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
                 return (
                   <Tooltip label="Erfüllungsgrad (Ist/Soll)" withArrow>
-                    <Badge size="xs" variant={ful === null ? "outline" : "light"} color={ful === null ? "gray" : ful >= 100 ? "teal" : "orange"}>
+                    <Badge size="xs" w={46} variant={ful === null ? "outline" : "light"} color={ful === null ? "gray" : ful >= 100 ? "teal" : "orange"}>
                       {ful === null ? "N/A" : `${ful}%`}
                     </Badge>
                   </Tooltip>

@@ -145,7 +145,7 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = ({
             <Text
               fw={700}
               size="xs"
-              style={{ cursor: "pointer" }}
+              style={{ cursor: "pointer", whiteSpace: "nowrap" }}
               onClick={() => onToggleCategory(category.id!)}
             >
               {category.name.toUpperCase()}
@@ -183,14 +183,14 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = ({
             {showMaxValues === 'avg' ? (
               // Average Bubble
               <Tooltip label="Durchschnittliche Abdeckung" withArrow>
-                <Badge size="xs" variant={catAvg === null ? "outline" : "filled"} color={catAvg === null ? "gray" : getScoreColor(catAvg)}>
+                <Badge size="xs" w={46} variant={catAvg === null ? "outline" : "filled"} color={catAvg === null ? "gray" : getScoreColor(catAvg)}>
                   {catAvg === null ? "N/A" : `${catAvg}%`}
                 </Badge>
               </Tooltip>
             ) : showMaxValues === 'max' ? (
               // Max Percentage Bubble
               <Tooltip label={`Max. Abdeckung: ${maxAvg !== null ? maxAvg : "N/A"}%`} withArrow>
-                <Badge size="xs" variant={maxAvg === null ? "outline" : "filled"} color={maxAvg === null ? "gray" : getScoreColor(maxAvg)} style={{ border: maxAvg === null ? undefined : '1px solid currentColor' }}>
+                <Badge size="xs" w={46} variant={maxAvg === null ? "outline" : "filled"} color={maxAvg === null ? "gray" : getScoreColor(maxAvg)} style={{ border: maxAvg === null ? undefined : '1px solid currentColor' }}>
                   {maxAvg !== null ? `${maxAvg}%` : "N/A"}
                 </Badge>
               </Tooltip>
@@ -213,7 +213,7 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = ({
                 const ful = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
                 return (
                   <Tooltip label="Erfüllungsgrad (Ist/Soll)" withArrow>
-                    <Badge size="xs" variant={ful === null ? "outline" : "filled"} color={ful === null ? "gray" : ful >= 100 ? "teal" : "orange"}>
+                    <Badge size="xs" w={46} variant={ful === null ? "outline" : "filled"} color={ful === null ? "gray" : ful >= 100 ? "teal" : "orange"}>
                       {ful === null ? "N/A" : `${ful}%`}
                     </Badge>
                   </Tooltip>

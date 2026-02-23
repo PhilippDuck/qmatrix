@@ -510,15 +510,15 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
   // Dynamische Breite für die Label-Spalte berechnen
   const responsiveLabelWidth = useMemo(() => {
     let maxW = 260; // Min width aus Constants
-    const charW = 7.5; // Reduziert für engere Breite (vorher 9)
+    const charW = 8.5; // Erhöht für mehr Puffer (vorher 7.5)
 
     const calcW = (text: string, depth: number, type: 'cat' | 'sub' | 'skill') => {
       let padding = 24; // Reduzierter Buffer (vorher 40) + Icons
       if (type === 'cat') padding += 0;
       else if (type === 'sub') padding += (depth * 24);
-      else if (type === 'skill') padding += 20 + (depth * 24); // +20 indentation for skills
+      else if (type === 'skill') padding += 40 + (depth * 24); // Erhöht auf 40 passend zum neuen Padding
 
-      return padding + (text.length * charW) + 24; // + Buffer right (vorher 40)
+      return padding + (text.length * charW) + 54; // Puffer auf 54 erhöht (46px Badge + Spacing)
     };
 
     categories.forEach(cat => {
@@ -557,7 +557,7 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
       rootSubs.forEach(s => processSub(s.id!, 0));
     });
 
-    return Math.min(maxW, 500); // Hard cap at 500px to prevent layout break
+    return Math.min(maxW, 600); // Erhöhtes Hard-Cap auf 600px
   }, [categories, subcategories, skills, collapsedStates]);
 
   return (

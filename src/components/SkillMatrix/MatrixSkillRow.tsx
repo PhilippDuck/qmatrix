@@ -72,7 +72,7 @@ export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = React.memo(({
         style={{
           width: effectiveLabelWidth,
           padding: "6px 12px",
-          paddingLeft: `${44 + (depth * 24)}px`,
+          paddingLeft: `${64 + (depth * 24)}px`,
           position: "sticky",
           left: 0,
           zIndex: 30,
@@ -93,7 +93,7 @@ export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = React.memo(({
               size="sm"
               fw={isRowHovered ? 700 : 400}
               truncate
-              style={{ flex: 1, cursor: "help" }}
+              style={{ flex: 1, cursor: "help", whiteSpace: "nowrap" }}
             >
               {skill.name}
             </Text>
@@ -122,47 +122,45 @@ export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = React.memo(({
         </HoverCard>
 
         <Group gap={4} align="center">
-          <Group gap={4} align="center">
-            {showMaxValues === 'avg' ? (
-              // Average Display
-              <Text style={{ fontSize: "10px" }} c={getScoreColor(skillAvg)}>
+          {showMaxValues === 'avg' ? (
+            // Average Display
+            <Tooltip label="Durchschnittliche Abdeckung" withArrow>
+              <Badge size="xs" w={46} variant="transparent" color={getScoreColor(skillAvg)}>
                 {skillAvg === null ? "N/A" : `${skillAvg}%`}
-              </Text>
-            ) : showMaxValues === 'max' ? (
-              // Max Value Display
-              maxLevelVal > 0 ? (
-                <Tooltip label={`Höchstes Level: ${maxLabel}`} withArrow>
-                  <Badge size="xs" variant="outline" color={getScoreColor(maxLevelVal)} style={{ padding: '0 4px', height: '16px' }}>
-                    {maxLevelVal}%
+              </Badge>
+            </Tooltip>
+          ) : showMaxValues === 'max' ? (
+            // Max Value Display
+            <Tooltip label={`Höchstes Level: ${maxLabel}`} withArrow>
+              <Badge size="xs" w={46} variant={maxLevelVal > 0 ? "outline" : "transparent"} color={maxLevelVal > 0 ? getScoreColor(maxLevelVal) : "gray"} style={maxLevelVal > 0 ? { padding: '0 4px', height: '16px' } : undefined}>
+                {maxLevelVal > 0 ? `${maxLevelVal}%` : "-"}
+              </Badge>
+            </Tooltip>
+          ) : (
+            // Fulfillment Display
+            (() => {
+              const scores: number[] = [];
+              employees.forEach(e => {
+                const asm = getAssessment(e.id!, skill.id!);
+                const individualTarget = asm?.targetLevel || 0;
+                const roleTarget = getMaxRoleTargetForSkill(e.roles, skill.id!, roles) || 0;
+                const target = Math.max(individualTarget, roleTarget);
+                if (target > 0) {
+                  const level = asm?.level ?? (roleTarget ? 0 : -1);
+                  if (level >= 0) scores.push(Math.min(100, Math.round((level / target) * 100)));
+                }
+              });
+              const ful = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
+              const fulColor = ful === null ? 'gray' : ful >= 100 ? 'teal' : ful >= 67 ? 'yellow' : 'red';
+              return (
+                <Tooltip label="Erfüllungsgrad (Ist/Soll)" withArrow>
+                  <Badge size="xs" w={46} variant="transparent" color={fulColor}>
+                    {ful === null ? "-" : `${ful}%`}
                   </Badge>
                 </Tooltip>
-              ) : (
-                <Text style={{ fontSize: "10px" }} c="dimmed">-</Text>
-              )
-            ) : (
-              // Fulfillment Display
-              (() => {
-                const scores: number[] = [];
-                employees.forEach(e => {
-                  const asm = getAssessment(e.id!, skill.id!);
-                  const individualTarget = asm?.targetLevel || 0;
-                  const roleTarget = getMaxRoleTargetForSkill(e.roles, skill.id!, roles) || 0;
-                  const target = Math.max(individualTarget, roleTarget);
-                  if (target > 0) {
-                    const level = asm?.level ?? (roleTarget ? 0 : -1);
-                    if (level >= 0) scores.push(Math.min(100, Math.round((level / target) * 100)));
-                  }
-                });
-                const ful = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
-                const fulColor = ful === null ? 'dimmed' : ful >= 100 ? 'teal' : ful >= 67 ? 'yellow' : 'red';
-                return (
-                  <Text style={{ fontSize: "10px" }} c={fulColor}>
-                    {ful === null ? "-" : `${ful}%`}
-                  </Text>
-                );
-              })()
-            )}
-          </Group>
+              );
+            })()
+          )}
         </Group>
       </div>
       {columns.map((col) => {

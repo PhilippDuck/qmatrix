@@ -1,4 +1,15 @@
 
+## [2.16.0] - 2026-02-23
+
+### Benutzeroberfläche & Anzeige (Skill-Matrix)
+- **Vertikale Badge-Ausrichtung**: Einführung eines fixen Breiten-Designs (`46px`) für alle Prozent-Badges in der Matrix. Dies stellt sicher, dass alle statistischen Werte (Durchschnitt, Max, Erfüllungsgrad) über alle Hierarchie-Ebenen (Kategorie, Unterkategorie, Skill) hinweg exakt vertikal untereinander ausgerichtet sind.
+- **Hierarchische Einrückung**: Anpassung der Einrückungstiefen zur besseren visuellen Trennung. Skills sind nun deutlicher unter ihren jeweiligen Unterkategorien eingerückt.
+- **Verbesserte Textdarstellung**: 
+  - Zeilenumbrüche bei langen Skill-Namen wurden durch `white-space: nowrap` unterbunden.
+  - Die Spaltenbreite berechnet sich nun dynamisch basierend auf der tatsächlichen Textlänge plus Einrückung und Badge-Platzbedarf.
+  - Das Spalten-Limit wurde auf `600px` erhöht.
+- **Bugfix Abteilungsanzeige**: Korrektur der Fallback-Logik in der Mitarbeiterliste (UUID-Fallback entfernt).
+
 ## [2.15.0] - 2026-02-23
 
 ### Architektur & Refactoring (Datenintegrität)
