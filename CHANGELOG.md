@@ -1,4 +1,11 @@
 
+## [2.16.4] - 2026-02-24
+
+### Performance (Skill-Matrix)
+- **Berechnungs-Cache über Seitenwechsel hinaus**: `calculateAverage` nutzt jetzt einen module-level Cache (`_avgCache`), der außerhalb des React-Lifecycles lebt. Bei einem Seitenwechsel ohne Datenänderung werden alle Durchschnittswerte direkt aus dem Cache gelesen (O(1)) statt neu berechnet. Der Cache wird automatisch invalidiert, sobald sich `assessments` oder `roles` ändern.
+- **Per-Employee-Averages und Group-Summary-Metriken vorgezogen**: In `MatrixSubcategoryRow` und `MatrixCategoryRow` werden alle Spaltenwerte (pro Mitarbeiter und Gruppen-Zusammenfassungen) jetzt in einem `useMemo` vorberechnet, statt bei jedem Render inline. Hover-Events lösen dadurch keine Berechnungen mehr aus.
+- **Matrix startet eingeklappt**: Die Skill-Matrix startet bei jedem Seitenbesuch mit allen Kategorien eingeklappt. Dadurch werden beim ersten Rendern nur Kategorie-Zeilen (statt tausende Skill-Zeilen) erzeugt. Der Collapsed-State wird nicht mehr in localStorage persistiert — gespeicherte Ansichten behalten ihr eigenes Collapse-Verhalten.
+
 ## [2.16.3] - 2026-02-23
 
 ### Performance (Skill-Matrix)

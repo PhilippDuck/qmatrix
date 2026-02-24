@@ -8,16 +8,19 @@ export function useMatrixState(
     savedViews: SavedView[] | undefined,
     addSavedView: (view: Omit<SavedView, "id" | "updatedAt">) => Promise<string>,
     updateSavedView: (id: string, view: Omit<SavedView, "id" | "updatedAt">) => Promise<void>,
-    deleteSavedView: (id: string) => Promise<void>
+    deleteSavedView: (id: string) => Promise<void>,
+    categoryIds: string[],
 ) {
+    // Always start with all categories collapsed — resets on every page visit for performance.
+    // Individual expand/collapse is held in React state only (not persisted to localStorage).
     const [collapsedStates, setCollapsedStates] = useState<Record<string, boolean>>(() => {
-        const saved = localStorage.getItem("skill-matrix-collapsed");
-        return saved ? JSON.parse(saved) : {};
+        const initial: Record<string, boolean> = {};
+        categoryIds.forEach(id => { initial[id] = true; });
+        return initial;
     });
 
     const updateCollapsedStates = (newState: Record<string, boolean>) => {
         setCollapsedStates(newState);
-        localStorage.setItem("skill-matrix-collapsed", JSON.stringify(newState));
     };
 
     const toggleItem = (id: string) => {
@@ -87,10 +90,6 @@ export function useMatrixState(
     };
 
     const handleSelectView = (view: SavedView) => {
-        if (!activeViewId) {
-            localStorage.setItem("skill-matrix-collapsed-standard", JSON.stringify(collapsedStates));
-        }
-
         setActiveViewId(view.id!);
         setFilterDepartments(view.config.filters.departments);
         setFilterRoles(view.config.filters.roles);
@@ -207,12 +206,9 @@ export function useMatrixState(
         setEmployeeSort(null);
         setSkillSort(null);
 
-        const savedStandard = localStorage.getItem("skill-matrix-collapsed-standard");
-        if (savedStandard) {
-            updateCollapsedStates(JSON.parse(savedStandard));
-        } else {
-            updateCollapsedStates({});
-        }
+        const initial: Record<string, boolean> = {};
+        categoryIds.forEach(id => { initial[id] = true; });
+        updateCollapsedStates(initial);
     };
 
     const handleDeleteView = async (id: string) => {

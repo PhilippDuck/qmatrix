@@ -147,7 +147,7 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
     }]
   ], ['INPUT', 'TEXTAREA', 'SELECT']);
 
-  const matrixState = useMatrixState(savedViews, addSavedView, updateSavedView, deleteSavedView);
+  const matrixState = useMatrixState(savedViews, addSavedView, updateSavedView, deleteSavedView, categories.map(c => c.id!));
   const {
     collapsedStates, updateCollapsedStates, toggleItem,
     filterDepartments, setFilterDepartments,
