@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from "react";
 import { useLocalStorage } from "@mantine/hooks";
-import { SavedView } from "../context/DataContext";
+import { SavedView } from "../store/useStore";
 
 export type MetricMode = 'avg' | 'max' | 'fulfillment';
 
@@ -10,14 +10,11 @@ export function useMatrixState(
     updateSavedView: (id: string, view: Omit<SavedView, "id" | "updatedAt">) => Promise<void>,
     deleteSavedView: (id: string) => Promise<void>,
     categoryIds: string[],
+    subcategoryIds: string[],
+    loading: boolean = false,
 ) {
-    // Always start with all categories collapsed — resets on every page visit for performance.
-    // Individual expand/collapse is held in React state only (not persisted to localStorage).
-    const [collapsedStates, setCollapsedStates] = useState<Record<string, boolean>>(() => {
-        const initial: Record<string, boolean> = {};
-        categoryIds.forEach(id => { initial[id] = true; });
-        return initial;
-    });
+    // Individual expand/collapse is held in React state only (not persisted to localStorage unless in a View).
+    const [collapsedStates, setCollapsedStates] = useState<Record<string, boolean>>({});
 
     const updateCollapsedStates = (newState: Record<string, boolean>) => {
         setCollapsedStates(newState);
@@ -79,18 +76,53 @@ export function useMatrixState(
         defaultValue: null,
     });
 
-    // Restore collapsed states from the active view when savedViews first becomes available
-    // (e.g. after page navigation — collapsedStates is React-only state and resets on unmount)
-    const [hasRestoredCollapsedStates, setHasRestoredCollapsedStates] = useState(false);
+    // Handle initialization and restoration
+    // We use a string to track WHICH view (or 'standard') we have restored.
+    const [lastRestoredId, setLastRestoredId] = useState<string | null>(null);
+
     useEffect(() => {
-        if (hasRestoredCollapsedStates || !savedViews) return;
-        setHasRestoredCollapsedStates(true);
-        if (!activeViewId) return;
-        const activeView = savedViews.find(v => v.id === activeViewId);
-        if (activeView?.config.collapsedStates) {
-            updateCollapsedStates(activeView.config.collapsedStates);
+        // Wait until initialization is finished
+        if (loading || !savedViews || categoryIds.length === 0) return;
+
+        if (activeViewId) {
+            // We have a named view active.
+            const activeView = savedViews.find(v => v.id === activeViewId);
+
+            if (activeView) {
+                // View found! Restore it if not already done for this ID.
+                if (lastRestoredId !== activeViewId) {
+                    if (activeView.config.collapsedStates !== undefined) {
+                        updateCollapsedStates(activeView.config.collapsedStates);
+                    } else {
+                        // Fallback for views without explicit collapsed state: collapse all.
+                        const initial: Record<string, boolean> = {};
+                        [...categoryIds, ...subcategoryIds].forEach(id => { initial[id] = true; });
+                        updateCollapsedStates(initial);
+                    }
+                    setLastRestoredId(activeViewId);
+                }
+            } else {
+                // View ID set but view NOT found. 
+                // We keep waiting unless loading is definitively finished.
+                // In Zustands store, when loading is false, savedViews should be complete.
+                // If it's still not found, it might have been deleted. Fallback to standard.
+                if (!loading && lastRestoredId !== 'missing-fallback') {
+                    const initial: Record<string, boolean> = {};
+                    [...categoryIds, ...subcategoryIds].forEach(id => { initial[id] = true; });
+                    updateCollapsedStates(initial);
+                    setLastRestoredId('missing-fallback');
+                }
+            }
+        } else {
+            // Standard view (activeViewId is null)
+            if (lastRestoredId !== 'standard') {
+                const initial: Record<string, boolean> = {};
+                [...categoryIds, ...subcategoryIds].forEach(id => { initial[id] = true; });
+                updateCollapsedStates(initial);
+                setLastRestoredId('standard');
+            }
         }
-    }, [savedViews, hasRestoredCollapsedStates, activeViewId]);
+    }, [loading, savedViews, categoryIds, subcategoryIds, activeViewId, lastRestoredId]);
 
     const nextMetricMode = () => {
         setMetricMode(prev => prev === 'avg' ? 'max' : prev === 'max' ? 'fulfillment' : 'avg');
@@ -220,8 +252,9 @@ export function useMatrixState(
         setSkillSort(null);
 
         const initial: Record<string, boolean> = {};
-        categoryIds.forEach(id => { initial[id] = true; });
+        [...categoryIds, ...subcategoryIds].forEach(id => { initial[id] = true; });
         updateCollapsedStates(initial);
+        setLastRestoredId('standard');
     };
 
     const handleDeleteView = async (id: string) => {

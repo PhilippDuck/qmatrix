@@ -67,6 +67,7 @@ export interface Department {
 export interface EmployeeRole {
   id?: string;
   name: string;
+  description?: string;
   inheritsFromId?: string;
   icon?: string; // Tabler icon name, e.g. "IconUser"
   requiredSkills?: { skillId: string; level: number }[];

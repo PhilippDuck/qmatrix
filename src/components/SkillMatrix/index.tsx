@@ -94,6 +94,7 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
     deleteEmployee,
     importData,
     assessments,
+    loading,
   } = useStore();
 
   // Defer assessment updates so the matrix structure renders immediately
@@ -147,7 +148,15 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
     }]
   ], ['INPUT', 'TEXTAREA', 'SELECT']);
 
-  const matrixState = useMatrixState(savedViews, addSavedView, updateSavedView, deleteSavedView, categories.map(c => c.id!));
+  const matrixState = useMatrixState(
+    savedViews,
+    addSavedView,
+    updateSavedView,
+    deleteSavedView,
+    categories.map(c => c.id!),
+    subcategories.map(s => s.id!),
+    loading
+  );
   const {
     collapsedStates, updateCollapsedStates, toggleItem,
     filterDepartments, setFilterDepartments,

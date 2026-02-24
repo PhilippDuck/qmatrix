@@ -1,4 +1,13 @@
 
+## [2.16.6] - 2026-02-24
+
+### Neue Funktionen (Stammdaten)
+- **Rollen-Beschreibungen**: Rollen können nun mit einer Beschreibung versehen werden. Diese wird im Rollen-Manager bearbeitet und in der Übersichtstabelle angezeigt.
+
+### Verbesserungen (Skill-Matrix)
+- **Robuste View-Wiederherstellung**: Die Wiederherstellung des Collapsed-Zustands von Ansichten wurde grundlegend überarbeitet, um asynchrones Laden von Daten (Categories/Subcategories) abzufangen.
+- **Unterstützung für Unterkategorien**: Die Standard-Ansicht (und Ansichten ohne expliziten State) klappt nun auch Unterkategorien initial ein, was für eine aufgeräumte Matrix bei tiefen Hierarchien sorgt.
+
 ## [2.16.5] - 2026-02-24
 
 ### Behobene Fehler (Skill-Matrix)

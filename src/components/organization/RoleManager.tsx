@@ -21,6 +21,7 @@ import {
     Modal,
     Box,
     Tooltip,
+    Textarea,
 } from "@mantine/core";
 import { IconPlus, IconTrash, IconBadge, IconArrowUpRight, IconEdit, IconList, IconHierarchy, IconX } from "@tabler/icons-react";
 import { useDisclosure } from "@mantine/hooks";
@@ -66,6 +67,7 @@ export const RoleManager: React.FC = () => {
     const [opened, { open, close }] = useDisclosure(false);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [name, setName] = useState("");
+    const [description, setDescription] = useState("");
     const [inheritsFrom, setInheritsFrom] = useState<string | null>(null);
     const [icon, setIcon] = useState<string>("IconUser");
     const [requiredSkills, setRequiredSkills] = useState<{ skillId: string; level: number }[]>([]);
@@ -75,6 +77,7 @@ export const RoleManager: React.FC = () => {
     const [confirmationOpen, setConfirmationOpen] = useState(false);
     const [initialRoleState, setInitialRoleState] = useState<{
         name: string;
+        description: string;
         inheritsFrom: string | null;
         icon: string;
         requiredSkills: { skillId: string; level: number }[];
@@ -83,11 +86,13 @@ export const RoleManager: React.FC = () => {
     const handleOpenAdd = () => {
         setEditingId(null);
         setName("");
+        setDescription("");
         setInheritsFrom(null);
         setIcon("IconUser");
         setRequiredSkills([]);
         setInitialRoleState({
             name: "",
+            description: "",
             inheritsFrom: null,
             icon: "IconUser",
             requiredSkills: [],
@@ -98,6 +103,7 @@ export const RoleManager: React.FC = () => {
     const handleOpenEdit = (role: EmployeeRole) => {
         setEditingId(role.id!);
         setName(role.name);
+        setDescription(role.description || "");
         setInheritsFrom(role.inheritsFromId || null);
         setIcon(role.icon || "IconUser");
 
@@ -117,6 +123,7 @@ export const RoleManager: React.FC = () => {
 
         setInitialRoleState({
             name: role.name,
+            description: role.description || "",
             inheritsFrom: role.inheritsFromId || null,
             icon: role.icon || "IconUser",
             requiredSkills: initialSkills.map(s => ({ ...s })), // deep copy
@@ -128,6 +135,7 @@ export const RoleManager: React.FC = () => {
     const hasChanges = () => {
         if (!initialRoleState) return false;
         if (name !== initialRoleState.name) return true;
+        if (description !== initialRoleState.description) return true;
         if (inheritsFrom !== initialRoleState.inheritsFrom) return true;
         if (icon !== initialRoleState.icon) return true;
 
@@ -147,8 +155,6 @@ export const RoleManager: React.FC = () => {
         }
     };
 
-    // ... (rest of component handles) Use handleCloseAttempt instead of close
-
     const handleSave = async () => {
         if (!name.trim()) return;
 
@@ -156,6 +162,7 @@ export const RoleManager: React.FC = () => {
         try {
             const roleData = {
                 name: name.trim(),
+                description: description.trim(),
                 inheritsFromId: inheritsFrom || undefined,
                 icon: icon,
                 requiredSkills: requiredSkills,
@@ -168,21 +175,14 @@ export const RoleManager: React.FC = () => {
                 roleId = await addRole(roleData);
             }
 
-            // Update skill associations if we have a valid role ID
-            // We now save skills directly on the role, so updateSkillsForRole is legacy/cleanup?
-            // Actually updateSkillsForRole was doing the INVERSE update.
-            // Since we moved to direct storage, we don't strictly need to update the skills requiredByRoleIds anymore,
-            // UNLESS other parts of the app rely on it.
-            // For safety: clean up the inverse relationship or update it to match.
-            // For now, let's just assume the Role object is the source of truth.
-
-            /* Legacy Sync (Optional - can be removed if we fully switch) */
+            // Legacy Sync (Optional - can be removed if we fully switch)
             if (roleId) {
                 await updateSkillsForRole(roleId, requiredSkills.map(s => s.skillId));
             }
 
             close();
             setName("");
+            setDescription("");
             setInheritsFrom(null);
             setEditingId(null);
             setRequiredSkills([]);
@@ -208,7 +208,6 @@ export const RoleManager: React.FC = () => {
         .filter((r) => !editingId || r.id !== editingId)
         .map((r) => ({ value: r.id!, label: r.name }));
 
-    // Group skills by category for better selection
     // Group skills by category -> subcategory for better selection
     const skillOptions = useMemo(() => {
         const options: { group: string; items: { value: string; label: string }[] }[] = [];
@@ -284,6 +283,7 @@ export const RoleManager: React.FC = () => {
                             <Table.Thead>
                                 <Table.Tr>
                                     <Table.Th>Bezeichnung</Table.Th>
+                                    <Table.Th>Beschreibung</Table.Th>
                                     <Table.Th>Erbt von</Table.Th>
                                     <Table.Th>Skills</Table.Th>
                                     <Table.Th style={{ width: 100, textAlign: "right" }}>
@@ -315,6 +315,11 @@ export const RoleManager: React.FC = () => {
                                                             </Group>
                                                         );
                                                     })()}
+                                                </Table.Td>
+                                                <Table.Td>
+                                                    <Text size="sm" c="dimmed" lineClamp={2}>
+                                                        {role.description || "-"}
+                                                    </Text>
                                                 </Table.Td>
                                                 <Table.Td>
                                                     {parentRole ? (
@@ -358,7 +363,7 @@ export const RoleManager: React.FC = () => {
                                     })
                                 ) : (
                                     <Table.Tr>
-                                        <Table.Td colSpan={4} style={{ textAlign: "center", py: "xl" }}>
+                                        <Table.Td colSpan={5} style={{ textAlign: "center", py: "xl" }}>
                                             <Text c="dimmed">Keine Rollen angelegt</Text>
                                         </Table.Td>
                                     </Table.Tr>
@@ -401,6 +406,13 @@ export const RoleManager: React.FC = () => {
                                 data-autofocus
                                 required
                             />
+                            <Textarea
+                                label="Beschreibung"
+                                placeholder="Zusätzliche Informationen zur Rolle"
+                                value={description}
+                                onChange={(e) => setDescription(e.currentTarget.value)}
+                                minRows={3}
+                            />
                             <Select
                                 label="Erbt von (Optional)"
                                 placeholder="Keine Vererbung"
@@ -436,14 +448,10 @@ export const RoleManager: React.FC = () => {
                                     nothingFoundMessage="Keine Skills gefunden"
                                 />
 
-                                {/* Skill Value Editor List */}
-                                {/* Skill Value Editor List */}
                                 {requiredSkills.length > 0 || inheritedSkills.length > 0 ? (
                                     <Paper withBorder p="xs" bg="var(--mantine-color-default)">
                                         <Stack gap="xs">
-                                            {/* Auto-scroll removed */}
                                             <Stack gap="sm" pb="xl">
-                                                {/* DIRECT SKILLS */}
                                                 {requiredSkills.length > 0 && (
                                                     <>
                                                         <Divider label="Direkt zugeordnete Skills" labelPosition="left" />
@@ -490,7 +498,6 @@ export const RoleManager: React.FC = () => {
                                                     </>
                                                 )}
 
-                                                {/* INHERITED SKILLS */}
                                                 {inheritedSkills.length > 0 && (
                                                     <>
                                                         <Divider
@@ -502,7 +509,6 @@ export const RoleManager: React.FC = () => {
                                                             }
                                                             labelPosition="left"
                                                             mt="md"
-                                                        // ... continuing same logic
                                                         />
                                                         {inheritedSkills
                                                             .filter(is => !requiredSkills.some(rs => rs.skillId === is.skillId))
@@ -548,7 +554,6 @@ export const RoleManager: React.FC = () => {
                                                     </>
                                                 )}
                                             </Stack>
-                                            {/* Auto-scroll removed */}
                                         </Stack>
                                     </Paper>
                                 ) : (
