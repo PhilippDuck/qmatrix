@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, useDeferredValue } from "react";
 import { MATRIX_LAYOUT } from "../../constants/skillLevels";
 import {
   Box,
@@ -9,6 +9,7 @@ import {
   ActionIcon,
   Tooltip,
   Text,
+  Loader,
   useMantineColorScheme,
 } from "@mantine/core";
 import { getMaxRoleTargetForSkill } from "../../utils/skillCalculations";
@@ -94,6 +95,11 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
     importData,
     assessments,
   } = useStore();
+
+  // Defer assessment updates so the matrix structure renders immediately
+  // and expensive calculations run in a lower-priority background pass
+  const deferredAssessments = useDeferredValue(assessments);
+  const isCalculating = assessments !== deferredAssessments;
 
   const [focusEmployeeId, setFocusEmployeeId] = useState<string | null>(null);
   const [hoveredSkillId, setHoveredSkillId] = useState<string | null>(null);
@@ -185,7 +191,7 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
     calculateEmployeeAverage,
     getAssessment: getAssessmentFast,
   } = useMatrixCalculations({
-    employees, categories, subcategories, skills, departments, roles, getAssessment, assessments,
+    employees, categories, subcategories, skills, departments, roles, getAssessment, assessments: deferredAssessments,
     focusEmployeeId, showInactive, filterDepartments, filterRoles, employeeSort,
     filterCategories, skillSort, metricMode, showMaxValues: metricMode, groupingMode, hideEmployees
   });
@@ -645,8 +651,15 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
               display: "flex",
               flexDirection: "column",
               overflow: "hidden",
+              position: "relative",
             }}
           >
+            {isCalculating && (
+              <div style={{ position: "absolute", top: 8, right: 12, zIndex: 100, display: "flex", alignItems: "center", gap: 6 }}>
+                <Loader size="xs" />
+                <Text size="xs" c="dimmed">Berechne…</Text>
+              </div>
+            )}
             <div style={{ overflow: "auto", flex: 1 }}>
               <div
                 style={{

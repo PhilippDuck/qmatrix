@@ -139,6 +139,68 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = React.memo(({
     return scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
   }, [showMaxValues, employees, catSkillIds, getAssessment, roles]);
 
+  // Pre-compute per-employee averages (avoids recalculation on every hover event)
+  const perEmployeeAvgMap = useMemo(() => {
+    const map = new Map<string, number | null>();
+    columns.forEach(col => {
+      if (col.type === 'employee') {
+        map.set(col.employee.id!, calculateAverage(catSkillIds, col.employee.id));
+      }
+    });
+    return map;
+  }, [columns, catSkillIds, calculateAverage]);
+
+  // Pre-compute group-summary metrics (avoids recalculation on every hover event)
+  const groupSummaryMap = useMemo(() => {
+    const map = new Map<string, { avg: number; maxAvg: number | null; fulfillmentPct: number | null }>();
+    columns.forEach(col => {
+      if (col.type !== 'group-summary') return;
+      let totalScore = 0, count = 0;
+      col.employeeIds.forEach(eId => {
+        const emp = employees.find(e => e.id === eId);
+        catSkillIds.forEach(sId => {
+          const roleTarget = getMaxRoleTargetForSkill(emp?.roles, sId, roles);
+          const asm = getAssessment(eId, sId);
+          const rawLevel = asm?.level ?? -1;
+          const level = (rawLevel === -1 && roleTarget !== undefined) ? 0 : rawLevel;
+          if (level > -1) { totalScore += level; count++; }
+        });
+      });
+      const avg = count > 0 ? Math.round(totalScore / count) : 0;
+      const empAvgs = col.employeeIds.map(eId => {
+        const emp = employees.find(e => e.id === eId);
+        let eTotal = 0, eCount = 0;
+        catSkillIds.forEach(sId => {
+          const roleTarget = getMaxRoleTargetForSkill(emp?.roles, sId, roles);
+          const asm = getAssessment(eId, sId);
+          const rawLevel = asm?.level ?? -1;
+          const level = (rawLevel === -1 && roleTarget !== undefined) ? 0 : rawLevel;
+          if (level > -1) { eTotal += level; eCount++; }
+        });
+        return eCount > 0 ? Math.round(eTotal / eCount) : null;
+      });
+      const validEmpAvgs = empAvgs.filter((a): a is number => a !== null);
+      const maxAvg = validEmpAvgs.length > 0 ? Math.max(...validEmpAvgs) : null;
+      const scores: number[] = [];
+      col.employeeIds.forEach(eId => {
+        const emp = employees.find(e => e.id === eId);
+        catSkillIds.forEach(sId => {
+          const asm = getAssessment(eId, sId);
+          const individualTarget = asm?.targetLevel || 0;
+          const roleTarget = getMaxRoleTargetForSkill(emp?.roles, sId, roles) || 0;
+          const target = Math.max(individualTarget, roleTarget);
+          if (target > 0) {
+            const level = asm?.level ?? (roleTarget ? 0 : -1);
+            if (level >= 0) scores.push(Math.min(100, Math.round((level / target) * 100)));
+          }
+        });
+      });
+      const fulfillmentPct = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
+      map.set(col.id, { avg, maxAvg, fulfillmentPct });
+    });
+    return map;
+  }, [columns, catSkillIds, employees, getAssessment, roles]);
+
   return (
     <div>
       <div
@@ -252,44 +314,7 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = React.memo(({
             }
 
             if (col.type === 'group-summary') {
-              // Calculate summary for this group
-              let totalScore = 0;
-              let count = 0;
-              col.employeeIds.forEach(eId => {
-                const emp = employees.find(e => e.id === eId);
-                catSkillIds.forEach(sId => {
-                  const roleTarget = getMaxRoleTargetForSkill(emp?.roles, sId, roles);
-                  const asm = getAssessment(eId, sId);
-                  const rawLevel = asm?.level ?? -1;
-                  const level = (rawLevel === -1 && roleTarget !== undefined) ? 0 : rawLevel;
-                  if (level > -1) {
-                    totalScore += level;
-                    count++;
-                  }
-                });
-              });
-              const avg = count > 0 ? Math.round(totalScore / count) : 0;
-
-              // Calculate Max Average for this group
-              const empAvgs = col.employeeIds.map(eId => {
-                const emp = employees.find(e => e.id === eId);
-                let eTotal = 0;
-                let eCount = 0;
-                catSkillIds.forEach(sId => {
-                  const roleTarget = getMaxRoleTargetForSkill(emp?.roles, sId, roles);
-                  const asm = getAssessment(eId, sId);
-                  const rawLevel = asm?.level ?? -1;
-                  const level = (rawLevel === -1 && roleTarget !== undefined) ? 0 : rawLevel;
-                  if (level > -1) {
-                    eTotal += level;
-                    eCount++;
-                  }
-                });
-                return eCount > 0 ? Math.round(eTotal / eCount) : null;
-              });
-              const validEmpAvgs = empAvgs.filter((a): a is number => a !== null);
-              const maxAvg = validEmpAvgs.length > 0 ? Math.max(...validEmpAvgs) : null;
-
+              const { avg, maxAvg, fulfillmentPct: ful } = groupSummaryMap.get(col.id) ?? { avg: 0, maxAvg: null, fulfillmentPct: null };
               return (
                 <div
                   key={col.id}
@@ -302,25 +327,9 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = React.memo(({
                       </Badge>
                     ) : <Text fw={700} size="xs" c="dimmed">-</Text>
                   ) : showMaxValues === 'fulfillment' ? (
-                    (() => {
-                      const scores: number[] = [];
-                      col.employeeIds.forEach(eId => {
-                        const emp = employees.find(e => e.id === eId);
-                        catSkillIds.forEach(sId => {
-                          const asm = getAssessment(eId, sId);
-                          const individualTarget = asm?.targetLevel || 0;
-                          const roleTarget = getMaxRoleTargetForSkill(emp?.roles, sId, roles) || 0;
-                          const target = Math.max(individualTarget, roleTarget);
-                          if (target > 0) {
-                            const level = asm?.level ?? (roleTarget ? 0 : -1);
-                            if (level >= 0) scores.push(Math.min(100, Math.round((level / target) * 100)));
-                          }
-                        });
-                      });
-                      const ful = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
-                      const fulColor = ful === null ? 'dimmed' : ful >= 100 ? 'teal' : 'orange';
-                      return <Text fw={700} size="xs" c={fulColor}>{ful === null ? '-' : `${ful}%`}</Text>;
-                    })()
+                    <Text fw={700} size="xs" c={ful === null ? 'dimmed' : ful >= 100 ? 'teal' : 'orange'}>
+                      {ful === null ? '-' : `${ful}%`}
+                    </Text>
                   ) : (
                     <Text fw={700} size="xs" c={avg === 0 ? "dimmed" : getScoreColor(avg)}>
                       {avg === 0 ? "-" : `${avg}%`}
@@ -331,7 +340,7 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = React.memo(({
             }
 
             const emp = col.employee;
-            const avg = calculateAverage(catSkillIds, emp.id);
+            const avg = perEmployeeAvgMap.get(emp.id!) ?? null;
 
             return (
               <BulkLevelMenu
