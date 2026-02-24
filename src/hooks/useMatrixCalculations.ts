@@ -6,6 +6,36 @@ import { MetricMode } from "./useMatrixState";
 import { useMantineColorScheme } from "@mantine/core";
 import { getAllSkillIdsForCategory } from "../utils/hierarchyUtils";
 
+// ---------------------------------------------------------------------------
+// Module-level persistent average cache
+// Lives outside React → survives component unmount/remount (page switches).
+// Invalidated automatically when assessments OR roles reference changes
+// (i.e. when the user actually edits data), so results are always correct.
+// ---------------------------------------------------------------------------
+const _avgCache = (() => {
+    let _assessmentsRef: unknown = null;
+    let _rolesRef: unknown = null;
+    const _values = new Map<string, number | null>();
+    return {
+        getOrCompute(
+            key: string,
+            assessments: unknown,
+            roles: unknown,
+            compute: () => number | null
+        ): number | null {
+            if (assessments !== _assessmentsRef || roles !== _rolesRef) {
+                _values.clear();
+                _assessmentsRef = assessments;
+                _rolesRef = roles;
+            }
+            if (_values.has(key)) return _values.get(key)!;
+            const result = compute();
+            _values.set(key, result);
+            return result;
+        },
+    };
+})();
+
 export interface UseMatrixCalculationsProps {
     employees: Employee[];
     categories: Category[];
@@ -137,29 +167,35 @@ export function useMatrixCalculations({
     ): number | null => {
         if (skillIds.length === 0) return null;
         if (employees.length === 0) return 0;
-        let totalScore = 0, relevantCount = 0;
 
-        const targetEmps = specificEmployeeId
-            ? employees.filter((e) => e.id === specificEmployeeId)
-            : displayedEmployees;
+        // Build a stable cache key.
+        // Per-employee: keyed by employeeId only (result doesn't depend on filters).
+        // All-employees: keyed by the set of displayed employee IDs so filter
+        //   changes produce different entries rather than stale results.
+        const empKey = specificEmployeeId ?? displayedEmployees.map(e => e.id!).join(',');
+        const cacheKey = `${empKey}|${skillIds.join(',')}`;
 
-        skillIds.forEach((sId) => {
-            targetEmps.forEach((emp) => {
-                const assessment = getAssessmentFast(emp.id!, sId);
-                const roleTarget = getMaxRoleTargetForSkill(emp.roles, sId, roles);
-                const rawLevel = assessment?.level ?? -1;
-                const val = (rawLevel === -1 && roleTarget !== undefined) ? 0 : rawLevel;
+        return _avgCache.getOrCompute(cacheKey, assessments, roles, () => {
+            let totalScore = 0, relevantCount = 0;
+            const targetEmps = specificEmployeeId
+                ? employees.filter((e) => e.id === specificEmployeeId)
+                : displayedEmployees;
 
-                if (val === -1) return;
-
-                totalScore += val;
-                relevantCount++;
+            skillIds.forEach((sId) => {
+                targetEmps.forEach((emp) => {
+                    const assessment = getAssessmentFast(emp.id!, sId);
+                    const roleTarget = getMaxRoleTargetForSkill(emp.roles, sId, roles);
+                    const rawLevel = assessment?.level ?? -1;
+                    const val = (rawLevel === -1 && roleTarget !== undefined) ? 0 : rawLevel;
+                    if (val === -1) return;
+                    totalScore += val;
+                    relevantCount++;
+                });
             });
-        });
 
-        if (relevantCount === 0) return null;
-        return Math.round(totalScore / relevantCount);
-    }, [employees, displayedEmployees, getAssessmentFast, roles]);
+            return relevantCount === 0 ? null : Math.round(totalScore / relevantCount);
+        });
+    }, [employees, displayedEmployees, getAssessmentFast, roles, assessments]);
 
     const calculateEmployeeAverage = useCallback((employeeId: string): number | null => {
         return calculateAverage(
