@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.16.5] - 2026-02-24
+
+### Behobene Fehler
+- **Skill-Matrix**: Nach dem Zuweisen einer Rolle zu einem Mitarbeiter wurden die angezeigten Durchschnittswerte in den Spalten-Headern nicht sofort aktualisiert, sodass die Sortierung optisch falsch wirkte. Dies wurde behoben.
+- **Skill-Matrix**: Beim Zurücknavigieren zur Matrix wurden alle Kategorien eingeklappt angezeigt, obwohl die aktive View ausgeklappte Kategorien gespeichert hatte. Der Collapse-Zustand der View wird nun korrekt wiederhergestellt.
+
 ## [2.4.2] - 2026-02-03
 
 ### Neue Funktionen & Verbesserungen

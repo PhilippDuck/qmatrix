@@ -15,18 +15,21 @@ import { getAllSkillIdsForCategory } from "../utils/hierarchyUtils";
 const _avgCache = (() => {
     let _assessmentsRef: unknown = null;
     let _rolesRef: unknown = null;
+    let _employeesRef: unknown = null;
     const _values = new Map<string, number | null>();
     return {
         getOrCompute(
             key: string,
             assessments: unknown,
             roles: unknown,
+            employees: unknown,
             compute: () => number | null
         ): number | null {
-            if (assessments !== _assessmentsRef || roles !== _rolesRef) {
+            if (assessments !== _assessmentsRef || roles !== _rolesRef || employees !== _employeesRef) {
                 _values.clear();
                 _assessmentsRef = assessments;
                 _rolesRef = roles;
+                _employeesRef = employees;
             }
             if (_values.has(key)) return _values.get(key)!;
             const result = compute();
@@ -175,7 +178,7 @@ export function useMatrixCalculations({
         const empKey = specificEmployeeId ?? displayedEmployees.map(e => e.id!).join(',');
         const cacheKey = `${empKey}|${skillIds.join(',')}`;
 
-        return _avgCache.getOrCompute(cacheKey, assessments, roles, () => {
+        return _avgCache.getOrCompute(cacheKey, assessments, roles, employees, () => {
             let totalScore = 0, relevantCount = 0;
             const targetEmps = specificEmployeeId
                 ? employees.filter((e) => e.id === specificEmployeeId)

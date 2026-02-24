@@ -1,4 +1,10 @@
 
+## [2.16.5] - 2026-02-24
+
+### Behobene Fehler (Skill-Matrix)
+- **Sortierung nach Rollenzuweisung**: Der `_avgCache` wurde nur bei Änderungen an `assessments` oder `roles` invalidiert. Wurde einem Mitarbeiter eine Rolle zugewiesen (Änderung nur an `employees`), lieferte `calculateEmployeeAverage` veraltete Werte — die Spalten-Header zeigten alte Durchschnitte, obwohl die Sortierung (inline berechnet) bereits korrekt war. Cache-Invalidierung jetzt auch bei `employees`-Änderungen.
+- **View-Collapse-Zustand nach Seitenwechsel**: Beim Zurücknavigieren zur Skill-Matrix wurden alle Kategorien immer eingeklappt angezeigt, auch wenn die aktive View ausgeklappte Kategorien gespeichert hatte. Ein `useEffect` stellt den `collapsedStates` der aktiven View jetzt einmalig beim ersten Laden von `savedViews` wieder her.
+
 ## [2.16.4] - 2026-02-24
 
 ### Performance (Skill-Matrix)

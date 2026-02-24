@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useLocalStorage } from "@mantine/hooks";
 import { SavedView } from "../context/DataContext";
 
@@ -78,6 +78,19 @@ export function useMatrixState(
         key: 'skill-matrix-active-view-id',
         defaultValue: null,
     });
+
+    // Restore collapsed states from the active view when savedViews first becomes available
+    // (e.g. after page navigation — collapsedStates is React-only state and resets on unmount)
+    const [hasRestoredCollapsedStates, setHasRestoredCollapsedStates] = useState(false);
+    useEffect(() => {
+        if (hasRestoredCollapsedStates || !savedViews) return;
+        setHasRestoredCollapsedStates(true);
+        if (!activeViewId) return;
+        const activeView = savedViews.find(v => v.id === activeViewId);
+        if (activeView?.config.collapsedStates) {
+            updateCollapsedStates(activeView.config.collapsedStates);
+        }
+    }, [savedViews, hasRestoredCollapsedStates, activeViewId]);
 
     const nextMetricMode = () => {
         setMetricMode(prev => prev === 'avg' ? 'max' : prev === 'max' ? 'fulfillment' : 'avg');
