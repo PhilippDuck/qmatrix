@@ -40,6 +40,7 @@ interface MatrixSubcategoryRowProps {
   renderChildren?: boolean;
   measuresMap?: Map<string, QualificationMeasure[]>;
   qualificationPlans?: QualificationPlan[];
+  showOnlyGaps?: boolean;
 }
 
 export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = React.memo(({
@@ -70,6 +71,7 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = React.m
   renderChildren = true,
   measuresMap,
   qualificationPlans,
+  showOnlyGaps,
 }) => {
   const { anonymizeName } = usePrivacy();
   const { cellSize } = MATRIX_LAYOUT;
@@ -379,6 +381,7 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = React.m
               labelWidth={effectiveLabelWidth}
               measuresMap={measuresMap}
               qualificationPlans={qualificationPlans}
+              showOnlyGaps={showOnlyGaps}
             />
           ))}
           {isEditMode && (
@@ -495,6 +498,7 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = React.m
                 onNavigate={onNavigate}
                 measuresMap={measuresMap}
                 qualificationPlans={qualificationPlans}
+                showOnlyGaps={showOnlyGaps}
               />
             );
           })}

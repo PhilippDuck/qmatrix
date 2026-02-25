@@ -4,7 +4,7 @@ import { getMaxRoleTargetForSkill } from "../utils/skillCalculations";
 import { MatrixColumn } from "../components/SkillMatrix/types";
 import { MetricMode } from "./useMatrixState";
 import { useMantineColorScheme } from "@mantine/core";
-import { getAllSkillIdsForCategory } from "../utils/hierarchyUtils";
+import { getAllSkillIdsForCategory, getAllSkillIdsForSubcategory } from "../utils/hierarchyUtils";
 
 // ---------------------------------------------------------------------------
 // Module-level persistent average cache
@@ -53,18 +53,24 @@ export interface UseMatrixCalculationsProps {
     filterDepartments: string[];
     filterRoles: string[];
     filterCategories: string[];
+    filterEmployees: string[];
+    filterLevels: number[];
+    filterSkills: string[];
     employeeSort: 'asc' | 'desc' | null;
     skillSort: 'asc' | 'desc' | null;
     metricMode: MetricMode;
     showMaxValues: MetricMode;
     groupingMode: 'none' | 'department' | 'role';
     hideEmployees: boolean;
+    showOnlyGaps: boolean;
+    hideNaColumns: boolean;
+    isEditMode: boolean;
 }
 
 export function useMatrixCalculations({
     employees, categories, subcategories, skills, departments, roles, getAssessment: _getAssessment, assessments,
-    focusEmployeeId, showInactive, filterDepartments, filterRoles, employeeSort,
-    filterCategories, skillSort, metricMode, showMaxValues, groupingMode, hideEmployees
+    focusEmployeeId, showInactive, filterDepartments, filterRoles, filterEmployees, filterLevels, filterSkills, employeeSort,
+    filterCategories, skillSort, metricMode, showMaxValues, groupingMode, hideEmployees, showOnlyGaps, hideNaColumns, isEditMode
 }: UseMatrixCalculationsProps) {
     const { colorScheme } = useMantineColorScheme();
     const isDark = colorScheme === 'dark';
@@ -93,6 +99,10 @@ export function useMatrixCalculations({
             result = result.filter(e => e.isActive !== false);
         }
 
+        if (filterEmployees && filterEmployees.length > 0) {
+            result = result.filter((e) => filterEmployees.includes(e.id!));
+        }
+
         if (filterDepartments.length > 0) {
             result = result.filter((e) => filterDepartments.includes(e.department || ''));
         }
@@ -104,6 +114,52 @@ export function useMatrixCalculations({
             result = result.filter((e) =>
                 e.roles && e.roles.some((role: string) => selectedRoleNames.includes(role))
             );
+        }
+
+        if (filterCategories.length > 0) {
+            // Not applying category filter to employees directly here unless needed,
+            // normally category filter only hides columns. 
+            // Let's keep existing logic unchanged for categories.
+        }
+
+        if (filterLevels && filterLevels.length > 0) {
+            const minSelected = Math.min(...filterLevels);
+            result = result.filter(e => {
+                return skills.some(s => {
+                    const asm = getAssessmentFast(e.id!, s.id!);
+                    return asm && asm.level >= minSelected;
+                });
+            });
+        }
+
+        if (filterSkills && filterSkills.length > 0) {
+            result = result.filter(e => {
+                return filterSkills.some(sId => {
+                    const asm = getAssessmentFast(e.id!, sId);
+                    return asm && asm.level > 0;
+                });
+            });
+        }
+
+        if (showOnlyGaps) {
+            // A gap exists if current level is less than the target level (individual or role)
+            result = result.filter(e => {
+                return skills.some(s => {
+                    // If filterSkills is active, only consider gaps in the selected skills
+                    if (filterSkills && filterSkills.length > 0 && !filterSkills.includes(s.id!)) {
+                        return false;
+                    }
+                    const asm = getAssessmentFast(e.id!, s.id!);
+                    const indTarget = asm?.targetLevel || 0;
+                    const roleTarget = getMaxRoleTargetForSkill(e.roles, s.id!, roles) || 0;
+                    const maxTarget = Math.max(indTarget, roleTarget);
+                    // Only consider it a gap if there IS a target > 0
+                    if (maxTarget === 0) return false;
+
+                    const currentLevel = asm?.level || 0;
+                    return currentLevel < maxTarget;
+                });
+            });
         }
 
         if (employeeSort) {
@@ -141,6 +197,11 @@ export function useMatrixCalculations({
                     };
                     const fulA = calcFulfillment(a.id!, a.roles);
                     const fulB = calcFulfillment(b.id!, b.roles);
+
+                    // Push -1 (N/A) to the bottom regardless of sort direction
+                    if (fulA === -1 && fulB !== -1) return 1;
+                    if (fulB === -1 && fulA !== -1) return -1;
+
                     return employeeSort === 'asc' ? fulA - fulB : fulB - fulA;
                 } else {
                     const calcAvg = (empId: string, empRoles: string[] | undefined) => {
@@ -159,10 +220,12 @@ export function useMatrixCalculations({
                     return employeeSort === 'asc' ? avgA - avgB : avgB - avgA;
                 }
             });
+        } else {
+            result = [...result].sort((a, b) => a.name.localeCompare(b.name, 'de'));
         }
 
         return result;
-    }, [employees, focusEmployeeId, showInactive, filterDepartments, filterRoles, employeeSort, skills, departments, roles, metricMode, getAssessmentFast, showMaxValues]);
+    }, [employees, focusEmployeeId, showInactive, filterDepartments, filterRoles, filterEmployees, filterLevels, filterSkills, showOnlyGaps, employeeSort, skills, departments, roles, metricMode, getAssessmentFast, showMaxValues]);
 
     const calculateAverage = useCallback((
         skillIds: string[],
@@ -207,6 +270,60 @@ export function useMatrixCalculations({
         );
     }, [skills, calculateAverage]);
 
+    const displayedSkills = useMemo(() => {
+        let result = skills;
+
+        if (filterSkills && filterSkills.length > 0) {
+            result = result.filter(s => filterSkills.includes(s.id!));
+        }
+
+        if (filterLevels && filterLevels.length > 0) {
+            const minSelected = Math.min(...filterLevels);
+            result = result.filter(s => {
+                return displayedEmployees.some(e => {
+                    const asm = getAssessmentFast(e.id!, s.id!);
+                    return asm && asm.level >= minSelected;
+                });
+            });
+        }
+
+        if (showOnlyGaps) {
+            result = result.filter(s => {
+                return displayedEmployees.some(e => {
+                    const asm = getAssessmentFast(e.id!, s.id!);
+                    const indTarget = asm?.targetLevel || 0;
+                    const roleTarget = getMaxRoleTargetForSkill(e.roles, s.id!, roles) || 0;
+                    const maxTarget = Math.max(indTarget, roleTarget);
+                    if (maxTarget === 0) return false;
+                    const currentLevel = asm?.level || 0;
+                    return currentLevel < maxTarget;
+                });
+            });
+        }
+
+        if (hideNaColumns) {
+            result = result.filter(s => {
+                const avg = calculateAverage([s.id!]);
+                return avg !== null;
+            });
+        }
+
+        return result;
+    }, [skills, filterSkills, filterLevels, showOnlyGaps, hideNaColumns, displayedEmployees, getAssessmentFast, roles, calculateAverage]);
+
+    const displayedSubcategories = useMemo(() => {
+        let result = subcategories;
+
+        if (!isEditMode && ((filterSkills && filterSkills.length > 0) || (filterLevels && filterLevels.length > 0) || showOnlyGaps || hideNaColumns)) {
+            result = result.filter(sub => {
+                const subSkillIds = getAllSkillIdsForSubcategory(sub.id!, subcategories, skills);
+                return subSkillIds.some((sId: string) => displayedSkills.some(ds => ds.id === sId));
+            });
+        }
+
+        return result;
+    }, [subcategories, filterSkills, filterLevels, showOnlyGaps, hideNaColumns, skills, displayedSkills, isEditMode]);
+
     const displayedCategories = useMemo(() => {
         let result = [...categories];
 
@@ -214,15 +331,24 @@ export function useMatrixCalculations({
             result = result.filter((c) => filterCategories.includes(c.id!));
         }
 
+        // Hide categories that have no matching displayed skills
+        if (!isEditMode && ((filterSkills && filterSkills.length > 0) || (filterLevels && filterLevels.length > 0) || showOnlyGaps || hideNaColumns)) {
+            result = result.filter(c => {
+                const catSkillIds = getAllSkillIdsForCategory(c.id!, subcategories, skills);
+                return catSkillIds.some(sId => displayedSkills.some(ds => ds.id === sId));
+            });
+        }
+
         if (skillSort) {
             result = result.sort((a, b) => {
                 if (showMaxValues === 'max') {
                     const calcMaxAvg = (catId: string) => {
                         const catSkillIds = getAllSkillIdsForCategory(catId, subcategories, skills);
-                        if (catSkillIds.length === 0) return 0;
+                        const visibleSkillIds = catSkillIds.filter(id => displayedSkills.some(ds => ds.id === id));
+                        if (visibleSkillIds.length === 0) return 0;
 
                         const allAvgs = displayedEmployees
-                            .map(emp => calculateAverage(catSkillIds, emp.id!))
+                            .map(emp => calculateAverage(visibleSkillIds, emp.id!))
                             .filter((v): v is number => v !== null);
 
                         return allAvgs.length > 0 ? Math.max(...allAvgs) : 0;
@@ -230,41 +356,56 @@ export function useMatrixCalculations({
 
                     const valA = calcMaxAvg(a.id!);
                     const valB = calcMaxAvg(b.id!);
+
+                    if (valA === -1 && valB !== -1) return 1;
+                    if (valB === -1 && valA !== -1) return -1;
+
                     return skillSort === 'asc' ? valA - valB : valB - valA;
                 } else if (showMaxValues === 'fulfillment') {
                     const calcCatFulfillment = (catId: string) => {
                         const catSkillIds = getAllSkillIdsForCategory(catId, subcategories, skills);
-                        if (catSkillIds.length === 0) return 0;
+                        const visibleSkillIds = catSkillIds.filter(id => displayedSkills.some(ds => ds.id === id));
+                        if (visibleSkillIds.length === 0) return 0;
 
-                        let total = 0, targets = 0;
+                        const scores: number[] = [];
                         displayedEmployees.forEach(emp => {
-                            catSkillIds.forEach(sId => {
+                            visibleSkillIds.forEach(sId => {
                                 const asm = getAssessmentFast(emp.id!, sId);
                                 const individualT = asm?.targetLevel || 0;
                                 const roleT = getMaxRoleTargetForSkill(emp.roles, sId, roles) || 0;
-                                const t = Math.max(individualT, roleT);
-                                if (t > 0) {
-                                    targets += t;
-                                    total += Math.max(asm?.level || 0, 0);
+                                const target = Math.max(individualT, roleT);
+                                if (target > 0) {
+                                    const level = asm?.level ?? (roleT ? 0 : -1);
+                                    if (level >= 0) scores.push(Math.min(100, Math.round((level / target) * 100)));
                                 }
                             });
                         });
-                        return targets > 0 ? (total / targets) * 100 : -1;
+                        return scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : -1;
                     };
                     const fulA = calcCatFulfillment(a.id!);
                     const fulB = calcCatFulfillment(b.id!);
+
+                    // Push -1 (N/A) to the bottom regardless of sort direction
+                    if (fulA === -1 && fulB !== -1) return 1;
+                    if (fulB === -1 && fulA !== -1) return -1;
+
                     return skillSort === 'asc' ? fulA - fulB : fulB - fulA;
                 } else {
                     const calcCatAvg = (catId: string) => {
                         const catSkillIds = getAllSkillIdsForCategory(catId, subcategories, skills);
-                        if (catSkillIds.length === 0) return 0;
+                        const visibleSkillIds = catSkillIds.filter(id => displayedSkills.some(ds => ds.id === id));
+                        if (visibleSkillIds.length === 0) return 0;
 
-                        const avg = calculateAverage(catSkillIds);
+                        const avg = calculateAverage(visibleSkillIds);
                         return avg !== null ? avg : 0;
                     };
 
                     const avgA = calcCatAvg(a.id!);
                     const avgB = calcCatAvg(b.id!);
+
+                    if (avgA === -1 && avgB !== -1) return 1;
+                    if (avgB === -1 && avgA !== -1) return -1;
+
                     return skillSort === 'asc' ? avgA - avgB : avgB - avgA;
                 }
             });
@@ -273,7 +414,7 @@ export function useMatrixCalculations({
         }
 
         return result;
-    }, [categories, filterCategories, skillSort, subcategories, skills, displayedEmployees, calculateAverage, showMaxValues]);
+    }, [categories, filterCategories, filterSkills, filterLevels, showOnlyGaps, hideNaColumns, skillSort, subcategories, skills, displayedSkills, displayedEmployees, calculateAverage, showMaxValues, getAssessmentFast, roles]);
 
     const matrixColumns = useMemo<MatrixColumn[]>(() => {
         if (groupingMode === 'none') {
@@ -321,6 +462,10 @@ export function useMatrixCalculations({
                 };
                 const valA = getXP(empsA);
                 const valB = getXP(empsB);
+
+                if (valA === -1 && valB !== -1) return 1;
+                if (valB === -1 && valA !== -1) return -1;
+
                 return employeeSort === 'asc' ? valA - valB : valB - valA;
 
             } else if (showMaxValues === 'fulfillment') {
@@ -344,6 +489,11 @@ export function useMatrixCalculations({
                 };
                 const fulA = getFul(empsA);
                 const fulB = getFul(empsB);
+
+                // Push -1 (N/A) to the bottom regardless of sort direction
+                if (fulA === -1 && fulB !== -1) return 1;
+                if (fulB === -1 && fulA !== -1) return -1;
+
                 return employeeSort === 'asc' ? fulA - fulB : fulB - fulA;
 
             } else {
@@ -360,6 +510,10 @@ export function useMatrixCalculations({
                 };
                 const avgA = getAvg(empsA);
                 const avgB = getAvg(empsB);
+
+                if (avgA === -1 && avgB !== -1) return 1;
+                if (avgB === -1 && avgA !== -1) return -1;
+
                 return employeeSort === 'asc' ? avgA - avgB : avgB - avgA;
             }
         });
@@ -411,6 +565,8 @@ export function useMatrixCalculations({
     return {
         displayedEmployees,
         displayedCategories,
+        displayedSubcategories,
+        displayedSkills,
         matrixColumns,
         calculateAverage,
         calculateEmployeeAverage,

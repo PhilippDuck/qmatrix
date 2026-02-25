@@ -1,4 +1,16 @@
 
+## [2.16.10] - 2026-02-25
+
+### Neue Funktionen & Verbesserungen (Skill-Matrix)
+- **Erweitertes Mindest-Level Filtering**: Der Filter "Mindest-Level" wurde von einer exakten Übereinstimmung (`==`) auf eine "Mindestens"-Logik (`>=`) umgestellt. Wenn nun z.B. Level 2 gewählt wird, werden auch Mitarbeiter mit Level 3 oder 4 angezeigt.
+- **Dynamisches Ausblenden leerer Reihen**: Kategorien, Unterkategorien und Skills, die aufgrund aktiver Filter (Levels, spezifische Skills, Nur Gaps, N/A ausblenden) keine relevanten Daten mehr enthalten, werden nun komplett aus der Matrix ausgeblendet.
+- **Präzise Aggregations-Berechnungen**: Die aggregierten Metriken im Matrix-Header und in Gruppen-Zusammenfassungen (Gesamt-XP, Durchschnitt, Erfüllungsgrad) basieren nun strikt *nur* auf den aktuell sichtbaren, gefilterten Skills.
+- **Edit-Mode Bypass**: Leere Unterkategorien und Kategorien (solche mit 0 Skills) werden standardmäßig ausgeblendet. Ist jedoch der "Bearbeitungsmodus" aktiv (`isEditMode`), werden diese explizit eingeblendet, damit nahtlos neue Skills innerhalb dieser Gruppen angelegt werden können.
+
+### Behobene Fehler (Skill-Matrix)
+- **Erfüllungsgrad Matrix-Sortierung**: Ein tiefergehender Fehler wurde behoben, bei dem die UI-Spalten eine *Durchschnitts-Prozentzahl* berechnet haben, der Sortier-Algorithmus der Matrix jedoch das Verhältnis aus *Gesamt-Punkten / Gesamt-Zielen* genutzt hat. Der Sortieralgorithmus wurde an die UI-Berechnung angeglichen, sodass absteigende und aufsteigende Sortierungen wieder exakt mit den visuell angezeigten Prozentwerten übereinstimmen.
+- **Sortierung von N/A Werten**: Bei absteigender Sortierung nach Leistungsmetriken (Durchschnitt, Erfüllungsgrad, Max XP) blieben Mitarbeiter oder Skills mit dem Wert `N/A` (keine Bewertung) teilweise fehlerhaft oben hängen. Diese werden nun konsistent und korrekt an das *Ende* der Liste sortiert.
+
 ## [2.16.9] - 2026-02-25
 
 ### Performance (Skill-Matrix)

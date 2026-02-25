@@ -317,9 +317,21 @@ export const RoleManager: React.FC = () => {
                                                     })()}
                                                 </Table.Td>
                                                 <Table.Td>
-                                                    <Text size="sm" c="dimmed" lineClamp={2}>
-                                                        {role.description || "-"}
-                                                    </Text>
+                                                    {role.description ? (
+                                                        <Tooltip
+                                                            label={role.description}
+                                                            multiline
+                                                            w={300}
+                                                            position="top"
+                                                            withArrow
+                                                        >
+                                                            <Text size="sm" c="dimmed" truncate style={{ maxWidth: 200 }}>
+                                                                {role.description}
+                                                            </Text>
+                                                        </Tooltip>
+                                                    ) : (
+                                                        <Text size="sm" c="dimmed">-</Text>
+                                                    )}
                                                 </Table.Td>
                                                 <Table.Td>
                                                     {parentRole ? (

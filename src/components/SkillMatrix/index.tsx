@@ -75,6 +75,7 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = React.memo(({ onNavigate 
     addSavedView,
     updateSavedView,
     deleteSavedView,
+    reorderSavedViews,
     setAssessment,
     setTargetLevel,
     getAssessment,
@@ -160,6 +161,9 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = React.memo(({ onNavigate 
     filterDepartments, setFilterDepartments,
     filterRoles, setFilterRoles,
     filterCategories, setFilterCategories,
+    filterEmployees, setFilterEmployees,
+    filterLevels, setFilterLevels,
+    filterSkills, setFilterSkills,
     metricMode, setMetricMode, nextMetricMode,
     employeeSort, setEmployeeSort,
     skillSort, setSkillSort,
@@ -167,6 +171,7 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = React.memo(({ onNavigate 
     hideEmployees, setHideEmployees,
     hideNaColumns, setHideNaColumns,
     showInactive, setShowInactive,
+    showOnlyGaps, setShowOnlyGaps,
     activeViewId, setActiveViewId,
     isViewDirty,
     handleSelectView,
@@ -193,14 +198,17 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = React.memo(({ onNavigate 
   const {
     displayedEmployees,
     displayedCategories,
+    displayedSubcategories,
+    displayedSkills,
     matrixColumns,
     calculateAverage,
     calculateEmployeeAverage,
     getAssessment: getAssessmentFast,
   } = useMatrixCalculations({
     employees, categories, subcategories, skills, departments, roles, getAssessment, assessments: deferredAssessments,
-    focusEmployeeId, showInactive, filterDepartments, filterRoles, employeeSort,
-    filterCategories, skillSort, metricMode, showMaxValues: metricMode, groupingMode, hideEmployees
+    focusEmployeeId, showInactive, filterDepartments, filterRoles, filterEmployees,
+    filterLevels, filterSkills, showOnlyGaps,
+    employeeSort, filterCategories, skillSort, metricMode, showMaxValues: metricMode, groupingMode, hideEmployees, hideNaColumns, isEditMode
   });
 
   const getGroupingLabel = (mode: 'none' | 'department' | 'role') => {
@@ -615,9 +623,19 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = React.memo(({ onNavigate 
             setFilterRoles={setFilterRoles}
             filterCategories={filterCategories}
             setFilterCategories={setFilterCategories}
+            filterEmployees={filterEmployees}
+            setFilterEmployees={setFilterEmployees}
+            filterLevels={filterLevels}
+            setFilterLevels={setFilterLevels}
+            filterSkills={filterSkills}
+            setFilterSkills={setFilterSkills}
+            showOnlyGaps={showOnlyGaps}
+            setShowOnlyGaps={setShowOnlyGaps}
+            employees={employees}
             departments={departments}
             roles={roles}
             categories={categories}
+            skills={skills}
             isEditMode={isEditMode}
             setIsEditMode={setIsEditMode}
             setSkillDrawerOpened={setSkillDrawerOpened}
@@ -633,6 +651,7 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = React.memo(({ onNavigate 
             setSaveViewModalOpened={setSaveViewModalOpened}
             focusEmployeeId={focusEmployeeId}
             setFocusEmployeeId={setFocusEmployeeId}
+            reorderSavedViews={reorderSavedViews}
           />
 
 
@@ -676,7 +695,7 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = React.memo(({ onNavigate 
                     focusEmployeeId={focusEmployeeId}
                     onFocusChange={setFocusEmployeeId}
                     calculateEmployeeAverage={calculateEmployeeAverage}
-                    skills={skills}
+                    skills={displayedSkills}
                     getAssessment={getAssessmentFast}
                     onEditEmployee={handleEditEmployee}
                     showMaxValues={metricMode}
@@ -697,40 +716,14 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = React.memo(({ onNavigate 
 
                 {displayedCategories.map((cat) => {
                   // [NEW] Filter Subcategories and Skills if hidden
-                  const catSubcategories = subcategories.filter(s => s.categoryId === cat.id);
-                  const catSkills = skills.filter(s => {
-                    if (!hideNaColumns) return true;
-                    // Check if this skill has ANY relevant data across displayed employees
-                    const avg = calculateAverage([s.id!]);
-                    return avg !== null;
-                  });
-
-                  // If hiding N/A, we also need to check if subcategories have any visible skills OR nested subcategories with visible skills
-                  // calculateAverage handles the check against displayedEmployees.
-
-                  // Effective check for a category/subcategory being visible:
-                  // Recursive function to check if a subcategory has visible content
-                  const hasVisibleContent = (subId: string): boolean => {
-                    const subSkills = catSkills.filter(s => s.subCategoryId === subId);
-                    if (subSkills.length > 0) return true;
-
-                    const children = catSubcategories.filter(s => s.parentSubCategoryId === subId);
-                    return children.some(c => hasVisibleContent(c.id!));
-                  };
-
-                  // If hiding N/A, filter subcategories
-                  const visibleSubcategories = hideNaColumns
-                    ? catSubcategories.filter(s => hasVisibleContent(s.id!))
-                    : catSubcategories;
-
-                  // If hiding N/A and no visible subcategories (and no direct skills? skills are in subcategories), hide category
-                  if (hideNaColumns && visibleSubcategories.length === 0) return null;
+                  const catSubcategories = displayedSubcategories.filter(s => s.categoryId === cat.id);
+                  const catSkills = displayedSkills;
 
                   return (
                     <MatrixCategoryRow
                       key={cat.id}
                       category={cat}
-                      subcategories={visibleSubcategories}
+                      subcategories={catSubcategories}
                       skills={catSkills}
                       employees={displayedEmployees}
                       columns={matrixColumns}
@@ -755,6 +748,7 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = React.memo(({ onNavigate 
                       onNavigate={onNavigate}
                       measuresMap={measuresMap}
                       qualificationPlans={qualificationPlans}
+                      showOnlyGaps={showOnlyGaps}
                     />
                   );
                 })}

@@ -120,19 +120,24 @@ export interface QualificationMeasure {
 export interface SavedView {
   id?: string;
   name: string;
+  order?: number;
   config: {
     filters: {
       departments: string[];
       roles: string[];
       categories: string[];
+      employees?: string[];
+      levels?: number[];
+      skills?: string[];
     };
     groupingMode: 'none' | 'department' | 'role';
     settings: {
-      showMaxValues?: boolean; // DEPRECATED – kept for backward compatibility
+      showMaxValues?: boolean; // DEPRECATED
       metricMode?: 'avg' | 'max' | 'fulfillment';
       hideEmployees: boolean;
-      hideNaColumns?: boolean; // Optional for backward compatibility
-      showInactive?: boolean; // [NEW] Optional for backward compatibility
+      hideNaColumns?: boolean;
+      showInactive?: boolean;
+      showOnlyGaps?: boolean;
     };
     sort: {
       employee: 'asc' | 'desc' | null;

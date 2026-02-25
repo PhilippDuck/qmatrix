@@ -24,6 +24,7 @@ interface MatrixSkillRowProps {
   labelWidth?: number;
   measuresMap?: Map<string, QualificationMeasure[]>;
   qualificationPlans?: QualificationPlan[];
+  showOnlyGaps?: boolean;
 }
 
 export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = React.memo(({
@@ -42,6 +43,7 @@ export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = React.memo(({
   labelWidth,
   measuresMap,
   qualificationPlans = [],
+  showOnlyGaps,
 }) => {
   const { cellSize } = MATRIX_LAYOUT;
   const effectiveLabelWidth = labelWidth || MATRIX_LAYOUT.labelWidth;
@@ -246,6 +248,7 @@ export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = React.memo(({
             onTargetLevelChange={(target) => onTargetLevelChange(emp.id!, skill.id!, target)}
             hasActiveMeasure={measureStatus}
             backgroundColor={col.backgroundColor}
+            showOnlyGaps={showOnlyGaps}
           />
         );
       })}

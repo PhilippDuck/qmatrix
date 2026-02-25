@@ -3,10 +3,10 @@ import { Group, Title, Tooltip, ActionIcon, Popover, Stack, MultiSelect, Button,
 import {
     IconLayoutNavbarCollapse, IconPlus, IconUserPlus, IconFilter, IconEdit, IconUsersGroup,
     IconBuilding, IconUserCircle, IconSum, IconPercentage, IconTargetArrow, IconEye,
-    IconEyeOff, IconColumnsOff, IconX, IconCubePlus
+    IconEyeOff, IconColumnsOff, IconX, IconCubePlus, IconTargetOff
 } from '@tabler/icons-react';
 import { ViewTabs } from './ViewTabs';
-import { Department, EmployeeRole, Category, SavedView } from '../../store/useStore';
+import { Department, EmployeeRole, Category, SavedView, Employee, Skill } from '../../store/useStore';
 import { MetricMode } from '../../hooks/useMatrixState';
 
 interface MatrixToolbarProps {
@@ -28,9 +28,19 @@ interface MatrixToolbarProps {
     setFilterRoles: React.Dispatch<React.SetStateAction<string[]>>;
     filterCategories: string[];
     setFilterCategories: React.Dispatch<React.SetStateAction<string[]>>;
+    filterEmployees: string[];
+    setFilterEmployees: React.Dispatch<React.SetStateAction<string[]>>;
+    filterLevels: number[];
+    setFilterLevels: React.Dispatch<React.SetStateAction<number[]>>;
+    filterSkills: string[];
+    setFilterSkills: React.Dispatch<React.SetStateAction<string[]>>;
+    showOnlyGaps: boolean;
+    setShowOnlyGaps: (val: boolean) => void;
+    employees: Employee[];
     departments: Department[];
     roles: EmployeeRole[];
     categories: Category[];
+    skills: Skill[];
     isEditMode: boolean;
     setIsEditMode: (val: boolean) => void;
     setSkillDrawerOpened: (val: boolean) => void;
@@ -46,16 +56,19 @@ interface MatrixToolbarProps {
     setSaveViewModalOpened: (val: boolean) => void;
     focusEmployeeId: string | null;
     setFocusEmployeeId: (val: string | null) => void;
+    reorderSavedViews: (viewIds: string[]) => void;
 }
 
 export const MatrixToolbar: React.FC<MatrixToolbarProps> = ({
     groupingMode, nextGroupingMode, getGroupingLabel, hideEmployees, setHideEmployees,
     metricMode, nextMetricMode, handleGlobalToggle, hideNaColumns, setHideNaColumns,
     filtersOpened, setFiltersOpened, filterDepartments, setFilterDepartments, filterRoles, setFilterRoles,
-    filterCategories, setFilterCategories, departments, roles, categories, isEditMode, setIsEditMode,
+    filterCategories, setFilterCategories, filterEmployees, setFilterEmployees,
+    filterLevels, setFilterLevels, filterSkills, setFilterSkills, showOnlyGaps, setShowOnlyGaps,
+    employees, departments, roles, categories, skills, isEditMode, setIsEditMode,
     setSkillDrawerOpened, setEmployeeDrawerOpened, savedViews, activeViewId, isViewDirty,
     handleSelectView, handleDeleteView, updateSavedView, handleUpdateCurrentView, handleClearView,
-    setSaveViewModalOpened, focusEmployeeId, setFocusEmployeeId
+    setSaveViewModalOpened, focusEmployeeId, setFocusEmployeeId, reorderSavedViews
 }) => {
     return (
         <>
@@ -94,7 +107,7 @@ export const MatrixToolbar: React.FC<MatrixToolbarProps> = ({
                         <Tooltip label={metricMode === 'avg' ? "Zeige Max-Werte" : metricMode === 'max' ? "Zeige Erfüllungsgrad" : "Zeige Durchschnittswerte"}>
                             <ActionIcon
                                 variant="light"
-                                color={metricMode === 'fulfillment' ? 'teal' : 'gray'}
+                                color={metricMode !== 'avg' ? 'blue' : 'gray'}
                                 onClick={nextMetricMode}
                                 size="lg"
                             >
@@ -123,6 +136,17 @@ export const MatrixToolbar: React.FC<MatrixToolbarProps> = ({
                             </ActionIcon>
                         </Tooltip>
 
+                        <Tooltip label={showOnlyGaps ? "Alle anzeigen" : "Nur Gaps anzeigen (Defizite fokussieren)"}>
+                            <ActionIcon
+                                variant="light"
+                                color={showOnlyGaps ? "orange" : "gray"}
+                                onClick={() => setShowOnlyGaps(!showOnlyGaps)}
+                                size="lg"
+                            >
+                                <IconTargetOff size={20} />
+                            </ActionIcon>
+                        </Tooltip>
+
                         <Popover
                             width={300}
                             position="bottom"
@@ -135,7 +159,7 @@ export const MatrixToolbar: React.FC<MatrixToolbarProps> = ({
                                 <Tooltip label="Filter">
                                     <ActionIcon
                                         variant="light"
-                                        color={filtersOpened || filterDepartments.length > 0 || filterRoles.length > 0 || filterCategories.length > 0 ? "blue" : "gray"}
+                                        color={filtersOpened || filterDepartments.length > 0 || filterRoles.length > 0 || filterCategories.length > 0 || filterEmployees.length > 0 ? "blue" : "gray"}
                                         size="lg"
                                         aria-label="Filter"
                                         onClick={() => setFiltersOpened((o) => !o)}
@@ -158,11 +182,47 @@ export const MatrixToolbar: React.FC<MatrixToolbarProps> = ({
                                     />
                                     <MultiSelect
                                         comboboxProps={{ withinPortal: false }}
-                                        label="Rollen / Level"
+                                        label="Mitarbeiter"
+                                        placeholder="Wähle Mitarbeiter"
+                                        data={employees.map(e => ({ value: e.id!, label: e.name }))}
+                                        value={filterEmployees}
+                                        onChange={setFilterEmployees}
+                                        clearable
+                                        searchable
+                                    />
+                                    <MultiSelect
+                                        comboboxProps={{ withinPortal: false }}
+                                        label="Rollen"
                                         placeholder="Wähle Rollen"
                                         data={roles.map(r => ({ value: r.id!, label: r.name }))}
                                         value={filterRoles}
                                         onChange={setFilterRoles}
+                                        clearable
+                                        searchable
+                                    />
+                                    <MultiSelect
+                                        comboboxProps={{ withinPortal: false }}
+                                        label="Mindest-Level"
+                                        placeholder="Wähle Level"
+                                        data={[
+                                            { value: '0', label: '0 (Keine Kenntnisse)' },
+                                            { value: '25', label: '25 (Geplant/Interesse)' },
+                                            { value: '50', label: '50 (Anfänger)' },
+                                            { value: '75', label: '75 (Fortgeschritten)' },
+                                            { value: '100', label: '100 (Experte)' },
+                                        ]}
+                                        value={filterLevels.map(String)}
+                                        onChange={(vals) => setFilterLevels(vals.map(Number))}
+                                        clearable
+                                        searchable
+                                    />
+                                    <MultiSelect
+                                        comboboxProps={{ withinPortal: false }}
+                                        label="Spezifische Skills"
+                                        placeholder="Suchen & Wählen"
+                                        data={skills.map(s => ({ value: s.id!, label: s.name }))}
+                                        value={filterSkills}
+                                        onChange={setFilterSkills}
                                         clearable
                                         searchable
                                     />
@@ -226,6 +286,7 @@ export const MatrixToolbar: React.FC<MatrixToolbarProps> = ({
                         onSaveCurrentView={handleUpdateCurrentView}
                         onClearView={handleClearView}
                         onCreateNewView={() => setSaveViewModalOpened(true)}
+                        onReorderViews={reorderSavedViews}
                     />
                 </Group>
                 {focusEmployeeId && (
@@ -241,8 +302,85 @@ export const MatrixToolbar: React.FC<MatrixToolbarProps> = ({
             </Group>
 
             {
-                (filterDepartments.length > 0 || filterRoles.length > 0 || filterCategories.length > 0) && (
+                (filterDepartments.length > 0 || filterRoles.length > 0 || filterCategories.length > 0 || filterEmployees.length > 0 || filterLevels.length > 0 || filterSkills.length > 0) && (
                     <Group mb="md" gap="xs">
+                        {filterLevels.map((lvl) => {
+                            const labels: Record<number, string> = { 0: '0', 25: '25', 50: '50', 75: '75', 100: '100' };
+                            return (
+                                <Badge
+                                    key={`lvl-${lvl}`}
+                                    size="lg"
+                                    variant="light"
+                                    color="gray"
+                                    rightSection={
+                                        <ActionIcon
+                                            size="xs"
+                                            color="gray"
+                                            variant="transparent"
+                                            onClick={() =>
+                                                setFilterLevels((prev) => prev.filter((x) => x !== lvl))
+                                            }
+                                        >
+                                            <IconX size={12} />
+                                        </ActionIcon>
+                                    }
+                                >
+                                    Level &gt;= {labels[lvl]}
+                                </Badge>
+                            );
+                        })}
+
+                        {filterSkills.map((id) => {
+                            const item = skills.find((s) => s.id === id);
+                            return item ? (
+                                <Badge
+                                    key={id}
+                                    size="lg"
+                                    variant="light"
+                                    color="teal"
+                                    rightSection={
+                                        <ActionIcon
+                                            size="xs"
+                                            color="teal"
+                                            variant="transparent"
+                                            onClick={() =>
+                                                setFilterSkills((prev) => prev.filter((x) => x !== id))
+                                            }
+                                        >
+                                            <IconX size={12} />
+                                        </ActionIcon>
+                                    }
+                                >
+                                    {item.name}
+                                </Badge>
+                            ) : null;
+                        })}
+                        {filterEmployees.map((id) => {
+                            const item = employees.find((e) => e.id === id);
+                            return item ? (
+                                <Badge
+                                    key={id}
+                                    size="lg"
+                                    variant="light"
+                                    color="orange"
+                                    rightSection={
+                                        <ActionIcon
+                                            size="xs"
+                                            color="orange"
+                                            variant="transparent"
+                                            onClick={() =>
+                                                setFilterEmployees((prev) => prev.filter((x) => x !== id))
+                                            }
+                                        >
+                                            <IconX size={12} />
+                                        </ActionIcon>
+                                    }
+                                >
+                                    {item.name}
+                                </Badge>
+                            ) : null;
+                        })}
+
                         {filterDepartments.map((id) => {
                             const item = departments.find((d) => d.id === id);
                             return item ? (
@@ -330,6 +468,9 @@ export const MatrixToolbar: React.FC<MatrixToolbarProps> = ({
                                 setFilterDepartments([]);
                                 setFilterRoles([]);
                                 setFilterCategories([]);
+                                setFilterEmployees([]);
+                                setFilterLevels([]);
+                                setFilterSkills([]);
                             }}
                         >
                             Alle Filter entfernen

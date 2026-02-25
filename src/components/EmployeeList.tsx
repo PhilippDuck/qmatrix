@@ -124,11 +124,13 @@ export const EmployeeList: React.FC = () => {
     });
   };
 
-  const filteredEmployees = employees.filter((emp) => {
-    if (filterRole && (!emp.roles || !emp.roles.includes(filterRole))) return false;
-    if (filterDepartment && emp.department !== filterDepartment) return false;
-    return true;
-  });
+  const filteredEmployees = [...employees]
+    .sort((a, b) => a.name.localeCompare(b.name, 'de'))
+    .filter((emp) => {
+      if (filterRole && (!emp.roles || !emp.roles.includes(filterRole))) return false;
+      if (filterDepartment && emp.department !== filterDepartment) return false;
+      return true;
+    });
 
   return (
     <>

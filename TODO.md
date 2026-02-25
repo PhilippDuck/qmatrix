@@ -2,19 +2,20 @@
 
 ## Verbesserungen
 
-- [x] Rollen anlegen und Soll definieren Legende in tooltip integrieren (hovern)
-- [x] Orgaqnigramm kacheln passen sich nach Inhalt an.
 - [ ] Dashboard überarbeiten?
-- [x] Metrik Matrix, Rollensoll erfüllung
 - [ ] Erstellen mehrerer gleicher Unterkategorien in Unterkategrien
 - [ ] Assestiertes Anlegen einer Qualimatrix
 - [ ] Dokumentation integriert
 - [ ] Alertsystem, hinweise über potentielle Optimierungen, Missstände
-- [ ] Mitarbeiter alphabetisch ordnen?
-- [ ] Reihenfolge der Views anpassen
+
 
 ### Abgeschlossen
 
+- [x] Rollen anlegen und Soll definieren Legende in tooltip integrieren (hovern)
+- [x] Orgaqnigramm kacheln passen sich nach Inhalt an.
+- [x] Metrik Matrix, Rollensoll erfüllung
+- [x] Mitarbeiter alphabetisch ordnen?
+- [x] Reihenfolge der Views anpassen
 - [x] Mitarbeiter "deaktivieren" (nicht mehr sichtbar, und nicht Auswertung)
 - [x] Drawer Speicherbuttons anordnung
 - [x] Organigramm kopieren von Untergruppen und einfügen dieser in Untergruppen
@@ -42,11 +43,11 @@
 
 ## Bugs
 
-- [x] Wird das kopieren und einfügen in Historie aufgenommen?
-- [x] Wenn man den Namen einer Abteilung ändert werden die zugeordneten MA nicht mitübernommen.
+
 
 ### Abgeschlossen
-
+- [x] Wird das kopieren und einfügen in Historie aufgenommen?
+- [x] Wenn man den Namen einer Abteilung ändert werden die zugeordneten MA nicht mitübernommen.
 - [x] Neuer Mitarbeiter -> Rolle festgelegt (defizite) Kontextmenür Qualifizierungsplan ausgegraut
 - [x] Wenn neuer nutzer angelegt wird und es gibt Haupt/Unterkategorien ohne skills wird die aggregation 0% verwirt etwas
 - [x] Wenn ich die ansicht lösche in der ich mich befinde, muss ich auf die standartansicht geworfen werden

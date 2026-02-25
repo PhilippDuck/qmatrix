@@ -11,6 +11,7 @@ interface SkillCellProps {
   onTargetLevelChange: (targetLevel: number | undefined) => void;
   hasActiveMeasure?: "pending" | "in_progress";
   backgroundColor?: string;
+  showOnlyGaps?: boolean;
 }
 
 export const SkillCell: React.FC<SkillCellProps> = React.memo(({
@@ -21,6 +22,7 @@ export const SkillCell: React.FC<SkillCellProps> = React.memo(({
   onTargetLevelChange,
   hasActiveMeasure,
   backgroundColor,
+  showOnlyGaps,
 }: SkillCellProps) => {
   const levelObj = getLevelByValue(level);
 
@@ -33,6 +35,9 @@ export const SkillCell: React.FC<SkillCellProps> = React.memo(({
   const hasRoleTarget = roleTargetLevel !== undefined && roleTargetLevel >= 0;
   const isBelowRoleTarget = hasRoleTarget && level !== -1 && level < roleTargetLevel;
   const isAtOrAboveRoleTarget = hasRoleTarget && level !== -1 && level >= roleTargetLevel;
+
+  const isGap = isBelowTarget || isBelowRoleTarget;
+  const shouldDim = showOnlyGaps && !isGap;
 
   return (
     <Menu shadow="md" width="auto" position="bottom" withArrow>
@@ -59,7 +64,7 @@ export const SkillCell: React.FC<SkillCellProps> = React.memo(({
               pointerEvents: "none",
               width: "80%",
               fontSize: "9px",
-              opacity: level === -1 ? 0.3 : 1,
+              opacity: shouldDim ? 0.1 : (level === -1 ? 0.3 : 1),
               border: level === -1 ? "1px dashed var(--mantine-color-default-border)" : "none",
             }}
           >

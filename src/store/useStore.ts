@@ -138,6 +138,7 @@ interface AppState {
     addSavedView: (view: Omit<SavedView, "id" | "updatedAt">) => Promise<string>;
     updateSavedView: (id: string, view: Omit<SavedView, "id" | "updatedAt">) => Promise<void>;
     deleteSavedView: (id: string) => Promise<void>;
+    reorderSavedViews: (viewIds: string[]) => Promise<void>;
 
     // Helper methods
     getSkillGapsForEmployee: (employeeId: string, targetRoleId?: string | null) => SkillGap[];
@@ -319,7 +320,7 @@ export const useStore = create<AppState>((set, get) => ({
                 roles: rls || [],
                 qualificationPlans: processedPlans,
                 qualificationMeasures: processedMeasures,
-                savedViews: views || [],
+                savedViews: (views || []).sort((a, b) => (a.order ?? 9999) - (b.order ?? 9999)),
                 changeHistory: history || [],
                 projectTitle: settings?.projectTitle || "",
                 dataHash: hash || "",
@@ -924,10 +925,13 @@ export const useStore = create<AppState>((set, get) => ({
 
     addSavedView: async (view) => {
         try {
-            const id = await db.addSavedView(view);
-            const newView = { ...view, id, updatedAt: Date.now() };
-            set(state => ({ savedViews: [...state.savedViews, newView] }));
-            await recordChangeHelper('savedView', id, view.name, 'create', null, newView);
+            const currentViews = get().savedViews;
+            const maxOrder = currentViews.length > 0 ? Math.max(...currentViews.map(v => v.order ?? 0)) : 0;
+            const viewWithOrder = { ...view, order: maxOrder + 1 };
+            const id = await db.addSavedView(viewWithOrder);
+            const newView = { ...viewWithOrder, id, updatedAt: Date.now() };
+            set(state => ({ savedViews: [...state.savedViews, newView].sort((a, b) => (a.order ?? 9999) - (b.order ?? 9999)) }));
+            await recordChangeHelper('savedView', id, viewWithOrder.name, 'create', null, newView);
             return id;
         } catch (err) { set({ error: err instanceof Error ? err.message : "Failed" }); throw err; }
     },
@@ -962,6 +966,26 @@ export const useStore = create<AppState>((set, get) => ({
             await recordChangeHelper('savedView', id, existing?.name || id, 'delete', existing, null);
         } catch (err) {
             set({ error: err instanceof Error ? err.message : "Failed" });
+            await get().refreshAllData();
+            throw err;
+        }
+    },
+
+    reorderSavedViews: async (viewIds) => {
+        try {
+            const currentViews = [...get().savedViews];
+            const updatedViews = currentViews.map(v => {
+                const newOrder = viewIds.indexOf(v.id!);
+                return { ...v, order: newOrder >= 0 ? newOrder : (v.order ?? 9999) };
+            });
+
+            // Optimistic update
+            set({ savedViews: updatedViews.sort((a, b) => (a.order ?? 9999) - (b.order ?? 9999)) });
+
+            // Background update to DB
+            await Promise.all(updatedViews.map(v => db.updateSavedView(v.id!, v)));
+        } catch (err) {
+            set({ error: err instanceof Error ? err.message : "Failed to reorder views" });
             await get().refreshAllData();
             throw err;
         }

@@ -40,6 +40,7 @@ interface MatrixCategoryRowProps {
   renderChildren?: boolean;
   measuresMap?: Map<string, QualificationMeasure[]>;
   qualificationPlans?: QualificationPlan[];
+  showOnlyGaps?: boolean;
 }
 
 
@@ -71,6 +72,7 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = React.memo(({
   renderChildren = true,
   measuresMap,
   qualificationPlans,
+  showOnlyGaps,
 }) => {
   const { anonymizeName } = usePrivacy();
   const isCatCollapsed = collapsedStates[category.id!];
@@ -397,6 +399,7 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = React.memo(({
                 onNavigate={onNavigate}
                 measuresMap={measuresMap}
                 qualificationPlans={qualificationPlans}
+                showOnlyGaps={showOnlyGaps}
               />
             );
           })}

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Group, Button, Menu, ActionIcon, TextInput } from '@mantine/core';
-import { IconDeviceFloppy, IconSettings, IconTrash, IconEdit, IconCheck, IconX } from '@tabler/icons-react';
+import { IconDeviceFloppy, IconSettings, IconTrash, IconEdit, IconCheck, IconX, IconArrowLeft, IconArrowRight } from '@tabler/icons-react';
 import { SavedView } from '../../services/indexeddb';
 
 interface ViewTabsProps {
@@ -13,6 +13,7 @@ interface ViewTabsProps {
     onSaveCurrentView: () => void;
     onClearView: () => void;
     onCreateNewView: () => void;
+    onReorderViews: (viewIds: string[]) => void;
 }
 
 export const ViewTabs: React.FC<ViewTabsProps> = ({
@@ -25,6 +26,7 @@ export const ViewTabs: React.FC<ViewTabsProps> = ({
     onSaveCurrentView,
     onClearView,
     onCreateNewView,
+    onReorderViews,
 }) => {
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editName, setEditName] = useState("");
@@ -46,6 +48,17 @@ export const ViewTabs: React.FC<ViewTabsProps> = ({
         setEditName("");
     };
 
+    const moveView = (index: number, direction: 'left' | 'right') => {
+        const newIds = savedViews.map(v => v.id!);
+        if (direction === 'left' && index > 0) {
+            [newIds[index - 1], newIds[index]] = [newIds[index], newIds[index - 1]];
+            onReorderViews(newIds);
+        } else if (direction === 'right' && index < newIds.length - 1) {
+            [newIds[index], newIds[index + 1]] = [newIds[index + 1], newIds[index]];
+            onReorderViews(newIds);
+        }
+    };
+
     return (
         <Group gap="xs" align="center" style={{ height: 34 }}>
             {/* Default / Reset View Button */}
@@ -59,7 +72,7 @@ export const ViewTabs: React.FC<ViewTabsProps> = ({
                 Standard
             </Button>
 
-            {savedViews.map((view) => {
+            {savedViews.map((view, index) => {
                 const isActive = activeViewId === view.id;
                 const showDirty = isActive && isViewDirty;
 
@@ -123,6 +136,14 @@ export const ViewTabs: React.FC<ViewTabsProps> = ({
                                         <Menu.Item leftSection={<IconEdit size={14} />} onClick={() => startEditing(view)}>
                                             Umbenennen
                                         </Menu.Item>
+                                        <Menu.Divider />
+                                        <Menu.Item leftSection={<IconArrowLeft size={14} />} onClick={() => moveView(index, 'left')} disabled={index === 0}>
+                                            Nach links verschieben
+                                        </Menu.Item>
+                                        <Menu.Item leftSection={<IconArrowRight size={14} />} onClick={() => moveView(index, 'right')} disabled={index === savedViews.length - 1}>
+                                            Nach rechts verschieben
+                                        </Menu.Item>
+                                        <Menu.Divider />
                                         <Menu.Item
                                             leftSection={<IconTrash size={14} />}
                                             color="red"

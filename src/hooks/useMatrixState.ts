@@ -36,6 +36,18 @@ export function useMatrixState(
         key: 'skill-matrix-filter-categories',
         defaultValue: [],
     });
+    const [filterEmployees, setFilterEmployees] = useLocalStorage<string[]>({
+        key: 'skill-matrix-filter-employees',
+        defaultValue: [],
+    });
+    const [filterLevels, setFilterLevels] = useLocalStorage<number[]>({
+        key: 'skill-matrix-filter-levels',
+        defaultValue: [],
+    });
+    const [filterSkills, setFilterSkills] = useLocalStorage<string[]>({
+        key: 'skill-matrix-filter-skills',
+        defaultValue: [],
+    });
 
     const [metricMode, setMetricMode] = useLocalStorage<MetricMode>({
         key: 'skill-matrix-metric-mode',
@@ -68,6 +80,11 @@ export function useMatrixState(
 
     const [showInactive, setShowInactive] = useLocalStorage<boolean>({
         key: 'skill-matrix-show-inactive',
+        defaultValue: false,
+    });
+
+    const [showOnlyGaps, setShowOnlyGaps] = useLocalStorage<boolean>({
+        key: 'skill-matrix-show-only-gaps',
         defaultValue: false,
     });
 
@@ -139,11 +156,15 @@ export function useMatrixState(
         setFilterDepartments(view.config.filters.departments);
         setFilterRoles(view.config.filters.roles);
         setFilterCategories(view.config.filters.categories);
+        setFilterEmployees(view.config.filters.employees || []);
+        setFilterLevels(view.config.filters.levels || []);
+        setFilterSkills(view.config.filters.skills || []);
         setGroupingMode(view.config.groupingMode);
         setMetricMode(view.config.settings.metricMode ?? (view.config.settings.showMaxValues ? 'max' : 'avg'));
         setHideEmployees(view.config.settings.hideEmployees);
         setHideNaColumns(view.config.settings.hideNaColumns || false);
         setShowInactive(view.config.settings.showInactive || false);
+        setShowOnlyGaps(view.config.settings.showOnlyGaps || false);
         setEmployeeSort(view.config.sort.employee);
         setSkillSort(view.config.sort.skill);
 
@@ -160,6 +181,9 @@ export function useMatrixState(
                     departments: filterDepartments,
                     roles: filterRoles,
                     categories: filterCategories,
+                    employees: filterEmployees,
+                    levels: filterLevels,
+                    skills: filterSkills,
                 },
                 groupingMode: groupingMode,
                 settings: {
@@ -167,6 +191,7 @@ export function useMatrixState(
                     hideEmployees: hideEmployees,
                     hideNaColumns: hideNaColumns,
                     showInactive: showInactive,
+                    showOnlyGaps: showOnlyGaps,
                 },
                 sort: {
                     employee: employeeSort,
@@ -194,16 +219,20 @@ export function useMatrixState(
             JSON.stringify(config.filters.departments) !== JSON.stringify(filterDepartments) ||
             JSON.stringify(config.filters.roles) !== JSON.stringify(filterRoles) ||
             JSON.stringify(config.filters.categories) !== JSON.stringify(filterCategories) ||
+            JSON.stringify(config.filters.employees || []) !== JSON.stringify(filterEmployees) ||
+            JSON.stringify(config.filters.levels || []) !== JSON.stringify(filterLevels) ||
+            JSON.stringify(config.filters.skills || []) !== JSON.stringify(filterSkills) ||
             config.groupingMode !== groupingMode ||
             (config.settings.metricMode ?? (config.settings.showMaxValues ? 'max' : 'avg')) !== metricMode ||
             config.settings.hideEmployees !== hideEmployees ||
             config.settings.hideNaColumns !== hideNaColumns ||
             config.settings.showInactive !== showInactive ||
+            (config.settings.showOnlyGaps || false) !== showOnlyGaps ||
             config.sort.employee !== employeeSort ||
             config.sort.skill !== skillSort ||
             JSON.stringify(config.collapsedStates || {}) !== JSON.stringify(collapsedStates)
         );
-    }, [activeViewId, savedViews, filterDepartments, filterRoles, filterCategories, groupingMode, metricMode, hideEmployees, hideNaColumns, employeeSort, skillSort, collapsedStates, showInactive]);
+    }, [activeViewId, savedViews, filterDepartments, filterRoles, filterCategories, filterEmployees, filterLevels, filterSkills, groupingMode, metricMode, hideEmployees, hideNaColumns, employeeSort, skillSort, collapsedStates, showInactive, showOnlyGaps]);
 
     const handleUpdateCurrentView = async () => {
         if (!activeViewId) return;
@@ -218,6 +247,9 @@ export function useMatrixState(
                         departments: filterDepartments,
                         roles: filterRoles,
                         categories: filterCategories,
+                        employees: filterEmployees,
+                        levels: filterLevels,
+                        skills: filterSkills,
                     },
                     groupingMode: groupingMode,
                     settings: {
@@ -225,6 +257,7 @@ export function useMatrixState(
                         hideEmployees: hideEmployees,
                         hideNaColumns: hideNaColumns,
                         showInactive: showInactive,
+                        showOnlyGaps: showOnlyGaps,
                     },
                     sort: {
                         employee: employeeSort,
@@ -243,11 +276,15 @@ export function useMatrixState(
         setFilterDepartments([]);
         setFilterRoles([]);
         setFilterCategories([]);
+        setFilterEmployees([]);
+        setFilterLevels([]);
+        setFilterSkills([]);
         setGroupingMode("none");
         setMetricMode('avg');
         setHideEmployees(false);
         setHideNaColumns(false);
         setShowInactive(false);
+        setShowOnlyGaps(false);
         setEmployeeSort(null);
         setSkillSort(null);
 
@@ -270,6 +307,9 @@ export function useMatrixState(
         filterDepartments, setFilterDepartments,
         filterRoles, setFilterRoles,
         filterCategories, setFilterCategories,
+        filterEmployees, setFilterEmployees,
+        filterLevels, setFilterLevels,
+        filterSkills, setFilterSkills,
         metricMode, setMetricMode, nextMetricMode,
         employeeSort, setEmployeeSort,
         skillSort, setSkillSort,
@@ -277,6 +317,7 @@ export function useMatrixState(
         hideEmployees, setHideEmployees,
         hideNaColumns, setHideNaColumns,
         showInactive, setShowInactive,
+        showOnlyGaps, setShowOnlyGaps,
         activeViewId, setActiveViewId,
         // Computed
         isViewDirty,

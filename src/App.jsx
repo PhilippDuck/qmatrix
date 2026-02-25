@@ -378,7 +378,7 @@ function AppContent() {
                       userSelect: "none",
                     }}
                   >
-                    SkillGrid
+                    SKILLGRID
                   </Title>
 
                   {/* Versions-Badge */}
