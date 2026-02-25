@@ -1,4 +1,12 @@
 
+## [2.16.9] - 2026-02-25
+
+### Performance (Skill-Matrix)
+- **Entfernung der Matrix-Crosshairs**: Die JavaScript-gesteuerte Highlight-Logik (Crosshairs / Fadenkreuz) beim Hovern über Matrix-Zellen wurde vollständig entfernt. 
+  - Die bisherige Logik hat bei jedem Hovern das State (`hoveredEmployeeId`, `hoveredSkillId`) aktualisiert, was das `React.memo` blockiert und die gesamte Matrix permanent neu gerendert hat.
+  - Ein CSS-Only-Ersatz mittels `:has()`-Selektor wurde in Betracht gezogen, aber verworfen, um die Daten-Grid-Usability (Visuelle Ruhe) sowie die DOM-Performance maximal hoch zu halten.
+  - Das Interface reagiert beim Scrollen und Navigieren nun verzögerungsfrei.
+
 ## [2.16.8] - 2026-02-25
 
 ### Performance (Skill-Matrix)

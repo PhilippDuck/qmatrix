@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   AppShell,
   Group,
@@ -114,31 +114,7 @@ function AnonymousToggle() {
   );
 }
 
-function AppContent() {
-  const { loading, exportData, projectTitle, updateProjectTitle, changeHistory, undoChange, initDb, hasUnsavedChanges } = useStore();
-
-  useEffect(() => {
-    initDb();
-  }, [initDb]);
-  const computedColorScheme = useComputedColorScheme("light");
-  const [activeTab, setActiveTab] = useLocalStorage({
-    key: 'skillgrid-active-tab',
-    defaultValue: 'matrix',
-  });
-
-  // Navigation params for cross-module jumping (e.g. Matrix -> QualPlan)
-  const [navParams, setNavParams] = useState(null);
-
-  const handleNavigate = (tab, params) => {
-    setNavParams(params);
-    setActiveTab(tab);
-  };
-
-  // Title edit state
-  const [isEditingTitle, setIsEditingTitle] = useState(false);
-  const [tempTitle, setTempTitle] = useState("");
-
-  // Wiggle Animation State
+function SaveButton({ hasUnsavedChanges, onSave }) {
   const [wiggleAngle, setWiggleAngle] = useState(0);
 
   useEffect(() => {
@@ -179,7 +155,64 @@ function AppContent() {
     };
   }, [hasUnsavedChanges]);
 
-  // Changelog modal state
+  return (
+    <Tooltip label="Schnellspeicherung (Backup Export)">
+      <ActionIcon
+        variant="subtle"
+        color="gray"
+        size="md"
+        onClick={() => onSave()}
+        style={{ position: "relative" }}
+      >
+        <div className={hasUnsavedChanges ? "forced-wiggle-animation" : ""} style={{ transform: `rotate(${wiggleAngle}deg)`, transition: "transform 0.15s ease-in-out" }}>
+          <IconDeviceFloppy size={18} />
+        </div>
+        {hasUnsavedChanges && (
+          <div
+            style={{
+              position: "absolute",
+              top: 4,
+              right: 4,
+              width: 8,
+              height: 8,
+              backgroundColor: "var(--mantine-color-red-6)",
+              borderRadius: "50%",
+            }}
+          />
+        )}
+      </ActionIcon>
+    </Tooltip>
+  );
+}
+
+function AppContent() {
+  const { loading, exportData, projectTitle, updateProjectTitle, changeHistory, undoChange, initDb, hasUnsavedChanges } = useStore();
+
+  useEffect(() => {
+    initDb();
+  }, [initDb]);
+  const computedColorScheme = useComputedColorScheme("light");
+  const [activeTab, setActiveTab] = useLocalStorage({
+    key: 'skillgrid-active-tab',
+    defaultValue: 'matrix',
+  });
+
+  // Navigation params for cross-module jumping (e.g. Matrix -> QualPlan)
+  const [navParams, setNavParams] = useState(null);
+
+  const handleNavigate = useCallback((tab, params) => {
+    setNavParams(params);
+    setActiveTab(tab);
+  }, [setActiveTab]);
+
+  const handleClearParams = useCallback(() => {
+    setNavParams(null);
+  }, []);
+
+  // Title edit state
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [tempTitle, setTempTitle] = useState("");
+
   const [changelogOpened, { open: openChangelog, close: closeChangelog }] = useDisclosure(false);
 
   // History drawer state
@@ -317,17 +350,17 @@ function AppContent() {
                     style={{ transition: "all 0.2s ease", flexShrink: 0 }}
                   >
                     <g transform="translate(14, 14)">
-                      <rect x="0" y="0" width="100" height="100" style={{ stroke: logoColor, strokeWidth: 5, fill: "none" }} rx="12" ry="12"/>
-                      <line x1="33.3" y1="0" x2="33.3" y2="100" style={{ stroke: logoColor, strokeWidth: 5 }}/>
-                      <line x1="66.6" y1="0" x2="66.6" y2="100" style={{ stroke: logoColor, strokeWidth: 5 }}/>
-                      <line x1="0" y1="33.3" x2="100" y2="33.3" style={{ stroke: logoColor, strokeWidth: 5 }}/>
-                      <line x1="0" y1="66.6" x2="100" y2="66.6" style={{ stroke: logoColor, strokeWidth: 5 }}/>
-                      <circle cx="50" cy="16.65" r="9" fill={logoColor}/>
-                      <circle cx="83.35" cy="16.65" r="9" fill={logoColor}/>
-                      <circle cx="16.65" cy="50" r="9" fill={logoColor}/>
-                      <circle cx="50" cy="50" r="9" fill={logoColor}/>
-                      <circle cx="16.65" cy="83.35" r="9" fill={logoColor}/>
-                      <circle cx="83.35" cy="83.35" r="9" fill={logoColor}/>
+                      <rect x="0" y="0" width="100" height="100" style={{ stroke: logoColor, strokeWidth: 5, fill: "none" }} rx="12" ry="12" />
+                      <line x1="33.3" y1="0" x2="33.3" y2="100" style={{ stroke: logoColor, strokeWidth: 5 }} />
+                      <line x1="66.6" y1="0" x2="66.6" y2="100" style={{ stroke: logoColor, strokeWidth: 5 }} />
+                      <line x1="0" y1="33.3" x2="100" y2="33.3" style={{ stroke: logoColor, strokeWidth: 5 }} />
+                      <line x1="0" y1="66.6" x2="100" y2="66.6" style={{ stroke: logoColor, strokeWidth: 5 }} />
+                      <circle cx="50" cy="16.65" r="9" fill={logoColor} />
+                      <circle cx="83.35" cy="16.65" r="9" fill={logoColor} />
+                      <circle cx="16.65" cy="50" r="9" fill={logoColor} />
+                      <circle cx="50" cy="50" r="9" fill={logoColor} />
+                      <circle cx="16.65" cy="83.35" r="9" fill={logoColor} />
+                      <circle cx="83.35" cy="83.35" r="9" fill={logoColor} />
                     </g>
                   </svg>
                 );
@@ -395,32 +428,7 @@ function AppContent() {
           </Box>
 
           <Group gap="xs">
-            <Tooltip label="Schnellspeicherung (Backup Export)">
-              <ActionIcon
-                variant="subtle"
-                color="gray"
-                size="md"
-                onClick={() => exportData()}
-                style={{ position: "relative" }}
-              >
-                <div className={hasUnsavedChanges ? "forced-wiggle-animation" : ""} style={{ transform: `rotate(${wiggleAngle}deg)`, transition: "transform 0.15s ease-in-out" }}>
-                  <IconDeviceFloppy size={18} />
-                </div>
-                {hasUnsavedChanges && (
-                  <div
-                    style={{
-                      position: "absolute",
-                      top: 4,
-                      right: 4,
-                      width: 8,
-                      height: 8,
-                      backgroundColor: "var(--mantine-color-red-6)",
-                      borderRadius: "50%",
-                    }}
-                  />
-                )}
-              </ActionIcon>
-            </Tooltip>
+            <SaveButton hasUnsavedChanges={hasUnsavedChanges} onSave={exportData} />
             <Tooltip label="Änderungshistorie">
               <ActionIcon
                 variant="subtle"
@@ -546,7 +554,7 @@ function AppContent() {
         >
           {activeTab === "dashboard" && <Dashboard />}
           {activeTab === "matrix" && <SkillMatrix onNavigate={handleNavigate} />}
-          {activeTab === "qualification" && <QualificationPlan initialEmployeeId={navParams?.employeeId} onClearParams={() => setNavParams(null)} />}
+          {activeTab === "qualification" && <QualificationPlan initialEmployeeId={navParams?.employeeId} onClearParams={handleClearParams} />}
           {activeTab === "data" && <UnifiedDataView />}
           {activeTab === "system" && <DataManagement />}
         </div>

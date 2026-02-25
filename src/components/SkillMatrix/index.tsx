@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect, useDeferredValue } from "react";
+import React, { useMemo, useState, useEffect, useDeferredValue, useCallback } from "react";
 import { MATRIX_LAYOUT } from "../../constants/skillLevels";
 import {
   Box,
@@ -63,7 +63,7 @@ interface SkillMatrixProps {
   onNavigate?: (tab: string, params?: any) => void;
 }
 
-export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
+export const SkillMatrix: React.FC<SkillMatrixProps> = React.memo(({ onNavigate }) => {
   const {
     employees,
     categories,
@@ -103,8 +103,6 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
   const isCalculating = assessments !== deferredAssessments;
 
   const [focusEmployeeId, setFocusEmployeeId] = useState<string | null>(null);
-  const [hoveredSkillId, setHoveredSkillId] = useState<string | null>(null);
-  const [hoveredEmployeeId, setHoveredEmployeeId] = useState<string | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
 
   // Employee Drawer state
@@ -290,7 +288,7 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
     await addSkill({ subCategoryId: subcategoryId, name, description });
   };
 
-  const handleAddCategory = () => {
+  const handleAddCategory = useCallback(() => {
     setEditEntityId(null);
     setEditEntityType('category');
     setEditEntityName("");
@@ -304,9 +302,9 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
       subCategoryIds: [],
     });
     setEditDrawerOpened(true);
-  };
+  }, []);
 
-  const handleAddSubCategory = (categoryId: string, parentSubId?: string) => {
+  const handleAddSubCategory = useCallback((categoryId: string, parentSubId?: string) => {
     setEditEntityId(null);
     setEditEntityType('subcategory');
     setEditEntityName("");
@@ -321,13 +319,12 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
       subCategoryIds: [],
     });
     setEditDrawerOpened(true);
-  };
+  }, []);
 
-  const handleOpenAddSkill = (subCategoryId: string) => {
+  const handleOpenAddSkill = useCallback((subCategoryId: string) => {
     setEditEntityId(null);
     setEditEntityType('skill');
     setEditEntityName("");
-    setEditEntityDescription("");
     setEditEntityDescription("");
     setEditEntityDepartmentId(null);
     setEditEntityRoleIds([]);
@@ -340,9 +337,9 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
       subCategoryIds: [],
     });
     setEditDrawerOpened(true);
-  };
+  }, []);
 
-  const handleEditSkill = (skillId: string) => {
+  const handleEditSkill = useCallback((skillId: string) => {
     const skill = skills.find((s) => s.id === skillId);
     if (skill) {
       setEditEntityId(skillId);
@@ -350,20 +347,20 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
       setEditEntityName(skill.name);
       setEditEntityDescription(skill.description || "");
       setEditEntityDepartmentId(skill.departmentId || null);
-      setEditEntityRoleIds(skill.requiredByRoleIds || []); // Assuming requiredByRoleIds is the correct field for roles on skill
+      setEditEntityRoleIds(skill.requiredByRoleIds || []);
       setEditParentId(skill.subCategoryId);
       setInitialValues({
         name: skill.name,
         description: skill.description || "",
         departmentId: skill.departmentId || null,
-        roleIds: skill.requiredByRoleIds || [], // Assuming requiredByRoleIds is the correct field for roles on skill
+        roleIds: skill.requiredByRoleIds || [],
         subCategoryIds: [],
       });
       setEditDrawerOpened(true);
     }
-  };
+  }, [skills]);
 
-  const handleEditCategory = (categoryId: string) => {
+  const handleEditCategory = useCallback((categoryId: string) => {
     const category = categories.find((c) => c.id === categoryId);
     if (category) {
       setEditEntityId(category.id!);
@@ -379,9 +376,9 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
       });
       setEditDrawerOpened(true);
     }
-  };
+  }, [categories]);
 
-  const handleEditSubcategory = (subcategoryId: string) => {
+  const handleEditSubcategory = useCallback((subcategoryId: string) => {
     const sub = subcategories.find((s) => s.id === subcategoryId);
     if (sub) {
       setEditEntityId(sub.id!);
@@ -397,7 +394,7 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
       });
       setEditDrawerOpened(true);
     }
-  };
+  }, [subcategories]);
 
   const handleSaveEditedEntity = async () => {
     if (!editEntityName.trim()) return;
@@ -677,9 +674,7 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
                     columns={matrixColumns}
                     employees={displayedEmployees}
                     focusEmployeeId={focusEmployeeId}
-                    hoveredEmployeeId={hoveredEmployeeId}
                     onFocusChange={setFocusEmployeeId}
-                    onHoverChange={setHoveredEmployeeId}
                     calculateEmployeeAverage={calculateEmployeeAverage}
                     skills={skills}
                     getAssessment={getAssessmentFast}
@@ -740,12 +735,8 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
                       employees={displayedEmployees}
                       columns={matrixColumns}
                       collapsedStates={collapsedStates}
-                      hoveredSkillId={hoveredSkillId}
-                      hoveredEmployeeId={hoveredEmployeeId}
                       onToggleCategory={toggleItem}
                       onToggleSubcategory={toggleItem}
-                      onSkillHover={setHoveredSkillId}
-                      onEmployeeHover={setHoveredEmployeeId}
                       calculateAverage={calculateAverage}
                       getAssessment={getAssessmentFast}
                       onBulkSetLevel={bulkSetLevel}
@@ -919,4 +910,4 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
       </Modal>
     </Box >
   );
-};
+});

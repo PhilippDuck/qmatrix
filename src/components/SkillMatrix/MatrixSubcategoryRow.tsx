@@ -21,11 +21,7 @@ interface MatrixSubcategoryRowProps {
   employees: Employee[];
   roles: EmployeeRole[];
   collapsedStates: Record<string, boolean>;
-  hoveredSkillId: string | null;
-  hoveredEmployeeId: string | null;
   onToggleSubcategory: (subcategoryId: string) => void;
-  onSkillHover: (skillId: string | null) => void;
-  onEmployeeHover: (employeeId: string | null) => void;
   calculateAverage: (skillIds: string[], employeeId?: string) => number | null;
   getAssessment: (employeeId: string, skillId: string) => Assessment | undefined;
   onBulkSetLevel: (employeeId: string, skillIds: string[], level: number) => void;
@@ -55,11 +51,7 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = React.m
   employees,
   roles,
   collapsedStates,
-  hoveredSkillId,
-  hoveredEmployeeId,
   onToggleSubcategory,
-  onSkillHover,
-  onEmployeeHover,
   calculateAverage,
   getAssessment,
   onBulkSetLevel,
@@ -337,15 +329,13 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = React.m
               onSelectLevel={(level) => onBulkSetLevel(emp.id!, allDescendantSkillIds, level)}
             >
               <div
-                onMouseEnter={() => onEmployeeHover(emp.id!)}
-                onMouseLeave={() => onEmployeeHover(null)}
                 style={{
                   width: cellSize,
                   cursor: "pointer",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  backgroundColor: col.backgroundColor || (hoveredEmployeeId === emp.id ? "var(--mantine-color-default-hover)" : "transparent"),
+                  backgroundColor: col.backgroundColor || "transparent",
                   transition: "background-color 0.15s ease",
                 }}
               >
@@ -378,10 +368,6 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = React.m
               columns={columns}
               employees={employees}
               roles={roles}
-              isHovered={hoveredSkillId === skill.id}
-              hoveredEmployeeId={hoveredEmployeeId}
-              onSkillHover={onSkillHover}
-              onEmployeeHover={onEmployeeHover}
               getAssessment={getAssessment}
               calculateSkillAverage={(skillId) => calculateAverage([skillId]) ?? null}
               onLevelChange={onLevelChange}
@@ -492,10 +478,6 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = React.m
                 roles={roles}
                 collapsedStates={collapsedStates}
                 onToggleSubcategory={onToggleSubcategory}
-                hoveredSkillId={hoveredSkillId}
-                hoveredEmployeeId={hoveredEmployeeId}
-                onSkillHover={onSkillHover}
-                onEmployeeHover={onEmployeeHover}
                 calculateAverage={calculateAverage}
                 getAssessment={getAssessment}
                 onBulkSetLevel={onBulkSetLevel}

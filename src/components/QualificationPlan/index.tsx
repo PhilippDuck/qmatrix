@@ -47,7 +47,7 @@ interface QualificationPlanProps {
   onClearParams?: () => void;
 }
 
-export const QualificationPlan: React.FC<QualificationPlanProps> = ({ initialEmployeeId, onClearParams }) => {
+export const QualificationPlan: React.FC<QualificationPlanProps> = React.memo(({ initialEmployeeId, onClearParams }) => {
   const {
     qualificationPlans,
     qualificationMeasures,
@@ -427,4 +427,4 @@ export const QualificationPlan: React.FC<QualificationPlanProps> = ({ initialEmp
       />
     </Box>
   );
-};
+});

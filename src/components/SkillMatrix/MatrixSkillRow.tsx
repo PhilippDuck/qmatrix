@@ -13,10 +13,6 @@ interface MatrixSkillRowProps {
   skill: Skill;
   employees: Employee[];
   roles: EmployeeRole[];
-  isHovered: boolean;
-  hoveredEmployeeId: string | null;
-  onSkillHover: (skillId: string | null) => void;
-  onEmployeeHover: (employeeId: string | null) => void;
   getAssessment: (employeeId: string, skillId: string) => Assessment | undefined;
   calculateSkillAverage: (skillId: string) => number | null;
   onLevelChange: (employeeId: string, skillId: string, newLevel: number) => void;
@@ -35,10 +31,6 @@ export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = React.memo(({
   skill,
   employees,
   roles,
-  isHovered,
-  hoveredEmployeeId,
-  onSkillHover,
-  onEmployeeHover,
   getAssessment,
   calculateSkillAverage,
   onLevelChange,
@@ -53,7 +45,6 @@ export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = React.memo(({
 }) => {
   const { cellSize } = MATRIX_LAYOUT;
   const effectiveLabelWidth = labelWidth || MATRIX_LAYOUT.labelWidth;
-  const isRowHovered = isHovered;
   const skillAvg = calculateSkillAverage(skill.id!);
 
   // O(1) lookup via pre-computed map instead of O(n) filter
@@ -78,9 +69,7 @@ export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = React.memo(({
           position: "sticky",
           left: 0,
           zIndex: 30,
-          background: isRowHovered
-            ? "linear-gradient(var(--mantine-color-default-hover), var(--mantine-color-default-hover)), var(--mantine-color-body)"
-            : "var(--mantine-color-body)",
+          // Styling done by global css on hover
           borderRight: "1px solid var(--mantine-color-default-border)",
           borderBottom: "1px solid var(--mantine-color-default-border)",
           display: "flex",
@@ -93,7 +82,8 @@ export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = React.memo(({
           <HoverCard.Target>
             <Text
               size="sm"
-              fw={isRowHovered ? 700 : 400}
+              fw={400}
+              className={`matrix-skill-text-${skill.id}`}
               truncate
               style={{ flex: 1, cursor: "help", whiteSpace: "nowrap" }}
             >
@@ -187,7 +177,7 @@ export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = React.memo(({
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                backgroundColor: col.backgroundColor || (isRowHovered ? "var(--mantine-color-default-hover)" : "var(--mantine-color-body)"),
+                backgroundColor: col.backgroundColor || "var(--mantine-color-body)",
                 borderRight: col.type === 'group-summary' ? "2px solid var(--mantine-color-default-border)" : undefined,
                 borderBottom: "1px solid var(--mantine-color-default-border)",
               }}
@@ -252,18 +242,8 @@ export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = React.memo(({
             level={level}
             targetLevel={assessment?.targetLevel}
             roleTargetLevel={roleTarget}
-            isRowHovered={isRowHovered}
-            isColumnHovered={hoveredEmployeeId === emp.id}
             onLevelChange={(newLevel) => onLevelChange(emp.id!, skill.id!, newLevel)}
             onTargetLevelChange={(target) => onTargetLevelChange(emp.id!, skill.id!, target)}
-            onMouseEnter={() => {
-              onSkillHover(skill.id!);
-              onEmployeeHover(emp.id!);
-            }}
-            onMouseLeave={() => {
-              onSkillHover(null);
-              onEmployeeHover(null);
-            }}
             hasActiveMeasure={measureStatus}
             backgroundColor={col.backgroundColor}
           />

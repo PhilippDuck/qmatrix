@@ -16,9 +16,7 @@ interface MatrixHeaderProps {
   columns: MatrixColumn[];
   employees: Employee[];
   focusEmployeeId: string | null;
-  hoveredEmployeeId: string | null;
   onFocusChange: (employeeId: string | null) => void;
-  onHoverChange: (employeeId: string | null) => void;
   calculateEmployeeAverage: (employeeId: string) => number | null;
   skills: Skill[];
   getAssessment: (empId: string, skillId: string) => Assessment | undefined;
@@ -342,9 +340,7 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
   columns,
   employees,
   focusEmployeeId,
-  hoveredEmployeeId,
   onFocusChange,
-  onHoverChange,
   calculateEmployeeAverage,
   skills,
   getAssessment,
@@ -581,7 +577,6 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
 
           const emp = col.employee;
           const avg = calculateEmployeeAverage(emp.id!);
-          const isColumnHovered = hoveredEmployeeId === emp.id;
           const isFocused = focusEmployeeId === emp.id;
 
           return (
@@ -595,8 +590,6 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
             >
               <HoverCard.Target>
                 <div
-                  onMouseEnter={() => onHoverChange(emp.id!)}
-                  onMouseLeave={() => onHoverChange(null)}
                   style={{
                     width: cellSize,
                     height: headerHeight,
@@ -607,9 +600,7 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
                     paddingBottom: "12px",
                     borderBottom: "2px solid var(--mantine-color-default-border)",
                     borderRight: "1px solid var(--mantine-color-default-border)",
-                    backgroundColor: col.backgroundColor || (isColumnHovered
-                      ? "var(--mantine-color-default-hover)"
-                      : "transparent"),
+                    backgroundColor: col.backgroundColor || "transparent",
                     position: "relative",
                     transition: "background-color 0.15s ease",
                   }}
@@ -675,7 +666,7 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
                   >
                     <Text
                       size="xs"
-                      fw={isColumnHovered || isFocused ? 700 : 400}
+                      fw={isFocused ? 700 : 400}
                       style={{
                         color: isFocused ? "var(--mantine-color-blue-filled)" : undefined,
                       }}

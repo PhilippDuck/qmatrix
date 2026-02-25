@@ -7,12 +7,8 @@ interface SkillCellProps {
   level: number;
   targetLevel?: number;
   roleTargetLevel?: number;
-  isRowHovered: boolean;
-  isColumnHovered: boolean;
   onLevelChange: (newLevel: number) => void;
   onTargetLevelChange: (targetLevel: number | undefined) => void;
-  onMouseEnter: () => void;
-  onMouseLeave: () => void;
   hasActiveMeasure?: "pending" | "in_progress";
   backgroundColor?: string;
 }
@@ -21,12 +17,8 @@ export const SkillCell: React.FC<SkillCellProps> = React.memo(({
   level,
   targetLevel,
   roleTargetLevel,
-  isRowHovered,
-  isColumnHovered,
   onLevelChange,
   onTargetLevelChange,
-  onMouseEnter,
-  onMouseLeave,
   hasActiveMeasure,
   backgroundColor,
 }: SkillCellProps) => {
@@ -46,8 +38,6 @@ export const SkillCell: React.FC<SkillCellProps> = React.memo(({
     <Menu shadow="md" width="auto" position="bottom" withArrow>
       <Menu.Target>
         <div
-          onMouseEnter={onMouseEnter}
-          onMouseLeave={onMouseLeave}
           style={{
             width: MATRIX_LAYOUT.cellSize,
             height: 36,
@@ -56,11 +46,7 @@ export const SkillCell: React.FC<SkillCellProps> = React.memo(({
             justifyContent: "center",
             borderBottom: "1px solid var(--mantine-color-default-border)",
             borderRight: "1px solid var(--mantine-color-default-border)",
-            backgroundColor: backgroundColor || (
-              isRowHovered || isColumnHovered
-                ? "var(--mantine-color-default-hover)"
-                : "transparent"
-            ),
+            backgroundColor: backgroundColor || "transparent",
             transition: "background-color 0.15s ease",
             position: "relative",
             cursor: "pointer",

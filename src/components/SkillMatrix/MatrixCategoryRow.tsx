@@ -20,12 +20,8 @@ interface MatrixCategoryRowProps {
   employees: Employee[];
   roles: EmployeeRole[];
   collapsedStates: Record<string, boolean>;
-  hoveredSkillId: string | null;
-  hoveredEmployeeId: string | null;
   onToggleCategory: (categoryId: string) => void;
   onToggleSubcategory: (subcategoryId: string) => void;
-  onSkillHover: (skillId: string | null) => void;
-  onEmployeeHover: (employeeId: string | null) => void;
   calculateAverage: (skillIds: string[], employeeId?: string) => number | null;
   getAssessment: (employeeId: string, skillId: string) => Assessment | undefined;
   onBulkSetLevel: (employeeId: string, skillIds: string[], level: number) => void;
@@ -55,12 +51,8 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = React.memo(({
   employees,
   roles,
   collapsedStates,
-  hoveredSkillId,
-  hoveredEmployeeId,
   onToggleCategory,
   onToggleSubcategory,
-  onSkillHover,
-  onEmployeeHover,
   calculateAverage,
   getAssessment,
   onBulkSetLevel,
@@ -303,14 +295,10 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = React.memo(({
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              backgroundColor: col.backgroundColor || (col.type === 'employee' && hoveredEmployeeId === col.id ? "var(--mantine-color-default-hover)" : "transparent"),
+              backgroundColor: col.backgroundColor || "transparent",
               borderRight: col.type === 'group-summary' ? "2px solid var(--mantine-color-default-border)" : undefined,
               transition: "background-color 0.15s ease",
             };
-            // Override hover if not grouped/colored
-            if (!col.backgroundColor && col.type === 'employee' && hoveredEmployeeId === col.id) {
-              cellStyle.backgroundColor = "var(--mantine-color-default-hover)";
-            }
 
             if (col.type === 'group-summary') {
               const { avg, maxAvg, fulfillmentPct: ful } = groupSummaryMap.get(col.id) ?? { avg: 0, maxAvg: null, fulfillmentPct: null };
@@ -348,8 +336,6 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = React.memo(({
                 onSelectLevel={(level) => onBulkSetLevel(emp.id!, catSkillIds, level)}
               >
                 <div
-                  onMouseEnter={() => onEmployeeHover(emp.id!)}
-                  onMouseLeave={() => onEmployeeHover(null)}
                   style={{
                     ...cellStyle,
                     cursor: "pointer",
@@ -395,10 +381,6 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = React.memo(({
                 roles={roles}
                 collapsedStates={collapsedStates}
                 onToggleSubcategory={onToggleSubcategory}
-                hoveredSkillId={hoveredSkillId}
-                hoveredEmployeeId={hoveredEmployeeId}
-                onSkillHover={onSkillHover}
-                onEmployeeHover={onEmployeeHover}
                 calculateAverage={calculateAverage}
                 getAssessment={getAssessment}
                 onBulkSetLevel={onBulkSetLevel}
