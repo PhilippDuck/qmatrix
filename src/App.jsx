@@ -307,33 +307,62 @@ function AppContent() {
             </ActionIcon>
 
             <Group gap="xs">
-              <Title
-                order={4}
-                c="blue"
-                style={{
-                  letterSpacing: -0.5,
-                  fontSize: desktopOpened ? "1.1rem" : "0.9rem",
-                  transition: "all 0.2s ease",
-                  userSelect: "none",
-                }}
-              >
-                {desktopOpened ? "SkillGrid" : "SG"}
-              </Title>
-
-              {/* Versions-Badge */}
-              {desktopOpened && (
-                <Tooltip label="Changelog anzeigen">
-                  <Badge
-                    variant="subtle"
-                    color="gray"
-                    size="xs"
-                    onClick={openChangelog}
-                    style={{ cursor: "pointer" }}
-                    styles={{ root: { textTransform: "none", opacity: 0.7 } }}
+              {(() => {
+                const logoColor = computedColorScheme === "dark" ? "#4DA6FF" : "#007BFF";
+                return (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 128 128"
+                    width={desktopOpened ? 32 : 28}
+                    height={desktopOpened ? 32 : 28}
+                    style={{ transition: "all 0.2s ease", flexShrink: 0 }}
                   >
-                    {APP_VERSION}
-                  </Badge>
-                </Tooltip>
+                    <g transform="translate(14, 14)">
+                      <rect x="0" y="0" width="100" height="100" style={{ stroke: logoColor, strokeWidth: 5, fill: "none" }} rx="12" ry="12"/>
+                      <line x1="33.3" y1="0" x2="33.3" y2="100" style={{ stroke: logoColor, strokeWidth: 5 }}/>
+                      <line x1="66.6" y1="0" x2="66.6" y2="100" style={{ stroke: logoColor, strokeWidth: 5 }}/>
+                      <line x1="0" y1="33.3" x2="100" y2="33.3" style={{ stroke: logoColor, strokeWidth: 5 }}/>
+                      <line x1="0" y1="66.6" x2="100" y2="66.6" style={{ stroke: logoColor, strokeWidth: 5 }}/>
+                      <circle cx="50" cy="16.65" r="9" fill={logoColor}/>
+                      <circle cx="83.35" cy="16.65" r="9" fill={logoColor}/>
+                      <circle cx="16.65" cy="50" r="9" fill={logoColor}/>
+                      <circle cx="50" cy="50" r="9" fill={logoColor}/>
+                      <circle cx="16.65" cy="83.35" r="9" fill={logoColor}/>
+                      <circle cx="83.35" cy="83.35" r="9" fill={logoColor}/>
+                    </g>
+                  </svg>
+                );
+              })()}
+
+              {desktopOpened && (
+                <>
+                  <Title
+                    order={4}
+                    c="blue"
+                    style={{
+                      letterSpacing: -0.5,
+                      fontSize: "1.1rem",
+                      transition: "all 0.2s ease",
+                      userSelect: "none",
+                    }}
+                  >
+                    SkillGrid
+                  </Title>
+
+                  {/* Versions-Badge */}
+                  <Tooltip label="Changelog anzeigen">
+                    <Badge
+                      variant="subtle"
+                      color="gray"
+                      size="xs"
+                      onClick={openChangelog}
+                      style={{ cursor: "pointer" }}
+                      styles={{ root: { textTransform: "none", opacity: 0.7 } }}
+                    >
+                      {APP_VERSION}
+                    </Badge>
+                  </Tooltip>
+                </>
               )}
             </Group>
           </Group>

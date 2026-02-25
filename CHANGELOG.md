@@ -1,4 +1,10 @@
 
+## [2.16.7] - 2026-02-25
+
+### Benutzeroberfläche
+- **App-Logo im Header**: Das SkillGrid-Logo (SVG) ist jetzt im Header sichtbar — neben dem App-Namen im aufgeklappten Zustand, alleinstehend wenn die Sidebar eingeklappt ist.
+- **Dark-Mode-Anpassung**: Die Logo-Farbe wechselt automatisch zwischen `#007BFF` (Light Mode) und `#4DA6FF` (Dark Mode) für optimale Lesbarkeit.
+
 ## [2.16.6] - 2026-02-24
 
 ### Neue Funktionen (Stammdaten)
