@@ -415,7 +415,6 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
           fontSize: "11px",
           fontWeight: 600,
           textTransform: "uppercase",
-          transition: "width 0.2s ease",
           flexDirection: "column",
           gap: "2px"
         }}

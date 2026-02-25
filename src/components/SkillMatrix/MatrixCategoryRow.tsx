@@ -222,7 +222,6 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = React.memo(({
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            transition: "width 0.2s ease",
           }}
           onMouseEnter={() => setIsLabelHovered(true)}
           onMouseLeave={() => setIsLabelHovered(false)}

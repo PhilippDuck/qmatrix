@@ -536,58 +536,45 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
     return undefined;
   }, [editEntityType, editEntityId, editParentId, categories, subcategories, skills]);
 
-  // Dynamische Breite für die Label-Spalte berechnen
+  // Dynamische Breite für die Label-Spalte berechnen (unabhängig von collapsedStates)
   const responsiveLabelWidth = useMemo(() => {
     let maxW = 260; // Min width aus Constants
-    const charW = 8.5; // Erhöht für mehr Puffer (vorher 7.5)
+    const charW = 8.5;
 
     const calcW = (text: string, depth: number, type: 'cat' | 'sub' | 'skill') => {
-      let padding = 24; // Reduzierter Buffer (vorher 40) + Icons
+      let padding = 24;
       if (type === 'cat') padding += 0;
       else if (type === 'sub') padding += (depth * 24);
-      else if (type === 'skill') padding += 40 + (depth * 24); // Erhöht auf 40 passend zum neuen Padding
+      else if (type === 'skill') padding += 40 + (depth * 24);
 
-      return padding + (text.length * charW) + 54; // Puffer auf 54 erhöht (46px Badge + Spacing)
+      return padding + (text.length * charW) + 54;
     };
 
     categories.forEach(cat => {
       maxW = Math.max(maxW, calcW(cat.name, 0, 'cat'));
 
-      // If category collapsed, skip children
-      if (collapsedStates[cat.id!]) return;
-
-      // Rekursive Funktion für Subkategorien
+      // Rekursive Funktion für Subkategorien – immer alle traversieren, unabhängig von collapsed
       const processSub = (subId: string, depth: number) => {
         const sub = subcategories.find(s => s.id === subId);
         if (!sub) return;
 
         maxW = Math.max(maxW, calcW(sub.name, depth, 'sub'));
 
-        // If subcategory collapsed, skip processing its children (skills and nested subs)
-        if (collapsedStates[sub.id!]) return;
-
-        // Buttons: "Unterkategorie hinzufügen" ~25 chars, "Skill hinzufügen" ~16 chars
-        maxW = Math.max(maxW, calcW("Unterkategorie hinzufügen", depth, 'sub'));
-        maxW = Math.max(maxW, calcW("Skill hinzufügen", depth, 'sub'));
-
-        // Skills
         const subSkills = skills.filter(s => s.subCategoryId === subId);
         subSkills.forEach(sk => {
           maxW = Math.max(maxW, calcW(sk.name, depth, 'skill'));
         });
 
-        // Children
         const children = subcategories.filter(s => s.parentSubCategoryId === subId);
         children.forEach(c => processSub(c.id!, depth + 1));
       };
 
-      // Root Subs of Category
       const rootSubs = subcategories.filter(s => s.categoryId === cat.id && !s.parentSubCategoryId);
       rootSubs.forEach(s => processSub(s.id!, 0));
     });
 
-    return Math.min(maxW, 600); // Erhöhtes Hard-Cap auf 600px
-  }, [categories, subcategories, skills, collapsedStates]);
+    return Math.min(maxW, 600);
+  }, [categories, subcategories, skills]);
 
   return (
     <Box
@@ -792,7 +779,6 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = ({ onNavigate }) => {
                         zIndex: 30,
                         backgroundColor: "var(--mantine-color-body)",
                         borderRight: "1px solid var(--mantine-color-default-border)",
-                        transition: "width 0.2s ease",
                       }}
                     >
                       <Button

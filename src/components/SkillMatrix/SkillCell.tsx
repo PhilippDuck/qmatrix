@@ -17,7 +17,7 @@ interface SkillCellProps {
   backgroundColor?: string;
 }
 
-export const SkillCell: React.FC<SkillCellProps> = ({
+export const SkillCell: React.FC<SkillCellProps> = React.memo(({
   level,
   targetLevel,
   roleTargetLevel,
@@ -29,7 +29,7 @@ export const SkillCell: React.FC<SkillCellProps> = ({
   onMouseLeave,
   hasActiveMeasure,
   backgroundColor,
-}) => {
+}: SkillCellProps) => {
   const levelObj = getLevelByValue(level);
 
   // Check if below target (ignore N/A = -1)
@@ -265,4 +265,4 @@ export const SkillCell: React.FC<SkillCellProps> = ({
       </Menu.Dropdown>
     </Menu>
   );
-};
+});

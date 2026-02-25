@@ -86,7 +86,7 @@ export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = React.memo(({
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          transition: "background-color 0.15s ease, width 0.2s ease",
+          transition: "background-color 0.15s ease",
         }}
       >
         <HoverCard width={280} shadow="md" withArrow openDelay={200}>

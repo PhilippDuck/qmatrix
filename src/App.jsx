@@ -277,8 +277,7 @@ function AppContent() {
         collapsed: { mobile: !mobileOpened },
       }}
       padding="md"
-      transitionDuration={300}
-      transitionTimingFunction="ease"
+      transitionDuration={0}
       styles={{ root: { height: "100dvh" } }}
     >
       <AppShell.Header>

@@ -1,4 +1,12 @@
 
+## [2.16.8] - 2026-02-25
+
+### Performance (Skill-Matrix)
+- **Sidebar-Toggle ohne Ladezeit**: Die `transition: "width 0.2s ease"` auf allen sticky Label-Elementen (Category, Subcategory, Skill, Header) wurde entfernt. Der Browser berechnete beim Sidebar-Ein/Ausklappen für jede sichtbare Zeile das Layout neu — bei komplett ausgeklappter Matrix bis zu hunderte Reflows pro Frame.
+- **AppShell-Transition deaktiviert**: Die 300 ms CSS-Animation der Navbar (`transitionDuration={300}`) wurde auf `0` gesetzt. Sie war der Auslöser für den kontinuierlichen Layout-Reflow während der Sidebar-Animation.
+- **Expand-All ohne Neuberechnung der Label-Breite**: `responsiveLabelWidth` hing bisher von `collapsedStates` ab und traversierte bei jedem Expand/Collapse den gesamten Kategorie-Baum (O(n²)). Die Abhängigkeit wurde entfernt — die Breite wird nur noch neu berechnet, wenn sich echte Datensätze (Categories, Subcategories, Skills) ändern.
+- **SkillCell memoized**: `SkillCell` ist jetzt mit `React.memo` gewrappt und verhindert unnötige Re-Renders wenn sich Props nicht geändert haben.
+
 ## [2.16.7] - 2026-02-25
 
 ### Benutzeroberfläche

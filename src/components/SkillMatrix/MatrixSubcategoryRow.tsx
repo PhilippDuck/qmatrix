@@ -223,7 +223,6 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = React.m
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            transition: "width 0.2s ease",
           }}
           onMouseEnter={() => setIsLabelHovered(true)}
           onMouseLeave={() => setIsLabelHovered(false)}
@@ -416,7 +415,6 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = React.m
                     zIndex: 30,
                     backgroundColor: "var(--mantine-color-body)",
                     borderRight: "1px solid var(--mantine-color-default-border)",
-                    transition: "width 0.2s ease",
                   }}
                 >
                   <Button
@@ -456,7 +454,6 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = React.m
                     zIndex: 30,
                     backgroundColor: "var(--mantine-color-body)",
                     borderRight: "1px solid var(--mantine-color-default-border)",
-                    transition: "width 0.2s ease",
                   }}
                 >
                   <Button
