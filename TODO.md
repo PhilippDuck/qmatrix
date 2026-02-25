@@ -10,6 +10,8 @@
 - [ ] Assestiertes Anlegen einer Qualimatrix
 - [ ] Dokumentation integriert
 - [ ] Alertsystem, hinweise über potentielle Optimierungen, Missstände
+- [ ] Mitarbeiter alphabetisch ordnen?
+- [ ] Reihenfolge der Views anpassen
 
 ### Abgeschlossen
 
@@ -41,7 +43,7 @@
 ## Bugs
 
 - [x] Wird das kopieren und einfügen in Historie aufgenommen?
-- [ ] Wenn man den Namen einer Abteilung ändert werden die zugeordneten MA nicht mitübernommen.
+- [x] Wenn man den Namen einer Abteilung ändert werden die zugeordneten MA nicht mitübernommen.
 
 ### Abgeschlossen
 
