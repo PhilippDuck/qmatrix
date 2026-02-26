@@ -615,6 +615,7 @@ class IndexedDBService {
     employeeId: string,
     skillId: string,
     level: -1 | 0 | 25 | 50 | 75 | 100,
+    note?: string
   ): Promise<void> {
     const id = `${employeeId}-${skillId}`;
     // Preserve existing targetLevel if present
@@ -628,6 +629,7 @@ class IndexedDBService {
         previousLevel: existing.level,
         newLevel: level,
         timestamp: Date.now(),
+        note,
       });
     } else if (!existing && level > 0) {
       // Log initial assessment if > 0
@@ -637,6 +639,7 @@ class IndexedDBService {
         previousLevel: 0,
         newLevel: level,
         timestamp: Date.now(),
+        note,
       });
     }
 

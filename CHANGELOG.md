@@ -1,4 +1,14 @@
 
+## [2.17.0] - 2026-02-26
+
+### Neue Funktionen & Benutzeroberfläche
+- **Optionale Notizen für Bewertungen**: Beim Ändern eines Skill-Levels in der Matrix kann nun eine optionale Notiz (Grund für die Änderung) angegeben werden. Die Eingabe befindet sich platzsparend ausklappbar im Bewertungs-Popup.
+- **Optionale Notizen für Maßnahmen**: Auch beim Aktualisieren des Fortschritts einer Qualifizierungsmaßnahme (Prozent-Buttons) öffnet sich nun ein Popover zur Eingabe einer Bemerkung. Ohne Eingabe wird standardmäßig der Maßnahmen-Titel in der Historie hinterlegt.
+- **Vollständige Historie**: Alle eingegebenen Notizen werden nahtlos in der zentralen User History (Änderungshistorie) gespeichert und angezeigt, was für optimale Nachvollziehbarkeit sorgt.
+
+### Behobene Fehler & UI
+- **Scroll-Überlagerung in der Skill-Matrix**: Ein Darstellungsfehler wurde behoben, bei dem die scrollenden Prozent-Badges (Zellen) beim horizontalen Scrollen über der fixierten linken Spalte (Struktur / Team) durchschienen. Die fixierten Spalten haben nun eine blickdichte Hintergrundfarbe (`var(--mantine-color-body)`).
+
 ## [2.16.11] - 2026-02-26
 
 ### Behobene Fehler (Skill-Matrix)

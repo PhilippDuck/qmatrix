@@ -1,5 +1,6 @@
-import React from "react";
-import { Badge, Menu, Text, Group, Stack, Tooltip } from "@mantine/core";
+import React, { useState } from "react";
+import { Badge, Menu, Text, Group, Stack, Tooltip, TextInput, Collapse, ActionIcon, Divider } from "@mantine/core";
+import { IconMessagePlus, IconX } from "@tabler/icons-react";
 import { MATRIX_LAYOUT, LEVELS } from "../../constants/skillLevels";
 import { getLevelByValue } from "../../utils/skillCalculations";
 
@@ -7,7 +8,7 @@ interface SkillCellProps {
   level: number;
   targetLevel?: number;
   roleTargetLevel?: number;
-  onLevelChange: (newLevel: number) => void;
+  onLevelChange: (newLevel: number, note?: string) => void;
   onTargetLevelChange: (targetLevel: number | undefined) => void;
   hasActiveMeasure?: "pending" | "in_progress";
   backgroundColor?: string;
@@ -24,6 +25,8 @@ export const SkillCell: React.FC<SkillCellProps> = React.memo(({
   backgroundColor,
   showOnlyGaps,
 }: SkillCellProps) => {
+  const [note, setNote] = useState("");
+  const [showNote, setShowNote] = useState(false);
   const levelObj = getLevelByValue(level);
 
   // Check if below target (ignore N/A = -1)
@@ -188,9 +191,12 @@ export const SkillCell: React.FC<SkillCellProps> = React.memo(({
                   openDelay={200}
                 >
                   <Badge
-                    color={lvl.value === -1 ? "gray.3" : lvl.color}
+                    color={lvl.value === -1 ? "gray.6" : lvl.color}
                     variant={level === lvl.value ? "filled" : "light"}
-                    onClick={() => onLevelChange(lvl.value)}
+                    onClick={() => {
+                      onLevelChange(lvl.value, note.trim() || undefined);
+                      setNote("");
+                    }}
                     style={{
                       cursor: "pointer",
                       minWidth: 38,
@@ -252,8 +258,30 @@ export const SkillCell: React.FC<SkillCellProps> = React.memo(({
               </Text>
             )}
           </div>
+          <Divider mb={-4} mt={-4} />
+          <div>
+            <Group justify="space-between" mb={showNote ? 8 : 0}>
+              <Text size="xs" c="dimmed" fw={500}>Optional: Notiz</Text>
+              <ActionIcon size="xs" variant="subtle" onClick={() => setShowNote(!showNote)}>
+                {showNote ? <IconX size={14} /> : <IconMessagePlus size={14} />}
+              </ActionIcon>
+            </Group>
+            <Collapse in={showNote}>
+              <TextInput
+                size="xs"
+                placeholder="Grund für Änderung..."
+                value={note}
+                onChange={(e) => setNote(e.currentTarget.value)}
+                onKeyDown={(e) => {
+                  if (e.key === " ") {
+                    e.stopPropagation();
+                  }
+                }}
+              />
+            </Collapse>
+          </div>
         </Stack>
       </Menu.Dropdown>
-    </Menu>
+    </Menu >
   );
 });

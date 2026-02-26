@@ -14,7 +14,7 @@ interface SkillMeasureGroupProps {
     onEditMeasure: (measure: QualificationMeasure) => void;
     onDeleteMeasure: (measureId: string) => void;
     onStatusChange: (measureId: string, status: QualificationMeasure["status"]) => void;
-    onUpdateProgress: (skillId: string, level: number) => void;
+    onUpdateProgress: (skillId: string, level: number, note?: string) => void;
 }
 
 export const SkillMeasureGroup: React.FC<SkillMeasureGroupProps> = ({
@@ -97,8 +97,8 @@ export const SkillMeasureGroup: React.FC<SkillMeasureGroupProps> = ({
                         onEdit={() => onEditMeasure(measure)}
                         onDelete={() => onDeleteMeasure(measure.id!)}
                         onStatusChange={(status) => onStatusChange(measure.id!, status)}
-                        onUpdateProgress={(level) =>
-                            onUpdateProgress(measure.skillId, level)
+                        onUpdateProgress={(level, note) =>
+                            onUpdateProgress(measure.skillId, level, note)
                         }
                     />
                 ))}

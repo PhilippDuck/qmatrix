@@ -114,8 +114,18 @@ function AnonymousToggle() {
   );
 }
 
-function SaveButton({ hasUnsavedChanges, onSave }) {
+function SaveButton({ hasUnsavedChanges, onSave, lastUpdate }) {
   const [wiggleAngle, setWiggleAngle] = useState(0);
+
+  const formatTime = (timestamp) => {
+    if (!timestamp) return null;
+    return new Date(timestamp).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  };
+
+  const lastUpdateStr = formatTime(lastUpdate);
+  const tooltipLabel = lastUpdateStr
+    ? `Schnellspeicherung (Letzte Änderung: ${lastUpdateStr})`
+    : "Schnellspeicherung (Backup Export)";
 
   useEffect(() => {
     let outerInterval;
@@ -156,7 +166,7 @@ function SaveButton({ hasUnsavedChanges, onSave }) {
   }, [hasUnsavedChanges]);
 
   return (
-    <Tooltip label="Schnellspeicherung (Backup Export)">
+    <Tooltip label={tooltipLabel}>
       <ActionIcon
         variant="subtle"
         color="gray"
@@ -217,6 +227,8 @@ function AppContent() {
 
   // History drawer state
   const [historyOpened, { open: openHistory, close: closeHistory }] = useDisclosure(false);
+
+  const lastUpdate = changeHistory.length > 0 ? changeHistory[0].timestamp : null;
 
   // Global Undo Shortcut (Ctrl+Z) - only when not in input fields
   useHotkeys([
@@ -428,7 +440,7 @@ function AppContent() {
           </Box>
 
           <Group gap="xs">
-            <SaveButton hasUnsavedChanges={hasUnsavedChanges} onSave={exportData} />
+            <SaveButton hasUnsavedChanges={hasUnsavedChanges} onSave={exportData} lastUpdate={lastUpdate} />
             <Tooltip label="Änderungshistorie">
               <ActionIcon
                 variant="subtle"

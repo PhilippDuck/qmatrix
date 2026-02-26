@@ -11,6 +11,8 @@ import {
   ThemeIcon,
   Tooltip,
   Button,
+  Popover,
+  TextInput,
 } from "@mantine/core";
 import {
   IconDotsVertical,
@@ -37,7 +39,7 @@ interface MeasureCardProps {
   onEdit: () => void;
   onDelete: () => void;
   onStatusChange: (status: QualificationMeasure["status"]) => void;
-  onUpdateProgress: (level: number) => void;
+  onUpdateProgress: (level: number, note?: string) => void;
 }
 
 const statusLabels: Record<QualificationMeasure["status"], string> = {
@@ -66,6 +68,8 @@ export const MeasureCard: React.FC<MeasureCardProps> = ({
 }) => {
   const { anonymizeName } = usePrivacy();
   const [localLevel, setLocalLevel] = React.useState(measure.currentLevel);
+  const [openedPopover, setOpenedPopover] = React.useState<number | null>(null);
+  const [note, setNote] = React.useState("");
 
   React.useEffect(() => {
     setLocalLevel(measure.currentLevel);
@@ -73,7 +77,9 @@ export const MeasureCard: React.FC<MeasureCardProps> = ({
 
   const handleLevelUpdate = (newLevel: number) => {
     setLocalLevel(newLevel);
-    onUpdateProgress(newLevel);
+    onUpdateProgress(newLevel, note.trim() || undefined);
+    setOpenedPopover(null);
+    setNote("");
   };
 
   const isInternal = measure.type === "internal";
@@ -216,36 +222,70 @@ export const MeasureCard: React.FC<MeasureCardProps> = ({
               const isCurrent = localLevel === level.value;
 
               return (
-                <Tooltip
+                <Popover
                   key={level.value}
-                  label={
-                    <Stack gap={2}>
-                      <Text size="xs" fw={700}>
-                        {level.title}
-                      </Text>
-                      {level.description && <Text size="xs">{level.description}</Text>}
-                    </Stack>
-                  }
-                  multiline
-                  w={200}
+                  opened={openedPopover === level.value}
+                  onChange={(opened) => setOpenedPopover(opened ? level.value : null)}
                   position="top"
                   withArrow
-                  openDelay={200}
+                  shadow="md"
                 >
-                  <Button
-                    size="compact-xs"
-                    p={0}
-                    variant={isCurrent ? "filled" : "default"}
-                    color={level.color}
-                    onClick={() => handleLevelUpdate(level.value)}
-                    style={{
-                      borderColor: isCurrent ? undefined : `var(--mantine-color-${level.color}-4)`,
-                      color: isCurrent ? undefined : `var(--mantine-color-${level.color}-7)`,
-                    }}
-                  >
-                    {level.value}%
-                  </Button>
-                </Tooltip>
+                  <Popover.Target>
+                    <Tooltip
+                      label={
+                        openedPopover === level.value ? undefined : (
+                          <Stack gap={2}>
+                            <Text size="xs" fw={700}>
+                              {level.title}
+                            </Text>
+                            {level.description && <Text size="xs">{level.description}</Text>}
+                          </Stack>
+                        )
+                      }
+                      multiline
+                      w={200}
+                      position="top"
+                      withArrow
+                      openDelay={200}
+                    >
+                      <Button
+                        size="compact-xs"
+                        p={0}
+                        variant={isCurrent ? "filled" : "default"}
+                        color={level.color}
+                        onClick={() => {
+                          setOpenedPopover(level.value);
+                          setNote("");
+                        }}
+                        style={{
+                          borderColor: isCurrent ? undefined : `var(--mantine-color-${level.color}-4)`,
+                          color: isCurrent ? undefined : `var(--mantine-color-${level.color}-7)`,
+                        }}
+                      >
+                        {level.value}%
+                      </Button>
+                    </Tooltip>
+                  </Popover.Target>
+                  <Popover.Dropdown p="sm">
+                    <Stack gap="xs" style={{ width: 220 }}>
+                      <Text size="sm" fw={700}>Level ändern auf {level.value}%</Text>
+                      <TextInput
+                        placeholder="Optionale Notiz..."
+                        size="xs"
+                        value={note}
+                        onChange={(e) => setNote(e.currentTarget.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            handleLevelUpdate(level.value);
+                          }
+                        }}
+                      />
+                      <Button size="xs" onClick={() => handleLevelUpdate(level.value)}>
+                        Speichern
+                      </Button>
+                    </Stack>
+                  </Popover.Dropdown>
+                </Popover>
               );
             })}
           </Group>

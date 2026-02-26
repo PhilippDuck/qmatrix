@@ -99,7 +99,7 @@ interface AppState {
     getSkillsBySubCategory: (subCategoryId: string) => Skill[];
 
     // Assessment methods
-    setAssessment: (employeeId: string, skillId: string, level: -1 | 0 | 25 | 50 | 75 | 100) => Promise<void>;
+    setAssessment: (employeeId: string, skillId: string, level: -1 | 0 | 25 | 50 | 75 | 100, note?: string) => Promise<void>;
     setTargetLevel: (employeeId: string, skillId: string, targetLevel: number | undefined) => Promise<void>;
     getAssessmentsByEmployee: (employeeId: string) => Assessment[];
     getAssessment: (employeeId: string, skillId: string) => Assessment | undefined;
@@ -642,7 +642,7 @@ export const useStore = create<AppState>((set, get) => ({
 
     getSkillsBySubCategory: (subCategoryId) => get().skills.filter(s => s.subCategoryId === subCategoryId),
 
-    setAssessment: async (employeeId, skillId, level) => {
+    setAssessment: async (employeeId, skillId, level, note?: string) => {
         try {
             const existingKey = `${employeeId}-${skillId}`;
             const existing = get().assessments.find(a => a.employeeId === employeeId && a.skillId === skillId);
@@ -663,7 +663,7 @@ export const useStore = create<AppState>((set, get) => ({
                     return { assessments: [...state.assessments, newAssessment] };
                 }
             });
-            await db.setAssessment(employeeId, skillId, level);
+            await db.setAssessment(employeeId, skillId, level, note);
             await recordChangeHelper('assessment', assessmentId, `${employee?.name || employeeId}: ${skill?.name || skillId}`, existing ? 'update' : 'create', existing || null, newAssessment);
         } catch (err) {
             set({ error: err instanceof Error ? err.message : "Failed to set assessment" });

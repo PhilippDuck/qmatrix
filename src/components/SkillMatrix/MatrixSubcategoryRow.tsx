@@ -25,7 +25,7 @@ interface MatrixSubcategoryRowProps {
   calculateAverage: (skillIds: string[], employeeId?: string) => number | null;
   getAssessment: (employeeId: string, skillId: string) => Assessment | undefined;
   onBulkSetLevel: (employeeId: string, skillIds: string[], level: number) => void;
-  onLevelChange: (employeeId: string, skillId: string, newLevel: number) => void;
+  onLevelChange: (employeeId: string, skillId: string, newLevel: number, note?: string) => void;
   onTargetLevelChange: (employeeId: string, skillId: string, targetLevel: number | undefined) => void;
   showMaxValues: 'avg' | 'max' | 'fulfillment';
   onEditSkill: (skillId: string) => void;

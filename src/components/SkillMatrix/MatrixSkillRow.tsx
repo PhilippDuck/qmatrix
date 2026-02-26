@@ -15,7 +15,7 @@ interface MatrixSkillRowProps {
   roles: EmployeeRole[];
   getAssessment: (employeeId: string, skillId: string) => Assessment | undefined;
   calculateSkillAverage: (skillId: string) => number | null;
-  onLevelChange: (employeeId: string, skillId: string, newLevel: number) => void;
+  onLevelChange: (employeeId: string, skillId: string, newLevel: number, note?: string) => void;
   onTargetLevelChange: (employeeId: string, skillId: string, targetLevel: number | undefined) => void;
   showMaxValues: 'avg' | 'max' | 'fulfillment';
   onEditSkill: (skillId: string) => void;
@@ -71,6 +71,7 @@ export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = React.memo(({
           position: "sticky",
           left: 0,
           zIndex: 30,
+          backgroundColor: "var(--mantine-color-body)",
           // Styling done by global css on hover
           borderRight: "1px solid var(--mantine-color-default-border)",
           borderBottom: "1px solid var(--mantine-color-default-border)",
@@ -244,7 +245,7 @@ export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = React.memo(({
             level={level}
             targetLevel={assessment?.targetLevel}
             roleTargetLevel={roleTarget}
-            onLevelChange={(newLevel) => onLevelChange(emp.id!, skill.id!, newLevel)}
+            onLevelChange={(newLevel, note) => onLevelChange(emp.id!, skill.id!, newLevel, note)}
             onTargetLevelChange={(target) => onTargetLevelChange(emp.id!, skill.id!, target)}
             hasActiveMeasure={measureStatus}
             backgroundColor={col.backgroundColor}

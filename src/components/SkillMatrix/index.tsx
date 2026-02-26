@@ -257,8 +257,8 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = React.memo(({ onNavigate 
     }
   };
 
-  const handleLevelChange = async (empId: string, sId: string, newLevel: number) => {
-    await setAssessment(empId, sId, newLevel as any);
+  const handleLevelChange = async (empId: string, sId: string, newLevel: number, note?: string) => {
+    await setAssessment(empId, sId, newLevel as any, note);
   };
 
   const handleTargetLevelChange = async (empId: string, sId: string, target: number | undefined) => {
@@ -544,7 +544,7 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = React.memo(({ onNavigate 
   // Dynamische Breite für die Label-Spalte berechnen – nur aktuell sichtbare Einträge
   const responsiveLabelWidth = useMemo(() => {
     let maxW = 260; // Min width aus Constants
-    const charW = 8.5;
+    const charW = 8.4;
 
     // O(1)-Lookups vorberechnen – vermeidet O(n²) durch .find()/.filter() in der Schleife
     const subById = new Map(subcategories.map(s => [s.id!, s]));
@@ -574,7 +574,7 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = React.memo(({ onNavigate 
       let padding = 24;
       if (type === 'sub') padding += depth * 24;
       else if (type === 'skill') padding += 40 + depth * 24;
-      return padding + text.length * charW + 54;
+      return padding + text.length * charW + 48;
     };
 
     const processSub = (subId: string, depth: number) => {

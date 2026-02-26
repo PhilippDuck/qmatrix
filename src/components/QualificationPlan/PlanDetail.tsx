@@ -408,8 +408,13 @@ export const PlanDetail: React.FC<PlanDetailProps> = ({
                       onEditMeasure={handleEditMeasure}
                       onDeleteMeasure={handleDeleteMeasure}
                       onStatusChange={handleMeasureStatusChange}
-                      onUpdateProgress={(skillId, level) =>
-                        setAssessment(plan.employeeId, skillId, level as any)
+                      onUpdateProgress={(skillId, level, note) =>
+                        setAssessment(
+                          plan.employeeId,
+                          skillId,
+                          level as any,
+                          note || `Maßnahme: ${skills.find((s) => s.id === skillId)?.name || "Unbekannt"}`
+                        )
                       }
                     />
                   ))}
