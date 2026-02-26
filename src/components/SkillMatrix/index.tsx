@@ -541,45 +541,66 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = React.memo(({ onNavigate 
     return undefined;
   }, [editEntityType, editEntityId, editParentId, categories, subcategories, skills]);
 
-  // Dynamische Breite für die Label-Spalte berechnen (unabhängig von collapsedStates)
+  // Dynamische Breite für die Label-Spalte berechnen – nur aktuell sichtbare Einträge
   const responsiveLabelWidth = useMemo(() => {
     let maxW = 260; // Min width aus Constants
     const charW = 8.5;
 
+    // O(1)-Lookups vorberechnen – vermeidet O(n²) durch .find()/.filter() in der Schleife
+    const subById = new Map(subcategories.map(s => [s.id!, s]));
+    const subsByCategory = new Map<string, typeof subcategories>();
+    const subsByParent = new Map<string, typeof subcategories>();
+    const skillsBySubId = new Map<string, typeof skills>();
+
+    subcategories.forEach(sub => {
+      if (!sub.parentSubCategoryId) {
+        const arr = subsByCategory.get(sub.categoryId) ?? [];
+        arr.push(sub);
+        subsByCategory.set(sub.categoryId, arr);
+      } else {
+        const arr = subsByParent.get(sub.parentSubCategoryId) ?? [];
+        arr.push(sub);
+        subsByParent.set(sub.parentSubCategoryId, arr);
+      }
+    });
+
+    skills.forEach(sk => {
+      const arr = skillsBySubId.get(sk.subCategoryId) ?? [];
+      arr.push(sk);
+      skillsBySubId.set(sk.subCategoryId, arr);
+    });
+
     const calcW = (text: string, depth: number, type: 'cat' | 'sub' | 'skill') => {
       let padding = 24;
-      if (type === 'cat') padding += 0;
-      else if (type === 'sub') padding += (depth * 24);
-      else if (type === 'skill') padding += 40 + (depth * 24);
-
-      return padding + (text.length * charW) + 54;
+      if (type === 'sub') padding += depth * 24;
+      else if (type === 'skill') padding += 40 + depth * 24;
+      return padding + text.length * charW + 54;
     };
 
-    categories.forEach(cat => {
+    const processSub = (subId: string, depth: number) => {
+      const sub = subById.get(subId);
+      if (!sub) return;
+
+      maxW = Math.max(maxW, calcW(sub.name, depth, 'sub'));
+      // Kinder nicht traversieren wenn eingeklappt – spart Arbeit & spiegelt Sichtbarkeit wider
+      if (collapsedStates[subId]) return;
+
+      (skillsBySubId.get(subId) ?? []).forEach(sk => {
+        maxW = Math.max(maxW, calcW(sk.name, depth, 'skill'));
+      });
+      (subsByParent.get(subId) ?? []).forEach(c => processSub(c.id!, depth + 1));
+    };
+
+    // displayedCategories statt categories – reagiert auf aktive Kategorie-Filter
+    displayedCategories.forEach(cat => {
       maxW = Math.max(maxW, calcW(cat.name, 0, 'cat'));
+      if (collapsedStates[cat.id!]) return;
 
-      // Rekursive Funktion für Subkategorien – immer alle traversieren, unabhängig von collapsed
-      const processSub = (subId: string, depth: number) => {
-        const sub = subcategories.find(s => s.id === subId);
-        if (!sub) return;
-
-        maxW = Math.max(maxW, calcW(sub.name, depth, 'sub'));
-
-        const subSkills = skills.filter(s => s.subCategoryId === subId);
-        subSkills.forEach(sk => {
-          maxW = Math.max(maxW, calcW(sk.name, depth, 'skill'));
-        });
-
-        const children = subcategories.filter(s => s.parentSubCategoryId === subId);
-        children.forEach(c => processSub(c.id!, depth + 1));
-      };
-
-      const rootSubs = subcategories.filter(s => s.categoryId === cat.id && !s.parentSubCategoryId);
-      rootSubs.forEach(s => processSub(s.id!, 0));
+      (subsByCategory.get(cat.id!) ?? []).forEach(s => processSub(s.id!, 0));
     });
 
     return Math.min(maxW, 600);
-  }, [categories, subcategories, skills]);
+  }, [displayedCategories, subcategories, skills, collapsedStates]);
 
   return (
     <Box

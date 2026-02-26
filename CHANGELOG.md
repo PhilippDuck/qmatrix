@@ -1,4 +1,13 @@
 
+## [2.16.11] - 2026-02-26
+
+### Behobene Fehler (Skill-Matrix)
+- **Dynamische Label-Spaltenbreite wiederhergestellt**: In v2.16.8 wurde `collapsedStates` aus den Dependencies von `responsiveLabelWidth` entfernt, was dazu führte dass die erste Spalte nicht mehr auf Kategorie-Filter, Expand- und Collapse-Aktionen reagierte. Die Breite wird jetzt korrekt anhand der aktuell sichtbaren Einträge berechnet.
+
+### Performance (Skill-Matrix)
+- **O(1)-Lookup-Maps**: Die Breitenberechnung verwendet jetzt vorberechnete Maps (`subById`, `subsByCategory`, `subsByParent`, `skillsBySubId`) statt `Array.find()`/`Array.filter()` in der inneren Schleife — eliminiert O(n²)-Verhalten bei tiefen Hierarchien.
+- **Short-Circuit bei kollapierten Knoten**: Kollabierte Kategorien und Unterkategorien werden sofort übersprungen. Bei komplett eingeklappter Matrix ist die Berechnung damit deutlich schneller als vor v2.16.8.
+
 ## [2.16.10] - 2026-02-25
 
 ### Neue Funktionen & Verbesserungen (Skill-Matrix)
@@ -14,7 +23,7 @@
 ## [2.16.9] - 2026-02-25
 
 ### Performance (Skill-Matrix)
-- **Entfernung der Matrix-Crosshairs**: Die JavaScript-gesteuerte Highlight-Logik (Crosshairs / Fadenkreuz) beim Hovern über Matrix-Zellen wurde vollständig entfernt. 
+- **Entfernung der Matrix-Crosshairs**: Die JavaScript-gesteuerte Highlight-Logik (Crosshairs / Fadenkreuz) beim Hovern über Matrix-Zellen wurde vollständig entfernt.
   - Die bisherige Logik hat bei jedem Hovern das State (`hoveredEmployeeId`, `hoveredSkillId`) aktualisiert, was das `React.memo` blockiert und die gesamte Matrix permanent neu gerendert hat.
   - Ein CSS-Only-Ersatz mittels `:has()`-Selektor wurde in Betracht gezogen, aber verworfen, um die Daten-Grid-Usability (Visuelle Ruhe) sowie die DOM-Performance maximal hoch zu halten.
   - Das Interface reagiert beim Scrollen und Navigieren nun verzögerungsfrei.
