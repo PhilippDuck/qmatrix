@@ -5,9 +5,8 @@
   <meta charset="UTF-8" />
   <script>
     (function () {
-      // SkillGrid SVG Logo URI-encoded to safely use in data URIs
-      const svgIcon = "%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Cg transform='translate(14, 14)'%3E%3Crect x='0' y='0' width='100' height='100' style='stroke: %23007BFF; stroke-width: 5; fill: none;' rx='12' ry='12' /%3E%3Cline x1='33.3' y1='0' x2='33.3' y2='100' style='stroke: %23007BFF; stroke-width: 5;' /%3E%3Cline x1='66.6' y1='0' x2='66.6' y2='100' style='stroke: %23007BFF; stroke-width: 5;' /%3E%3Cline x1='0' y1='33.3' x2='100' y2='33.3' style='stroke: %23007BFF; stroke-width: 5;' /%3E%3Cline x1='0' y1='66.6' x2='100' y2='66.6' style='stroke: %23007BFF; stroke-width: 5;' /%3E%3Ccircle cx='50' cy='16.65' r='9' fill='%23007BFF' /%3E%3Ccircle cx='83.35' cy='16.65' r='9' fill='%23007BFF' /%3E%3Ccircle cx='16.65' cy='50' r='9' fill='%23007BFF' /%3E%3Ccircle cx='50' cy='50' r='9' fill='%23007BFF' /%3E%3Ccircle cx='16.65' cy='83.35' r='9' fill='%23007BFF' /%3E%3Ccircle cx='83.35' cy='83.35' r='9' fill='%23007BFF' /%3E%3C/g%3E%3C/svg%3E";
-      const iconDataUri = "data:image/svg+xml;charset=utf-8," + svgIcon;
+      const base64Icon = "PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjggMTI4IiB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiI+DQogIDxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDE0LCAxNCkiPg0KICAgIDxyZWN0IHg9IjAiIHk9IjAiIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiBzdHlsZT0ic3Ryb2tlOiAjMDA3QkZGOyBzdHJva2Utd2lkdGg6IDU7IGZpbGw6IG5vbmU7IiByeD0iMTIiIHJ5PSIxMiIgLz4NCiAgICA8bGluZSB4MT0iMzMuMyIgeTE9IjAiIHgyPSIzMy4zIiB5Mj0iMTAwIiBzdHlsZT0ic3Ryb2tlOiAjMDA3QkZGOyBzdHJva2Utd2lkdGg6wNSIgLz4NCiAgICA8bGluZSB4MT0iNjYuNiIgeTE9IjAiIHgyPSI2Ni42IiB5Mj0iMTAwIiBzdHlsZT0ic3Ryb2tlOiAjMDA3QkZGOyBzdHJva2Utd2lkdGg6IDU7IiAvPg0KICAgIDxsaW5lIHgxPSIwIiB5MT0iMzMuMyIgeDI9IjEwMCIgeTI9IjMzLjMiIHN0eWxlPSJzdHJva2U6ICMwMDdCRkY7IHN0cm9rZS13aWR0aDogNTsiIC8+DQogICAgPGxpbmUgeDE9IjAiIHkxPSI2Ni42IiB4Mj0iMTAwIiB5Mj0iNjYuNiIgc3R5bGU9InN0cm9rZTogIzAwN0JGRjsgc3Ryb2tlLXdpZHRoOiA1OyIgLz4NCg0KICAgIDxjaXJjbGUgY3g9IjUwIiBjeT0iMTYuNjUiIHI9IjkiIGZpbGw9IiMwMDdCRkYiIC8+DQogICAgPGNpcmNsZSBjeD0iODMuMzUiIGN5PSIxNi42NSIgcj0iOSIgZmlsbD0iIzAwN0JGRiIgLz4NCiAgICA8Y2lyY2xlIGN4PSIxNi42NSIgY3k9IjUwIiByPSI5IiBmaWxsPSIjMDA3QkZGIiAvPg0KICAgIDxjaXJjbGUgY3g9IjUwIiBjeT0iNTAiIHI9IjkiIGZpbGw9IiMwMDdCRkYiIC8+DQogICAgPGNpcmNsZSBjeD0iMTYuNjUiIGN5PSI4My4zNSIgcj0iOSIgZmlsbD0iIzAwN0JGRiIgLz4NCiAgICA8Y2lyY2xlIGN4PSI4My4zNSIgY3k9IjgzLjM1IiByPSI5IiBmaWxsPSIjMDA3QkZGIiAvPg0KICA8L2c+DQo8L3N2Zz4NCg==";
+      const iconDataUri = "data:image/svg+xml;base64," + base64Icon;
 
       // Always inject dynamic favicon to support both standalone single file and web server
       const linkIcon = document.createElement('link');
@@ -15,43 +14,6 @@
       linkIcon.type = 'image/svg+xml';
       linkIcon.href = iconDataUri;
       document.head.appendChild(linkIcon);
-
-      // Turn into a PWA only when served via HTTP/HTTPS
-      if (window.location.protocol.startsWith('http')) {
-        const manifest = {
-          name: "SkillGrid",
-          short_name: "SkillGrid",
-          start_url: window.location.pathname + window.location.search,
-          display: "standalone",
-          background_color: "#141517",
-          theme_color: "#007BFF",
-          icons: [
-            {
-              src: iconDataUri,
-              sizes: "any",
-              type: "image/svg+xml",
-              purpose: "any maskable"
-            }
-          ]
-        };
-        const manifestBlob = new Blob([JSON.stringify(manifest)], { type: "application/json" });
-        const manifestUrl = URL.createObjectURL(manifestBlob);
-        const linkManifest = document.createElement('link');
-        linkManifest.rel = 'manifest';
-        linkManifest.href = manifestUrl;
-        document.head.appendChild(linkManifest);
-
-        // Register a minimal service worker to satisfy Chromium's PWA installability requirements
-        if ('serviceWorker' in navigator) {
-          window.addEventListener('load', function () {
-            navigator.serviceWorker.register('/sw.js').then(function (registration) {
-              console.log('ServiceWorker registration successful with scope: ', registration.scope);
-            }, function (err) {
-              console.log('ServiceWorker registration failed: ', err);
-            });
-          });
-        }
-      }
     })();
   </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />

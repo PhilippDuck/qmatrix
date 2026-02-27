@@ -2,7 +2,6 @@
 ## [2.18.0] - 2026-02-27
 
 ### Neue Funktionen & Benutzeroberfläche
-- **Dynamische PWA (Progressive Web App)**: Die App erkennt nun automatisch, ob sie lokal als Datei (`file://`) oder über einen Webserver (`http://`/`https://`) geöffnet wird. Wird sie über einen Webserver gehostet, installiert sie sich dynamisch als PWA und kann als eigenständige App (z.B. auf den Desktop oder Homescreen) hinzugefügt werden.
 - **Massen Individuallsoll**: In der Skill-Matrix können nun auch Soll-Level für alle Mitarbeiter einer kompletten Unter- oder Hauptkategorie gleichzeitig gesetzt werden (inklusive der "Kein"-Option zum Entfernen). Die Einstellungen befinden sich im Ausklappmenü der jeweiligen Kopfzelle.
 - **SkillGrid Favicon**: Das eigene App-Logo (der blaue Würfel) wird nun als Favicon im Browser-Tab angezeigt und ersetzt das Standard Vite-Logo.
 
