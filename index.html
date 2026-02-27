@@ -1,14 +1,56 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <title>SkillGrid</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<head>
+  <meta charset="UTF-8" />
+  <script>
+    (function () {
+      // SkillGrid SVG Logo URI-encoded to safely use in data URIs
+      const svgIcon = "%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Cg transform='translate(14, 14)'%3E%3Crect x='0' y='0' width='100' height='100' style='stroke: %23007BFF; stroke-width: 5; fill: none;' rx='12' ry='12' /%3E%3Cline x1='33.3' y1='0' x2='33.3' y2='100' style='stroke: %23007BFF; stroke-width: 5;' /%3E%3Cline x1='66.6' y1='0' x2='66.6' y2='100' style='stroke: %23007BFF; stroke-width: 5;' /%3E%3Cline x1='0' y1='33.3' x2='100' y2='33.3' style='stroke: %23007BFF; stroke-width: 5;' /%3E%3Cline x1='0' y1='66.6' x2='100' y2='66.6' style='stroke: %23007BFF; stroke-width: 5;' /%3E%3Ccircle cx='50' cy='16.65' r='9' fill='%23007BFF' /%3E%3Ccircle cx='83.35' cy='16.65' r='9' fill='%23007BFF' /%3E%3Ccircle cx='16.65' cy='50' r='9' fill='%23007BFF' /%3E%3Ccircle cx='50' cy='50' r='9' fill='%23007BFF' /%3E%3Ccircle cx='16.65' cy='83.35' r='9' fill='%23007BFF' /%3E%3Ccircle cx='83.35' cy='83.35' r='9' fill='%23007BFF' /%3E%3C/g%3E%3C/svg%3E";
+      const iconDataUri = "data:image/svg+xml;charset=utf-8," + svgIcon;
+
+      // Always inject dynamic favicon to support both standalone single file and web server
+      const linkIcon = document.createElement('link');
+      linkIcon.rel = 'icon';
+      linkIcon.type = 'image/svg+xml';
+      linkIcon.href = iconDataUri;
+      document.head.appendChild(linkIcon);
+
+      // Turn into a PWA only when served via HTTP/HTTPS
+      if (window.location.protocol.startsWith('http')) {
+        const manifest = {
+          name: "SkillGrid",
+          short_name: "SkillGrid",
+          start_url: window.location.pathname + window.location.search,
+          display: "standalone",
+          background_color: "#141517",
+          theme_color: "#007BFF",
+          icons: [
+            {
+              src: iconDataUri,
+              sizes: "any",
+              type: "image/svg+xml",
+              purpose: "any maskable"
+            }
+          ]
+        };
+        const manifestBlob = new Blob([JSON.stringify(manifest)], { type: "application/json" });
+        const manifestUrl = URL.createObjectURL(manifestBlob);
+        const linkManifest = document.createElement('link');
+        linkManifest.rel = 'manifest';
+        linkManifest.href = manifestUrl;
+        document.head.appendChild(linkManifest);
+      }
+    })();
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>SkillGrid</title>
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+
 </html>

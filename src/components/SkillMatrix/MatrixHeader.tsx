@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Badge, Text, HoverCard, Stack, Group, Divider, ThemeIcon, Box, SimpleGrid, Tooltip, ActionIcon, Menu } from "@mantine/core";
+import { Badge, Text, HoverCard, Stack, Group, Divider, ThemeIcon, Box, SimpleGrid, Tooltip, ActionIcon, Menu, ScrollArea } from "@mantine/core";
 import { IconBuilding, IconHistory, IconTrendingUp, IconTrendingDown, IconMinus, IconPencil, IconPlus, IconDotsVertical, IconCertificate, IconInfoCircle, IconSortAscending, IconSortDescending, IconArrowsSort } from "@tabler/icons-react";
 import { MATRIX_LAYOUT } from "../../constants/skillLevels";
 import { getScoreColor, getMaxRoleTargetForSkill } from "../../utils/skillCalculations";
@@ -81,258 +81,260 @@ const EmployeeInfoCard: React.FC<{
   };
 
   return (
-    <Stack gap="sm">
-      <Group justify="space-between" align="start" wrap="nowrap">
-        <Box>
-          <Text fw={700} size="lg">
-            {anonymizeName(emp.name, emp.id)}
-          </Text>
-          <Stack gap={4} mt={6}>
-            {emp.department && (
-              <Group gap={6}>
-                <IconBuilding size={12} color="gray" />
-                <Text size="xs" c="dimmed">{departments.find(d => d.id === emp.department)?.name || emp.department}</Text>
-              </Group>
-            )}
-            {emp.roles && emp.roles.length > 0 && (
-              <Stack gap={2}>
-                {emp.roles.map((roleName, idx) => {
-                  const role = roles.find(r => r.name === roleName);
-                  const RoleIcon = getIconByName(role?.icon);
-                  return (
-                    <Group key={idx} gap={6}>
-                      <RoleIcon size={12} color="gray" />
-                      <Text size="xs" c="dimmed">{roleName}</Text>
-                    </Group>
-                  );
-                })}
-              </Stack>
-            )}
-          </Stack>
-        </Box>
-        <Menu shadow="md" width={200} position="bottom-end" withinPortal={false}>
-          <Menu.Target>
-            <ActionIcon variant="subtle" color="gray" title="Optionen">
-              <IconDotsVertical size={16} />
-            </ActionIcon>
-          </Menu.Target>
-
-          <Menu.Dropdown>
-            <Menu.Item leftSection={<IconPencil size={14} />} onClick={onEdit}>
-              Mitarbeiter bearbeiten
-            </Menu.Item>
-            <Menu.Item
-              leftSection={<IconCertificate size={14} />}
-              onClick={() => onNavigate?.('qualification', { employeeId: emp.id })}
-              disabled={!isPlanEnabled}
-              title={!isPlanEnabled ? "Keine Defizite vorhanden" : undefined}
-            >
-              Qualifizierungsplan
-            </Menu.Item>
-          </Menu.Dropdown>
-        </Menu>
-      </Group>
-
-      <Divider />
-
-      <SimpleGrid cols={2} spacing="xs" verticalSpacing="xs">
-        <Tooltip
-          label="Durchschnitt der aktiven Themen. Zeigt die aktuelle Qualität der Arbeit in den bekannten Feldern."
-          multiline
-          w={220}
-          withArrow
-          transitionProps={{ duration: 200 }}
-        >
-          <Box p="xs" bg="light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-6))" style={{ borderRadius: 8, cursor: 'help' }}>
-            <Text size="xs" c="dimmed" fw={700} tt="uppercase">Expertise</Text>
-            <Text size="lg" fw={700} c={getScoreColor(avg)}>{avg || 0}%</Text>
-            <Text size="xs" c="dimmed" style={{ fontSize: '10px' }}>Qualität</Text>
-          </Box>
-        </Tooltip>
-
-        <Tooltip
-          label="Anzahl der Themen mit Score > 0%. Zeigt die Flexibilität und Einsatzbreite."
-          multiline
-          w={220}
-          withArrow
-        >
-          <Box p="xs" bg="light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-6))" style={{ borderRadius: 8, cursor: 'help' }}>
-            <Text size="xs" c="dimmed" fw={700} tt="uppercase">Vielseitigkeit</Text>
-            <Text size="lg" fw={700}>{activeSkillCount}</Text>
-            <Text size="xs" c="dimmed" style={{ fontSize: '10px' }}>Aktive Themen</Text>
-          </Box>
-        </Tooltip>
-
-        <Tooltip
-          label="Summe aller Prozentpunkte. Belohnt Breite und Einsatzbereitschaft."
-          multiline
-          w={220}
-          withArrow
-        >
-          <Box p="xs" bg="light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-6))" style={{ borderRadius: 8, cursor: 'help' }}>
-            <Text size="xs" c="dimmed" fw={700} tt="uppercase">Volumen (XP)</Text>
-            <Text size="lg" fw={700} c="blue">{totalXP}</Text>
-            <Text size="xs" c="dimmed" style={{ fontSize: '10px' }}>Punkte Summe</Text>
-          </Box>
-        </Tooltip>
-
-        <Tooltip
-          label="Ist-Werte im Verhältnis zur Soll-Vorgabe. Relativiert die Leistung an den Zielen."
-          multiline
-          w={220}
-          withArrow
-        >
-          <Box p="xs" bg="light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-6))" style={{ borderRadius: 8, cursor: 'help' }}>
-            <Text size="xs" c="dimmed" fw={700} tt="uppercase">Ziel-Erfüllung</Text>
-            <Text size="lg" fw={700} c={fulfillment && fulfillment >= 100 ? "teal" : "orange"}>
-              {fulfillment !== null ? `${fulfillment}%` : "-"}
+    <ScrollArea.Autosize mah="60vh" offsetScrollbars>
+      <Stack gap="sm" mr={4}>
+        <Group justify="space-between" align="start" wrap="nowrap">
+          <Box>
+            <Text fw={700} size="lg">
+              {anonymizeName(emp.name, emp.id)}
             </Text>
-            <Text size="xs" c="dimmed" style={{ fontSize: '10px' }}>Ist / Soll</Text>
-          </Box>
-        </Tooltip>
-      </SimpleGrid>
-
-      {topSkills.length > 0 && (
-        <>
-          <Divider />
-          <Text size="xs" c="dimmed" fw={700} tt="uppercase">
-            Top Skills
-          </Text>
-          <Stack gap={8}>
-            {topSkills.map((item) => {
-              const ctx = resolveContext(item.skill);
-              return (
-                <Group
-                  key={item.skill.id}
-                  justify="space-between"
-                  wrap="nowrap"
-                  align="center"
-                >
-                  <Box style={{ flex: 1, overflow: "hidden" }}>
-                    <Text size="sm" truncate fw={500}>
-                      {item.skill.name}
-                    </Text>
-                    <Text size="10px" c="dimmed" truncate>
-                      {ctx.catName} • {ctx.subName}
-                    </Text>
-                  </Box>
-                  <Badge size="sm" variant="outline">
-                    {item.assessment?.level}%
-                  </Badge>
+            <Stack gap={4} mt={6}>
+              {emp.department && (
+                <Group gap={6}>
+                  <IconBuilding size={12} color="gray" />
+                  <Text size="xs" c="dimmed">{departments.find(d => d.id === emp.department)?.name || emp.department}</Text>
                 </Group>
-              );
-            })}
-          </Stack>
-        </>
-      )}
+              )}
+              {emp.roles && emp.roles.length > 0 && (
+                <Stack gap={2}>
+                  {emp.roles.map((roleName, idx) => {
+                    const role = roles.find(r => r.name === roleName);
+                    const RoleIcon = getIconByName(role?.icon);
+                    return (
+                      <Group key={idx} gap={6}>
+                        <RoleIcon size={12} color="gray" />
+                        <Text size="xs" c="dimmed">{roleName}</Text>
+                      </Group>
+                    );
+                  })}
+                </Stack>
+              )}
+            </Stack>
+          </Box>
+          <Menu shadow="md" width={200} position="bottom-end" withinPortal={false}>
+            <Menu.Target>
+              <ActionIcon variant="subtle" color="gray" title="Optionen">
+                <IconDotsVertical size={16} />
+              </ActionIcon>
+            </Menu.Target>
 
-      {learningNeeds.length > 0 && (
-        <>
-          <Divider />
+            <Menu.Dropdown>
+              <Menu.Item leftSection={<IconPencil size={14} />} onClick={onEdit}>
+                Mitarbeiter bearbeiten
+              </Menu.Item>
+              <Menu.Item
+                leftSection={<IconCertificate size={14} />}
+                onClick={() => onNavigate?.('qualification', { employeeId: emp.id })}
+                disabled={!isPlanEnabled}
+                title={!isPlanEnabled ? "Keine Defizite vorhanden" : undefined}
+              >
+                Qualifizierungsplan
+              </Menu.Item>
+            </Menu.Dropdown>
+          </Menu>
+        </Group>
+
+        <Divider />
+
+        <SimpleGrid cols={2} spacing="xs" verticalSpacing="xs">
           <Tooltip
-            label="Skills mit negativer Abweichung zum definierten Soll-Wert. Diese sollten priorisiert werden."
+            label="Durchschnitt der aktiven Themen. Zeigt die aktuelle Qualität der Arbeit in den bekannten Feldern."
+            multiline
+            w={220}
+            withArrow
+            transitionProps={{ duration: 200 }}
+          >
+            <Box p="xs" bg="light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-6))" style={{ borderRadius: 8, cursor: 'help' }}>
+              <Text size="xs" c="dimmed" fw={700} tt="uppercase">Expertise</Text>
+              <Text size="lg" fw={700} c={getScoreColor(avg)}>{avg || 0}%</Text>
+              <Text size="xs" c="dimmed" style={{ fontSize: '10px' }}>Qualität</Text>
+            </Box>
+          </Tooltip>
+
+          <Tooltip
+            label="Anzahl der Themen mit Score > 0%. Zeigt die Flexibilität und Einsatzbreite."
             multiline
             w={220}
             withArrow
           >
-            <Text size="xs" c="dimmed" fw={700} tt="uppercase" style={{ cursor: 'help' }}>
-              Lernbedarf
-            </Text>
+            <Box p="xs" bg="light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-6))" style={{ borderRadius: 8, cursor: 'help' }}>
+              <Text size="xs" c="dimmed" fw={700} tt="uppercase">Vielseitigkeit</Text>
+              <Text size="lg" fw={700}>{activeSkillCount}</Text>
+              <Text size="xs" c="dimmed" style={{ fontSize: '10px' }}>Aktive Themen</Text>
+            </Box>
           </Tooltip>
-          <Stack gap={8}>
-            {learningNeeds.map((item) => {
-              const ctx = resolveContext(item.skill);
-              return (
-                <Group
-                  key={item.skill.id}
-                  justify="space-between"
-                  wrap="nowrap"
-                  align="center"
-                >
-                  <Box style={{ flex: 1, overflow: "hidden" }}>
-                    <Text size="sm" truncate fw={500}>
-                      {item.skill.name}
-                    </Text>
-                    <Text size="10px" c="dimmed" truncate>
-                      {ctx.catName} • {ctx.subName}
-                    </Text>
-                  </Box>
-                  <Group gap={4} wrap="nowrap">
-                    <Badge size="xs" variant="light" color="red">{item.level}%</Badge>
-                    <Text size="xs" c="dimmed">/</Text>
-                    <Badge size="xs" variant="light" color="teal">{item.target}%</Badge>
-                  </Group>
-                </Group>
-              );
-            })}
-          </Stack>
-        </>
-      )}
 
-      {/* Active Qualification Measures */}
-      {activeMeasures.length > 0 && (
-        <>
-          <Divider />
-          <Text size="xs" c="dimmed" fw={700} tt="uppercase">
-            Aktive Qualifizierung
-          </Text>
-          <Stack gap={8}>
-            {activeMeasures.map(measure => {
-              const skill = skills.find(s => s.id === measure.skillId);
-              // eslint-disable-next-line @typescript-eslint/no-unused-vars
-              const ctx = skill ? resolveContext(skill) : { catName: '-', subName: '-' };
-              return (
-                <Group key={measure.id} justify="space-between" wrap="nowrap">
-                  <Box style={{ flex: 1, overflow: "hidden" }}>
-                    <Text size="xs" fw={500} truncate>{skill?.name || 'Unbekannt'}</Text>
-                    <Text size="10px" c="dimmed" truncate>
-                      {measure.type === "internal" ? "Intern" : "Extern"}: {measure.status === "in_progress" ? "Läuft" : "Geplant"}
-                    </Text>
-                  </Box>
-                  <Badge size="xs" color={measure.status === "in_progress" ? "blue" : "gray"}>
-                    {measure.currentLevel}% → {measure.targetLevel}%
-                  </Badge>
-                </Group>
-              );
-            })}
-          </Stack>
-        </>
-      )}
+          <Tooltip
+            label="Summe aller Prozentpunkte. Belohnt Breite und Einsatzbereitschaft."
+            multiline
+            w={220}
+            withArrow
+          >
+            <Box p="xs" bg="light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-6))" style={{ borderRadius: 8, cursor: 'help' }}>
+              <Text size="xs" c="dimmed" fw={700} tt="uppercase">Volumen (XP)</Text>
+              <Text size="lg" fw={700} c="blue">{totalXP}</Text>
+              <Text size="xs" c="dimmed" style={{ fontSize: '10px' }}>Punkte Summe</Text>
+            </Box>
+          </Tooltip>
 
-      {history.length > 0 && (
-        <>
-          <Divider />
-          <Group justify="space-between">
-            <Text size="xs" c="dimmed" fw={700} tt="uppercase">Historie</Text>
-          </Group>
-          <Stack gap={8}>
-            {history.map(entry => {
-              const skill = skills.find(s => s.id === entry.skillId);
-              const ctx = skill ? resolveContext(skill) : { catName: '-', subName: '-' };
+          <Tooltip
+            label="Ist-Werte im Verhältnis zur Soll-Vorgabe. Relativiert die Leistung an den Zielen."
+            multiline
+            w={220}
+            withArrow
+          >
+            <Box p="xs" bg="light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-6))" style={{ borderRadius: 8, cursor: 'help' }}>
+              <Text size="xs" c="dimmed" fw={700} tt="uppercase">Ziel-Erfüllung</Text>
+              <Text size="lg" fw={700} c={fulfillment && fulfillment >= 100 ? "teal" : "orange"}>
+                {fulfillment !== null ? `${fulfillment}%` : "-"}
+              </Text>
+              <Text size="xs" c="dimmed" style={{ fontSize: '10px' }}>Ist / Soll</Text>
+            </Box>
+          </Tooltip>
+        </SimpleGrid>
 
-              return (
-                <Group key={entry.id} justify="space-between" wrap="nowrap">
-                  <Group gap={6} wrap="nowrap" style={{ overflow: 'hidden', flex: 1 }}>
-                    {entry.newLevel > entry.previousLevel ? <IconTrendingUp size={14} color="green" style={{ flexShrink: 0 }} /> :
-                      entry.newLevel < entry.previousLevel ? <IconTrendingDown size={14} color="red" style={{ flexShrink: 0 }} /> :
-                        <IconMinus size={14} color="gray" style={{ flexShrink: 0 }} />}
-                    <Box style={{ overflow: 'hidden' }}>
-                      <Text size="xs" truncate fw={500}>{skill?.name || 'Unbekannt'}</Text>
-                      <Text size="10px" c="dimmed" truncate style={{ lineHeight: 1.1 }}>
+        {topSkills.length > 0 && (
+          <>
+            <Divider />
+            <Text size="xs" c="dimmed" fw={700} tt="uppercase">
+              Top Skills
+            </Text>
+            <Stack gap={8}>
+              {topSkills.map((item) => {
+                const ctx = resolveContext(item.skill);
+                return (
+                  <Group
+                    key={item.skill.id}
+                    justify="space-between"
+                    wrap="nowrap"
+                    align="center"
+                  >
+                    <Box style={{ flex: 1, overflow: "hidden" }}>
+                      <Text size="sm" truncate fw={500}>
+                        {item.skill.name}
+                      </Text>
+                      <Text size="10px" c="dimmed" truncate>
                         {ctx.catName} • {ctx.subName}
                       </Text>
                     </Box>
+                    <Badge size="sm" variant="outline">
+                      {item.assessment?.level}%
+                    </Badge>
                   </Group>
-                  <Text size="xs" c="dimmed" style={{ whiteSpace: 'nowrap', fontSize: '10px' }}>
-                    {new Date(entry.timestamp).toLocaleDateString()}
-                  </Text>
-                </Group>
-              );
-            })}
-          </Stack>
-        </>
-      )}
-    </Stack>
+                );
+              })}
+            </Stack>
+          </>
+        )}
+
+        {learningNeeds.length > 0 && (
+          <>
+            <Divider />
+            <Tooltip
+              label="Skills mit negativer Abweichung zum definierten Soll-Wert. Diese sollten priorisiert werden."
+              multiline
+              w={220}
+              withArrow
+            >
+              <Text size="xs" c="dimmed" fw={700} tt="uppercase" style={{ cursor: 'help' }}>
+                Lernbedarf
+              </Text>
+            </Tooltip>
+            <Stack gap={8}>
+              {learningNeeds.map((item) => {
+                const ctx = resolveContext(item.skill);
+                return (
+                  <Group
+                    key={item.skill.id}
+                    justify="space-between"
+                    wrap="nowrap"
+                    align="center"
+                  >
+                    <Box style={{ flex: 1, overflow: "hidden" }}>
+                      <Text size="sm" truncate fw={500}>
+                        {item.skill.name}
+                      </Text>
+                      <Text size="10px" c="dimmed" truncate>
+                        {ctx.catName} • {ctx.subName}
+                      </Text>
+                    </Box>
+                    <Group gap={4} wrap="nowrap">
+                      <Badge size="xs" variant="light" color="red">{item.level}%</Badge>
+                      <Text size="xs" c="dimmed">/</Text>
+                      <Badge size="xs" variant="light" color="teal">{item.target}%</Badge>
+                    </Group>
+                  </Group>
+                );
+              })}
+            </Stack>
+          </>
+        )}
+
+        {/* Active Qualification Measures */}
+        {activeMeasures.length > 0 && (
+          <>
+            <Divider />
+            <Text size="xs" c="dimmed" fw={700} tt="uppercase">
+              Aktive Qualifizierung
+            </Text>
+            <Stack gap={8}>
+              {activeMeasures.map(measure => {
+                const skill = skills.find(s => s.id === measure.skillId);
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                const ctx = skill ? resolveContext(skill) : { catName: '-', subName: '-' };
+                return (
+                  <Group key={measure.id} justify="space-between" wrap="nowrap">
+                    <Box style={{ flex: 1, overflow: "hidden" }}>
+                      <Text size="xs" fw={500} truncate>{skill?.name || 'Unbekannt'}</Text>
+                      <Text size="10px" c="dimmed" truncate>
+                        {measure.type === "internal" ? "Intern" : "Extern"}: {measure.status === "in_progress" ? "Läuft" : "Geplant"}
+                      </Text>
+                    </Box>
+                    <Badge size="xs" color={measure.status === "in_progress" ? "blue" : "gray"}>
+                      {measure.currentLevel}% → {measure.targetLevel}%
+                    </Badge>
+                  </Group>
+                );
+              })}
+            </Stack>
+          </>
+        )}
+
+        {history.length > 0 && (
+          <>
+            <Divider />
+            <Group justify="space-between">
+              <Text size="xs" c="dimmed" fw={700} tt="uppercase">Historie</Text>
+            </Group>
+            <Stack gap={8}>
+              {history.map(entry => {
+                const skill = skills.find(s => s.id === entry.skillId);
+                const ctx = skill ? resolveContext(skill) : { catName: '-', subName: '-' };
+
+                return (
+                  <Group key={entry.id} justify="space-between" wrap="nowrap">
+                    <Group gap={6} wrap="nowrap" style={{ overflow: 'hidden', flex: 1 }}>
+                      {entry.newLevel > entry.previousLevel ? <IconTrendingUp size={14} color="green" style={{ flexShrink: 0 }} /> :
+                        entry.newLevel < entry.previousLevel ? <IconTrendingDown size={14} color="red" style={{ flexShrink: 0 }} /> :
+                          <IconMinus size={14} color="gray" style={{ flexShrink: 0 }} />}
+                      <Box style={{ overflow: 'hidden' }}>
+                        <Text size="xs" truncate fw={500}>{skill?.name || 'Unbekannt'}</Text>
+                        <Text size="10px" c="dimmed" truncate style={{ lineHeight: 1.1 }}>
+                          {ctx.catName} • {ctx.subName}
+                        </Text>
+                      </Box>
+                    </Group>
+                    <Text size="xs" c="dimmed" style={{ whiteSpace: 'nowrap', fontSize: '10px' }}>
+                      {new Date(entry.timestamp).toLocaleDateString()}
+                    </Text>
+                  </Group>
+                );
+              })}
+            </Stack>
+          </>
+        )}
+      </Stack>
+    </ScrollArea.Autosize>
   );
 }
 

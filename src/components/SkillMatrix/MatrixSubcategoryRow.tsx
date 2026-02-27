@@ -25,6 +25,7 @@ interface MatrixSubcategoryRowProps {
   calculateAverage: (skillIds: string[], employeeId?: string) => number | null;
   getAssessment: (employeeId: string, skillId: string) => Assessment | undefined;
   onBulkSetLevel: (employeeId: string, skillIds: string[], level: number) => void;
+  onBulkSetTargetLevel: (employeeId: string, skillIds: string[], targetLevel: number | undefined) => void;
   onLevelChange: (employeeId: string, skillId: string, newLevel: number, note?: string) => void;
   onTargetLevelChange: (employeeId: string, skillId: string, targetLevel: number | undefined) => void;
   showMaxValues: 'avg' | 'max' | 'fulfillment';
@@ -56,6 +57,7 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = React.m
   calculateAverage,
   getAssessment,
   onBulkSetLevel,
+  onBulkSetTargetLevel,
   onLevelChange,
   onTargetLevelChange,
   showMaxValues,
@@ -329,6 +331,7 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = React.m
               key={emp.id}
               label={`Alle "${subcategory.name}" (inkl. Untergruppen) setzen für ${anonymizeName(emp.name, emp.id)}`}
               onSelectLevel={(level) => onBulkSetLevel(emp.id!, allDescendantSkillIds, level)}
+              onSelectTargetLevel={(targetLevel) => onBulkSetTargetLevel(emp.id!, allDescendantSkillIds, targetLevel)}
             >
               <div
                 style={{
@@ -484,6 +487,7 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = React.m
                 calculateAverage={calculateAverage}
                 getAssessment={getAssessment}
                 onBulkSetLevel={onBulkSetLevel}
+                onBulkSetTargetLevel={onBulkSetTargetLevel}
                 onLevelChange={onLevelChange}
                 onTargetLevelChange={onTargetLevelChange}
                 showMaxValues={showMaxValues}
