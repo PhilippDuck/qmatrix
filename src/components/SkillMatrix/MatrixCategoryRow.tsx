@@ -25,6 +25,7 @@ interface MatrixCategoryRowProps {
   calculateAverage: (skillIds: string[], employeeId?: string) => number | null;
   getAssessment: (employeeId: string, skillId: string) => Assessment | undefined;
   onBulkSetLevel: (employeeId: string, skillIds: string[], level: number) => void;
+  onBulkSetTargetLevel: (employeeId: string, skillIds: string[], targetLevel: number | undefined) => void;
   onLevelChange: (employeeId: string, skillId: string, newLevel: number, note?: string) => void;
   onTargetLevelChange: (employeeId: string, skillId: string, targetLevel: number | undefined) => void;
   showMaxValues: 'avg' | 'max' | 'fulfillment';
@@ -57,6 +58,7 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = React.memo(({
   calculateAverage,
   getAssessment,
   onBulkSetLevel,
+  onBulkSetTargetLevel,
   onLevelChange,
   onTargetLevelChange,
   showMaxValues,
@@ -336,6 +338,7 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = React.memo(({
                 key={emp.id}
                 label={`Alle "${category.name}" setzen für ${anonymizeName(emp.name, emp.id)}`}
                 onSelectLevel={(level) => onBulkSetLevel(emp.id!, catSkillIds, level)}
+                onSelectTargetLevel={(targetLevel) => onBulkSetTargetLevel(emp.id!, catSkillIds, targetLevel)}
               >
                 <div
                   style={{
@@ -386,6 +389,7 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = React.memo(({
                 calculateAverage={calculateAverage}
                 getAssessment={getAssessment}
                 onBulkSetLevel={onBulkSetLevel}
+                onBulkSetTargetLevel={onBulkSetTargetLevel}
                 onLevelChange={onLevelChange}
                 onTargetLevelChange={onTargetLevelChange}
                 showMaxValues={showMaxValues}

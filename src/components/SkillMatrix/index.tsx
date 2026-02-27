@@ -257,6 +257,16 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = React.memo(({ onNavigate 
     }
   };
 
+  const bulkSetTargetLevel = async (
+    empId: string,
+    skillIds: string[],
+    newTargetLevel: number | undefined
+  ) => {
+    for (const sId of skillIds) {
+      await setTargetLevel(empId, sId, newTargetLevel);
+    }
+  };
+
   const handleLevelChange = async (empId: string, sId: string, newLevel: number, note?: string) => {
     await setAssessment(empId, sId, newLevel as any, note);
   };
@@ -754,6 +764,7 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = React.memo(({ onNavigate 
                       calculateAverage={calculateAverage}
                       getAssessment={getAssessmentFast}
                       onBulkSetLevel={bulkSetLevel}
+                      onBulkSetTargetLevel={bulkSetTargetLevel}
                       onLevelChange={handleLevelChange}
                       onTargetLevelChange={handleTargetLevelChange}
                       showMaxValues={metricMode}
