@@ -8,6 +8,7 @@ import {
 import { ViewTabs } from './ViewTabs';
 import { Department, EmployeeRole, Category, SavedView, Employee, Skill } from '../../store/useStore';
 import { MetricMode } from '../../hooks/useMatrixState';
+import { usePrivacy } from '../../context/PrivacyContext';
 
 interface MatrixToolbarProps {
     groupingMode: 'none' | 'department' | 'role';
@@ -70,6 +71,7 @@ export const MatrixToolbar: React.FC<MatrixToolbarProps> = ({
     handleSelectView, handleDeleteView, updateSavedView, handleUpdateCurrentView, handleClearView,
     setSaveViewModalOpened, focusEmployeeId, setFocusEmployeeId, reorderSavedViews
 }) => {
+    const { anonymizeName } = usePrivacy();
     return (
         <>
             <Group justify="space-between" align="center">
@@ -184,7 +186,7 @@ export const MatrixToolbar: React.FC<MatrixToolbarProps> = ({
                                         comboboxProps={{ withinPortal: false }}
                                         label="Mitarbeiter"
                                         placeholder="Wähle Mitarbeiter"
-                                        data={employees.map(e => ({ value: e.id!, label: e.name }))}
+                                        data={employees.map(e => ({ value: e.id!, label: anonymizeName(e.name, e.id) }))}
                                         value={filterEmployees}
                                         onChange={setFilterEmployees}
                                         clearable
@@ -376,7 +378,7 @@ export const MatrixToolbar: React.FC<MatrixToolbarProps> = ({
                                         </ActionIcon>
                                     }
                                 >
-                                    {item.name}
+                                    {anonymizeName(item.name, item.id)}
                                 </Badge>
                             ) : null;
                         })}

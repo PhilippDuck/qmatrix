@@ -1,4 +1,9 @@
 
+## [2.18.1] - 2026-03-02
+
+### Behobene Fehler
+- **Anonymisierungsmodus Filter**: Die gefilterten Mitarbeiternamen in der Skill-Matrix werden nun korrekt pseudonymisiert, wenn der Anonymisierungsmodus aktiviert ist. Zuvor wurden echte Namen im Mitarbeiter-Filter und in den angewendeten Filter-Badges angezeigt.
+
 ## [2.18.0] - 2026-02-27
 
 ### Neue Funktionen & Benutzeroberfläche
