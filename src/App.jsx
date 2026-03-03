@@ -202,6 +202,12 @@ function AppContent() {
     initDb();
   }, [initDb]);
   const computedColorScheme = useComputedColorScheme("light");
+
+  useEffect(() => {
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.content = computedColorScheme === 'dark' ? '#141517' : '#ffffff';
+  }, [computedColorScheme]);
+
   const [activeTab, setActiveTab] = useLocalStorage({
     key: 'skillgrid-active-tab',
     defaultValue: 'matrix',
