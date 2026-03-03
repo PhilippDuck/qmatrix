@@ -1,4 +1,15 @@
 
+## [2.19.0] - 2026-03-03
+
+### Progressive Web App (PWA)
+- **vite-plugin-pwa**: Manuelle Blob-Manifest + sw.js Implementierung durch `vite-plugin-pwa` ersetzt – behebt Chromium-Fehler im GitHub Codespace, der Blob-URL-Manifeste ablehnte
+- **Adaptive Statusleisten-Farbe**: Die Browser-Statusleiste passt sich jetzt dem gewählten Farbschema an (Dark Mode → `#141517`, Light Mode → `#ffffff`) – sowohl beim Laden (aus localStorage) als auch beim Umschalten in der App
+- **PWA-Icons**: Neue PNG-Icons in 192×192 und 512×512 aus dem SVG-Favicon generiert
+- **GitHub Codespaces HMR**: WebSocket-Verbindung im Dev-Server über `clientPort: 443` korrigiert
+
+### Sicherheit
+- **npm-Sicherheitslücken**: Alle 7 Vulnerabilities geschlossen (`ajv`, `minimatch`, `rollup` via `npm audit fix`; `serialize-javascript` via `overrides` auf `^7.0.4` ohne Breaking Change)
+
 ## [2.18.1] - 2026-03-02
 
 ### Behobene Fehler
