@@ -20,7 +20,7 @@ export default defineConfig({
         name: "SkillGrid",
         short_name: "SkillGrid",
         description: "Visualisierung und Planung von Qualifikationen",
-        theme_color: "#007BFF",
+        theme_color: "#ffffff",
         background_color: "#141517",
         start_url: "/",
         display: "standalone",

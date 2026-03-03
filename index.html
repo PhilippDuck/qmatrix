@@ -14,6 +14,15 @@
       linkIcon.type = 'image/svg+xml';
       linkIcon.href = iconDataUri;
       document.head.appendChild(linkIcon);
+
+      // Set theme-color based on stored color scheme (before React hydrates)
+      const stored = localStorage.getItem('skillgrid-color-scheme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const isDark = stored === 'dark' || (!stored && prefersDark);
+      const metaTheme = document.createElement('meta');
+      metaTheme.name = 'theme-color';
+      metaTheme.content = isDark ? '#141517' : '#ffffff';
+      document.head.appendChild(metaTheme);
     })();
   </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
