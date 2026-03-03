@@ -14,52 +14,6 @@
       linkIcon.type = 'image/svg+xml';
       linkIcon.href = iconDataUri;
       document.head.appendChild(linkIcon);
-<<<<<<< HEAD
-=======
-
-      // Turn into a PWA only when served via HTTP/HTTPS
-      if (window.location.protocol.startsWith('http')) {
-        const manifest = {
-          id: "/",
-          name: "SkillGrid",
-          short_name: "SkillGrid",
-          description: "Visualisierung und Planung von Qualifikationen",
-          start_url: ".",
-          display: "standalone",
-          background_color: "#141517",
-          theme_color: "#007BFF",
-          icons: [
-            {
-              src: "data:image/svg+xml;base64," + base64Icon,
-              sizes: "any",
-              purpose: "any maskable"
-            },
-            {
-              src: "data:image/svg+xml;base64," + base64Icon,
-              sizes: "192x192 512x512",
-              type: "image/svg+xml",
-              purpose: "any"
-            }
-          ]
-        };
-        const manifestBlob = new Blob([JSON.stringify(manifest)], { type: "application/json" });
-        const manifestUrl = URL.createObjectURL(manifestBlob);
-        const linkManifest = document.createElement('link');
-        linkManifest.rel = 'manifest';
-        linkManifest.href = manifestUrl;
-        document.head.appendChild(linkManifest);
-        // Register a minimal service worker to satisfy Chromium's PWA installability requirements
-        if ('serviceWorker' in navigator) {
-          window.addEventListener('load', function () {
-            navigator.serviceWorker.register('/sw.js').then(function (registration) {
-              console.log('ServiceWorker registration successful with scope: ', registration.scope);
-            }, function (err) {
-              console.log('ServiceWorker registration failed: ', err);
-            });
-          });
-        }
-      }
->>>>>>> 5bafe56cc354d7fb348945f4a559710d49a82aa8
     })();
   </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
