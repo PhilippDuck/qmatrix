@@ -1,4 +1,16 @@
 
+## [2.20.0] - 2026-03-05
+
+### Neue Funktionen
+- **Datenschutzerklärung**: Neue Datenschutzübersicht hinzugefügt, die erklärt, dass alle Daten ausschließlich lokal im Browser gespeichert werden (IndexedDB/localStorage) und keine Daten an externe Server übertragen werden. Erreichbar über das Schild-Icon im Header sowie über einen Link im Willkommensdialog.
+
+### Verbesserungen
+- **Versionsnummer im Dev-Server**: Die Versionsnummer wird nun auch im Entwicklungsmodus korrekt über Vites `define`-Option eingefügt.
+- **PWA Service Worker im Dev-Modus deaktiviert**: Der Service Worker wird im Entwicklungsmodus nicht mehr registriert, um das Caching von alten Versionen im Browser zu verhindern.
+
+### Behobene Fehler
+- **Dropzone-Styles**: Ungültige CSS-Selektoren (`&[data-accept]`, `&[data-reject]`) im `styles`-Prop wurden in ein CSS-Modul ausgelagert.
+
 ## [2.19.0] - 2026-03-03
 
 ### Progressive Web App (PWA)

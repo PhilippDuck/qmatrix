@@ -73,8 +73,6 @@ export function PrivacyModal({ opened, onClose }: PrivacyModalProps) {
                     </List>
                 </Stack>
 
-                <Divider />
-
                 <Stack gap="xs">
                     <Text fw={700} size="sm" tt="uppercase" c="dimmed">Ihre Kontrolle über die Daten</Text>
                     <List spacing="sm" size="sm" center>

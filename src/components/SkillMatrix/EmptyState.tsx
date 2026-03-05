@@ -2,6 +2,7 @@ import React, { useRef } from "react";
 import { Box, Stack, Text, Title, Button, Group, useMantineTheme, rem, Center, Anchor, Card } from "@mantine/core";
 import { IconRocket, IconUpload, IconUserPlus, IconBulb, IconX, IconPackageImport } from "@tabler/icons-react";
 import { Dropzone, MIME_TYPES, FileRejection } from "@mantine/dropzone";
+import classes from "./EmptyState.module.css";
 
 interface EmptyStateProps {
   onAddEmployee: () => void;
@@ -83,24 +84,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({ onAddEmployee, onAddSkil
               maxSize={5 * 1024 ** 2}
               accept={['application/json']}
               radius="md"
-              styles={{
-                root: {
-                  border: '1px dashed light-dark(var(--mantine-color-gray-4), var(--mantine-color-dark-4))',
-                  backgroundColor: 'light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6))',
-                  transition: 'background-color 150ms ease, border-color 150ms ease',
-                  '&:hover': {
-                    backgroundColor: 'light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-5))',
-                  },
-                  '&[data-accept]': {
-                    backgroundColor: 'var(--mantine-color-blue-light)',
-                    borderColor: 'var(--mantine-color-blue-6)',
-                  },
-                  '&[data-reject]': {
-                    backgroundColor: 'var(--mantine-color-red-light)',
-                    borderColor: 'var(--mantine-color-red-6)',
-                  }
-                },
-              }}
+              classNames={{ root: classes.dropzone }}
             >
               <Stack align="center" gap="xs" style={{ minHeight: rem(100), justifyContent: 'center', pointerEvents: 'none' }}>
                 <Dropzone.Accept>
