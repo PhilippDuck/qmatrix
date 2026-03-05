@@ -40,6 +40,7 @@ import {
   IconEdit,
   IconCertificate,
   IconHistory,
+  IconShieldLock,
 } from "@tabler/icons-react";
 
 import { useStore } from "./store/useStore";
@@ -50,6 +51,7 @@ import { Dashboard } from "./components/Dashboard/Dashboard";
 import { QualificationPlan } from "./components/QualificationPlan";
 import { WelcomeModal } from "./components/WelcomeModal";
 import { ChangelogModal } from "./components/ChangelogModal";
+import { PrivacyModal } from "./components/PrivacyModal";
 import { HistoryDrawer } from "./components/shared/HistoryDrawer";
 import { PrivacyProvider, usePrivacy } from "./context/PrivacyContext";
 import { ModalsProvider } from "@mantine/modals";
@@ -76,8 +78,7 @@ const theme = createTheme({
   },
 });
 
-import packageJson from "../package.json";
-const APP_VERSION = `v${packageJson.version}`;
+const APP_VERSION = `v${__APP_VERSION__}`;
 
 function ColorSchemeToggle() {
   const { setColorScheme } = useMantineColorScheme();
@@ -230,6 +231,7 @@ function AppContent() {
   const [tempTitle, setTempTitle] = useState("");
 
   const [changelogOpened, { open: openChangelog, close: closeChangelog }] = useDisclosure(false);
+  const [privacyOpened, { open: openPrivacy, close: closePrivacy }] = useDisclosure(false);
 
   // History drawer state
   const [historyOpened, { open: openHistory, close: closeHistory }] = useDisclosure(false);
@@ -412,6 +414,19 @@ function AppContent() {
                       {APP_VERSION}
                     </Badge>
                   </Tooltip>
+
+                  {/* Datenschutz */}
+                  <Tooltip label="Datenschutzerklärung">
+                    <ActionIcon
+                      variant="subtle"
+                      color="green"
+                      size="sm"
+                      onClick={openPrivacy}
+                      style={{ opacity: 0.7 }}
+                    >
+                      <IconShieldLock size={14} />
+                    </ActionIcon>
+                  </Tooltip>
                 </>
               )}
             </Group>
@@ -580,6 +595,7 @@ function AppContent() {
       <HistoryDrawer opened={historyOpened} onClose={closeHistory} />
       <WelcomeModal />
       <ChangelogModal opened={changelogOpened} onClose={closeChangelog} />
+      <PrivacyModal opened={privacyOpened} onClose={closePrivacy} />
     </AppShell >
   );
 }

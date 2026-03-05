@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { Modal, Text, Button, Checkbox, Stack, Group, Title, ThemeIcon, List, Box } from '@mantine/core';
-import { useLocalStorage } from '@mantine/hooks';
-import { IconRocket, IconListCheck, IconUsers, IconCertificate, IconArrowRight } from '@tabler/icons-react';
+import { Modal, Text, Button, Checkbox, Stack, Group, Title, ThemeIcon, List, Box, Anchor } from '@mantine/core';
+import { useLocalStorage, useDisclosure } from '@mantine/hooks';
+import { IconRocket, IconListCheck, IconUsers, IconCertificate, IconArrowRight, IconShieldLock } from '@tabler/icons-react';
+import { PrivacyModal } from './PrivacyModal';
 
 export function WelcomeModal() {
     const [seen, setSeen] = useLocalStorage({ key: 'skillgrid-welcome-seen-v1', defaultValue: false });
     const [opened, setOpened] = useState(false);
     const [dontShowAgain, setDontShowAgain] = useState(false);
+    const [privacyOpened, { open: openPrivacy, close: closePrivacy }] = useDisclosure(false);
 
     useEffect(() => {
         // Show modal if not marked as seen
@@ -26,7 +28,7 @@ export function WelcomeModal() {
         setOpened(false);
     };
 
-    return (
+    return (<>
         <Modal
             opened={opened}
             onClose={handleClose}
@@ -98,6 +100,26 @@ export function WelcomeModal() {
                     </List>
                 </Box>
 
+                <Box
+                    p="sm"
+                    style={{
+                        borderRadius: '8px',
+                        backgroundColor: 'light-dark(var(--mantine-color-green-0), var(--mantine-color-dark-6))',
+                        border: '1px solid light-dark(var(--mantine-color-green-3), var(--mantine-color-dark-4))',
+                    }}
+                >
+                    <Group gap="xs">
+                        <IconShieldLock size={16} color="var(--mantine-color-green-6)" />
+                        <Text size="sm">
+                            Alle Daten werden <b>ausschließlich lokal</b> in Ihrem Browser gespeichert.
+                            Es findet keine Übertragung an externe Server statt.{' '}
+                            <Anchor size="sm" onClick={openPrivacy} style={{ cursor: 'pointer' }}>
+                                Datenschutzerklärung
+                            </Anchor>
+                        </Text>
+                    </Group>
+                </Box>
+
                 <Group justify="space-between" mt="md" align="center">
                     <Checkbox
                         label="Nicht mehr anzeigen"
@@ -111,5 +133,7 @@ export function WelcomeModal() {
                 </Group>
             </Stack>
         </Modal>
-    );
+
+        <PrivacyModal opened={privacyOpened} onClose={closePrivacy} />
+    </>);
 }

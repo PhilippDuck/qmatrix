@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.20.0] - 2026-03-05
+
+### Neue Funktionen
+- **Datenschutzerklärung**: Neue Datenschutzübersicht hinzugefügt, die erklärt, dass alle Daten ausschließlich lokal im Browser gespeichert werden (IndexedDB/localStorage) und keine Daten an externe Server übertragen werden. Erreichbar über das Schild-Icon im Header sowie über einen Link im Willkommensdialog.
+
+### Verbesserungen
+- **Versionsnummer im Dev-Server**: Die Versionsnummer wird nun auch im Entwicklungsmodus korrekt über Vites `define`-Option eingefügt (zuvor konnte der direkte `package.json`-Import im Dev-Server inkonsistent sein).
+- **PWA Service Worker im Dev-Modus deaktiviert**: Der Service Worker wird im Entwicklungsmodus nicht mehr registriert, um das Caching von alten Versionen im Browser zu verhindern.
+
 ## [2.16.5] - 2026-02-24
 
 ### Behobene Fehler
