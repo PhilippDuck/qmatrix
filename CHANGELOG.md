@@ -1,4 +1,9 @@
 
+## [2.22.1] - 2026-03-06
+
+### Verbesserungen
+- **Bereinigen & Schließen – zweistufiger Dialog**: Der Reset-Button führt nun einen zweischrittigen Prozess durch. Schritt 1 startet den Backup-Download. Erst nach expliziter Bestätigung im zweiten Dialog („Datei gespeichert?") werden die Daten gelöscht und die App geschlossen.
+
 ## [2.22.0] - 2026-03-06
 
 ### Neue Funktionen

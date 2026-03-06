@@ -202,26 +202,43 @@ function ResetAndCloseButton() {
   const { clearAllData, exportData } = useStore();
 
   const handleResetAndClose = () => {
+    // Schritt 1: Export anstoßen
     modals.openConfirmModal({
-      title: 'Speichern, zurücksetzen & beenden',
+      title: 'Schritt 1 von 2 – Backup exportieren',
       centered: true,
       children: (
         <Text size="sm">
-          Es wird zuerst ein <strong>Backup exportiert</strong>, dann alle Daten unwiderruflich gelöscht und die Anwendung geschlossen. Möchten Sie fortfahren?
+          Es wird jetzt ein Backup-Download gestartet. Bitte speichern Sie die Datei, bevor Sie fortfahren.
         </Text>
       ),
-      labels: { confirm: 'Exportieren, löschen & schließen', cancel: 'Abbrechen' },
-      confirmProps: { color: 'red', leftSection: <IconPower size={14} /> },
+      labels: { confirm: 'Backup herunterladen', cancel: 'Abbrechen' },
+      confirmProps: { color: 'blue' },
       onConfirm: async () => {
         try {
           await exportData();
-          notifications.show({ title: 'Backup erstellt', message: 'Daten werden jetzt gelöscht...', color: 'blue', autoClose: 1500 });
-          await new Promise(r => setTimeout(r, 1000));
-          await clearAllData();
-          notifications.show({ title: 'Zurückgesetzt', message: 'Alle Daten wurden gelöscht.', color: 'blue', autoClose: 1500 });
-          setTimeout(() => window.close(), 1200);
+          // Schritt 2: Erst nach expliziter Bestätigung löschen
+          modals.openConfirmModal({
+            title: 'Schritt 2 von 2 – Daten löschen & schließen',
+            centered: true,
+            children: (
+              <Text size="sm">
+                Haben Sie die Datei gespeichert? Erst dann werden alle Daten <strong>unwiderruflich gelöscht</strong> und die Anwendung geschlossen.
+              </Text>
+            ),
+            labels: { confirm: 'Ja, löschen & schließen', cancel: 'Abbrechen' },
+            confirmProps: { color: 'red', leftSection: <IconPower size={14} /> },
+            onConfirm: async () => {
+              try {
+                await clearAllData();
+                notifications.show({ title: 'Zurückgesetzt', message: 'Alle Daten wurden gelöscht.', color: 'blue', autoClose: 1500 });
+                setTimeout(() => window.close(), 1200);
+              } catch (error) {
+                notifications.show({ title: 'Fehler', message: 'Fehler beim Löschen.', color: 'red' });
+              }
+            },
+          });
         } catch (error) {
-          notifications.show({ title: 'Fehler', message: 'Fehler beim Vorgang.', color: 'red' });
+          notifications.show({ title: 'Fehler', message: 'Fehler beim Export.', color: 'red' });
         }
       },
     });
