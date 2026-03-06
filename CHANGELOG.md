@@ -1,4 +1,9 @@
 
+## [2.22.2] - 2026-03-06
+
+### Verbesserungen
+- **Rollenliste – Mitarbeiteranzahl**: In der Tabelle Stammdaten → Rollen gibt es eine neue Spalte „Mitarbeiter" mit einem Badge, der anzeigt wie viele Mitarbeiter die jeweilige Rolle zugewiesen haben. Blau bei ≥1, grau bei 0.
+
 ## [2.22.1] - 2026-03-06
 
 ### Verbesserungen

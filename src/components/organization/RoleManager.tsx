@@ -337,6 +337,7 @@ export const RoleManager: React.FC<RoleManagerProps> = ({ initialEditRoleId, onC
                                     <Table.Th>Beschreibung</Table.Th>
                                     <Table.Th>Erbt von</Table.Th>
                                     <Table.Th>Skills</Table.Th>
+                                    <Table.Th>Mitarbeiter</Table.Th>
                                     <Table.Th style={{ width: 100, textAlign: "right" }}>
                                         Aktionen
                                     </Table.Th>
@@ -352,6 +353,9 @@ export const RoleManager: React.FC<RoleManagerProps> = ({ initialEditRoleId, onC
                                         const skillCount = role.requiredSkills?.length
                                             ?? skills.filter(s => s.requiredByRoleIds?.includes(role.id!)).length;
                                         const RoleIcon = getIconByName(role.icon);
+                                        const empCount = employees.filter(e =>
+                                            e.roles?.some((r: string) => r === role.name || r === role.id)
+                                        ).length;
 
                                         return (
                                             <Table.Tr
@@ -400,6 +404,22 @@ export const RoleManager: React.FC<RoleManagerProps> = ({ initialEditRoleId, onC
                                                         {skillCount} Skills zugeordnet
                                                     </Text>
                                                 </Table.Td>
+                                                <Table.Td>
+                                                    <Tooltip
+                                                        label={empCount === 0 ? "Keine Mitarbeiter zugewiesen" : `${empCount} Mitarbeiter mit dieser Rolle`}
+                                                        withArrow
+                                                        position="top"
+                                                    >
+                                                        <Badge
+                                                            size="sm"
+                                                            variant={empCount > 0 ? "light" : "outline"}
+                                                            color={empCount > 0 ? "blue" : "gray"}
+                                                            style={{ cursor: 'help' }}
+                                                        >
+                                                            {empCount}
+                                                        </Badge>
+                                                    </Tooltip>
+                                                </Table.Td>
                                                 <Table.Td style={{ textAlign: "right" }}>
                                                     <Group gap={0} justify="flex-end" wrap="nowrap">
                                                         <Tooltip label="Details anzeigen" withArrow position="top">
@@ -424,7 +444,7 @@ export const RoleManager: React.FC<RoleManagerProps> = ({ initialEditRoleId, onC
                                     });
                                 })() : (
                                     <Table.Tr>
-                                        <Table.Td colSpan={5} style={{ textAlign: "center", py: "xl" }}>
+                                        <Table.Td colSpan={6} style={{ textAlign: "center", py: "xl" }}>
                                             <Text c="dimmed">Keine Rollen angelegt</Text>
                                         </Table.Td>
                                     </Table.Tr>
