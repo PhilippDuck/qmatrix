@@ -14,11 +14,23 @@ import { RoleManager } from "./organization/RoleManager";
 import { CategoryManager } from "./CategoryManager";
 import { DataManagement } from "./DataManagement";
 
-export const UnifiedDataView: React.FC = () => {
+interface UnifiedDataViewProps {
+    navParams?: { tab?: string; editRoleId?: string } | null;
+    onClearParams?: () => void;
+}
+
+export const UnifiedDataView: React.FC<UnifiedDataViewProps> = ({ navParams, onClearParams }) => {
     // Try to restore active tab from localStorage or default to 'employees'
     const [activeTab, setActiveTab] = useState<string | null>(() => {
         return localStorage.getItem("unified-data-tab") || "employees";
     });
+
+    // Handle incoming navigation params (e.g. from matrix role detail)
+    useEffect(() => {
+        if (navParams?.tab) {
+            setActiveTab(navParams.tab);
+        }
+    }, [navParams]);
 
     // Save active tab to localStorage when it changes
     useEffect(() => {
@@ -59,7 +71,7 @@ export const UnifiedDataView: React.FC = () => {
                     </Tabs.Panel>
 
                     <Tabs.Panel value="roles">
-                        <RoleManager />
+                        <RoleManager initialEditRoleId={navParams?.editRoleId} onClearParams={onClearParams} />
                     </Tabs.Panel>
 
                     <Tabs.Panel value="skills">

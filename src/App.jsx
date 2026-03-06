@@ -588,7 +588,7 @@ function AppContent() {
           {activeTab === "dashboard" && <Dashboard />}
           {activeTab === "matrix" && <SkillMatrix onNavigate={handleNavigate} />}
           {activeTab === "qualification" && <QualificationPlan initialEmployeeId={navParams?.employeeId} onClearParams={handleClearParams} />}
-          {activeTab === "data" && <UnifiedDataView />}
+          {activeTab === "data" && <UnifiedDataView navParams={navParams} onClearParams={handleClearParams} />}
           {activeTab === "system" && <DataManagement />}
         </div>
       </AppShell.Main>

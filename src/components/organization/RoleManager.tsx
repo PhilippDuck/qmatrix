@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
     Title,
     Button,
@@ -22,13 +22,16 @@ import {
     Box,
     Tooltip,
     Textarea,
+    ThemeIcon,
+    Accordion,
 } from "@mantine/core";
-import { IconPlus, IconTrash, IconBadge, IconArrowUpRight, IconEdit, IconList, IconHierarchy, IconX } from "@tabler/icons-react";
+import { IconPlus, IconTrash, IconBadge, IconArrowUpRight, IconEdit, IconList, IconHierarchy, IconX, IconEye } from "@tabler/icons-react";
 import { useDisclosure } from "@mantine/hooks";
 import { useStore } from "../../store/useStore";
 import { EmployeeRole } from "../../services/indexeddb";
 import { RoleOrgChart } from "./RoleOrgChart";
 import { RoleIconPicker, getIconByName } from "../shared/RoleIconPicker";
+import { RoleDetailDrawer } from "../shared/RoleDetailDrawer";
 import { LEVELS } from "../../constants/skillLevels";
 
 const sliderMarksWithTooltips = [0, 25, 50, 75, 100].map(val => {
@@ -62,7 +65,12 @@ const sliderMarksWithTooltips = [0, 25, 50, 75, 100].map(val => {
     };
 });
 
-export const RoleManager: React.FC = () => {
+interface RoleManagerProps {
+    initialEditRoleId?: string;
+    onClearParams?: () => void;
+}
+
+export const RoleManager: React.FC<RoleManagerProps> = ({ initialEditRoleId, onClearParams }) => {
     const { roles, skills, employees, categories, subcategories, addRole, updateRole, deleteRole, updateSkillsForRole } = useStore();
     const [opened, { open, close }] = useDisclosure(false);
     const [editingId, setEditingId] = useState<string | null>(null);
@@ -72,6 +80,21 @@ export const RoleManager: React.FC = () => {
     const [icon, setIcon] = useState<string>("IconUser");
     const [requiredSkills, setRequiredSkills] = useState<{ skillId: string; level: number }[]>([]);
     const [loading, setLoading] = useState(false);
+
+    // Detail view
+    const [detailRoleId, setDetailRoleId] = useState<string | null>(null);
+
+    // Auto-open edit drawer from external navigation
+    useEffect(() => {
+        if (initialEditRoleId && roles.length > 0) {
+            const role = roles.find(r => r.id === initialEditRoleId);
+            if (role) {
+                handleOpenEdit(role);
+                onClearParams?.();
+            }
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [initialEditRoleId, roles]);
 
     // Unsaved Changes
     const [confirmationOpen, setConfirmationOpen] = useState(false);
@@ -353,21 +376,34 @@ export const RoleManager: React.FC = () => {
                                                     </Text>
                                                 </Table.Td>
                                                 <Table.Td style={{ textAlign: "right" }}>
-                                                    <Group gap={0} justify="flex-end">
-                                                        <ActionIcon
-                                                            variant="subtle"
-                                                            color="blue"
-                                                            onClick={() => handleOpenEdit(role)}
-                                                        >
-                                                            <IconEdit size={16} />
-                                                        </ActionIcon>
-                                                        <ActionIcon
-                                                            color="red"
-                                                            variant="subtle"
-                                                            onClick={() => handleDelete(role.id!, role.name)}
-                                                        >
-                                                            <IconTrash size={16} />
-                                                        </ActionIcon>
+                                                    <Group gap={0} justify="flex-end" wrap="nowrap">
+                                                        <Tooltip label="Details anzeigen" withArrow position="top">
+                                                            <ActionIcon
+                                                                variant="subtle"
+                                                                color="gray"
+                                                                onClick={() => setDetailRoleId(role.id!)}
+                                                            >
+                                                                <IconEye size={16} />
+                                                            </ActionIcon>
+                                                        </Tooltip>
+                                                        <Tooltip label="Bearbeiten" withArrow position="top">
+                                                            <ActionIcon
+                                                                variant="subtle"
+                                                                color="blue"
+                                                                onClick={() => handleOpenEdit(role)}
+                                                            >
+                                                                <IconEdit size={16} />
+                                                            </ActionIcon>
+                                                        </Tooltip>
+                                                        <Tooltip label="Löschen" withArrow position="top">
+                                                            <ActionIcon
+                                                                color="red"
+                                                                variant="subtle"
+                                                                onClick={() => handleDelete(role.id!, role.name)}
+                                                            >
+                                                                <IconTrash size={16} />
+                                                            </ActionIcon>
+                                                        </Tooltip>
                                                     </Group>
                                                 </Table.Td>
                                             </Table.Tr>
@@ -460,119 +496,188 @@ export const RoleManager: React.FC = () => {
                                     nothingFoundMessage="Keine Skills gefunden"
                                 />
 
-                                {requiredSkills.length > 0 || inheritedSkills.length > 0 ? (
-                                    <Paper withBorder p="xs" bg="var(--mantine-color-default)">
-                                        <Stack gap="xs">
-                                            <Stack gap="sm" pb="xl">
-                                                {requiredSkills.length > 0 && (
-                                                    <>
-                                                        <Divider label="Direkt zugeordnete Skills" labelPosition="left" />
-                                                        {requiredSkills.map((req) => {
-                                                            const skill = skills.find(s => s.id === req.skillId);
-                                                            const sub = subcategories.find(sc => sc.id === skill?.subCategoryId);
-                                                            const cat = categories.find(c => c.id === sub?.categoryId);
-                                                            const breadcrumb = `${cat?.name || '?'} > ${sub?.name || '?'}`;
-                                                            const isOverride = inheritedSkills.some(is => is.skillId === req.skillId);
+                                {(() => {
+                                    type EditSkillEntry = {
+                                        skillId: string;
+                                        level: number;
+                                        isDirect: boolean;
+                                        isInheritedOnly: boolean;
+                                        isOverride: boolean;
+                                        sourceRoleName?: string;
+                                        catId: string;
+                                        catName: string;
+                                        subId: string;
+                                        subName: string;
+                                    };
 
-                                                            return (
-                                                                <div key={req.skillId}>
-                                                                    <Text size="xs" c="dimmed" mb={2}>{breadcrumb}</Text>
-                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                                                        <Group gap="xs" style={{ width: '150px' }} wrap="nowrap">
-                                                                            <Text size="sm" truncate style={{ flexShrink: 1 }}>{skill?.name || "Unknown"}</Text>
-                                                                            {isOverride && (
-                                                                                <Badge size="xs" color="orange" variant="light" style={{ flexShrink: 0 }}>Überschreibt</Badge>
-                                                                            )}
-                                                                        </Group>
-                                                                        <Slider
-                                                                            style={{ flex: 1 }}
-                                                                            min={0}
-                                                                            max={100}
-                                                                            step={25}
-                                                                            color={LEVELS.find(l => l.value === req.level)?.color || "gray"}
-                                                                            marks={sliderMarksWithTooltips}
-                                                                            value={req.level}
-                                                                            onChange={(val) => {
-                                                                                setRequiredSkills(prev => prev.map(p => p.skillId === req.skillId ? { ...p, level: val } : p));
-                                                                            }}
-                                                                            label={null}
-                                                                        />
-                                                                        <ActionIcon
-                                                                            color="red" variant="subtle" size="sm"
-                                                                            onClick={() => setRequiredSkills(prev => prev.filter(p => p.skillId !== req.skillId))}
-                                                                        >
-                                                                            <IconX size={16} />
-                                                                        </ActionIcon>
-                                                                    </div>
-                                                                </div>
-                                                            );
-                                                        })}
-                                                    </>
-                                                )}
+                                    const directEntries: EditSkillEntry[] = requiredSkills.map(req => {
+                                        const skill = skills.find(s => s.id === req.skillId);
+                                        const sub = subcategories.find(sc => sc.id === skill?.subCategoryId);
+                                        const cat = categories.find(c => c.id === sub?.categoryId);
+                                        return {
+                                            skillId: req.skillId,
+                                            level: req.level,
+                                            isDirect: true,
+                                            isInheritedOnly: false,
+                                            isOverride: inheritedSkills.some(is => is.skillId === req.skillId),
+                                            catId: cat?.id ?? "_",
+                                            catName: cat?.name ?? "?",
+                                            subId: sub?.id ?? "_",
+                                            subName: sub?.name ?? "?",
+                                        };
+                                    });
 
-                                                {inheritedSkills.length > 0 && (
-                                                    <>
-                                                        <Divider
-                                                            label={
-                                                                <Group gap="xs">
-                                                                    <IconArrowUpRight size={14} />
-                                                                    <Text size="xs">Geerbte Skills (über Vererbung)</Text>
-                                                                </Group>
-                                                            }
-                                                            labelPosition="left"
-                                                            mt="md"
-                                                        />
-                                                        {inheritedSkills
-                                                            .filter(is => !requiredSkills.some(rs => rs.skillId === is.skillId))
-                                                            .map((req) => {
-                                                                const skill = skills.find(s => s.id === req.skillId);
-                                                                const sub = subcategories.find(sc => sc.id === skill?.subCategoryId);
-                                                                const cat = categories.find(c => c.id === sub?.categoryId);
-                                                                const breadcrumb = `${cat?.name || '?'} > ${sub?.name || '?'}`;
+                                    const inheritedOnlyEntries: EditSkillEntry[] = inheritedSkills
+                                        .filter(is => !requiredSkills.some(rs => rs.skillId === is.skillId))
+                                        .map(req => {
+                                            const skill = skills.find(s => s.id === req.skillId);
+                                            const sub = subcategories.find(sc => sc.id === skill?.subCategoryId);
+                                            const cat = categories.find(c => c.id === sub?.categoryId);
+                                            return {
+                                                skillId: req.skillId,
+                                                level: req.level,
+                                                isDirect: false,
+                                                isInheritedOnly: true,
+                                                isOverride: false,
+                                                sourceRoleName: req.sourceRoleName,
+                                                catId: cat?.id ?? "_",
+                                                catName: cat?.name ?? "?",
+                                                subId: sub?.id ?? "_",
+                                                subName: sub?.name ?? "?",
+                                            };
+                                        });
 
-                                                                return (
-                                                                    <div key={req.skillId} style={{ opacity: 0.8 }}>
-                                                                        <Group justify="space-between" mb={2}>
-                                                                            <Text size="xs" c="dimmed">{breadcrumb} • Geerbt von {req.sourceRoleName}</Text>
-                                                                        </Group>
-                                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                                                            <Text size="sm" style={{ width: '150px' }} truncate>{skill?.name || "Unknown"}</Text>
-                                                                            <Slider
-                                                                                style={{ flex: 1 }}
-                                                                                min={0}
-                                                                                max={100}
-                                                                                step={25}
-                                                                                color="gray"
-                                                                                marks={sliderMarksWithTooltips}
-                                                                                value={req.level}
-                                                                                onChange={(val) => {
-                                                                                    // Adding or updating in direct skills as an override
-                                                                                    setRequiredSkills(prev => {
-                                                                                        const existingIdx = prev.findIndex(p => p.skillId === req.skillId);
-                                                                                        if (existingIdx >= 0) {
-                                                                                            return prev.map((p, idx) => idx === existingIdx ? { ...p, level: val } : p);
-                                                                                        } else {
-                                                                                            return [...prev, { skillId: req.skillId, level: val }];
-                                                                                        }
-                                                                                    });
-                                                                                }}
-                                                                                label={null}
-                                                                            />
-                                                                            <div style={{ width: 28 }} /> {/* Spacer for symmetry */}
-                                                                        </div>
-                                                                    </div>
-                                                                );
-                                                            })}
-                                                    </>
-                                                )}
-                                            </Stack>
-                                        </Stack>
-                                    </Paper>
-                                ) : (
-                                    <Text size="xs" c="dimmed" fs="italic">
-                                        Wähle oben Skills aus oder nutze die Vererbung, um Soll-Level zu definieren.
-                                    </Text>
-                                )}
+                                    const all = [...directEntries, ...inheritedOnlyEntries];
+
+                                    if (all.length === 0) {
+                                        return (
+                                            <Text size="xs" c="dimmed" fs="italic">
+                                                Wähle oben Skills aus oder nutze die Vererbung, um Soll-Level zu definieren.
+                                            </Text>
+                                        );
+                                    }
+
+                                    const catOrder = categories.map(c => c.id!);
+                                    const subOrder = subcategories.map(s => s.id!);
+
+                                    const grouped = new Map<string, { catName: string; subs: Map<string, { subName: string; items: EditSkillEntry[] }> }>();
+                                    all.forEach(item => {
+                                        if (!grouped.has(item.catId)) grouped.set(item.catId, { catName: item.catName, subs: new Map() });
+                                        const catGroup = grouped.get(item.catId)!;
+                                        if (!catGroup.subs.has(item.subId)) catGroup.subs.set(item.subId, { subName: item.subName, items: [] });
+                                        catGroup.subs.get(item.subId)!.items.push(item);
+                                    });
+
+                                    const sortedCats = [...grouped.entries()].sort((a, b) => catOrder.indexOf(a[0]) - catOrder.indexOf(b[0]));
+
+                                    return (
+                                        <Accordion multiple variant="separated" radius="sm">
+                                            {sortedCats.map(([catId, catGroup]) => {
+                                                const cat = categories.find(c => c.id === catId);
+                                                const sortedSubs = [...catGroup.subs.entries()].sort((a, b) => subOrder.indexOf(a[0]) - subOrder.indexOf(b[0]));
+                                                const totalCount = sortedSubs.reduce((acc, [, sg]) => acc + sg.items.length, 0);
+                                                return (
+                                                    <Accordion.Item key={catId} value={catId}>
+                                                        <Accordion.Control>
+                                                            <Group gap="sm">
+                                                                <Tooltip label={cat?.description} disabled={!cat?.description} withArrow multiline w={240} position="right">
+                                                                    <Text size="sm" fw={600} style={{ cursor: cat?.description ? 'help' : 'default' }}>{catGroup.catName}</Text>
+                                                                </Tooltip>
+                                                                <Badge size="xs" variant="light" color="gray">{totalCount}</Badge>
+                                                            </Group>
+                                                        </Accordion.Control>
+                                                        <Accordion.Panel p={0}>
+                                                            <Stack gap={0}>
+                                                                {sortedSubs.map(([subId, subGroup], subIdx) => {
+                                                                    const sub = subcategories.find(s => s.id === subId);
+                                                                    return (
+                                                                    <Box key={subId}>
+                                                                        {subIdx > 0 && <Divider />}
+                                                                        <Box px="xs" py={5} bg="var(--mantine-color-default-hover)">
+                                                                            <Tooltip label={sub?.description} disabled={!sub?.description} withArrow multiline w={240} position="right">
+                                                                                <Text size="xs" c="dimmed" fw={500} style={{ cursor: sub?.description ? 'help' : 'default' }}>{subGroup.subName}</Text>
+                                                                            </Tooltip>
+                                                                        </Box>
+                                                                        <Stack gap={0}>
+                                                                            {subGroup.items.map((item, itemIdx) => {
+                                                                                const skill = skills.find(s => s.id === item.skillId);
+                                                                                const currentLevel = item.isDirect
+                                                                                    ? (requiredSkills.find(r => r.skillId === item.skillId)?.level ?? item.level)
+                                                                                    : item.level;
+                                                                                return (
+                                                                                    <Box
+                                                                                        key={item.skillId}
+                                                                                        px="xs"
+                                                                                        style={{
+                                                                                            paddingTop: 8,
+                                                                                            paddingBottom: 28,
+                                                                                            borderTop: itemIdx > 0 ? '1px solid var(--mantine-color-default-border)' : undefined,
+                                                                                            opacity: item.isInheritedOnly ? 0.8 : 1,
+                                                                                        }}
+                                                                                    >
+                                                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                                                            <Group gap="xs" style={{ width: '140px' }} wrap="nowrap">
+                                                                                                <Text size="sm" truncate style={{ flexShrink: 1 }}>{skill?.name ?? "Unbekannt"}</Text>
+                                                                                                {item.isOverride && (
+                                                                                                    <Tooltip label="Überschreibt einen geerbten Skill" withArrow position="top">
+                                                                                                        <Badge size="xs" color="orange" variant="light" style={{ flexShrink: 0, cursor: 'help' }}>↑</Badge>
+                                                                                                    </Tooltip>
+                                                                                                )}
+                                                                                                {item.isInheritedOnly && (
+                                                                                                    <Tooltip label={`Geerbt von: ${item.sourceRoleName}`} withArrow>
+                                                                                                        <Badge size="xs" color="gray" variant="light" style={{ flexShrink: 0, cursor: 'help' }}>
+                                                                                                            <IconArrowUpRight size={10} />
+                                                                                                        </Badge>
+                                                                                                    </Tooltip>
+                                                                                                )}
+                                                                                            </Group>
+                                                                                            <Slider
+                                                                                                style={{ flex: 1 }}
+                                                                                                min={0}
+                                                                                                max={100}
+                                                                                                step={25}
+                                                                                                color={LEVELS.find(l => l.value === currentLevel)?.color ?? "gray"}
+                                                                                                marks={sliderMarksWithTooltips}
+                                                                                                value={currentLevel}
+                                                                                                onChange={(val) => {
+                                                                                                    if (item.isDirect) {
+                                                                                                        setRequiredSkills(prev => prev.map(p => p.skillId === item.skillId ? { ...p, level: val } : p));
+                                                                                                    } else {
+                                                                                                        setRequiredSkills(prev => {
+                                                                                                            const idx = prev.findIndex(p => p.skillId === item.skillId);
+                                                                                                            if (idx >= 0) return prev.map((p, i) => i === idx ? { ...p, level: val } : p);
+                                                                                                            return [...prev, { skillId: item.skillId, level: val }];
+                                                                                                        });
+                                                                                                    }
+                                                                                                }}
+                                                                                                label={null}
+                                                                                            />
+                                                                                            {item.isDirect ? (
+                                                                                                <ActionIcon
+                                                                                                    color="red" variant="subtle" size="sm"
+                                                                                                    onClick={() => setRequiredSkills(prev => prev.filter(p => p.skillId !== item.skillId))}
+                                                                                                >
+                                                                                                    <IconX size={16} />
+                                                                                                </ActionIcon>
+                                                                                            ) : (
+                                                                                                <div style={{ width: 28 }} />
+                                                                                            )}
+                                                                                        </div>
+                                                                                    </Box>
+                                                                                );
+                                                                            })}
+                                                                        </Stack>
+                                                                    </Box>
+                                                                    );
+                                                                })}
+                                                            </Stack>
+                                                        </Accordion.Panel>
+                                                    </Accordion.Item>
+                                                );
+                                            })}
+                                        </Accordion>
+                                    );
+                                })()}
                             </Stack>
 
                             <Stack gap={4}>
@@ -607,6 +712,12 @@ export const RoleManager: React.FC = () => {
                     </Group>
                 </Stack>
             </Drawer>
+            <RoleDetailDrawer
+                roleId={detailRoleId}
+                onClose={() => setDetailRoleId(null)}
+                onEdit={(role) => handleOpenEdit(role)}
+            />
+
             <Modal
                 opened={confirmationOpen}
                 onClose={() => setConfirmationOpen(false)}

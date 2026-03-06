@@ -1,4 +1,17 @@
 
+## [2.21.0] - 2026-03-06
+
+### Neue Funktionen
+- **Rollen-Detailseite**: Jede Rolle in Stammdaten → Rollen & Level hat nun eine read-only Detailansicht (Auge-Icon). Zeigt Rollenname & Icon, Beschreibung, Vererbungsstatus sowie alle benötigten Skills mit Soll-Level.
+- **Rollen-Detail aus der Matrix**: Klick auf das Rollen-Icon neben einem Mitarbeiternamen in der Skill-Matrix öffnet direkt die Rollen-Detailansicht.
+- **Rolle bearbeiten aus der Matrix**: Über den „Bearbeiten"-Button im Rollen-Detail-Drawer wird direkt zu Stammdaten → Rollen & Level navigiert und der Bearbeitungs-Drawer für die Rolle geöffnet.
+
+### Verbesserungen
+- **Skills gruppiert & ausklappbar**: Benötigte Skills werden in beiden Drawern (Detail & Bearbeiten) nach Kategorie → Subkategorie gruppiert und in einem Accordion dargestellt. Standardmäßig eingeklappt.
+- **Skill-Tooltips**: Hover über einen Skill zeigt dessen Beschreibung als Tooltip. Gleiches gilt für Kategorien und Subkategorien (sofern Beschreibung hinterlegt).
+- **Geerbte Skills inline**: Direkte und geerbte Skills werden gemeinsam in der Kategoriestruktur angezeigt – geerbte mit Quellenangabe-Badge.
+- **Aktionen in der Rollentabelle**: Auge-, Bearbeiten- und Löschen-Icon sind nun immer horizontal angeordnet (`wrap="nowrap"`) mit jeweils eigenem Tooltip.
+
 ## [2.20.0] - 2026-03-05
 
 ### Neue Funktionen

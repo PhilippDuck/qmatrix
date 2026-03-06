@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Badge, Text, HoverCard, Stack, Group, Divider, ThemeIcon, Box, SimpleGrid, Tooltip, ActionIcon, Menu, ScrollArea } from "@mantine/core";
+import { RoleDetailDrawer } from "../shared/RoleDetailDrawer";
 import { IconBuilding, IconHistory, IconTrendingUp, IconTrendingDown, IconMinus, IconPencil, IconPlus, IconDotsVertical, IconCertificate, IconInfoCircle, IconSortAscending, IconSortDescending, IconArrowsSort } from "@tabler/icons-react";
 import { MATRIX_LAYOUT } from "../../constants/skillLevels";
 import { getScoreColor, getMaxRoleTargetForSkill } from "../../utils/skillCalculations";
@@ -360,6 +361,12 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
   const { anonymizeName } = usePrivacy();
   const { roles, qualificationPlans } = useStore();
   const { cellSize, headerHeight } = MATRIX_LAYOUT;
+  const [detailRoleId, setDetailRoleId] = useState<string | null>(null);
+
+  const handleEditRole = (role: { id?: string }) => {
+    setDetailRoleId(null);
+    onNavigate?.('data', { tab: 'roles', editRoleId: role.id });
+  };
   const effectiveLabelWidth = labelWidth || MATRIX_LAYOUT.labelWidth;
 
   const cycleSortEmployee = () => {
@@ -387,6 +394,8 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
   };
 
   return (
+    <>
+    <RoleDetailDrawer roleId={detailRoleId} onClose={() => setDetailRoleId(null)} onEdit={handleEditRole} />
     <div
       style={{
         display: "flex",
@@ -681,8 +690,15 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
                           const role = roles.find(r => r.name === roleName);
                           const RoleIcon = getIconByName(role?.icon);
                           return (
-                            <Tooltip key={idx} label={roleName} withArrow position="top">
-                              <ThemeIcon size={14} variant="light" color="gray" radius="xl" style={{ transform: 'rotate(180deg)' }}>
+                            <Tooltip key={idx} label={`${roleName} – Details anzeigen`} withArrow position="top">
+                              <ThemeIcon
+                                size={14}
+                                variant="light"
+                                color="gray"
+                                radius="xl"
+                                style={{ transform: 'rotate(180deg)', cursor: role ? 'pointer' : 'default' }}
+                                onClick={role?.id ? (e) => { e.stopPropagation(); setDetailRoleId(role.id!); } : undefined}
+                              >
                                 <RoleIcon size={10} />
                               </ThemeIcon>
                             </Tooltip>
@@ -731,6 +747,7 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
         )}
       </div>
     </div>
+    </>
   );
 };
 
