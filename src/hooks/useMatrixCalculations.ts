@@ -213,10 +213,12 @@ export function useMatrixCalculations({
                             const val = (rawLevel === -1 && roleTarget !== undefined) ? 0 : rawLevel;
                             if (val !== -1) { total += val; count++; }
                         });
-                        return count > 0 ? total / count : 0;
+                        return count > 0 ? total / count : -1;
                     };
                     const avgA = calcAvg(a.id!, a.roles);
                     const avgB = calcAvg(b.id!, b.roles);
+                    if (avgA === -1 && avgB !== -1) return 1;
+                    if (avgB === -1 && avgA !== -1) return -1;
                     return employeeSort === 'asc' ? avgA - avgB : avgB - avgA;
                 }
             });
@@ -397,7 +399,7 @@ export function useMatrixCalculations({
                         if (visibleSkillIds.length === 0) return 0;
 
                         const avg = calculateAverage(visibleSkillIds);
-                        return avg !== null ? avg : 0;
+                        return avg !== null ? avg : -1;
                     };
 
                     const avgA = calcCatAvg(a.id!);

@@ -646,7 +646,7 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
                         <Badge
                           size="xs"
                           variant="outline"
-                          color={ful === null ? 'gray' : ful >= 100 ? 'teal' : 'orange'}
+                          color={ful === null ? 'gray' : ful >= 100 ? 'teal' : ful >= 85 ? 'green' : ful >= 67 ? 'yellow' : 'red'}
                           mb="xs"
                         >
                           {ful === null ? '-' : `${ful}%`}

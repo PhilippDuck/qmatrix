@@ -666,6 +666,7 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = React.memo(({ onNavigate 
             departments={departments}
             roles={roles}
             categories={categories}
+            subcategories={subcategories}
             skills={skills}
             isEditMode={isEditMode}
             setIsEditMode={setIsEditMode}

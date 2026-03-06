@@ -1,4 +1,15 @@
 
+## [2.22.0] - 2026-03-06
+
+### Neue Funktionen
+- **Bereinigen & Schließen**: Neuer roter Power-Button oben rechts im Header. Exportiert zuerst automatisch ein Backup, löscht dann alle Daten und schließt die Anwendung.
+- **Skill-Filter gruppiert**: Das Dropdown „Spezifische Skills" im Matrix-Filter ist jetzt nach Hauptkategorie › Unterkategorie gruppiert, statt einer flachen Liste.
+- **Rollen-Liste gruppiert**: In Stammdaten → Rollen werden Rollen hierarchisch nach Vererbung gegliedert. Root-Rollen sind fett mit blauem Icon, Unterrollen eingerückt mit ↳-Pfeil. Trennlinien separieren die Familien.
+
+### Behobene Fehler
+- **Erfüllungsgrad-Farbskala**: 98 % wurde fälschlicherweise orange dargestellt. Die Farbskala hat nun vier Stufen: ≥100 % Teal, ≥85 % Grün, ≥67 % Gelb, <67 % Rot. Fix in allen betroffenen Komponenten (SkillRow, SubcategoryRow, CategoryRow, MatrixHeader).
+- **Sortierung N/A vs. 0 %**: Bei absteigender Sortierung erschienen N/A-Einträge über 0 %-Einträgen. Ursache: Subkategorie-Sort in `MatrixCategoryRow` war nicht modus-bewusst und nutzte `|| 0` statt `?? -1`. N/A-Einträge werden jetzt in allen Sortiermodi ans Ende gesetzt – unabhängig von Sortierrichtung.
+
 ## [2.21.0] - 2026-03-06
 
 ### Neue Funktionen

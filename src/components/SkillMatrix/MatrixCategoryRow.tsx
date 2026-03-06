@@ -98,14 +98,40 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = React.memo(({
   const categorySubcategories = useMemo(() =>
     [...subcategories.filter(s => s.categoryId === category.id && !s.parentSubCategoryId)]
       .sort((a, b) => {
-        if (skillSort) {
-          const avgA = calculateAverage(getAllSkillIdsForSubcategory(a.id!, subcategories, skills)) || 0;
-          const avgB = calculateAverage(getAllSkillIdsForSubcategory(b.id!, subcategories, skills)) || 0;
-          return skillSort === 'asc' ? avgA - avgB : avgB - avgA;
+        if (!skillSort) return a.name.localeCompare(b.name, 'de');
+
+        if (showMaxValues === 'fulfillment') {
+          const calcFul = (subId: string) => {
+            const subSkillIds = getAllSkillIdsForSubcategory(subId, subcategories, skills);
+            const scores: number[] = [];
+            employees.forEach(emp => {
+              subSkillIds.forEach(sId => {
+                const asm = getAssessment(emp.id!, sId);
+                const individualT = asm?.targetLevel || 0;
+                const roleT = getMaxRoleTargetForSkill(emp.roles, sId, roles) || 0;
+                const target = Math.max(individualT, roleT);
+                if (target > 0) {
+                  const level = asm?.level ?? (roleT ? 0 : -1);
+                  if (level >= 0) scores.push(Math.min(100, Math.round((level / target) * 100)));
+                }
+              });
+            });
+            return scores.length > 0 ? Math.round(scores.reduce((x, y) => x + y, 0) / scores.length) : -1;
+          };
+          const fulA = calcFul(a.id!);
+          const fulB = calcFul(b.id!);
+          if (fulA === -1 && fulB !== -1) return 1;
+          if (fulB === -1 && fulA !== -1) return -1;
+          return skillSort === 'asc' ? fulA - fulB : fulB - fulA;
         }
-        return a.name.localeCompare(b.name, 'de');
+
+        const avgA = calculateAverage(getAllSkillIdsForSubcategory(a.id!, subcategories, skills)) ?? -1;
+        const avgB = calculateAverage(getAllSkillIdsForSubcategory(b.id!, subcategories, skills)) ?? -1;
+        if (avgA === -1 && avgB !== -1) return 1;
+        if (avgB === -1 && avgA !== -1) return -1;
+        return skillSort === 'asc' ? avgA - avgB : avgB - avgA;
       }),
-    [subcategories, skills, category.id, skillSort, calculateAverage]
+    [subcategories, skills, category.id, skillSort, showMaxValues, calculateAverage, employees, getAssessment, roles]
   );
 
   const catAvg = useMemo(() => calculateAverage(catSkillIds), [calculateAverage, catSkillIds]);
@@ -285,7 +311,7 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = React.memo(({
             ) : (
               // Fulfillment Bubble
               <Tooltip label="Erfüllungsgrad (Ist/Soll)" withArrow>
-                <Badge size="xs" w={46} variant={fulfillmentPct === null ? "outline" : "filled"} color={fulfillmentPct === null ? "gray" : fulfillmentPct >= 100 ? "teal" : "orange"}>
+                <Badge size="xs" w={46} variant={fulfillmentPct === null ? "outline" : "filled"} color={fulfillmentPct === null ? "gray" : fulfillmentPct >= 100 ? "teal" : fulfillmentPct >= 85 ? "green" : fulfillmentPct >= 67 ? "yellow" : "red"}>
                   {fulfillmentPct === null ? "N/A" : `${fulfillmentPct}%`}
                 </Badge>
               </Tooltip>
@@ -318,7 +344,7 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = React.memo(({
                       </Badge>
                     ) : <Text fw={700} size="xs" c="dimmed">-</Text>
                   ) : showMaxValues === 'fulfillment' ? (
-                    <Text fw={700} size="xs" c={ful === null ? 'dimmed' : ful >= 100 ? 'teal' : 'orange'}>
+                    <Text fw={700} size="xs" c={ful === null ? 'dimmed' : ful >= 100 ? 'teal' : ful >= 85 ? 'green' : ful >= 67 ? 'yellow' : 'red'}>
                       {ful === null ? '-' : `${ful}%`}
                     </Text>
                   ) : (

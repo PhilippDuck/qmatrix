@@ -226,6 +226,34 @@ export const RoleManager: React.FC<RoleManagerProps> = ({ initialEditRoleId, onC
         }
     };
 
+    // Grouped + sorted role list for the table view (tree by inheritance)
+    const groupedRoles = useMemo(() => {
+        const roots = roles
+            .filter(r => !r.inheritsFromId || !roles.some(p => p.id === r.inheritsFromId))
+            .sort((a, b) => a.name.localeCompare(b.name, "de"));
+
+        const result: { role: EmployeeRole; depth: number; isLastInFamily: boolean }[] = [];
+
+        const addWithChildren = (role: EmployeeRole, depth: number) => {
+            const children = roles
+                .filter(r => r.inheritsFromId === role.id)
+                .sort((a, b) => a.name.localeCompare(b.name, "de"));
+            result.push({ role, depth, isLastInFamily: children.length === 0 && depth === 0 });
+            children.forEach(child => addWithChildren(child, depth + 1));
+        };
+
+        roots.forEach(root => addWithChildren(root, 0));
+
+        // Orphans (parent referenced but missing)
+        const placed = new Set(result.map(r => r.role.id));
+        roles
+            .filter(r => !placed.has(r.id))
+            .sort((a, b) => a.name.localeCompare(b.name, "de"))
+            .forEach(r => result.push({ role: r, depth: 0, isLastInFamily: true }));
+
+        return result;
+    }, [roles]);
+
     // Filter roles to prevent circular inheritance (simple check: exclude self if editing)
     const roleOptions = roles
         .filter((r) => !editingId || r.id !== editingId)
@@ -315,39 +343,40 @@ export const RoleManager: React.FC<RoleManagerProps> = ({ initialEditRoleId, onC
                                 </Table.Tr>
                             </Table.Thead>
                             <Table.Tbody>
-                                {roles.length > 0 ? (
-                                    roles.map((role) => {
-                                        const parentRole = roles.find(
-                                            (r) => r.id === role.inheritsFromId
-                                        );
-                                        // Count skills either from new property or legacy
+                                {groupedRoles.length > 0 ? (() => {
+                                    return groupedRoles.map(({ role, depth }, rowIdx) => {
+                                        const isRoot = depth === 0;
+                                        const needsSeparator = isRoot && rowIdx > 0;
+
+                                        const parentRole = roles.find(r => r.id === role.inheritsFromId);
                                         const skillCount = role.requiredSkills?.length
                                             ?? skills.filter(s => s.requiredByRoleIds?.includes(role.id!)).length;
+                                        const RoleIcon = getIconByName(role.icon);
 
                                         return (
-                                            <Table.Tr key={role.id}>
+                                            <Table.Tr
+                                                key={role.id}
+                                                style={needsSeparator ? { borderTop: '2px solid var(--mantine-color-default-border)' } : undefined}
+                                            >
                                                 <Table.Td>
-                                                    {(() => {
-                                                        const RoleIcon = getIconByName(role.icon);
-                                                        return (
-                                                            <Group gap="sm">
-                                                                <RoleIcon size={16} color="gray" />
-                                                                <Text size="sm" fw={500}>
-                                                                    {role.name}
-                                                                </Text>
-                                                            </Group>
-                                                        );
-                                                    })()}
+                                                    <Group gap="sm" wrap="nowrap" style={{ paddingLeft: depth * 20 }}>
+                                                        {depth > 0 && (
+                                                            <Text size="xs" c="dimmed" style={{ flexShrink: 0 }}>↳</Text>
+                                                        )}
+                                                        <RoleIcon size={16} color={isRoot ? "var(--mantine-color-blue-6)" : "gray"} />
+                                                        <Text size="sm" fw={isRoot ? 600 : 400}>
+                                                            {role.name}
+                                                        </Text>
+                                                        {isRoot && roles.some(r => r.inheritsFromId === role.id) && (
+                                                            <Badge size="xs" variant="light" color="blue">
+                                                                {roles.filter(r => r.inheritsFromId === role.id).length} Unterrollen
+                                                            </Badge>
+                                                        )}
+                                                    </Group>
                                                 </Table.Td>
                                                 <Table.Td>
                                                     {role.description ? (
-                                                        <Tooltip
-                                                            label={role.description}
-                                                            multiline
-                                                            w={300}
-                                                            position="top"
-                                                            withArrow
-                                                        >
+                                                        <Tooltip label={role.description} multiline w={300} position="top" withArrow>
                                                             <Text size="sm" c="dimmed" truncate style={{ maxWidth: 200 }}>
                                                                 {role.description}
                                                             </Text>
@@ -360,14 +389,10 @@ export const RoleManager: React.FC<RoleManagerProps> = ({ initialEditRoleId, onC
                                                     {parentRole ? (
                                                         <Group gap="xs">
                                                             <IconArrowUpRight size={14} color="gray" />
-                                                            <Text size="sm" c="dimmed">
-                                                                {parentRole.name}
-                                                            </Text>
+                                                            <Text size="sm" c="dimmed">{parentRole.name}</Text>
                                                         </Group>
                                                     ) : (
-                                                        <Text size="sm" c="dimmed">
-                                                            -
-                                                        </Text>
+                                                        <Text size="sm" c="dimmed">-</Text>
                                                     )}
                                                 </Table.Td>
                                                 <Table.Td>
@@ -378,29 +403,17 @@ export const RoleManager: React.FC<RoleManagerProps> = ({ initialEditRoleId, onC
                                                 <Table.Td style={{ textAlign: "right" }}>
                                                     <Group gap={0} justify="flex-end" wrap="nowrap">
                                                         <Tooltip label="Details anzeigen" withArrow position="top">
-                                                            <ActionIcon
-                                                                variant="subtle"
-                                                                color="gray"
-                                                                onClick={() => setDetailRoleId(role.id!)}
-                                                            >
+                                                            <ActionIcon variant="subtle" color="gray" onClick={() => setDetailRoleId(role.id!)}>
                                                                 <IconEye size={16} />
                                                             </ActionIcon>
                                                         </Tooltip>
                                                         <Tooltip label="Bearbeiten" withArrow position="top">
-                                                            <ActionIcon
-                                                                variant="subtle"
-                                                                color="blue"
-                                                                onClick={() => handleOpenEdit(role)}
-                                                            >
+                                                            <ActionIcon variant="subtle" color="blue" onClick={() => handleOpenEdit(role)}>
                                                                 <IconEdit size={16} />
                                                             </ActionIcon>
                                                         </Tooltip>
                                                         <Tooltip label="Löschen" withArrow position="top">
-                                                            <ActionIcon
-                                                                color="red"
-                                                                variant="subtle"
-                                                                onClick={() => handleDelete(role.id!, role.name)}
-                                                            >
+                                                            <ActionIcon color="red" variant="subtle" onClick={() => handleDelete(role.id!, role.name)}>
                                                                 <IconTrash size={16} />
                                                             </ActionIcon>
                                                         </Tooltip>
@@ -408,8 +421,8 @@ export const RoleManager: React.FC<RoleManagerProps> = ({ initialEditRoleId, onC
                                                 </Table.Td>
                                             </Table.Tr>
                                         );
-                                    })
-                                ) : (
+                                    });
+                                })() : (
                                     <Table.Tr>
                                         <Table.Td colSpan={5} style={{ textAlign: "center", py: "xl" }}>
                                             <Text c="dimmed">Keine Rollen angelegt</Text>

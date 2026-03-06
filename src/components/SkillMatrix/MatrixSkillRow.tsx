@@ -146,7 +146,7 @@ export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = React.memo(({
                 }
               });
               const ful = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
-              const fulColor = ful === null ? 'gray' : ful >= 100 ? 'teal' : ful >= 67 ? 'yellow' : 'red';
+              const fulColor = ful === null ? 'gray' : ful >= 100 ? 'teal' : ful >= 85 ? 'green' : ful >= 67 ? 'yellow' : 'red';
               return (
                 <Tooltip label="Erfüllungsgrad (Ist/Soll)" withArrow>
                   <Badge size="xs" w={46} variant="transparent" color={fulColor}>
@@ -208,7 +208,7 @@ export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = React.memo(({
                     }
                   });
                   const ful = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
-                  const fulColor = ful === null ? 'dimmed' : ful >= 100 ? 'teal' : ful >= 67 ? 'yellow' : 'red';
+                  const fulColor = ful === null ? 'dimmed' : ful >= 100 ? 'teal' : ful >= 85 ? 'green' : ful >= 67 ? 'yellow' : 'red';
                   return <Text size="xs" fw={500} c={fulColor}>{ful === null ? "-" : `${ful}%`}</Text>;
                 })()
               ) : (

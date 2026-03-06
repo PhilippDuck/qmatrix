@@ -282,7 +282,7 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = React.m
             ) : (
               // Fulfillment Bubble
               <Tooltip label="Erfüllungsgrad (Ist/Soll)" withArrow>
-                <Badge size="xs" w={46} variant={fulfillmentPct === null ? "outline" : "light"} color={fulfillmentPct === null ? "gray" : fulfillmentPct >= 100 ? "teal" : "orange"}>
+                <Badge size="xs" w={46} variant={fulfillmentPct === null ? "outline" : "light"} color={fulfillmentPct === null ? "gray" : fulfillmentPct >= 100 ? "teal" : fulfillmentPct >= 85 ? "green" : fulfillmentPct >= 67 ? "yellow" : "red"}>
                   {fulfillmentPct === null ? "N/A" : `${fulfillmentPct}%`}
                 </Badge>
               </Tooltip>
@@ -311,7 +311,7 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = React.m
                     </Badge>
                   ) : <Text size="xs" c="dimmed">-</Text>
                 ) : showMaxValues === 'fulfillment' ? (
-                  <Text size="xs" fw={500} c={ful === null ? 'dimmed' : ful >= 100 ? 'teal' : 'orange'}>
+                  <Text size="xs" fw={500} c={ful === null ? 'dimmed' : ful >= 100 ? 'teal' : ful >= 85 ? 'green' : ful >= 67 ? 'yellow' : 'red'}>
                     {ful === null ? '-' : `${ful}%`}
                   </Text>
                 ) : (

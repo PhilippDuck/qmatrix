@@ -41,8 +41,10 @@ import {
   IconCertificate,
   IconHistory,
   IconShieldLock,
+  IconPower,
 } from "@tabler/icons-react";
 
+import { modals } from "@mantine/modals";
 import { useStore } from "./store/useStore";
 import { UnifiedDataView } from "./components/UnifiedDataView";
 import { SkillMatrix } from "./components/SkillMatrix";
@@ -191,6 +193,49 @@ function SaveButton({ hasUnsavedChanges, onSave, lastUpdate }) {
             }}
           />
         )}
+      </ActionIcon>
+    </Tooltip>
+  );
+}
+
+function ResetAndCloseButton() {
+  const { clearAllData, exportData } = useStore();
+
+  const handleResetAndClose = () => {
+    modals.openConfirmModal({
+      title: 'Speichern, zurücksetzen & beenden',
+      centered: true,
+      children: (
+        <Text size="sm">
+          Es wird zuerst ein <strong>Backup exportiert</strong>, dann alle Daten unwiderruflich gelöscht und die Anwendung geschlossen. Möchten Sie fortfahren?
+        </Text>
+      ),
+      labels: { confirm: 'Exportieren, löschen & schließen', cancel: 'Abbrechen' },
+      confirmProps: { color: 'red', leftSection: <IconPower size={14} /> },
+      onConfirm: async () => {
+        try {
+          await exportData();
+          notifications.show({ title: 'Backup erstellt', message: 'Daten werden jetzt gelöscht...', color: 'blue', autoClose: 1500 });
+          await new Promise(r => setTimeout(r, 1000));
+          await clearAllData();
+          notifications.show({ title: 'Zurückgesetzt', message: 'Alle Daten wurden gelöscht.', color: 'blue', autoClose: 1500 });
+          setTimeout(() => window.close(), 1200);
+        } catch (error) {
+          notifications.show({ title: 'Fehler', message: 'Fehler beim Vorgang.', color: 'red' });
+        }
+      },
+    });
+  };
+
+  return (
+    <Tooltip label="Alle Daten löschen & Anwendung schließen">
+      <ActionIcon
+        variant="subtle"
+        color="red"
+        size="md"
+        onClick={handleResetAndClose}
+      >
+        <IconPower size={18} />
       </ActionIcon>
     </Tooltip>
   );
@@ -474,6 +519,7 @@ function AppContent() {
             </Tooltip>
             <AnonymousToggle />
             <ColorSchemeToggle />
+            <ResetAndCloseButton />
           </Group>
         </Group>
       </AppShell.Header>

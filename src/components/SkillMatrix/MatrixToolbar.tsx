@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Group, Title, Tooltip, ActionIcon, Popover, Stack, MultiSelect, Button, Badge } from '@mantine/core';
 import {
     IconLayoutNavbarCollapse, IconPlus, IconUserPlus, IconFilter, IconEdit, IconUsersGroup,
@@ -7,6 +7,7 @@ import {
 } from '@tabler/icons-react';
 import { ViewTabs } from './ViewTabs';
 import { Department, EmployeeRole, Category, SavedView, Employee, Skill } from '../../store/useStore';
+import { SubCategory } from '../../services/indexeddb';
 import { MetricMode } from '../../hooks/useMatrixState';
 import { usePrivacy } from '../../context/PrivacyContext';
 
@@ -41,6 +42,7 @@ interface MatrixToolbarProps {
     departments: Department[];
     roles: EmployeeRole[];
     categories: Category[];
+    subcategories: SubCategory[];
     skills: Skill[];
     isEditMode: boolean;
     setIsEditMode: (val: boolean) => void;
@@ -66,12 +68,36 @@ export const MatrixToolbar: React.FC<MatrixToolbarProps> = ({
     filtersOpened, setFiltersOpened, filterDepartments, setFilterDepartments, filterRoles, setFilterRoles,
     filterCategories, setFilterCategories, filterEmployees, setFilterEmployees,
     filterLevels, setFilterLevels, filterSkills, setFilterSkills, showOnlyGaps, setShowOnlyGaps,
-    employees, departments, roles, categories, skills, isEditMode, setIsEditMode,
+    employees, departments, roles, categories, subcategories, skills, isEditMode, setIsEditMode,
     setSkillDrawerOpened, setEmployeeDrawerOpened, savedViews, activeViewId, isViewDirty,
     handleSelectView, handleDeleteView, updateSavedView, handleUpdateCurrentView, handleClearView,
     setSaveViewModalOpened, focusEmployeeId, setFocusEmployeeId, reorderSavedViews
 }) => {
     const { anonymizeName } = usePrivacy();
+
+    const groupedSkillOptions = useMemo(() => {
+        const result: { group: string; items: { value: string; label: string }[] }[] = [];
+        categories.forEach(cat => {
+            const catSubs = subcategories.filter(sc => sc.categoryId === cat.id);
+            catSubs.forEach(sub => {
+                const subSkills = skills.filter(s => s.subCategoryId === sub.id);
+                if (subSkills.length > 0) {
+                    result.push({
+                        group: `${cat.name}  ›  ${sub.name}`,
+                        items: subSkills.map(s => ({ value: s.id!, label: s.name })),
+                    });
+                }
+            });
+        });
+        // Skills ohne Zuordnung
+        const assignedIds = new Set(skills.filter(s => s.subCategoryId).map(s => s.id!));
+        const unassigned = skills.filter(s => !assignedIds.has(s.id!));
+        if (unassigned.length > 0) {
+            result.push({ group: 'Ohne Kategorie', items: unassigned.map(s => ({ value: s.id!, label: s.name })) });
+        }
+        return result;
+    }, [categories, subcategories, skills]);
+
     return (
         <>
             <Group justify="space-between" align="center">
@@ -222,7 +248,7 @@ export const MatrixToolbar: React.FC<MatrixToolbarProps> = ({
                                         comboboxProps={{ withinPortal: false }}
                                         label="Spezifische Skills"
                                         placeholder="Suchen & Wählen"
-                                        data={skills.map(s => ({ value: s.id!, label: s.name }))}
+                                        data={groupedSkillOptions}
                                         value={filterSkills}
                                         onChange={setFilterSkills}
                                         clearable
