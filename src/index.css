@@ -95,3 +95,26 @@ button:focus-visible {
   transform-origin: center center !important;
   display: inline-flex !important;
 }
+
+/* Formatierte Rollenbeschreibung (HTML aus RichTextEditor) */
+.role-description-html p {
+  margin: 0 0 0.4em;
+}
+.role-description-html p:last-child {
+  margin-bottom: 0;
+}
+.role-description-html ul,
+.role-description-html ol {
+  margin: 0.2em 0 0.4em 1.4em;
+  padding: 0;
+}
+.role-description-html li {
+  margin-bottom: 0.1em;
+}
+.role-description-html strong {
+  font-weight: 600;
+}
+.role-description-html a {
+  color: var(--mantine-color-blue-6);
+  text-decoration: underline;
+}

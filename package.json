@@ -1,7 +1,7 @@
 {
   "name": "skillgrid",
   "private": true,
-  "version": "2.22.2",
+  "version": "2.23.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -26,7 +26,11 @@
     "@mantine/hooks": "^8.3.14",
     "@mantine/modals": "^8.3.14",
     "@mantine/notifications": "^8.3.14",
+    "@mantine/tiptap": "^8.3.16",
     "@tabler/icons-react": "^3.36.1",
+    "@tiptap/pm": "^3.20.1",
+    "@tiptap/react": "^3.20.1",
+    "@tiptap/starter-kit": "^3.20.1",
     "dayjs": "^1.11.19",
     "jspdf": "^4.0.0",
     "jspdf-autotable": "^5.0.7",

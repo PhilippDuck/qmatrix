@@ -30,6 +30,22 @@ export const RoleDetailDrawer: React.FC<RoleDetailDrawerProps> = ({ roleId, onCl
 
     const role = useMemo(() => roles.find(r => r.id === roleId) ?? null, [roleId, roles]);
 
+    const inheritedDescriptions = useMemo(() => {
+        if (!role?.inheritsFromId) return [];
+        const chain: { roleName: string; description: string }[] = [];
+        const visited = new Set<string>();
+        let currentId: string | null = role.inheritsFromId;
+        while (currentId && !visited.has(currentId)) {
+            visited.add(currentId);
+            const parent = roles.find(r => r.id === currentId);
+            if (!parent) break;
+            if (parent.description) chain.unshift({ roleName: parent.name, description: parent.description });
+            currentId = parent.inheritsFromId ?? null;
+        }
+        return chain;
+    }, [role, roles]);
+
+
     const inheritedSkills = useMemo(() => {
         const skillsMap = new Map<string, { skillId: string; level: number; sourceRoleName: string }>();
         if (!role?.inheritsFromId) return [];
@@ -248,9 +264,30 @@ export const RoleDetailDrawer: React.FC<RoleDetailDrawerProps> = ({ roleId, onCl
                     {/* Beschreibung */}
                     <Stack gap={4}>
                         <Text size="sm" fw={600} c="dimmed">Beschreibung</Text>
-                        {role.description ? (
-                            <Text size="sm">{role.description}</Text>
-                        ) : (
+                        {(inheritedDescriptions.length > 0 || role.description) ? (() => {
+                            const all = [
+                                ...inheritedDescriptions,
+                                ...(role.description ? [{ roleName: role.name, description: role.description }] : []),
+                            ];
+                            return (
+                                <Stack gap={8}>
+                                    {all.map((entry, i) => (
+                                        <Box key={i}>
+                                            {i > 0 && (
+                                                <Text size="xs" c="dimmed" fw={500} mb={2}>
+                                                    Ergänzung durch Rolle <strong>{entry.roleName}</strong>:
+                                                </Text>
+                                            )}
+                                            <div
+                                                className="role-description-html"
+                                                dangerouslySetInnerHTML={{ __html: entry.description }}
+                                                style={{ fontSize: "var(--mantine-font-size-sm)" }}
+                                            />
+                                        </Box>
+                                    ))}
+                                </Stack>
+                            );
+                        })() : (
                             <Text size="sm" c="dimmed" fs="italic">Keine Beschreibung hinterlegt.</Text>
                         )}
                     </Stack>

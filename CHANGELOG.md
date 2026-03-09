@@ -1,4 +1,15 @@
 
+## [2.23.0] - 2026-03-09
+
+### Neue Funktionen
+- **Rich-Text-Editor für Rollenbeschreibung**: Das Beschreibungsfeld im Bearbeitungs-Drawer für Rollen ist nun ein vollwertiger Rich-Text-Editor (Mantine Tiptap). Unterstützt Fettschrift, Kursiv, Unterstrichen, Durchgestrichen, Aufzählungslisten, nummerierte Listen und Links.
+- **Formatierte Beschreibung in der Detailansicht**: Die Rollenbeschreibung wird in der Detailansicht formatiert (HTML) angezeigt statt als Plaintext.
+- **Beschreibungs-Vererbung**: Rollen, die von einer anderen Rolle erben, sehen im Bearbeitungs-Drawer die geerbte(n) Beschreibung(en) als read-only Vorschau (von Wurzel bis direktem Elternteil). So ist klar, was bereits steht, bevor eine eigene Ergänzung geschrieben wird.
+- **Kombinierte Beschreibung mit Quellenangabe**: In der Detailansicht werden die Beschreibungen aller Vererbungsstufen kombiniert dargestellt. Die Ursprungsbeschreibung erscheint ohne Label; jede weitere Ergänzung erhält ein kleines Label „Ergänzung durch Rolle **X**:".
+
+### Verbesserungen
+- **Rollenliste – Beschreibungs-Hover**: Der Tooltip in der Rollentabelle zeigt die Beschreibung nun ebenfalls formatiert (HTML) an; der abgeschnittene Vorschautext wird als Plaintext ohne HTML-Tags dargestellt.
+
 ## [2.22.2] - 2026-03-06
 
 ### Verbesserungen

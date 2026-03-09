@@ -21,7 +21,6 @@ import {
     Modal,
     Box,
     Tooltip,
-    Textarea,
     ThemeIcon,
     Accordion,
 } from "@mantine/core";
@@ -32,7 +31,28 @@ import { EmployeeRole } from "../../services/indexeddb";
 import { RoleOrgChart } from "./RoleOrgChart";
 import { RoleIconPicker, getIconByName } from "../shared/RoleIconPicker";
 import { RoleDetailDrawer } from "../shared/RoleDetailDrawer";
+import { RoleRichTextEditorField } from "../shared/RoleRichTextEditor";
 import { LEVELS } from "../../constants/skillLevels";
+
+const stripHtml = (html: string) => html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+
+/** Gibt die Vererbungskette von Wurzel bis direktem Elternteil zurück */
+function resolveInheritedDescriptions(
+    startId: string | null,
+    allRoles: EmployeeRole[]
+): { roleName: string; description: string }[] {
+    const chain: { roleName: string; description: string }[] = [];
+    const visited = new Set<string>();
+    let currentId: string | null = startId;
+    while (currentId && !visited.has(currentId)) {
+        visited.add(currentId);
+        const parent = allRoles.find(r => r.id === currentId);
+        if (!parent) break;
+        if (parent.description) chain.unshift({ roleName: parent.name, description: parent.description });
+        currentId = parent.inheritsFromId ?? null;
+    }
+    return chain;
+}
 
 const sliderMarksWithTooltips = [0, 25, 50, 75, 100].map(val => {
     const lvl = LEVELS.find((l) => l.value === val);
@@ -80,6 +100,12 @@ export const RoleManager: React.FC<RoleManagerProps> = ({ initialEditRoleId, onC
     const [icon, setIcon] = useState<string>("IconUser");
     const [requiredSkills, setRequiredSkills] = useState<{ skillId: string; level: number }[]>([]);
     const [loading, setLoading] = useState(false);
+
+    // Geerbte Beschreibungen für den Bearbeitungs-Drawer
+    const inheritedDescriptionsForEditor = useMemo(
+        () => resolveInheritedDescriptions(inheritsFrom, roles),
+        [inheritsFrom, roles]
+    );
 
     // Detail view
     const [detailRoleId, setDetailRoleId] = useState<string | null>(null);
@@ -380,9 +406,21 @@ export const RoleManager: React.FC<RoleManagerProps> = ({ initialEditRoleId, onC
                                                 </Table.Td>
                                                 <Table.Td>
                                                     {role.description ? (
-                                                        <Tooltip label={role.description} multiline w={300} position="top" withArrow>
-                                                            <Text size="sm" c="dimmed" truncate style={{ maxWidth: 200 }}>
-                                                                {role.description}
+                                                        <Tooltip
+                                                            label={
+                                                                <div
+                                                                    className="role-description-html"
+                                                                    dangerouslySetInnerHTML={{ __html: role.description }}
+                                                                    style={{ fontSize: "var(--mantine-font-size-xs)" }}
+                                                                />
+                                                            }
+                                                            multiline
+                                                            w={300}
+                                                            position="top"
+                                                            withArrow
+                                                        >
+                                                            <Text size="sm" c="dimmed" truncate style={{ maxWidth: 200, cursor: "help" }}>
+                                                                {stripHtml(role.description)}
                                                             </Text>
                                                         </Tooltip>
                                                     ) : (
@@ -487,13 +525,29 @@ export const RoleManager: React.FC<RoleManagerProps> = ({ initialEditRoleId, onC
                                 data-autofocus
                                 required
                             />
-                            <Textarea
-                                label="Beschreibung"
-                                placeholder="Zusätzliche Informationen zur Rolle"
-                                value={description}
-                                onChange={(e) => setDescription(e.currentTarget.value)}
-                                minRows={3}
-                            />
+                            <Stack gap="xs">
+                                {inheritedDescriptionsForEditor.length > 0 && (
+                                    <Stack gap={6}>
+                                        {inheritedDescriptionsForEditor.map((entry, i) => (
+                                            <Paper key={i} withBorder p="sm" radius="sm" bg="var(--mantine-color-default-hover)">
+                                                <Text size="xs" fw={600} c="dimmed" mb={4}>
+                                                    Geerbt von: {entry.roleName}
+                                                </Text>
+                                                <div
+                                                    className="role-description-html"
+                                                    dangerouslySetInnerHTML={{ __html: entry.description }}
+                                                    style={{ fontSize: "var(--mantine-font-size-sm)", opacity: 0.7 }}
+                                                />
+                                            </Paper>
+                                        ))}
+                                    </Stack>
+                                )}
+                                <RoleRichTextEditorField
+                                    value={description}
+                                    onChange={setDescription}
+                                    label={inheritedDescriptionsForEditor.length > 0 ? "Eigene Ergänzung" : "Beschreibung"}
+                                />
+                            </Stack>
                             <Select
                                 label="Erbt von (Optional)"
                                 placeholder="Keine Vererbung"
