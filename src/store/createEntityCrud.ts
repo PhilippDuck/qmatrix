@@ -4,7 +4,7 @@
  */
 
 import type { EntityType } from "../types";
-import { recordChange } from "./recordChange";
+import { recordChange, failAndMaybeReload } from "./recordChange";
 import type { AppState } from "./types";
 
 type Get = () => AppState;
@@ -90,13 +90,8 @@ export function createEntityCrudHandlers<
     set({ [config.listKey]: next } as Partial<AppState>);
   };
 
-  const fail = async (err: unknown, reload: boolean): Promise<never> => {
-    set({
-      error: err instanceof Error ? err.message : config.errorMessage || "Failed",
-    });
-    if (reload) await get().refreshAllData();
-    throw err;
-  };
+  const fail = (err: unknown, reload: boolean): Promise<never> =>
+    failAndMaybeReload(set, get, err, config.errorMessage || "Failed", reload);
 
   return {
     add: async (data) => {

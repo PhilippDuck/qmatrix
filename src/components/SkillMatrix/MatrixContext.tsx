@@ -5,6 +5,7 @@ import type {
   EmployeeRole,
   QualificationMeasure,
   QualificationPlan,
+  Skill,
 } from "../../store/useStore";
 import type { NavigateFn } from "../../types";
 import type { MatrixColumn } from "./types";
@@ -15,6 +16,8 @@ export type MetricMode = "avg" | "max" | "fulfillment";
 export interface MatrixContextValue {
   columns: MatrixColumn[];
   employees: Employee[];
+  /** Currently displayed (filtered) skills */
+  skills: Skill[];
   roles: EmployeeRole[];
   labelWidth: number;
   isEditMode: boolean;
@@ -87,6 +90,7 @@ export function useMatrixContextValue(
     [
       value.columns,
       value.employees,
+      value.skills,
       value.roles,
       value.labelWidth,
       value.isEditMode,

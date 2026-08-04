@@ -10,28 +10,19 @@ import { getIconByName } from "../shared/RoleIconPicker";
 import { usePrivacy } from "../../context/PrivacyContext";
 import { useEmployeeMetrics } from "../../hooks/useEmployeeMetrics";
 
-import { MatrixColumn } from "./types";
 import { MatrixLegend } from "./MatrixLegend";
 import type { NavigateFn } from "../../types";
+import { useMatrixContext } from "./MatrixContext";
 
 interface MatrixHeaderProps {
-  columns: MatrixColumn[];
-  employees: Employee[];
   focusEmployeeId: string | null;
   onFocusChange: (employeeId: string | null) => void;
   calculateEmployeeAverage: (employeeId: string) => number | null;
-  skills: Skill[];
-  getAssessment: (empId: string, skillId: string) => Assessment | undefined;
   onEditEmployee: (employeeId: string) => void;
-  showMaxValues: 'avg' | 'max' | 'fulfillment';
-  isEditMode: boolean;
   onAddEmployee: () => void;
-  onNavigate?: NavigateFn;
-  labelWidth?: number;
-  employeeSort: 'asc' | 'desc' | null;
-  onEmployeeSortChange: (sort: 'asc' | 'desc' | null) => void;
-  skillSort: 'asc' | 'desc' | null;
-  onSkillSortChange: (sort: 'asc' | 'desc' | null) => void;
+  employeeSort: "asc" | "desc" | null;
+  onEmployeeSortChange: (sort: "asc" | "desc" | null) => void;
+  onSkillSortChange: (sort: "asc" | "desc" | null) => void;
 }
 
 const EmployeeInfoCard: React.FC<{
@@ -55,8 +46,6 @@ const EmployeeInfoCard: React.FC<{
   );
   const { anonymizeName } = usePrivacy();
   const [history, setHistory] = useState<AssessmentLogEntry[]>([]);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [loadingHistory, setLoadingHistory] = useState(true);
 
   // Hook for metrics
   const {
@@ -79,7 +68,6 @@ const EmployeeInfoCard: React.FC<{
   useEffect(() => {
     getHistory(emp.id!).then(data => {
       setHistory(data.sort((a, b) => b.timestamp - a.timestamp).slice(0, 3));
-      setLoadingHistory(false);
     });
   }, [emp.id, getHistory]);
 
@@ -351,37 +339,36 @@ const EmployeeInfoCard: React.FC<{
 }
 
 export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
-  columns,
-  employees,
   focusEmployeeId,
   onFocusChange,
   calculateEmployeeAverage,
-  skills,
-  getAssessment,
   onEditEmployee,
-  showMaxValues,
-  isEditMode,
   onAddEmployee,
-  onNavigate,
-  labelWidth,
   employeeSort,
   onEmployeeSortChange,
-  skillSort,
   onSkillSortChange,
 }) => {
+  const {
+    columns,
+    employees,
+    skills,
+    roles,
+    getAssessment,
+    showMaxValues,
+    isEditMode,
+    labelWidth,
+    onNavigate,
+    skillSort,
+    qualificationPlans,
+  } = useMatrixContext();
+
   const { anonymizeName } = usePrivacy();
-  const { roles, qualificationPlans } = useStore(
-    useShallow((s) => ({
-      roles: s.roles,
-      qualificationPlans: s.qualificationPlans,
-    }))
-  );
   const { cellSize, headerHeight } = MATRIX_LAYOUT;
   const [detailRoleId, setDetailRoleId] = useState<string | null>(null);
 
   const handleEditRole = (role: { id?: string }) => {
     setDetailRoleId(null);
-    onNavigate?.('data', { tab: 'roles', editRoleId: role.id });
+    onNavigate?.("data", { tab: "roles", editRoleId: role.id });
   };
   const effectiveLabelWidth = labelWidth || MATRIX_LAYOUT.labelWidth;
 

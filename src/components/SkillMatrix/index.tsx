@@ -660,6 +660,7 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = React.memo(({ onNavigate 
   const matrixCtx = useMatrixContextValue({
     columns: matrixColumns,
     employees: displayedEmployees,
+    skills: displayedSkills,
     roles,
     labelWidth: responsiveLabelWidth,
     isEditMode,
@@ -795,25 +796,16 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = React.memo(({ onNavigate 
                     }}
                   >
                     <MatrixHeader
-                      columns={matrixColumns}
-                      employees={displayedEmployees}
                       focusEmployeeId={focusEmployeeId}
                       onFocusChange={setFocusEmployeeId}
                       calculateEmployeeAverage={calculateEmployeeAverage}
-                      skills={displayedSkills}
-                      getAssessment={getAssessmentFast}
                       onEditEmployee={handleEditEmployee}
-                      showMaxValues={metricMode}
-                      isEditMode={isEditMode}
                       onAddEmployee={() => {
                         setEditingEmployeeId(null);
                         setEmployeeDrawerOpened(true);
                       }}
-                      onNavigate={onNavigate}
-                      labelWidth={responsiveLabelWidth}
                       employeeSort={employeeSort}
                       onEmployeeSortChange={setEmployeeSort}
-                      skillSort={skillSort}
                       onSkillSortChange={setSkillSort}
                     />
                   </div>

@@ -39,7 +39,9 @@ export async function recordChange(
 
 /** Standard error path: set error, optionally reload, rethrow. */
 export async function failAndMaybeReload(
-  set: (partial: Partial<AppState>) => void,
+  set: (
+    partial: Partial<AppState> | ((state: AppState) => Partial<AppState>)
+  ) => void,
   get: () => AppState,
   err: unknown,
   message: string,
