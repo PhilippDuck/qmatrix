@@ -232,12 +232,12 @@ function ResetAndCloseButton() {
                 await clearAllData();
                 notifications.show({ title: 'Zurückgesetzt', message: 'Alle Daten wurden gelöscht.', color: 'blue', autoClose: 1500 });
                 setTimeout(() => window.close(), 1200);
-              } catch (error) {
+              } catch {
                 notifications.show({ title: 'Fehler', message: 'Fehler beim Löschen.', color: 'red' });
               }
             },
           });
-        } catch (error) {
+        } catch {
           notifications.show({ title: 'Fehler', message: 'Fehler beim Export.', color: 'red' });
         }
       },
