@@ -1,4 +1,21 @@
 
+## [2.24.0] - 2026-08-04
+
+### Verbesserungen
+- **Architektur – Zustand-Store**: Store in Domain-Slices (Core, Employee, Hierarchy, Assessment, Org, Qualification, Views, History, DataManagement) aufgeteilt; generische Entity-CRUD-Factory für optimistische Mutations + Historie.
+- **Architektur – Domain-Typen**: Domain-Interfaces als Single Source of Truth unter `src/types/`; Load-Zeit-Migrationen und Skill-Gap-Logik aus dem Store extrahiert.
+- **Performance – Store-Selektoren**: Komponenten abonnieren nur benötigte Store-Felder (`useShallow`), statt des gesamten States.
+- **Skill-Matrix – Context**: Prop-Drilling in Category-/Subcategory-/Skill-Rows und Header durch `MatrixProvider` ersetzt.
+- **App-Shell TypeScript**: Entry-Point und App-Shell (`App.tsx` / `main.tsx`) typisiert; gemeinsame Navigationstypen (`AppTab`, `NavParams`).
+
+### Behobene Fehler
+- **Production-Build**: Fehlende `dompurify`-Dependency (jspdf) behoben – `npm run build` läuft wieder durch.
+- **ESLint**: Globals für Node/Vite (`process`, `__APP_VERSION__`) und ungenutzte Catch-Variablen korrigiert.
+
+### Sicherheit
+- **npm audit**: Bekannte Vulnerabilities per `npm audit fix` geschlossen (0 gemeldet).
+- **Abhängigkeiten**: Unbenutztes `lucide-react` entfernt.
+
 ## [2.23.0] - 2026-03-09
 
 ### Neue Funktionen
