@@ -1,28 +1,22 @@
 import { create } from 'zustand';
+import { db } from "../services/indexeddb";
+import { runLoadTimeMigrations } from "../services/dataMigrations";
 import {
-    db,
-    Employee,
-    Category,
-    SubCategory,
-    Skill,
+    computeSkillGapsForEmployee,
+    findPotentialMentors,
+} from "../utils/skillGaps";
+import type {
     Assessment,
-    AssessmentLogEntry,
-    Department,
-    EmployeeRole,
     ExportData,
-    MergeReport,
-    MergeDiff,
-    QualificationPlan as DBQualificationPlan,
-    QualificationMeasure,
-    SavedView,
-    ChangeHistoryEntry,
     EntityType,
     ChangeAction,
-} from "../services/indexeddb";
+} from "../types";
+import type { AppState } from "./types";
 
 /** Re-export for shallow multi-field selectors: useStore(useShallow(s => ({ ... }))) */
 export { useShallow } from 'zustand/react/shallow';
 
+// Re-export domain types so existing `from "../store/useStore"` imports keep working
 export type {
     Employee,
     Category,
@@ -35,142 +29,24 @@ export type {
     ExportData,
     MergeReport,
     MergeDiff,
+    QualificationPlan,
     QualificationMeasure,
     SavedView,
     ChangeHistoryEntry,
     EntityType,
     ChangeAction,
-};
+    SkillGap,
+} from "../types";
+export type { AppState } from "./types";
 
-export interface QualificationPlan extends Omit<DBQualificationPlan, 'targetRoleId'> {
-    targetRoleId?: string;
-}
-
-export interface SkillGap {
-    skillId: string;
-    skillName: string;
-    categoryId: string;
-    categoryName: string;
-    subCategoryId: string;
-    subCategoryName: string;
-    currentLevel: number;
-    targetLevel: number;
-    gap: number;
-}
-
-interface AppState {
-    employees: Employee[];
-    categories: Category[];
-    subcategories: SubCategory[];
-    skills: Skill[];
-    assessments: Assessment[];
-    departments: Department[];
-    roles: EmployeeRole[];
-    qualificationPlans: QualificationPlan[];
-    qualificationMeasures: QualificationMeasure[];
-    savedViews: SavedView[];
-    changeHistory: ChangeHistoryEntry[];
-    projectTitle: string;
-    dataHash: string;
-    loading: boolean;
-    error: string | null;
-
-    initDb: () => Promise<void>;
-    refreshAllData: () => Promise<void>;
-
-    // Employee methods
-    addEmployee: (employee: Omit<Employee, "id">) => Promise<void>;
-    updateEmployee: (id: string, employee: Omit<Employee, "id">) => Promise<void>;
-    deleteEmployee: (id: string) => Promise<void>;
-
-    // Category methods
-    addCategory: (category: Omit<Category, "id">) => Promise<string>;
-    updateCategory: (id: string, category: Omit<Category, "id">) => Promise<void>;
-    deleteCategory: (id: string) => Promise<void>;
-
-    // SubCategory methods
-    addSubCategory: (subCategory: Omit<SubCategory, "id">) => Promise<string>;
-    updateSubCategory: (id: string, subCategory: Omit<SubCategory, "id">) => Promise<void>;
-    deleteSubCategory: (id: string) => Promise<void>;
-    getSubCategoriesByCategory: (categoryId: string) => SubCategory[];
-    getSubCategoriesByParent: (parentSubCategoryId: string) => SubCategory[];
-
-    // Skill methods
-    addSkill: (skill: Omit<Skill, "id">) => Promise<void>;
-    updateSkill: (id: string, skill: Omit<Skill, "id">) => Promise<void>;
-    deleteSkill: (id: string) => Promise<void>;
-    getSkillsBySubCategory: (subCategoryId: string) => Skill[];
-
-    // Assessment methods
-    setAssessment: (employeeId: string, skillId: string, level: -1 | 0 | 25 | 50 | 75 | 100, note?: string) => Promise<void>;
-    setTargetLevel: (employeeId: string, skillId: string, targetLevel: number | undefined) => Promise<void>;
-    getAssessmentsByEmployee: (employeeId: string) => Assessment[];
-    getAssessment: (employeeId: string, skillId: string) => Assessment | undefined;
-
-    // History methods
-    getHistory: (employeeId: string) => Promise<AssessmentLogEntry[]>;
-    getAllHistory: () => Promise<AssessmentLogEntry[]>;
-
-    // Department methods
-    addDepartment: (name: string) => Promise<string>;
-    updateDepartment: (id: string, department: Omit<Department, "id">) => Promise<void>;
-    deleteDepartment: (id: string) => Promise<void>;
-
-    // Role methods
-    addRole: (role: Omit<EmployeeRole, "id">) => Promise<string>;
-    updateRole: (id: string, role: Omit<EmployeeRole, "id">) => Promise<void>;
-    deleteRole: (id: string) => Promise<void>;
-    updateSkillsForRole: (roleId: string, skillIds: string[]) => Promise<void>;
-
-    // Settings
-    updateProjectTitle: (title: string) => Promise<void>;
-
-    // Qualification Plan methods
-    addQualificationPlan: (plan: Omit<QualificationPlan, "id" | "createdAt" | "updatedAt">) => Promise<string>;
-    updateQualificationPlan: (id: string, plan: Partial<Omit<QualificationPlan, "id" | "createdAt">>) => Promise<void>;
-    deleteQualificationPlan: (id: string) => Promise<void>;
-    getQualificationPlansForEmployee: (employeeId: string) => QualificationPlan[];
-
-    // Qualification Measure methods
-    addQualificationMeasure: (measure: Omit<QualificationMeasure, "id" | "updatedAt">) => Promise<string>;
-    updateQualificationMeasure: (id: string, measure: Partial<Omit<QualificationMeasure, "id">>) => Promise<void>;
-    deleteQualificationMeasure: (id: string) => Promise<void>;
-    getQualificationMeasuresForPlan: (planId: string) => QualificationMeasure[];
-
-    // Saved View methods
-    addSavedView: (view: Omit<SavedView, "id" | "updatedAt">) => Promise<string>;
-    updateSavedView: (id: string, view: Omit<SavedView, "id" | "updatedAt">) => Promise<void>;
-    deleteSavedView: (id: string) => Promise<void>;
-    reorderSavedViews: (viewIds: string[]) => Promise<void>;
-
-    // Helper methods
-    getSkillGapsForEmployee: (employeeId: string, targetRoleId?: string | null) => SkillGap[];
-    getPotentialMentors: (skillId: string, excludeEmployeeId?: string) => Employee[];
-
-    // Data management
-    exportData: () => Promise<ExportData>;
-    importData: (jsonData: string) => Promise<void>;
-    mergeData: (jsonData: string) => Promise<MergeReport>;
-    diffData: (jsonData: string) => Promise<MergeDiff>;
-    applyMerge: (diff: MergeDiff, selectedIds: string[]) => Promise<MergeReport>;
-    clearAllData: () => Promise<void>;
-
-    // Change History
-    undoChange: (historyEntryId: string) => Promise<void>;
-    refreshChangeHistory: () => Promise<void>;
-
-    hasUnsavedChanges: boolean;
-    setHasUnsavedChanges: (val: boolean) => void;
-}
-
-// Helper to record changes inside the store
+// Helper to record changes; uses useStore.getState at call time (after create)
 const recordChangeHelper = async (
     entityType: EntityType,
     entityId: string,
     entityLabel: string,
     action: ChangeAction,
-    previousData: any | null,
-    newData: any | null
+    previousData: unknown | null,
+    newData: unknown | null
 ) => {
     try {
         await db.addChangeHistoryEntry({
@@ -226,7 +102,7 @@ export const useStore = create<AppState>((set, get) => ({
 
     refreshAllData: async () => {
         try {
-            let [emps, cats, subcats, sks, asms, depts, rls, qPlans, qMeasures, settings, views, history, hash] = await Promise.all([
+            const [emps, cats, subcats, sks, asms, depts, rls, qPlans, qMeasures, settings, views, history, hash] = await Promise.all([
                 db.getEmployees(),
                 db.getCategories(),
                 db.getSubCategories(),
@@ -242,92 +118,27 @@ export const useStore = create<AppState>((set, get) => ({
                 db.getDataHash()
             ]);
 
-            const processedPlans = await Promise.all((qPlans || []).map(async (plan) => {
-                if ((plan.status as any) === 'draft') {
-                    const updated = { ...plan, status: 'active' as const, updatedAt: Date.now() };
-                    try { await db.execute("qualificationPlans", "put", updated); } catch (e) { console.error(e); }
-                    return updated;
-                }
-                return plan;
-            }));
-
-            const nowTimestamp = Date.now();
-            const processedMeasures = await Promise.all((qMeasures || []).map(async (m) => {
-                if (m.status === 'pending' && m.startDate && m.startDate <= nowTimestamp) {
-                    const updated = { ...m, status: 'in_progress' as const, updatedAt: nowTimestamp };
-                    try { await db.execute("qualificationMeasures", "put", updated); } catch (e) { console.error(e); }
-                    return updated;
-                }
-                return m;
-            }));
-
-            const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-            // Cleanup corrupted departments where name is a UUID
-            const corruptedDepts = depts?.filter(d => uuidRegex.test(d.name)) || [];
-            for (const badDept of corruptedDepts) {
-                await db.deleteDepartment(badDept.id!);
-            }
-            if (corruptedDepts.length > 0) {
-                depts = await db.getDepartments();
-            }
-
-            const updatedEmps = await Promise.all((emps || []).map(async (emp) => {
-                let modified = false;
-                let finalEmp = { ...emp };
-                const now = new Date();
-
-                // Migrate department name to ID
-                if (finalEmp.department && !depts?.some(d => d.id === finalEmp.department)) {
-                    if (uuidRegex.test(finalEmp.department)) {
-                        // It's a UUID, but not in depts. The department was deleted.
-                        finalEmp.department = undefined;
-                        modified = true;
-                    } else {
-                        // It looks like a name (or a missing ID)
-                        let deptId = depts?.find(d => d.name === finalEmp.department)?.id;
-                        if (!deptId) {
-                            // Department doesn't exist, create it
-                            deptId = await db.addDepartment(finalEmp.department);
-                            // Refresh departments so subsequent missing ones find it
-                            depts = await db.getDepartments();
-                        }
-                        finalEmp.department = deptId;
-                        modified = true;
-                    }
-                }
-
-                if (finalEmp.isActive !== false && finalEmp.deactivationDate && new Date(finalEmp.deactivationDate) <= now) {
-                    finalEmp.isActive = false;
-                    modified = true;
-                }
-                if (finalEmp.isActive === false && finalEmp.reactivationDate && new Date(finalEmp.reactivationDate) <= now) {
-                    finalEmp.isActive = true;
-                    modified = true;
-                }
-                if (modified && finalEmp.id) {
-                    try {
-                        const { id, updatedAt, ...rest } = finalEmp;
-                        await db.updateEmployee(id, rest);
-                    } catch (e) { console.error(e); }
-                }
-                return finalEmp;
-            }));
+            const migrated = await runLoadTimeMigrations(db, {
+                employees: emps || [],
+                departments: depts || [],
+                qualificationPlans: qPlans || [],
+                qualificationMeasures: qMeasures || [],
+            });
 
             set({
                 categories: cats || [],
                 subcategories: subcats || [],
                 skills: sks || [],
                 assessments: asms || [],
-                departments: depts || [],
+                departments: migrated.departments,
                 roles: rls || [],
-                qualificationPlans: processedPlans,
-                qualificationMeasures: processedMeasures,
+                qualificationPlans: migrated.qualificationPlans,
+                qualificationMeasures: migrated.qualificationMeasures,
                 savedViews: (views || []).sort((a, b) => (a.order ?? 9999) - (b.order ?? 9999)),
                 changeHistory: history || [],
                 projectTitle: settings?.projectTitle || "",
                 dataHash: hash || "",
-                employees: updatedEmps,
+                employees: migrated.employees,
                 loading: false,
                 error: null
             });
@@ -996,87 +807,28 @@ export const useStore = create<AppState>((set, get) => ({
 
     getSkillGapsForEmployee: (employeeId, targetRoleId) => {
         const state = get();
-        const employeeAssessments = state.assessments.filter((a) => a.employeeId === employeeId);
-        const assessmentMap = new Map(employeeAssessments.map((a) => [a.skillId, a.level]));
-        const assessmentTargetMap = new Map(employeeAssessments.map((a) => [a.skillId, a.targetLevel || 0]));
-
-        const requiredTargets = new Map<string, number>();
-
-        assessmentTargetMap.forEach((target, skillId) => {
-            if (target > 0) requiredTargets.set(skillId, target);
-        });
-
-        if (targetRoleId) {
-            const normalizedTargetId = targetRoleId.trim().toLowerCase();
-            let currentRole = state.roles.find((r) => r.id === targetRoleId || (r.name && r.name.trim().toLowerCase() === normalizedTargetId));
-            const roleRequirements = new Map<string, number>();
-            const visitedRoles = new Set<string>();
-
-            while (currentRole) {
-                if (visitedRoles.has(currentRole.id!)) break;
-                visitedRoles.add(currentRole.id!);
-
-                if (currentRole.requiredSkills) {
-                    currentRole.requiredSkills.forEach((req) => {
-                        if (!roleRequirements.has(req.skillId)) {
-                            roleRequirements.set(req.skillId, req.level);
-                        }
-                    });
-                }
-
-                if (currentRole.inheritsFromId) {
-                    const parentId = currentRole.inheritsFromId;
-                    const normalizedParentId = parentId.trim().toLowerCase();
-                    currentRole = state.roles.find((r) => r.id === parentId || (r.name && r.name.trim().toLowerCase() === normalizedParentId));
-                } else {
-                    currentRole = undefined;
-                }
-            }
-
-            roleRequirements.forEach((level, skillId) => {
-                const currentTarget = requiredTargets.get(skillId) || 0;
-                requiredTargets.set(skillId, Math.max(currentTarget, level));
-            });
-        }
-
-        const gaps: SkillGap[] = [];
-
-        requiredTargets.forEach((targetLevel, skillId) => {
-            const rawLevel = assessmentMap.get(skillId) ?? 0;
-            const currentLevel = rawLevel < 0 ? 0 : rawLevel;
-            const gap = targetLevel - currentLevel;
-
-            if (gap > 0) {
-                const skill = state.skills.find((s) => s.id === skillId);
-                if (skill) {
-                    const subCategory = state.subcategories.find((sc) => sc.id === skill.subCategoryId);
-                    const category = subCategory ? state.categories.find((c) => c.id === subCategory.categoryId) : undefined;
-
-                    gaps.push({
-                        skillId: skillId,
-                        skillName: skill.name,
-                        categoryId: category?.id || "",
-                        categoryName: category?.name || "",
-                        subCategoryId: subCategory?.id || "",
-                        subCategoryName: subCategory?.name || "",
-                        currentLevel,
-                        targetLevel,
-                        gap,
-                    });
-                }
-            }
-        });
-
-        return gaps.sort((a, b) => b.gap - a.gap);
+        return computeSkillGapsForEmployee(
+            {
+                assessments: state.assessments,
+                roles: state.roles,
+                skills: state.skills,
+                subcategories: state.subcategories,
+                categories: state.categories,
+                employees: state.employees,
+            },
+            employeeId,
+            targetRoleId
+        );
     },
 
     getPotentialMentors: (skillId, excludeEmployeeId) => {
         const state = get();
-        const qualifiedAssessments = state.assessments.filter(
-            (a) => a.skillId === skillId && a.level === 100 && a.employeeId !== excludeEmployeeId
+        return findPotentialMentors(
+            state.assessments,
+            state.employees,
+            skillId,
+            excludeEmployeeId
         );
-        const qualifiedEmployeeIds = new Set(qualifiedAssessments.map((a) => a.employeeId));
-        return state.employees.filter((e) => qualifiedEmployeeIds.has(e.id!));
     },
 
     exportData: async () => {

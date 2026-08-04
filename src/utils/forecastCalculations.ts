@@ -6,7 +6,7 @@
  * - Mitarbeiter-Abgänge (deactivationDate in der Zukunft)
  */
 
-import type { Employee, Assessment, QualificationMeasure, Skill, Category, SubCategory, EmployeeRole } from "../services/indexeddb";
+import type { Employee, Assessment, QualificationMeasure, Skill, Category, SubCategory, EmployeeRole } from "../types";
 import { getMaxRoleTargetForSkill } from "./skillCalculations";
 
 // ── Types ────────────────────────────────────────────────────────────

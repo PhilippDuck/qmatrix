@@ -1,210 +1,53 @@
 // IndexedDB Service für Qualifizierungsmatrix
+import type {
+  Employee,
+  Category,
+  SubCategory,
+  Skill,
+  Assessment,
+  AssessmentLogEntry,
+  Department,
+  EmployeeRole,
+  AppSettings,
+  QualificationPlan,
+  QualificationMeasure,
+  SavedView,
+  EntityType,
+  ChangeAction,
+  ChangeHistoryEntry,
+  ExportData,
+  MergeReport,
+  MergeItemDiff,
+  MergeDiff,
+  SkillLevel,
+} from "../types";
+
+// Re-export domain types for backward-compatible imports from this module
+export type {
+  Employee,
+  Category,
+  SubCategory,
+  Skill,
+  Assessment,
+  AssessmentLogEntry,
+  Department,
+  EmployeeRole,
+  AppSettings,
+  QualificationPlan,
+  QualificationMeasure,
+  SavedView,
+  EntityType,
+  ChangeAction,
+  ChangeHistoryEntry,
+  ExportData,
+  MergeReport,
+  MergeItemDiff,
+  MergeDiff,
+  SkillLevel,
+} from "../types";
+
 const DB_NAME = "QualificationMatrixDB";
 const DB_VERSION = 12;
-
-export interface Employee {
-  id?: string;
-  name: string;
-  department?: string;
-  roles?: string[];  // Multiple roles per employee
-  isActive?: boolean; // Default true if undefined
-  deactivationDate?: string; // ISO Date String
-  reactivationDate?: string; // ISO Date String
-  updatedAt?: number;
-}
-
-export interface Category {
-  id?: string;
-  name: string;
-  description?: string;
-  updatedAt?: number;
-}
-
-export interface SubCategory {
-  id?: string;
-  categoryId: string; // The root visual category
-  parentSubCategoryId?: string; // For nesting, if present
-  name: string;
-  description?: string;
-  updatedAt?: number;
-}
-
-export interface Skill {
-  id?: string;
-  subCategoryId: string;
-  name: string;
-  description?: string;
-  departmentId?: string;
-  requiredByRoleIds?: string[];
-  updatedAt?: number;
-}
-
-export interface Assessment {
-  id?: string;
-  employeeId: string;
-  skillId: string;
-  level: -1 | 0 | 25 | 50 | 75 | 100;
-  targetLevel?: number; // Individuelles Soll pro Mitarbeiter/Skill
-  updatedAt?: number;
-}
-
-export interface AssessmentLogEntry {
-  id?: string;
-  employeeId: string;
-  skillId: string;
-  previousLevel: number;
-  newLevel: number;
-  timestamp: number;
-  note?: string;
-}
-
-export interface Department {
-  id?: string;
-  name: string;
-  updatedAt?: number;
-}
-
-export interface EmployeeRole {
-  id?: string;
-  name: string;
-  description?: string;
-  inheritsFromId?: string;
-  icon?: string; // Tabler icon name, e.g. "IconUser"
-  requiredSkills?: { skillId: string; level: number }[];
-  updatedAt?: number;
-}
-
-export interface AppSettings {
-  id: string; // usually 'default'
-  projectTitle: string;
-  updatedAt: number;
-}
-
-export interface QualificationPlan {
-  id?: string;
-  employeeId: string;
-  targetRoleId: string;      // Zielrolle (Standard: aktuelle Rolle des MA)
-  status: 'active' | 'completed' | 'archived';
-  createdAt: number;
-  updatedAt: number;
-  notes?: string;
-}
-
-export interface QualificationMeasure {
-  id?: string;
-  planId: string;            // Referenz zum QualificationPlan
-  skillId: string;           // Welcher Skill wird trainiert
-  currentLevel: number;      // Ist-Level bei Erstellung (Snapshot)
-  startLevel: number;        // [NEW] Geplanter Start-Level der Maßnahme (für Ketten)
-  targetLevel: number;       // Soll-Level (aus Rolle)
-  type: 'internal' | 'external' | 'self_learning';
-
-  // Für interne Schulung
-  mentorId?: string;         // MA mit 100% im Skill
-
-  // Für externe Schulung
-  externalProvider?: string;
-  externalCourse?: string;
-  estimatedCost?: number;
-
-  // Timeline
-  startDate?: number;
-  targetDate?: number;
-  completedDate?: number;
-
-  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
-  notes?: string;
-  updatedAt?: number;
-}
-
-export interface SavedView {
-  id?: string;
-  name: string;
-  order?: number;
-  config: {
-    filters: {
-      departments: string[];
-      roles: string[];
-      categories: string[];
-      employees?: string[];
-      levels?: number[];
-      skills?: string[];
-    };
-    groupingMode: 'none' | 'department' | 'role';
-    settings: {
-      showMaxValues?: boolean; // DEPRECATED
-      metricMode?: 'avg' | 'max' | 'fulfillment';
-      hideEmployees: boolean;
-      hideNaColumns?: boolean;
-      showInactive?: boolean;
-      showOnlyGaps?: boolean;
-    };
-    sort: {
-      employee: 'asc' | 'desc' | null;
-      skill: 'asc' | 'desc' | null;
-    };
-    collapsedStates: Record<string, boolean>;
-  };
-  updatedAt?: number;
-}
-
-// Change History Types
-export type EntityType =
-  | 'employee' | 'skill' | 'category' | 'subcategory'
-  | 'department' | 'role' | 'qualificationPlan'
-  | 'qualificationMeasure' | 'assessment' | 'savedView';
-
-export type ChangeAction = 'create' | 'update' | 'delete';
-
-export interface ChangeHistoryEntry {
-  id?: string;
-  entityType: EntityType;
-  entityId: string;
-  entityLabel: string;        // Lesbare Bezeichnung für UI
-  action: ChangeAction;
-  previousData: any | null;   // Für Undo bei update/delete
-  newData: any | null;        // Für Referenz bei create/update
-  timestamp: number;
-  undone: boolean;
-}
-
-export interface ExportData {
-  employees: Employee[];
-  categories: Category[];
-  subcategories: SubCategory[];
-  skills: Skill[];
-  assessments: Assessment[];
-  departments: Department[];
-  roles: EmployeeRole[];
-  settings: AppSettings;
-  history: AssessmentLogEntry[];
-  qualificationPlans?: QualificationPlan[];
-  qualificationMeasures?: QualificationMeasure[];
-  savedViews?: SavedView[];
-  changeHistory?: ChangeHistoryEntry[];
-}
-
-export interface MergeReport {
-  added: number;
-  updated: number;
-  skipped: number;
-  conflicts: number;
-}
-
-export interface MergeItemDiff {
-  id: string;
-  storeName: string;
-  label: string;
-  type: 'new' | 'update' | 'conflict' | 'identical';
-  localTimestamp?: number;
-  remoteTimestamp?: number;
-  localData?: any;
-  remoteData?: any;
-}
-
-export interface MergeDiff {
-  items: MergeItemDiff[];
-}
 
 class IndexedDBService {
   private db: IDBDatabase | null = null;

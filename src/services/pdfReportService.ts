@@ -1,6 +1,6 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { ExportData, AssessmentLogEntry } from "./indexeddb";
+import type { ExportData, AssessmentLogEntry } from "../types";
 
 interface CategoryPerformance {
     id: string;

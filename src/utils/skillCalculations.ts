@@ -1,5 +1,5 @@
 import { LEVELS } from "../constants/skillLevels";
-import { EmployeeRole } from "../services/indexeddb";
+import type { EmployeeRole } from "../types";
 
 /**
  * Berechnet den Score-Farbwert basierend auf dem Score.
