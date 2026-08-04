@@ -4,10 +4,15 @@ import "@mantine/core/styles.css";
 import "@mantine/charts/styles.css";
 import "@mantine/tiptap/styles.css";
 
-import App from "./App.jsx";
+import App from "./App";
 
-createRoot(document.getElementById("root")).render(
+const rootEl = document.getElementById("root");
+if (!rootEl) {
+  throw new Error("Root element #root not found");
+}
+
+createRoot(rootEl).render(
   <StrictMode>
     <App />
-  </StrictMode>,
+  </StrictMode>
 );

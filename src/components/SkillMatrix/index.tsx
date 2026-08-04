@@ -58,9 +58,10 @@ import { MatrixToolbar } from "./MatrixToolbar";
 
 import { SegmentedControl } from "@mantine/core";
 import { MatrixColumn } from "./types";
+import type { NavigateFn } from "../../types";
 
 interface SkillMatrixProps {
-  onNavigate?: (tab: string, params?: any) => void;
+  onNavigate?: NavigateFn;
 }
 
 export const SkillMatrix: React.FC<SkillMatrixProps> = React.memo(({ onNavigate }) => {

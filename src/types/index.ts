@@ -21,3 +21,5 @@ export type {
   MergeDiff,
   SkillGap,
 } from "./domain";
+
+export type { AppTab, NavParams, NavigateFn } from "./navigation";

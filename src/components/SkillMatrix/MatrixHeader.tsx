@@ -12,6 +12,7 @@ import { useEmployeeMetrics } from "../../hooks/useEmployeeMetrics";
 
 import { MatrixColumn } from "./types";
 import { MatrixLegend } from "./MatrixLegend";
+import type { NavigateFn } from "../../types";
 
 interface MatrixHeaderProps {
   columns: MatrixColumn[];
@@ -25,7 +26,7 @@ interface MatrixHeaderProps {
   showMaxValues: 'avg' | 'max' | 'fulfillment';
   isEditMode: boolean;
   onAddEmployee: () => void;
-  onNavigate?: (tab: string, params?: any) => void;
+  onNavigate?: NavigateFn;
   labelWidth?: number;
   employeeSort: 'asc' | 'desc' | null;
   onEmployeeSortChange: (sort: 'asc' | 'desc' | null) => void;
@@ -39,7 +40,7 @@ const EmployeeInfoCard: React.FC<{
   skills: Skill[];
   getAssessment: (empId: string, skillId: string) => Assessment | undefined;
   onEdit: () => void;
-  onNavigate?: (tab: string, params?: any) => void;
+  onNavigate?: NavigateFn;
 }> = ({ emp, avg, skills, getAssessment, onEdit, onNavigate }) => {
   const { getHistory, categories, subcategories, roles, departments, qualificationMeasures, qualificationPlans } = useStore(
     useShallow((s) => ({

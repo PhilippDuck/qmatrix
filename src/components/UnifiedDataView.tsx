@@ -14,8 +14,10 @@ import { RoleManager } from "./organization/RoleManager";
 import { CategoryManager } from "./CategoryManager";
 import { DataManagement } from "./DataManagement";
 
+import type { NavParams } from "../types";
+
 interface UnifiedDataViewProps {
-    navParams?: { tab?: string; editRoleId?: string } | null;
+    navParams?: NavParams | null;
     onClearParams?: () => void;
 }
 
