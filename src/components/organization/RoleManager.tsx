@@ -26,7 +26,7 @@ import {
 } from "@mantine/core";
 import { IconPlus, IconTrash, IconBadge, IconArrowUpRight, IconEdit, IconList, IconHierarchy, IconX, IconEye } from "@tabler/icons-react";
 import { useDisclosure } from "@mantine/hooks";
-import { useStore } from "../../store/useStore";
+import { useStore, useShallow } from "../../store/useStore";
 import { EmployeeRole } from "../../services/indexeddb";
 import { RoleOrgChart } from "./RoleOrgChart";
 import { RoleIconPicker, getIconByName } from "../shared/RoleIconPicker";
@@ -91,7 +91,19 @@ interface RoleManagerProps {
 }
 
 export const RoleManager: React.FC<RoleManagerProps> = ({ initialEditRoleId, onClearParams }) => {
-    const { roles, skills, employees, categories, subcategories, addRole, updateRole, deleteRole, updateSkillsForRole } = useStore();
+    const { roles, skills, employees, categories, subcategories, addRole, updateRole, deleteRole, updateSkillsForRole } = useStore(
+        useShallow((s) => ({
+            roles: s.roles,
+            skills: s.skills,
+            employees: s.employees,
+            categories: s.categories,
+            subcategories: s.subcategories,
+            addRole: s.addRole,
+            updateRole: s.updateRole,
+            deleteRole: s.deleteRole,
+            updateSkillsForRole: s.updateSkillsForRole,
+        }))
+    );
     const [opened, { open, close }] = useDisclosure(false);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [name, setName] = useState("");

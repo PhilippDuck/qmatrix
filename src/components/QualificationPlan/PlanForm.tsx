@@ -17,7 +17,7 @@ import {
 import { useHotkeys } from "@mantine/hooks";
 import { IconPlus, IconAlertCircle, IconTarget, IconUser } from "@tabler/icons-react";
 import { QualificationPlan, SkillGap } from "../../store/useStore";
-import { useStore } from "../../store/useStore";
+import { useStore, useShallow } from "../../store/useStore";
 import { usePrivacy } from "../../context/PrivacyContext";
 import { SkillGapAnalysis } from "./SkillGapAnalysis";
 
@@ -44,7 +44,17 @@ export const PlanForm: React.FC<PlanFormProps> = ({
     updateQualificationPlan,
     updateEmployee,
     getSkillGapsForEmployee,
-  } = useStore();
+  } = useStore(
+    useShallow((s) => ({
+      employees: s.employees,
+      roles: s.roles,
+      qualificationPlans: s.qualificationPlans,
+      addQualificationPlan: s.addQualificationPlan,
+      updateQualificationPlan: s.updateQualificationPlan,
+      updateEmployee: s.updateEmployee,
+      getSkillGapsForEmployee: s.getSkillGapsForEmployee,
+    }))
+  );
   const { anonymizeName } = usePrivacy();
 
   const [formData, setFormData] = useState({

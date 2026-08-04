@@ -14,7 +14,7 @@ import {
     Button,
 } from "@mantine/core";
 import { IconArrowUpRight, IconEdit } from "@tabler/icons-react";
-import { useStore } from "../../store/useStore";
+import { useStore, useShallow } from "../../store/useStore";
 import { EmployeeRole } from "../../services/indexeddb";
 import { getIconByName } from "./RoleIconPicker";
 import { LEVELS } from "../../constants/skillLevels";
@@ -26,7 +26,14 @@ interface RoleDetailDrawerProps {
 }
 
 export const RoleDetailDrawer: React.FC<RoleDetailDrawerProps> = ({ roleId, onClose, onEdit }) => {
-    const { roles, skills, categories, subcategories } = useStore();
+    const { roles, skills, categories, subcategories } = useStore(
+        useShallow((s) => ({
+            roles: s.roles,
+            skills: s.skills,
+            categories: s.categories,
+            subcategories: s.subcategories,
+        }))
+    );
 
     const role = useMemo(() => roles.find(r => r.id === roleId) ?? null, [roleId, roles]);
 

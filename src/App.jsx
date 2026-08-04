@@ -45,7 +45,7 @@ import {
 } from "@tabler/icons-react";
 
 import { modals } from "@mantine/modals";
-import { useStore } from "./store/useStore";
+import { useStore, useShallow } from "./store/useStore";
 import { UnifiedDataView } from "./components/UnifiedDataView";
 import { SkillMatrix } from "./components/SkillMatrix";
 import { DataManagement } from "./components/DataManagement";
@@ -199,7 +199,12 @@ function SaveButton({ hasUnsavedChanges, onSave, lastUpdate }) {
 }
 
 function ResetAndCloseButton() {
-  const { clearAllData, exportData } = useStore();
+  const { clearAllData, exportData } = useStore(
+    useShallow((s) => ({
+      clearAllData: s.clearAllData,
+      exportData: s.exportData,
+    }))
+  );
 
   const handleResetAndClose = () => {
     // Schritt 1: Export anstoßen
@@ -259,7 +264,18 @@ function ResetAndCloseButton() {
 }
 
 function AppContent() {
-  const { loading, exportData, projectTitle, updateProjectTitle, changeHistory, undoChange, initDb, hasUnsavedChanges } = useStore();
+  const { loading, exportData, projectTitle, updateProjectTitle, changeHistory, undoChange, initDb, hasUnsavedChanges } = useStore(
+    useShallow((s) => ({
+      loading: s.loading,
+      exportData: s.exportData,
+      projectTitle: s.projectTitle,
+      updateProjectTitle: s.updateProjectTitle,
+      changeHistory: s.changeHistory,
+      undoChange: s.undoChange,
+      initDb: s.initDb,
+      hasUnsavedChanges: s.hasUnsavedChanges,
+    }))
+  );
 
   useEffect(() => {
     initDb();

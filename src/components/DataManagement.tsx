@@ -32,7 +32,7 @@ import {
   IconFileText,
 } from "@tabler/icons-react";
 import { MergeReport, MergeDiff, MergeItemDiff } from "../store/useStore";
-import { useStore } from "../store/useStore";
+import { useStore, useShallow } from "../store/useStore";
 import { generateQuarterlyReport } from "../services/pdfReportService";
 import { useDisclosure } from "@mantine/hooks";
 import { modals } from "@mantine/modals";
@@ -44,7 +44,20 @@ interface ActionInfo {
 }
 
 export const DataManagement = () => {
-  const { exportData, importData, mergeData, diffData, applyMerge, clearAllData, employees, skills, projectTitle } = useStore();
+  const { exportData, importData, mergeData, diffData, applyMerge, clearAllData, employees, skills, projectTitle, dataHash } = useStore(
+    useShallow((s) => ({
+      exportData: s.exportData,
+      importData: s.importData,
+      mergeData: s.mergeData,
+      diffData: s.diffData,
+      applyMerge: s.applyMerge,
+      clearAllData: s.clearAllData,
+      employees: s.employees,
+      skills: s.skills,
+      projectTitle: s.projectTitle,
+      dataHash: s.dataHash,
+    }))
+  );
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mergeInputRef = useRef<HTMLInputElement>(null);
@@ -225,7 +238,7 @@ export const DataManagement = () => {
                   styles={{ label: { fontFamily: 'monospace', letterSpacing: '1px' } }}
                   title="Dieser Hash-Code ist identisch, wenn zwei Personen denselben Datenstand haben."
                 >
-                  {useStore().dataHash || "CALC..."}
+                  {dataHash || "CALC..."}
                 </Badge>
               </Stack>
               <Divider orientation="vertical" />

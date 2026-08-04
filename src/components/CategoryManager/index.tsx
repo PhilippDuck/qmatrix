@@ -3,7 +3,7 @@ import { Box, Group, Title, Tabs, Badge, ActionIcon, Tooltip, Text } from "@mant
 import { useDisclosure } from "@mantine/hooks";
 import { modals } from "@mantine/modals";
 import { IconList, IconHierarchy, IconClipboardOff } from "@tabler/icons-react";
-import { useStore } from "../../store/useStore";
+import { useStore, useShallow } from "../../store/useStore";
 import { CategoryColumn } from "./CategoryColumn";
 import { SubcategoryColumn } from "./SubcategoryColumn";
 import { SkillColumn } from "./SkillColumn";
@@ -28,7 +28,28 @@ export const CategoryManager: React.FC = () => {
     roles,
     skills,
     subcategories,
-  } = useStore();
+    projectTitle,
+  } = useStore(
+    useShallow((s) => ({
+      categories: s.categories,
+      addCategory: s.addCategory,
+      updateCategory: s.updateCategory,
+      deleteCategory: s.deleteCategory,
+      addSubCategory: s.addSubCategory,
+      updateSubCategory: s.updateSubCategory,
+      deleteSubCategory: s.deleteSubCategory,
+      addSkill: s.addSkill,
+      updateSkill: s.updateSkill,
+      deleteSkill: s.deleteSkill,
+      getSubCategoriesByCategory: s.getSubCategoriesByCategory,
+      getSkillsBySubCategory: s.getSkillsBySubCategory,
+      departments: s.departments,
+      roles: s.roles,
+      skills: s.skills,
+      subcategories: s.subcategories,
+      projectTitle: s.projectTitle,
+    }))
+  );
 
   const [opened, { open, close }] = useDisclosure(false);
   const [formMode, setFormMode] = useState<FormMode>("category");
@@ -527,7 +548,7 @@ export const CategoryManager: React.FC = () => {
               subcategories={subcategories}
               skills={skills}
               roles={roles}
-              projectTitle={useStore().projectTitle} // Pass projectTitle
+              projectTitle={projectTitle}
               onEditCategory={(cat) => openForm("category", cat.id!, cat.name, cat.description || "")}
               onEditSubCategory={(sub) => {
                 setSelectedCategory(sub.categoryId);

@@ -44,7 +44,7 @@ import {
     IconSettings,
 } from "@tabler/icons-react";
 import { AssessmentLogEntry } from "../../store/useStore";
-import { useStore } from "../../store/useStore";
+import { useStore, useShallow } from "../../store/useStore";
 import { getScoreColor } from "../../utils/skillCalculations";
 import { getIconByName } from "../shared/RoleIconPicker";
 import {
@@ -142,7 +142,18 @@ export const Dashboard: React.FC = () => {
         departments,
         roles,
         getAllHistory
-    } = useStore();
+    } = useStore(
+        useShallow((s) => ({
+            employees: s.employees,
+            skills: s.skills,
+            assessments: s.assessments,
+            categories: s.categories,
+            subcategories: s.subcategories,
+            departments: s.departments,
+            roles: s.roles,
+            getAllHistory: s.getAllHistory,
+        }))
+    );
     const { colorScheme } = useMantineColorScheme();
     const isDark = colorScheme === 'dark';
 

@@ -20,6 +20,9 @@ import {
     ChangeAction,
 } from "../services/indexeddb";
 
+/** Re-export for shallow multi-field selectors: useStore(useShallow(s => ({ ... }))) */
+export { useShallow } from 'zustand/react/shallow';
+
 export type {
     Employee,
     Category,

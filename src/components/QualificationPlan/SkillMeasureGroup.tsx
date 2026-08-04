@@ -2,7 +2,7 @@ import React, { useMemo } from "react";
 import { Paper, Group, ThemeIcon, Text, Button, SimpleGrid, Stack } from "@mantine/core";
 import { IconTarget, IconPlus } from "@tabler/icons-react";
 import { QualificationMeasure, SkillGap } from "../../store/useStore";
-import { useStore } from "../../store/useStore";
+import { useStore, useShallow } from "../../store/useStore";
 import { MeasureCard } from "./MeasureCard";
 
 interface SkillMeasureGroupProps {
@@ -28,7 +28,14 @@ export const SkillMeasureGroup: React.FC<SkillMeasureGroupProps> = ({
     onStatusChange,
     onUpdateProgress,
 }) => {
-    const { skills, categories, subcategories, employees } = useStore();
+    const { skills, categories, subcategories, employees } = useStore(
+        useShallow((s) => ({
+            skills: s.skills,
+            categories: s.categories,
+            subcategories: s.subcategories,
+            employees: s.employees,
+        }))
+    );
 
     const skill = skills.find((s) => s.id === skillId);
     const subCategory = subcategories.find((s) => s.id === skill?.subCategoryId);

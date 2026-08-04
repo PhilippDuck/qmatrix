@@ -5,7 +5,7 @@ import { IconBuilding, IconHistory, IconTrendingUp, IconTrendingDown, IconMinus,
 import { MATRIX_LAYOUT } from "../../constants/skillLevels";
 import { getScoreColor, getMaxRoleTargetForSkill } from "../../utils/skillCalculations";
 import { Employee, Skill, Assessment, AssessmentLogEntry } from "../../store/useStore";
-import { useStore } from "../../store/useStore";
+import { useStore, useShallow } from "../../store/useStore";
 import { getIconByName } from "../shared/RoleIconPicker";
 import { usePrivacy } from "../../context/PrivacyContext";
 import { useEmployeeMetrics } from "../../hooks/useEmployeeMetrics";
@@ -41,7 +41,17 @@ const EmployeeInfoCard: React.FC<{
   onEdit: () => void;
   onNavigate?: (tab: string, params?: any) => void;
 }> = ({ emp, avg, skills, getAssessment, onEdit, onNavigate }) => {
-  const { getHistory, categories, subcategories, roles, departments, qualificationMeasures, qualificationPlans } = useStore();
+  const { getHistory, categories, subcategories, roles, departments, qualificationMeasures, qualificationPlans } = useStore(
+    useShallow((s) => ({
+      getHistory: s.getHistory,
+      categories: s.categories,
+      subcategories: s.subcategories,
+      roles: s.roles,
+      departments: s.departments,
+      qualificationMeasures: s.qualificationMeasures,
+      qualificationPlans: s.qualificationPlans,
+    }))
+  );
   const { anonymizeName } = usePrivacy();
   const [history, setHistory] = useState<AssessmentLogEntry[]>([]);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -359,7 +369,12 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
   onSkillSortChange,
 }) => {
   const { anonymizeName } = usePrivacy();
-  const { roles, qualificationPlans } = useStore();
+  const { roles, qualificationPlans } = useStore(
+    useShallow((s) => ({
+      roles: s.roles,
+      qualificationPlans: s.qualificationPlans,
+    }))
+  );
   const { cellSize, headerHeight } = MATRIX_LAYOUT;
   const [detailRoleId, setDetailRoleId] = useState<string | null>(null);
 

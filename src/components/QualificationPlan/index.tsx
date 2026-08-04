@@ -34,7 +34,7 @@ import {
   IconTrendingUp,
 } from "@tabler/icons-react";
 import { QualificationPlan as QualificationPlanType } from "../../store/useStore";
-import { useStore } from "../../store/useStore";
+import { useStore, useShallow } from "../../store/useStore";
 import { usePrivacy } from "../../context/PrivacyContext";
 import { PlanForm } from "./PlanForm";
 import { PlanDetail } from "./PlanDetail";
@@ -56,8 +56,19 @@ export const QualificationPlan: React.FC<QualificationPlanProps> = React.memo(({
     deleteQualificationPlan,
     updateQualificationPlan,
     getSkillGapsForEmployee,
-    assessments, // Import this
-  } = useStore();
+    assessments,
+  } = useStore(
+    useShallow((s) => ({
+      qualificationPlans: s.qualificationPlans,
+      qualificationMeasures: s.qualificationMeasures,
+      employees: s.employees,
+      roles: s.roles,
+      deleteQualificationPlan: s.deleteQualificationPlan,
+      updateQualificationPlan: s.updateQualificationPlan,
+      getSkillGapsForEmployee: s.getSkillGapsForEmployee,
+      assessments: s.assessments,
+    }))
+  );
   const { anonymizeName } = usePrivacy();
 
   const [activeTab, setActiveTab] = useState<string | null>(() => {

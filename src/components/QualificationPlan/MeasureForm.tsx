@@ -31,7 +31,7 @@ import {
   IconBook,
 } from "@tabler/icons-react";
 import { QualificationMeasure, SkillGap } from "../../store/useStore";
-import { useStore } from "../../store/useStore";
+import { useStore, useShallow } from "../../store/useStore";
 import { usePrivacy } from "../../context/PrivacyContext";
 import { MentorSuggestion } from "./MentorSuggestion";
 
@@ -63,7 +63,16 @@ export const MeasureForm: React.FC<MeasureFormProps> = ({
     getPotentialMentors,
     qualificationMeasures,
     qualificationPlans,
-  } = useStore();
+  } = useStore(
+    useShallow((s) => ({
+      skills: s.skills,
+      addQualificationMeasure: s.addQualificationMeasure,
+      updateQualificationMeasure: s.updateQualificationMeasure,
+      getPotentialMentors: s.getPotentialMentors,
+      qualificationMeasures: s.qualificationMeasures,
+      qualificationPlans: s.qualificationPlans,
+    }))
+  );
   const { anonymizeName } = usePrivacy();
   const computedColorScheme = useComputedColorScheme("light");
 

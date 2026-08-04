@@ -29,7 +29,7 @@ import {
     IconCalendarStats,
     IconSum,
 } from "@tabler/icons-react";
-import { useStore } from "../../store/useStore";
+import { useStore, useShallow } from "../../store/useStore";
 import { usePrivacy } from "../../context/PrivacyContext";
 import {
     generateForecastWithPlans,
@@ -461,7 +461,18 @@ export const ForecastView: React.FC = () => {
         categories,
         subcategories,
         roles,
-    } = useStore();
+    } = useStore(
+        useShallow((s) => ({
+            employees: s.employees,
+            assessments: s.assessments,
+            qualificationMeasures: s.qualificationMeasures,
+            qualificationPlans: s.qualificationPlans,
+            skills: s.skills,
+            categories: s.categories,
+            subcategories: s.subcategories,
+            roles: s.roles,
+        }))
+    );
     const { anonymizeName } = usePrivacy();
     const computedColorScheme = useComputedColorScheme("light");
     const isDark = computedColorScheme === "dark";

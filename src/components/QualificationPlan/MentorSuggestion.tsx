@@ -27,7 +27,7 @@ export const MentorSuggestion: React.FC<MentorSuggestionProps> = ({
   onSelect,
 }) => {
   const { anonymizeName, anonymizeInitials } = usePrivacy();
-  const { departments } = useStore();
+  const departments = useStore((s) => s.departments);
 
   if (mentors.length === 0) {
     return null;

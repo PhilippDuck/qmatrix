@@ -33,7 +33,7 @@ import {
   IconUserOff,
 } from "@tabler/icons-react";
 import { Employee, SavedView } from "../../store/useStore";
-import { useStore } from "../../store/useStore";
+import { useStore, useShallow } from "../../store/useStore";
 import { ViewTabs } from "./ViewTabs";
 import { SaveViewModal } from "./SaveViewModal";
 import { CreateContextMenu } from "../shared/CreateContextMenu";
@@ -69,8 +69,8 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = React.memo(({ onNavigate 
     categories,
     subcategories,
     skills,
-    departments, // Get departments
-    roles,       // Get roles
+    departments,
+    roles,
     savedViews,
     addSavedView,
     updateSavedView,
@@ -96,7 +96,41 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = React.memo(({ onNavigate 
     importData,
     assessments,
     loading,
-  } = useStore();
+  } = useStore(
+    useShallow((s) => ({
+      employees: s.employees,
+      categories: s.categories,
+      subcategories: s.subcategories,
+      skills: s.skills,
+      departments: s.departments,
+      roles: s.roles,
+      savedViews: s.savedViews,
+      addSavedView: s.addSavedView,
+      updateSavedView: s.updateSavedView,
+      deleteSavedView: s.deleteSavedView,
+      reorderSavedViews: s.reorderSavedViews,
+      setAssessment: s.setAssessment,
+      setTargetLevel: s.setTargetLevel,
+      getAssessment: s.getAssessment,
+      qualificationMeasures: s.qualificationMeasures,
+      qualificationPlans: s.qualificationPlans,
+      addEmployee: s.addEmployee,
+      updateEmployee: s.updateEmployee,
+      addSkill: s.addSkill,
+      addCategory: s.addCategory,
+      addSubCategory: s.addSubCategory,
+      updateSkill: s.updateSkill,
+      updateCategory: s.updateCategory,
+      updateSubCategory: s.updateSubCategory,
+      deleteCategory: s.deleteCategory,
+      deleteSubCategory: s.deleteSubCategory,
+      deleteSkill: s.deleteSkill,
+      deleteEmployee: s.deleteEmployee,
+      importData: s.importData,
+      assessments: s.assessments,
+      loading: s.loading,
+    }))
+  );
 
   // Defer assessment updates so the matrix structure renders immediately
   // and expensive calculations run in a lower-priority background pass

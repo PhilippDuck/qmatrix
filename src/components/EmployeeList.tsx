@@ -12,13 +12,22 @@ import {
 import { useDisclosure, useHotkeys } from "@mantine/hooks";
 import { modals } from "@mantine/modals";
 import { IconPlus, IconEdit, IconTrash, IconUser, IconUserOff } from "@tabler/icons-react";
-import { useStore } from "../store/useStore";
+import { useStore, useShallow } from "../store/useStore";
 import { usePrivacy } from "../context/PrivacyContext";
 import { Employee } from "../services/indexeddb";
 import { EmployeeDrawer } from "./shared/EmployeeDrawer";
 
 export const EmployeeList: React.FC = () => {
-  const { employees, addEmployee, updateEmployee, deleteEmployee, roles, departments } = useStore();
+  const { employees, addEmployee, updateEmployee, deleteEmployee, roles, departments } = useStore(
+    useShallow((s) => ({
+      employees: s.employees,
+      addEmployee: s.addEmployee,
+      updateEmployee: s.updateEmployee,
+      deleteEmployee: s.deleteEmployee,
+      roles: s.roles,
+      departments: s.departments,
+    }))
+  );
   const { anonymizeName } = usePrivacy();
 
   const [opened, { open, close }] = useDisclosure(false);

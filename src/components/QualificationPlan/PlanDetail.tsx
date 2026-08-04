@@ -31,7 +31,7 @@ import {
   IconDownload,
 } from "@tabler/icons-react";
 import { QualificationPlan, QualificationMeasure } from "../../store/useStore";
-import { useStore } from "../../store/useStore";
+import { useStore, useShallow } from "../../store/useStore";
 import { exportQualificationPlanPDF } from "../../services/pdfReportService";
 import { usePrivacy } from "../../context/PrivacyContext";
 import { SkillGapAnalysis } from "./SkillGapAnalysis";
@@ -74,7 +74,20 @@ export const PlanDetail: React.FC<PlanDetailProps> = ({
     updateQualificationMeasure,
     deleteQualificationMeasure,
     setAssessment,
-  } = useStore();
+  } = useStore(
+    useShallow((s) => ({
+      employees: s.employees,
+      roles: s.roles,
+      skills: s.skills,
+      assessments: s.assessments,
+      qualificationMeasures: s.qualificationMeasures,
+      getSkillGapsForEmployee: s.getSkillGapsForEmployee,
+      updateQualificationPlan: s.updateQualificationPlan,
+      updateQualificationMeasure: s.updateQualificationMeasure,
+      deleteQualificationMeasure: s.deleteQualificationMeasure,
+      setAssessment: s.setAssessment,
+    }))
+  );
   const { anonymizeName } = usePrivacy();
 
   const [activeTab, setActiveTab] = useState<string | null>("measures");

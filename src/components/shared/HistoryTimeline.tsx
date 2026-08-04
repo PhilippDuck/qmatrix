@@ -2,14 +2,21 @@ import React, { useEffect, useState } from "react";
 import { Timeline, Text, ThemeIcon, Loader, Center } from "@mantine/core";
 import { IconArrowUp, IconArrowDown, IconStar } from "@tabler/icons-react";
 import { AssessmentLogEntry } from "../../store/useStore";
-import { useStore } from "../../store/useStore";
+import { useStore, useShallow } from "../../store/useStore";
 
 interface HistoryTimelineProps {
     employeeId: string;
 }
 
 export const HistoryTimeline: React.FC<HistoryTimelineProps> = ({ employeeId }) => {
-    const { getHistory, skills, categories, subcategories } = useStore();
+    const { getHistory, skills, categories, subcategories } = useStore(
+        useShallow((s) => ({
+            getHistory: s.getHistory,
+            skills: s.skills,
+            categories: s.categories,
+            subcategories: s.subcategories,
+        }))
+    );
     const [history, setHistory] = useState<AssessmentLogEntry[]>([]);
     const [loading, setLoading] = useState(true);
 

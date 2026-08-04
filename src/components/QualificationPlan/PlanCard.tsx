@@ -2,7 +2,7 @@ import React from "react";
 import { Card, Group, ThemeIcon, Text, Menu, ActionIcon, Stack, Badge, Progress, Button } from "@mantine/core";
 import { IconUser, IconDotsVertical, IconEye, IconEdit, IconArchive, IconTrash } from "@tabler/icons-react";
 import { QualificationPlan } from "../../store/useStore";
-import { useStore } from "../../store/useStore";
+import { useStore, useShallow } from "../../store/useStore";
 import { usePrivacy } from "../../context/PrivacyContext";
 
 interface PlanCardProps {
@@ -26,7 +26,13 @@ const statusColors: Record<QualificationPlan["status"], string> = {
 };
 
 export const PlanCard: React.FC<PlanCardProps> = ({ plan, onView, onEdit, onArchive, onDelete }) => {
-    const { employees, roles, qualificationMeasures } = useStore();
+    const { employees, roles, qualificationMeasures } = useStore(
+        useShallow((s) => ({
+            employees: s.employees,
+            roles: s.roles,
+            qualificationMeasures: s.qualificationMeasures,
+        }))
+    );
     const { anonymizeName } = usePrivacy();
 
     const employee = employees.find((e) => e.id === plan.employeeId);

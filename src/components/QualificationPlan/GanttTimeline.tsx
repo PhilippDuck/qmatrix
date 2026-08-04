@@ -23,7 +23,7 @@ import {
     IconCircleX,
 } from "@tabler/icons-react";
 import { QualificationMeasure, QualificationPlan, Employee, Skill, Category, SubCategory } from "../../store/useStore";
-import { useStore } from "../../store/useStore";
+import { useStore, useShallow } from "../../store/useStore";
 import { usePrivacy } from "../../context/PrivacyContext";
 
 // ─── Helpers ────────────────────────────────────────────────
@@ -125,7 +125,16 @@ export const GanttTimeline: React.FC<GanttTimelineProps> = ({ onViewPlan, planId
         skills,
         categories,
         subcategories,
-    } = useStore();
+    } = useStore(
+        useShallow((s) => ({
+            qualificationMeasures: s.qualificationMeasures,
+            qualificationPlans: s.qualificationPlans,
+            employees: s.employees,
+            skills: s.skills,
+            categories: s.categories,
+            subcategories: s.subcategories,
+        }))
+    );
     const { anonymizeName } = usePrivacy();
 
     const [monthOffset, setMonthOffset] = useState(0);
