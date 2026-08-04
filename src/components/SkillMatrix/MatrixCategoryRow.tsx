@@ -7,79 +7,48 @@ import { getAllSubcategoryIdsForCategory, getAllSkillIdsForCategory, getAllSkill
 import { InfoTooltip } from "../shared/InfoTooltip";
 import { BulkLevelMenu } from "./BulkLevelMenu";
 import { MatrixSubcategoryRow } from "./MatrixSubcategoryRow";
-import { Employee, Category, SubCategory, Skill, Assessment, EmployeeRole, QualificationMeasure, QualificationPlan } from "../../store/useStore";
+import type { Category, SubCategory, Skill } from "../../store/useStore";
 import { usePrivacy } from "../../context/PrivacyContext";
-
-import { MatrixColumn } from "./types";
+import { useMatrixContext } from "./MatrixContext";
 
 interface MatrixCategoryRowProps {
-  columns: MatrixColumn[];
   category: Category;
+  /** Subcategories belonging to this category (may be filtered) */
   subcategories: SubCategory[];
+  /** Skills in scope for this category tree */
   skills: Skill[];
-  employees: Employee[];
-  roles: EmployeeRole[];
-  collapsedStates: Record<string, boolean>;
-  onToggleCategory: (categoryId: string) => void;
-  onToggleSubcategory: (subcategoryId: string) => void;
-  calculateAverage: (skillIds: string[], employeeId?: string) => number | null;
-  getAssessment: (employeeId: string, skillId: string) => Assessment | undefined;
-  onBulkSetLevel: (employeeId: string, skillIds: string[], level: number) => void;
-  onBulkSetTargetLevel: (employeeId: string, skillIds: string[], targetLevel: number | undefined) => void;
-  onLevelChange: (employeeId: string, skillId: string, newLevel: number, note?: string) => void;
-  onTargetLevelChange: (employeeId: string, skillId: string, targetLevel: number | undefined) => void;
-  showMaxValues: 'avg' | 'max' | 'fulfillment';
-  onEditSkill: (skillId: string) => void;
-  onEditCategory: (categoryId: string) => void;
-  onEditSubcategory: (subcategoryId: string) => void;
-  isEditMode: boolean;
-  onAddSubcategory: (parentSubId?: string) => void;
-  onAddSkill: (subCategoryId: string) => void;
-  skillSort: 'asc' | 'desc' | null;
-  labelWidth?: number;
-  onNavigate?: (tab: string, params?: any) => void;
   renderChildren?: boolean;
-  measuresMap?: Map<string, QualificationMeasure[]>;
-  qualificationPlans?: QualificationPlan[];
-  showOnlyGaps?: boolean;
 }
 
-
 export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = React.memo(({
-  columns,
   category,
   subcategories,
   skills,
-  employees,
-  roles,
-  collapsedStates,
-  onToggleCategory,
-  onToggleSubcategory,
-  calculateAverage,
-  getAssessment,
-  onBulkSetLevel,
-  onBulkSetTargetLevel,
-  onLevelChange,
-  onTargetLevelChange,
-  showMaxValues,
-  onEditSkill,
-  onEditCategory,
-  onEditSubcategory,
-  isEditMode,
-  onAddSubcategory,
-  onAddSkill,
-  skillSort,
-  labelWidth,
-  onNavigate,
   renderChildren = true,
-  measuresMap,
-  qualificationPlans,
-  showOnlyGaps,
 }) => {
+  const {
+    columns,
+    employees,
+    roles,
+    collapsedStates,
+    onToggle,
+    calculateAverage,
+    getAssessment,
+    onBulkSetLevel,
+    onBulkSetTargetLevel,
+    showMaxValues,
+    onEditCategory,
+    isEditMode,
+    onAddSubcategory,
+    skillSort,
+    labelWidth,
+  } = useMatrixContext();
+
   const { anonymizeName } = usePrivacy();
   const isCatCollapsed = collapsedStates[category.id!];
   const { cellSize } = MATRIX_LAYOUT;
   const effectiveLabelWidth = labelWidth || MATRIX_LAYOUT.labelWidth;
+  const onToggleCategory = onToggle;
   const [isLabelHovered, setIsLabelHovered] = useState(false);
 
   // Get ALL subcategory IDs for this category (including nested ones)
@@ -400,36 +369,10 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = React.memo(({
             return (
               <MatrixSubcategoryRow
                 key={sub.id}
-                columns={columns}
                 subcategory={sub}
-                allSubcategories={subcategories} // Pass all so it can find children if any (global or category scoped?)
-                // Actually we probably want to pass ALL available subcategories so it can find ANY child,
-                // even if that child technically belongs to the same parent category.
-                // `subcategories` prop passed to MatrixCategoryRow contains all subcategories (from context).
-                allSkills={skills} // Pass all skills
+                allSubcategories={subcategories}
+                allSkills={skills}
                 skills={subSkills}
-                employees={employees}
-                roles={roles}
-                collapsedStates={collapsedStates}
-                onToggleSubcategory={onToggleSubcategory}
-                calculateAverage={calculateAverage}
-                getAssessment={getAssessment}
-                onBulkSetLevel={onBulkSetLevel}
-                onBulkSetTargetLevel={onBulkSetTargetLevel}
-                onLevelChange={onLevelChange}
-                onTargetLevelChange={onTargetLevelChange}
-                showMaxValues={showMaxValues}
-                onEditSkill={onEditSkill}
-                onEditSubcategory={onEditSubcategory}
-                isEditMode={isEditMode}
-                onAddSkill={onAddSkill}
-                onAddSubcategory={onAddSubcategory}
-                skillSort={skillSort}
-                labelWidth={effectiveLabelWidth}
-                onNavigate={onNavigate}
-                measuresMap={measuresMap}
-                qualificationPlans={qualificationPlans}
-                showOnlyGaps={showOnlyGaps}
               />
             );
           })}
@@ -457,7 +400,7 @@ export const MatrixCategoryRow: React.FC<MatrixCategoryRowProps> = React.memo(({
                   size="xs"
                   color="blue"
                   leftSection={<IconPlus size={14} />}
-                  onClick={() => onAddSubcategory()} // No parent ID for top-level subcategory
+                  onClick={() => onAddSubcategory(category.id!)}
                   fullWidth
                   justify="flex-start"
                   styles={{ section: { marginRight: 8 } }}

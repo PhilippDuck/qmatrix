@@ -4,61 +4,50 @@ import { IconPencil } from "@tabler/icons-react";
 import { MATRIX_LAYOUT, LEVELS } from "../../constants/skillLevels";
 import { getScoreColor, getMaxRoleTargetForSkill } from "../../utils/skillCalculations";
 import { SkillCell } from "./SkillCell";
-import { Employee, Skill, Assessment, EmployeeRole, QualificationMeasure, QualificationPlan } from "../../store/useStore";
-
-import { MatrixColumn } from "./types";
+import type { Skill } from "../../store/useStore";
+import { useMatrixContext } from "./MatrixContext";
 
 interface MatrixSkillRowProps {
-  columns: MatrixColumn[];
   skill: Skill;
-  employees: Employee[];
-  roles: EmployeeRole[];
-  getAssessment: (employeeId: string, skillId: string) => Assessment | undefined;
-  calculateSkillAverage: (skillId: string) => number | null;
-  onLevelChange: (employeeId: string, skillId: string, newLevel: number, note?: string) => void;
-  onTargetLevelChange: (employeeId: string, skillId: string, targetLevel: number | undefined) => void;
-  showMaxValues: 'avg' | 'max' | 'fulfillment';
-  onEditSkill: (skillId: string) => void;
-  isEditMode: boolean;
   depth?: number;
-  labelWidth?: number;
-  measuresMap?: Map<string, QualificationMeasure[]>;
-  qualificationPlans?: QualificationPlan[];
-  showOnlyGaps?: boolean;
 }
 
 export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = React.memo(({
-  columns,
   skill,
-  employees,
-  roles,
-  getAssessment,
-  calculateSkillAverage,
-  onLevelChange,
-  onTargetLevelChange,
-  showMaxValues,
-  onEditSkill,
-  isEditMode,
   depth = 0,
-  labelWidth,
-  measuresMap,
-  qualificationPlans = [],
-  showOnlyGaps,
 }) => {
+  const {
+    columns,
+    employees,
+    roles,
+    getAssessment,
+    calculateAverage,
+    onLevelChange,
+    onTargetLevelChange,
+    showMaxValues,
+    onEditSkill,
+    isEditMode,
+    labelWidth,
+    measuresMap,
+    qualificationPlans,
+    showOnlyGaps,
+  } = useMatrixContext();
+
   const { cellSize } = MATRIX_LAYOUT;
   const effectiveLabelWidth = labelWidth || MATRIX_LAYOUT.labelWidth;
-  const skillAvg = calculateSkillAverage(skill.id!);
+  const skillAvg = calculateAverage([skill.id!]);
 
-  // O(1) lookup via pre-computed map instead of O(n) filter
-  const skillMeasures = measuresMap?.get(skill.id!) ?? [];
+  const skillMeasures = measuresMap.get(skill.id!) ?? [];
 
-  // Calculate Max Level for this skill across all employees
-  const maxLevelVal = Math.max(...employees.map(e => {
-    const assessment = getAssessment(e.id!, skill.id!);
-    return assessment ? assessment.level : 0;
-  }), 0);
+  const maxLevelVal = Math.max(
+    ...employees.map((e) => {
+      const assessment = getAssessment(e.id!, skill.id!);
+      return assessment ? assessment.level : 0;
+    }),
+    0
+  );
 
-  const maxLevelObj = LEVELS.find(l => l.value === maxLevelVal);
+  const maxLevelObj = LEVELS.find((l) => l.value === maxLevelVal);
   const maxLabel = maxLevelObj ? maxLevelObj.label : "None";
 
   return (
@@ -67,12 +56,11 @@ export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = React.memo(({
         style={{
           width: effectiveLabelWidth,
           padding: "6px 12px",
-          paddingLeft: `${64 + (depth * 24)}px`,
+          paddingLeft: `${64 + depth * 24}px`,
           position: "sticky",
           left: 0,
           zIndex: 30,
           backgroundColor: "var(--mantine-color-body)",
-          // Styling done by global css on hover
           borderRight: "1px solid var(--mantine-color-default-border)",
           borderBottom: "1px solid var(--mantine-color-default-border)",
           display: "flex",
@@ -96,7 +84,9 @@ export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = React.memo(({
           <HoverCard.Dropdown>
             <Stack gap="xs">
               <Group justify="space-between" align="start">
-                <Text fw={700} size="sm">{skill.name}</Text>
+                <Text fw={700} size="sm">
+                  {skill.name}
+                </Text>
                 <ActionIcon
                   variant="subtle"
                   color="blue"
@@ -117,36 +107,52 @@ export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = React.memo(({
         </HoverCard>
 
         <Group gap={4} align="center">
-          {showMaxValues === 'avg' ? (
-            // Average Display
+          {showMaxValues === "avg" ? (
             <Tooltip label="Durchschnittliche Abdeckung" withArrow>
               <Badge size="xs" w={46} variant="transparent" color={getScoreColor(skillAvg)}>
                 {skillAvg === null ? "N/A" : `${skillAvg}%`}
               </Badge>
             </Tooltip>
-          ) : showMaxValues === 'max' ? (
-            // Max Value Display
+          ) : showMaxValues === "max" ? (
             <Tooltip label={`Höchstes Level: ${maxLabel}`} withArrow>
-              <Badge size="xs" w={46} variant={maxLevelVal > 0 ? "outline" : "transparent"} color={maxLevelVal > 0 ? getScoreColor(maxLevelVal) : "gray"} style={maxLevelVal > 0 ? { padding: '0 4px', height: '16px' } : undefined}>
+              <Badge
+                size="xs"
+                w={46}
+                variant={maxLevelVal > 0 ? "outline" : "transparent"}
+                color={maxLevelVal > 0 ? getScoreColor(maxLevelVal) : "gray"}
+                style={maxLevelVal > 0 ? { padding: "0 4px", height: "16px" } : undefined}
+              >
                 {maxLevelVal > 0 ? `${maxLevelVal}%` : "-"}
               </Badge>
             </Tooltip>
           ) : (
-            // Fulfillment Display
             (() => {
               const scores: number[] = [];
-              employees.forEach(e => {
+              employees.forEach((e) => {
                 const asm = getAssessment(e.id!, skill.id!);
                 const individualTarget = asm?.targetLevel || 0;
                 const roleTarget = getMaxRoleTargetForSkill(e.roles, skill.id!, roles) || 0;
                 const target = Math.max(individualTarget, roleTarget);
                 if (target > 0) {
                   const level = asm?.level ?? (roleTarget ? 0 : -1);
-                  if (level >= 0) scores.push(Math.min(100, Math.round((level / target) * 100)));
+                  if (level >= 0)
+                    scores.push(Math.min(100, Math.round((level / target) * 100)));
                 }
               });
-              const ful = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
-              const fulColor = ful === null ? 'gray' : ful >= 100 ? 'teal' : ful >= 85 ? 'green' : ful >= 67 ? 'yellow' : 'red';
+              const ful =
+                scores.length > 0
+                  ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
+                  : null;
+              const fulColor =
+                ful === null
+                  ? "gray"
+                  : ful >= 100
+                    ? "teal"
+                    : ful >= 85
+                      ? "green"
+                      : ful >= 67
+                        ? "yellow"
+                        : "red";
               return (
                 <Tooltip label="Erfüllungsgrad (Ist/Soll)" withArrow>
                   <Badge size="xs" w={46} variant="transparent" color={fulColor}>
@@ -159,14 +165,15 @@ export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = React.memo(({
         </Group>
       </div>
       {columns.map((col) => {
-        if (col.type === 'group-summary') {
-          // Calculate average for this skill in this group
-          const validScores = col.employeeIds.map(eId => {
-            const emp = employees.find(e => e.id === eId);
-            const roleTarget = getMaxRoleTargetForSkill(emp?.roles, skill.id!, roles);
-            const asm = getAssessment(eId, skill.id!);
-            return asm?.level ?? (roleTarget !== undefined ? 0 : -1);
-          }).filter(v => v !== -1);
+        if (col.type === "group-summary") {
+          const validScores = col.employeeIds
+            .map((eId) => {
+              const emp = employees.find((e) => e.id === eId);
+              const roleTarget = getMaxRoleTargetForSkill(emp?.roles, skill.id!, roles);
+              const asm = getAssessment(eId, skill.id!);
+              return asm?.level ?? (roleTarget !== undefined ? 0 : -1);
+            })
+            .filter((v) => v !== -1);
 
           const sum = validScores.reduce<number>((a, b) => a + b, 0);
           const avg = validScores.length > 0 ? Math.round(sum / validScores.length) : 0;
@@ -181,35 +188,63 @@ export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = React.memo(({
                 alignItems: "center",
                 justifyContent: "center",
                 backgroundColor: col.backgroundColor || "var(--mantine-color-body)",
-                borderRight: col.type === 'group-summary' ? "2px solid var(--mantine-color-default-border)" : undefined,
+                borderRight:
+                  col.type === "group-summary"
+                    ? "2px solid var(--mantine-color-default-border)"
+                    : undefined,
                 borderBottom: "1px solid var(--mantine-color-default-border)",
               }}
             >
-              {showMaxValues === 'max' ? (
+              {showMaxValues === "max" ? (
                 max > 0 ? (
-                  <Badge size="xs" variant="outline" color={getScoreColor(max)} style={{ padding: '0 4px', height: '16px' }}>
+                  <Badge
+                    size="xs"
+                    variant="outline"
+                    color={getScoreColor(max)}
+                    style={{ padding: "0 4px", height: "16px" }}
+                  >
                     {max}%
                   </Badge>
                 ) : (
-                  <Text size="xs" c="dimmed">-</Text>
+                  <Text size="xs" c="dimmed">
+                    -
+                  </Text>
                 )
-              ) : showMaxValues === 'fulfillment' ? (
+              ) : showMaxValues === "fulfillment" ? (
                 (() => {
                   const scores: number[] = [];
-                  col.employeeIds.forEach(eId => {
-                    const emp = employees.find(e => e.id === eId);
+                  col.employeeIds.forEach((eId) => {
+                    const emp = employees.find((e) => e.id === eId);
                     const asm = getAssessment(eId, skill.id!);
                     const individualTarget = asm?.targetLevel || 0;
-                    const roleTarget = getMaxRoleTargetForSkill(emp?.roles, skill.id!, roles) || 0;
+                    const roleTarget =
+                      getMaxRoleTargetForSkill(emp?.roles, skill.id!, roles) || 0;
                     const target = Math.max(individualTarget, roleTarget);
                     if (target > 0) {
                       const level = asm?.level ?? (roleTarget ? 0 : -1);
-                      if (level >= 0) scores.push(Math.min(100, Math.round((level / target) * 100)));
+                      if (level >= 0)
+                        scores.push(Math.min(100, Math.round((level / target) * 100)));
                     }
                   });
-                  const ful = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
-                  const fulColor = ful === null ? 'dimmed' : ful >= 100 ? 'teal' : ful >= 85 ? 'green' : ful >= 67 ? 'yellow' : 'red';
-                  return <Text size="xs" fw={500} c={fulColor}>{ful === null ? "-" : `${ful}%`}</Text>;
+                  const ful =
+                    scores.length > 0
+                      ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
+                      : null;
+                  const fulColor =
+                    ful === null
+                      ? "dimmed"
+                      : ful >= 100
+                        ? "teal"
+                        : ful >= 85
+                          ? "green"
+                          : ful >= 67
+                            ? "yellow"
+                            : "red";
+                  return (
+                    <Text size="xs" fw={500} c={fulColor}>
+                      {ful === null ? "-" : `${ful}%`}
+                    </Text>
+                  );
                 })()
               ) : (
                 <Text size="xs" fw={500} c={getScoreColor(avg)}>
@@ -221,23 +256,20 @@ export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = React.memo(({
         }
 
         const emp = col.employee;
-        // Find Role Target (recursive) - take max across all employee roles
         const roleTarget = getMaxRoleTargetForSkill(emp.roles, skill.id!, roles);
-
         const assessment = getAssessment(emp.id!, skill.id!);
-        // If assessment is -1 (N/A) or doesn't exist, and we have a role target, default to 0
         const rawLevel = assessment?.level ?? -1;
-        const level = (rawLevel === -1 && roleTarget !== undefined) ? 0 : rawLevel;
+        const level = rawLevel === -1 && roleTarget !== undefined ? 0 : rawLevel;
 
-        // Find Active Measure for this employee and skill
-        const measure = skillMeasures.find(m => {
-          const plan = qualificationPlans.find(p => p.id === m.planId && p.employeeId === emp.id);
+        const measure = skillMeasures.find((m) => {
+          const plan = qualificationPlans.find((p) => p.id === m.planId && p.employeeId === emp.id);
           return !!plan;
         });
 
-        const measureStatus = measure && (measure.status === "in_progress" || measure.status === "pending")
-          ? measure.status
-          : undefined;
+        const measureStatus =
+          measure && (measure.status === "in_progress" || measure.status === "pending")
+            ? measure.status
+            : undefined;
 
         return (
           <SkillCell
@@ -245,15 +277,18 @@ export const MatrixSkillRow: React.FC<MatrixSkillRowProps> = React.memo(({
             level={level}
             targetLevel={assessment?.targetLevel}
             roleTargetLevel={roleTarget}
-            onLevelChange={(newLevel, note) => onLevelChange(emp.id!, skill.id!, newLevel, note)}
-            onTargetLevelChange={(target) => onTargetLevelChange(emp.id!, skill.id!, target)}
+            onLevelChange={(newLevel, note) =>
+              onLevelChange(emp.id!, skill.id!, newLevel, note)
+            }
+            onTargetLevelChange={(target) =>
+              onTargetLevelChange(emp.id!, skill.id!, target)
+            }
             hasActiveMeasure={measureStatus}
             backgroundColor={col.backgroundColor}
             showOnlyGaps={showOnlyGaps}
           />
         );
       })}
-      {/* Empty Placeholder for Add Employee Column */}
       {isEditMode && (
         <div
           style={{

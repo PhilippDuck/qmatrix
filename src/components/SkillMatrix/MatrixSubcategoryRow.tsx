@@ -7,74 +7,48 @@ import { getAllSkillIdsForSubcategory } from "../../utils/hierarchyUtils";
 import { InfoTooltip } from "../shared/InfoTooltip";
 import { BulkLevelMenu } from "./BulkLevelMenu";
 import { MatrixSkillRow } from "./MatrixSkillRow";
-import { Employee, SubCategory, Skill, Assessment, EmployeeRole, QualificationMeasure, QualificationPlan } from "../../store/useStore";
+import type { SubCategory, Skill } from "../../store/useStore";
 import { usePrivacy } from "../../context/PrivacyContext";
-
-import { MatrixColumn } from "./types";
+import { useMatrixContext } from "./MatrixContext";
 
 interface MatrixSubcategoryRowProps {
-  columns: MatrixColumn[];
   subcategory: SubCategory;
-  allSubcategories: SubCategory[]; // Added: Pass all subcategories to find children
-  skills: Skill[]; // Skills directly in this subcategory
-  allSkills: Skill[]; // Added: Pass all skills to find descendants in children
-  employees: Employee[];
-  roles: EmployeeRole[];
-  collapsedStates: Record<string, boolean>;
-  onToggleSubcategory: (subcategoryId: string) => void;
-  calculateAverage: (skillIds: string[], employeeId?: string) => number | null;
-  getAssessment: (employeeId: string, skillId: string) => Assessment | undefined;
-  onBulkSetLevel: (employeeId: string, skillIds: string[], level: number) => void;
-  onBulkSetTargetLevel: (employeeId: string, skillIds: string[], targetLevel: number | undefined) => void;
-  onLevelChange: (employeeId: string, skillId: string, newLevel: number, note?: string) => void;
-  onTargetLevelChange: (employeeId: string, skillId: string, targetLevel: number | undefined) => void;
-  showMaxValues: 'avg' | 'max' | 'fulfillment';
-  onEditSkill: (skillId: string) => void;
-  onEditSubcategory: (subcategoryId: string) => void;
-  isEditMode: boolean;
-  onAddSkill: (subCategoryId: string) => void;
-  skillSort: 'asc' | 'desc' | null;
+  allSubcategories: SubCategory[];
+  /** Skills directly in this subcategory */
+  skills: Skill[];
+  allSkills: Skill[];
   depth?: number;
-  onAddSubcategory: (parentSubId?: string) => void;
-  labelWidth?: number;
-  onNavigate?: (tab: string, params?: any) => void;
   renderChildren?: boolean;
-  measuresMap?: Map<string, QualificationMeasure[]>;
-  qualificationPlans?: QualificationPlan[];
-  showOnlyGaps?: boolean;
 }
 
 export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = React.memo(({
-  columns,
   subcategory,
   allSubcategories,
   skills,
   allSkills,
-  employees,
-  roles,
-  collapsedStates,
-  onToggleSubcategory,
-  calculateAverage,
-  getAssessment,
-  onBulkSetLevel,
-  onBulkSetTargetLevel,
-  onLevelChange,
-  onTargetLevelChange,
-  showMaxValues,
-  onEditSkill,
-  onEditSubcategory,
-  isEditMode,
-  onAddSkill,
-  skillSort,
   depth = 0,
-  onAddSubcategory,
-  labelWidth,
-  onNavigate,
   renderChildren = true,
-  measuresMap,
-  qualificationPlans,
-  showOnlyGaps,
 }) => {
+  const {
+    columns,
+    employees,
+    roles,
+    collapsedStates,
+    onToggle,
+    calculateAverage,
+    getAssessment,
+    onBulkSetLevel,
+    onBulkSetTargetLevel,
+    showMaxValues,
+    onEditSubcategory,
+    isEditMode,
+    onAddSkill,
+    onAddSubcategory,
+    skillSort,
+    labelWidth,
+  } = useMatrixContext();
+
+  const onToggleSubcategory = onToggle;
   const { anonymizeName } = usePrivacy();
   const { cellSize } = MATRIX_LAYOUT;
   const effectiveLabelWidth = labelWidth || MATRIX_LAYOUT.labelWidth;
@@ -367,25 +341,7 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = React.m
       {renderChildren && !isCollapsed && (
         <>
           {sortedSkills.map((skill) => (
-            <MatrixSkillRow
-              key={skill.id}
-              skill={skill}
-              columns={columns}
-              employees={employees}
-              roles={roles}
-              getAssessment={getAssessment}
-              calculateSkillAverage={(skillId) => calculateAverage([skillId]) ?? null}
-              onLevelChange={onLevelChange}
-              onTargetLevelChange={onTargetLevelChange}
-              showMaxValues={showMaxValues}
-              onEditSkill={onEditSkill}
-              isEditMode={isEditMode}
-              depth={depth}
-              labelWidth={effectiveLabelWidth}
-              measuresMap={measuresMap}
-              qualificationPlans={qualificationPlans}
-              showOnlyGaps={showOnlyGaps}
-            />
+            <MatrixSkillRow key={skill.id} skill={skill} depth={depth} />
           ))}
           {isEditMode && (
             <>
@@ -453,7 +409,7 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = React.m
                     size="xs"
                     color="violet"
                     leftSection={<IconFolderPlus size={14} />}
-                    onClick={() => onAddSubcategory(subcategory.id!)}
+                    onClick={() => onAddSubcategory(subcategory.categoryId, subcategory.id!)}
                     fullWidth
                     justify="flex-start"
                     styles={{ section: { marginRight: 8 } }}
@@ -471,38 +427,15 @@ export const MatrixSubcategoryRow: React.FC<MatrixSubcategoryRowProps> = React.m
 
           {/* Recursive Child Subcategories */}
           {childSubcategories.map((child) => {
-            const childSkills = allSkills.filter(s => s.subCategoryId === child.id);
+            const childSkills = allSkills.filter((s) => s.subCategoryId === child.id);
             return (
               <MatrixSubcategoryRow
                 key={child.id}
-                columns={columns}
                 subcategory={child}
                 allSubcategories={allSubcategories}
                 skills={childSkills}
                 allSkills={allSkills}
-                employees={employees}
-                roles={roles}
-                collapsedStates={collapsedStates}
-                onToggleSubcategory={onToggleSubcategory}
-                calculateAverage={calculateAverage}
-                getAssessment={getAssessment}
-                onBulkSetLevel={onBulkSetLevel}
-                onBulkSetTargetLevel={onBulkSetTargetLevel}
-                onLevelChange={onLevelChange}
-                onTargetLevelChange={onTargetLevelChange}
-                showMaxValues={showMaxValues}
-                onEditSkill={onEditSkill}
-                onEditSubcategory={onEditSubcategory}
-                isEditMode={isEditMode}
-                onAddSkill={onAddSkill}
-                skillSort={skillSort}
                 depth={depth + 1}
-                onAddSubcategory={onAddSubcategory}
-                labelWidth={labelWidth}
-                onNavigate={onNavigate}
-                measuresMap={measuresMap}
-                qualificationPlans={qualificationPlans}
-                showOnlyGaps={showOnlyGaps}
               />
             );
           })}

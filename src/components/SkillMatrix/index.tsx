@@ -55,6 +55,7 @@ import { EntityFormDrawer, FormMode, EntityFormValues } from "../CategoryManager
 import { useMatrixState } from "../../hooks/useMatrixState";
 import { useMatrixCalculations } from "../../hooks/useMatrixCalculations";
 import { MatrixToolbar } from "./MatrixToolbar";
+import { MatrixProvider, useMatrixContextValue } from "./MatrixContext";
 
 import { SegmentedControl } from "@mantine/core";
 import { MatrixColumn } from "./types";
@@ -282,17 +283,17 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = React.memo(({ onNavigate 
 
 
 
-  const bulkSetLevel = async (
+  const bulkSetLevel = useCallback(async (
     empId: string,
     skillIds: string[],
     newLevel: number
   ) => {
     for (const sId of skillIds) {
-      await setAssessment(empId, sId, newLevel as any);
+      await setAssessment(empId, sId, newLevel as -1 | 0 | 25 | 50 | 75 | 100);
     }
-  };
+  }, [setAssessment]);
 
-  const bulkSetTargetLevel = async (
+  const bulkSetTargetLevel = useCallback(async (
     empId: string,
     skillIds: string[],
     newTargetLevel: number | undefined
@@ -300,15 +301,24 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = React.memo(({ onNavigate 
     for (const sId of skillIds) {
       await setTargetLevel(empId, sId, newTargetLevel);
     }
-  };
+  }, [setTargetLevel]);
 
-  const handleLevelChange = async (empId: string, sId: string, newLevel: number, note?: string) => {
-    await setAssessment(empId, sId, newLevel as any, note);
-  };
+  const handleLevelChange = useCallback(async (
+    empId: string,
+    sId: string,
+    newLevel: number,
+    note?: string
+  ) => {
+    await setAssessment(empId, sId, newLevel as -1 | 0 | 25 | 50 | 75 | 100, note);
+  }, [setAssessment]);
 
-  const handleTargetLevelChange = async (empId: string, sId: string, target: number | undefined) => {
+  const handleTargetLevelChange = useCallback(async (
+    empId: string,
+    sId: string,
+    target: number | undefined
+  ) => {
     await setTargetLevel(empId, sId, target);
-  };
+  }, [setTargetLevel]);
 
   const handleEditEmployee = (id: string) => {
     setEditingEmployeeId(id);
@@ -647,6 +657,33 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = React.memo(({ onNavigate 
     return Math.min(maxW, 600);
   }, [displayedCategories, subcategories, skills, collapsedStates]);
 
+  const matrixCtx = useMatrixContextValue({
+    columns: matrixColumns,
+    employees: displayedEmployees,
+    roles,
+    labelWidth: responsiveLabelWidth,
+    isEditMode,
+    showMaxValues: metricMode,
+    skillSort,
+    showOnlyGaps,
+    collapsedStates,
+    measuresMap,
+    qualificationPlans,
+    getAssessment: getAssessmentFast,
+    calculateAverage,
+    onToggle: toggleItem,
+    onBulkSetLevel: bulkSetLevel,
+    onBulkSetTargetLevel: bulkSetTargetLevel,
+    onLevelChange: handleLevelChange,
+    onTargetLevelChange: handleTargetLevelChange,
+    onEditSkill: handleEditSkill,
+    onEditCategory: handleEditCategory,
+    onEditSubcategory: handleEditSubcategory,
+    onAddSubcategory: handleAddSubCategory,
+    onAddSkill: handleOpenAddSkill,
+    onNavigate,
+  });
+
   return (
     <Box
       style={{
@@ -739,120 +776,104 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = React.memo(({ onNavigate 
                 <Text size="xs" c="dimmed">Berechne…</Text>
               </div>
             )}
-            <div style={{ overflow: "auto", flex: 1 }}>
-              <div
-                style={{
-                  width: "max-content",
-                  display: "flex",
-                  flexDirection: "column",
-                  minWidth: "100%",
-                }}
-              >
+            <MatrixProvider value={matrixCtx}>
+              <div style={{ overflow: "auto", flex: 1 }}>
                 <div
                   style={{
-                    position: "sticky",
-                    top: 0,
-                    zIndex: 31,
-                    backgroundColor: "var(--mantine-color-body)",
+                    width: "max-content",
+                    display: "flex",
+                    flexDirection: "column",
+                    minWidth: "100%",
                   }}
                 >
-                  <MatrixHeader
-                    columns={matrixColumns}
-                    employees={displayedEmployees}
-                    focusEmployeeId={focusEmployeeId}
-                    onFocusChange={setFocusEmployeeId}
-                    calculateEmployeeAverage={calculateEmployeeAverage}
-                    skills={displayedSkills}
-                    getAssessment={getAssessmentFast}
-                    onEditEmployee={handleEditEmployee}
-                    showMaxValues={metricMode}
-                    isEditMode={isEditMode}
-                    onAddEmployee={() => {
-                      setEditingEmployeeId(null);
-                      setEmployeeDrawerOpened(true);
+                  <div
+                    style={{
+                      position: "sticky",
+                      top: 0,
+                      zIndex: 31,
+                      backgroundColor: "var(--mantine-color-body)",
                     }}
-                    onNavigate={onNavigate}
-
-                    labelWidth={responsiveLabelWidth}
-                    employeeSort={employeeSort}
-                    onEmployeeSortChange={setEmployeeSort}
-                    skillSort={skillSort}
-                    onSkillSortChange={setSkillSort}
-                  />
-                </div>
-
-                {displayedCategories.map((cat) => {
-                  // [NEW] Filter Subcategories and Skills if hidden
-                  const catSubcategories = displayedSubcategories.filter(s => s.categoryId === cat.id);
-                  const catSkills = displayedSkills;
-
-                  return (
-                    <MatrixCategoryRow
-                      key={cat.id}
-                      category={cat}
-                      subcategories={catSubcategories}
-                      skills={catSkills}
-                      employees={displayedEmployees}
+                  >
+                    <MatrixHeader
                       columns={matrixColumns}
-                      collapsedStates={collapsedStates}
-                      onToggleCategory={toggleItem}
-                      onToggleSubcategory={toggleItem}
-                      calculateAverage={calculateAverage}
+                      employees={displayedEmployees}
+                      focusEmployeeId={focusEmployeeId}
+                      onFocusChange={setFocusEmployeeId}
+                      calculateEmployeeAverage={calculateEmployeeAverage}
+                      skills={displayedSkills}
                       getAssessment={getAssessmentFast}
-                      onBulkSetLevel={bulkSetLevel}
-                      onBulkSetTargetLevel={bulkSetTargetLevel}
-                      onLevelChange={handleLevelChange}
-                      onTargetLevelChange={handleTargetLevelChange}
+                      onEditEmployee={handleEditEmployee}
                       showMaxValues={metricMode}
-                      onEditSkill={handleEditSkill}
-                      roles={roles}
-                      onEditCategory={handleEditCategory}
-                      onEditSubcategory={handleEditSubcategory}
                       isEditMode={isEditMode}
-                      onAddSubcategory={(parentSubId) => handleAddSubCategory(cat.id!, parentSubId)}
-                      onAddSkill={(subId) => handleOpenAddSkill(subId)}
-                      skillSort={skillSort}
-                      labelWidth={responsiveLabelWidth}
+                      onAddEmployee={() => {
+                        setEditingEmployeeId(null);
+                        setEmployeeDrawerOpened(true);
+                      }}
                       onNavigate={onNavigate}
-                      measuresMap={measuresMap}
-                      qualificationPlans={qualificationPlans}
-                      showOnlyGaps={showOnlyGaps}
+                      labelWidth={responsiveLabelWidth}
+                      employeeSort={employeeSort}
+                      onEmployeeSortChange={setEmployeeSort}
+                      skillSort={skillSort}
+                      onSkillSortChange={setSkillSort}
                     />
-                  );
-                })}
+                  </div>
 
-                {isEditMode && (
-                  <div style={{ display: "flex", borderBottom: "1px solid var(--mantine-color-default-border)", backgroundColor: "var(--mantine-color-body)" }}>
+                  {displayedCategories.map((cat) => {
+                    const catSubcategories = displayedSubcategories.filter(
+                      (s) => s.categoryId === cat.id
+                    );
+                    return (
+                      <MatrixCategoryRow
+                        key={cat.id}
+                        category={cat}
+                        subcategories={catSubcategories}
+                        skills={displayedSkills}
+                      />
+                    );
+                  })}
+
+                  {isEditMode && (
                     <div
                       style={{
-                        width: responsiveLabelWidth,
-                        padding: "8px 12px",
-                        position: "sticky",
-                        left: 0,
-                        zIndex: 30,
+                        display: "flex",
+                        borderBottom: "1px solid var(--mantine-color-default-border)",
                         backgroundColor: "var(--mantine-color-body)",
-                        borderRight: "1px solid var(--mantine-color-default-border)",
                       }}
                     >
-                      <Button
-                        variant="subtle"
-                        size="xs"
-                        leftSection={<IconPlus size={16} />}
-                        onClick={handleAddCategory}
-                        fullWidth
-                        justify="flex-start"
+                      <div
+                        style={{
+                          width: responsiveLabelWidth,
+                          padding: "8px 12px",
+                          position: "sticky",
+                          left: 0,
+                          zIndex: 30,
+                          backgroundColor: "var(--mantine-color-body)",
+                          borderRight: "1px solid var(--mantine-color-default-border)",
+                        }}
                       >
-                        Kategorie hinzufügen
-                      </Button>
+                        <Button
+                          variant="subtle"
+                          size="xs"
+                          leftSection={<IconPlus size={16} />}
+                          onClick={handleAddCategory}
+                          fullWidth
+                          justify="flex-start"
+                        >
+                          Kategorie hinzufügen
+                        </Button>
+                      </div>
+                      <div style={{ flex: 1 }} />
+                      <div
+                        style={{
+                          width: MATRIX_LAYOUT.cellSize,
+                          borderLeft: "1px solid var(--mantine-color-default-border)",
+                        }}
+                      />
                     </div>
-                    {/* Horizontal spacer for employees - just flex 1 to fill width */}
-                    <div style={{ flex: 1 }} />
-                    {/* Spacer for "Add Employee" column from header */}
-                    <div style={{ width: MATRIX_LAYOUT.cellSize, borderLeft: "1px solid var(--mantine-color-default-border)" }} />
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
-            </div>
+            </MatrixProvider>
           </Card>
         </Stack>
       )
