@@ -694,29 +694,59 @@ function AppContent() {
 
         <Box style={{ flex: 1 }} />
 
-        {desktopOpened && (
-          <Box
-            py="sm"
-            px="xs"
-            style={{
-              borderTop: "1px solid var(--mantine-color-default-border)",
-              marginTop: "auto",
-            }}
-          >
-            <Text size="xs" c="dimmed" ta="center">
-              Designed with{" "}
-              <IconHeart
-                size={12}
-                style={{ verticalAlign: "middle", color: "var(--mantine-color-red-6)" }}
-                fill="var(--mantine-color-red-6)"
-              />{" "}
-              by
-            </Text>
-            <Text size="xs" c="dimmed" ta="center" fw={500}>
-              Philipp-Marcel Duck
-            </Text>
-          </Box>
-        )}
+        <Box
+          py="sm"
+          px="xs"
+          style={{
+            borderTop: "1px solid var(--mantine-color-default-border)",
+            marginTop: "auto",
+          }}
+        >
+          {desktopOpened ? (
+            <>
+              <Text size="xs" c="dimmed" ta="center">
+                Designed with{" "}
+                <IconHeart
+                  size={12}
+                  style={{ verticalAlign: "middle", color: "var(--mantine-color-red-6)" }}
+                  fill="var(--mantine-color-red-6)"
+                />{" "}
+                by
+              </Text>
+              <Text size="xs" c="dimmed" ta="center" fw={500}>
+                Philipp-Marcel Duck
+              </Text>
+              <Tooltip label="Changelog anzeigen">
+                <Badge
+                  variant="subtle"
+                  color="gray"
+                  size="xs"
+                  fullWidth
+                  mt={6}
+                  onClick={openChangelog}
+                  style={{ cursor: "pointer" }}
+                  styles={{ root: { textTransform: "none", opacity: 0.7 } }}
+                >
+                  {APP_VERSION}
+                </Badge>
+              </Tooltip>
+            </>
+          ) : (
+            <Tooltip label={`Changelog (${APP_VERSION})`} position="right" withArrow>
+              <Badge
+                variant="subtle"
+                color="gray"
+                size="xs"
+                fullWidth
+                onClick={openChangelog}
+                style={{ cursor: "pointer" }}
+                styles={{ root: { textTransform: "none", opacity: 0.7, paddingInline: 4 } }}
+              >
+                {APP_VERSION.replace(/^v/, "")}
+              </Badge>
+            </Tooltip>
+          )}
+        </Box>
       </AppShell.Navbar>
 
       <AppShell.Main
