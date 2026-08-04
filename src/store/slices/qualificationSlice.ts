@@ -4,216 +4,105 @@ import {
   findPotentialMentors,
 } from "../../utils/skillGaps";
 import type { QualificationMeasure, QualificationPlan } from "../../types";
-import { recordChange } from "../recordChange";
+import { createEntityCrudHandlers } from "../createEntityCrud";
 import type { AppSlice, QualificationSlice } from "../types";
 
-export const createQualificationSlice: AppSlice<QualificationSlice> = (set, get) => ({
-  qualificationPlans: [],
-  qualificationMeasures: [],
+export const createQualificationSlice: AppSlice<QualificationSlice> = (set, get) => {
+  const planLabel = (item: Partial<QualificationPlan>, fallbackId = "") => {
+    const emp = get().employees.find((e) => e.id === item.employeeId);
+    return `Plan für ${emp?.name || item.employeeId || fallbackId}`;
+  };
 
-  addQualificationPlan: async (plan) => {
-    try {
-      const id = await db.addQualificationPlan(plan as Parameters<typeof db.addQualificationPlan>[0]);
-      const emp = get().employees.find((e) => e.id === plan.employeeId);
+  const measureLabel = (item: Partial<QualificationMeasure>, fallbackId = "") => {
+    const skill = get().skills.find((s) => s.id === item.skillId);
+    return `Maßnahme: ${skill?.name || item.skillId || fallbackId}`;
+  };
+
+  const plans = createEntityCrudHandlers<
+    QualificationPlan,
+    Omit<QualificationPlan, "id" | "createdAt" | "updatedAt">,
+    Partial<Omit<QualificationPlan, "id" | "createdAt">>
+  >(set, get, {
+    entityType: "qualificationPlan",
+    listKey: "qualificationPlans",
+    getLabel: planLabel,
+    dbAdd: (data) =>
+      db.addQualificationPlan(data as Parameters<typeof db.addQualificationPlan>[0]),
+    dbUpdate: (id, data) => db.updateQualificationPlan(id, data),
+    dbDelete: (id) => db.deleteQualificationPlan(id),
+    buildNew: (data, id) => {
       const now = Date.now();
-      const newPlan = { ...plan, id, createdAt: now, updatedAt: now } as QualificationPlan;
+      return { ...data, id, createdAt: now, updatedAt: now };
+    },
+    prepareDelete: (getState, id, existing) => {
+      const state = getState();
+      const cascadeMeasures = state.qualificationMeasures.filter((m) => m.planId === id);
+      return {
+        partial: {
+          qualificationPlans: state.qualificationPlans.filter((p) => p.id !== id),
+          qualificationMeasures: state.qualificationMeasures.filter((m) => m.planId !== id),
+        },
+        previousData: {
+          ...existing,
+          _cascade: { qualificationMeasures: cascadeMeasures },
+        },
+      };
+    },
+  });
 
-      set((state) => ({
-        qualificationPlans: [...state.qualificationPlans, newPlan],
-      }));
+  const measures = createEntityCrudHandlers<
+    QualificationMeasure,
+    Omit<QualificationMeasure, "id" | "updatedAt">,
+    Partial<Omit<QualificationMeasure, "id">>
+  >(set, get, {
+    entityType: "qualificationMeasure",
+    listKey: "qualificationMeasures",
+    getLabel: measureLabel,
+    dbAdd: (data) => db.addQualificationMeasure(data),
+    dbUpdate: (id, data) => db.updateQualificationMeasure(id, data),
+    dbDelete: (id) => db.deleteQualificationMeasure(id),
+  });
 
-      await recordChange(
-        get,
-        "qualificationPlan",
-        id,
-        `Plan für ${emp?.name || plan.employeeId}`,
-        "create",
-        null,
-        newPlan
+  return {
+    qualificationPlans: [],
+    qualificationMeasures: [],
+
+    addQualificationPlan: plans.add,
+    updateQualificationPlan: plans.update,
+    deleteQualificationPlan: plans.remove,
+    getQualificationPlansForEmployee: (employeeId) =>
+      get().qualificationPlans.filter((p) => p.employeeId === employeeId),
+
+    addQualificationMeasure: measures.add,
+    updateQualificationMeasure: measures.update,
+    deleteQualificationMeasure: measures.remove,
+    getQualificationMeasuresForPlan: (planId) =>
+      get().qualificationMeasures.filter((m) => m.planId === planId),
+
+    getSkillGapsForEmployee: (employeeId, targetRoleId) => {
+      const state = get();
+      return computeSkillGapsForEmployee(
+        {
+          assessments: state.assessments,
+          roles: state.roles,
+          skills: state.skills,
+          subcategories: state.subcategories,
+          categories: state.categories,
+          employees: state.employees,
+        },
+        employeeId,
+        targetRoleId
       );
-      return id;
-    } catch (err) {
-      set({ error: err instanceof Error ? err.message : "Failed" });
-      throw err;
-    }
-  },
+    },
 
-  updateQualificationPlan: async (id, plan) => {
-    try {
-      const existing = get().qualificationPlans.find((p) => p.id === id);
-      const emp = get().employees.find((e) => e.id === existing?.employeeId);
-      const updatedPlan = {
-        ...existing,
-        ...plan,
-        id,
-        updatedAt: Date.now(),
-      } as QualificationPlan;
-
-      set((state) => ({
-        qualificationPlans: state.qualificationPlans.map((p) =>
-          p.id === id ? updatedPlan : p
-        ),
-      }));
-
-      await db.updateQualificationPlan(id, plan);
-      await recordChange(
-        get,
-        "qualificationPlan",
-        id,
-        `Plan für ${emp?.name || existing?.employeeId || id}`,
-        "update",
-        existing,
-        updatedPlan
+    getPotentialMentors: (skillId, excludeEmployeeId) => {
+      const state = get();
+      return findPotentialMentors(
+        state.assessments,
+        state.employees,
+        skillId,
+        excludeEmployeeId
       );
-    } catch (err) {
-      set({ error: err instanceof Error ? err.message : "Failed" });
-      await get().refreshAllData();
-      throw err;
-    }
-  },
-
-  deleteQualificationPlan: async (id) => {
-    try {
-      const existing = get().qualificationPlans.find((p) => p.id === id);
-      const cascadeMeasures = get().qualificationMeasures.filter((m) => m.planId === id);
-
-      set((state) => ({
-        qualificationPlans: state.qualificationPlans.filter((p) => p.id !== id),
-        qualificationMeasures: state.qualificationMeasures.filter((m) => m.planId !== id),
-      }));
-
-      await db.deleteQualificationPlan(id);
-      await recordChange(
-        get,
-        "qualificationPlan",
-        id,
-        `Plan für ${existing?.employeeId || id}`,
-        "delete",
-        { ...existing, _cascade: { qualificationMeasures: cascadeMeasures } },
-        null
-      );
-    } catch (err) {
-      set({ error: err instanceof Error ? err.message : "Failed" });
-      await get().refreshAllData();
-      throw err;
-    }
-  },
-
-  getQualificationPlansForEmployee: (employeeId) =>
-    get().qualificationPlans.filter((p) => p.employeeId === employeeId),
-
-  addQualificationMeasure: async (measure) => {
-    try {
-      const id = await db.addQualificationMeasure(measure);
-      const skill = get().skills.find((s) => s.id === measure.skillId);
-      const newMeasure = { ...measure, id, updatedAt: Date.now() };
-
-      set((state) => ({
-        qualificationMeasures: [...state.qualificationMeasures, newMeasure],
-      }));
-
-      await recordChange(
-        get,
-        "qualificationMeasure",
-        id,
-        `Maßnahme: ${skill?.name || measure.skillId}`,
-        "create",
-        null,
-        newMeasure
-      );
-      return id;
-    } catch (err) {
-      set({ error: err instanceof Error ? err.message : "Failed" });
-      throw err;
-    }
-  },
-
-  updateQualificationMeasure: async (id, measure) => {
-    try {
-      const existing = get().qualificationMeasures.find((m) => m.id === id);
-      const skill = get().skills.find((s) => s.id === existing?.skillId);
-      const updatedMeasure = {
-        ...existing,
-        ...measure,
-        id,
-        updatedAt: Date.now(),
-      } as QualificationMeasure;
-
-      set((state) => ({
-        qualificationMeasures: state.qualificationMeasures.map((m) =>
-          m.id === id ? updatedMeasure : m
-        ),
-      }));
-
-      await db.updateQualificationMeasure(id, measure);
-      await recordChange(
-        get,
-        "qualificationMeasure",
-        id,
-        `Maßnahme: ${skill?.name || existing?.skillId || id}`,
-        "update",
-        existing,
-        updatedMeasure
-      );
-    } catch (err) {
-      set({ error: err instanceof Error ? err.message : "Failed" });
-      await get().refreshAllData();
-      throw err;
-    }
-  },
-
-  deleteQualificationMeasure: async (id) => {
-    try {
-      const existing = get().qualificationMeasures.find((m) => m.id === id);
-      const skill = get().skills.find((s) => s.id === existing?.skillId);
-
-      set((state) => ({
-        qualificationMeasures: state.qualificationMeasures.filter((m) => m.id !== id),
-      }));
-
-      await db.deleteQualificationMeasure(id);
-      await recordChange(
-        get,
-        "qualificationMeasure",
-        id,
-        `Maßnahme: ${skill?.name || existing?.skillId || id}`,
-        "delete",
-        existing,
-        null
-      );
-    } catch (err) {
-      set({ error: err instanceof Error ? err.message : "Failed" });
-      await get().refreshAllData();
-      throw err;
-    }
-  },
-
-  getQualificationMeasuresForPlan: (planId) =>
-    get().qualificationMeasures.filter((m) => m.planId === planId),
-
-  getSkillGapsForEmployee: (employeeId, targetRoleId) => {
-    const state = get();
-    return computeSkillGapsForEmployee(
-      {
-        assessments: state.assessments,
-        roles: state.roles,
-        skills: state.skills,
-        subcategories: state.subcategories,
-        categories: state.categories,
-        employees: state.employees,
-      },
-      employeeId,
-      targetRoleId
-    );
-  },
-
-  getPotentialMentors: (skillId, excludeEmployeeId) => {
-    const state = get();
-    return findPotentialMentors(
-      state.assessments,
-      state.employees,
-      skillId,
-      excludeEmployeeId
-    );
-  },
-});
+    },
+  };
+};

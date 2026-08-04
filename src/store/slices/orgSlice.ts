@@ -1,116 +1,50 @@
 import { db } from "../../services/indexeddb";
-import { recordChange } from "../recordChange";
+import type { Department, EmployeeRole } from "../../types";
+import { createEntityCrudHandlers, nameLabel } from "../createEntityCrud";
 import type { AppSlice, OrgSlice } from "../types";
 
-export const createOrgSlice: AppSlice<OrgSlice> = (set, get) => ({
-  departments: [],
-  roles: [],
+export const createOrgSlice: AppSlice<OrgSlice> = (set, get) => {
+  const departments = createEntityCrudHandlers<
+    Department,
+    Omit<Department, "id" | "updatedAt">
+  >(set, get, {
+    entityType: "department",
+    listKey: "departments",
+    getLabel: nameLabel<Department>(),
+    dbAdd: (data) => db.addDepartment(data.name),
+    dbUpdate: (id, data) => db.updateDepartment(id, data),
+    dbDelete: (id) => db.deleteDepartment(id),
+  });
 
-  addDepartment: async (name) => {
-    try {
-      const id = await db.addDepartment(name);
-      const newDept = { name, id, updatedAt: Date.now() };
-      set((state) => ({ departments: [...state.departments, newDept] }));
-      await recordChange(get, "department", id, name, "create", null, newDept);
-      return id;
-    } catch (err) {
-      set({ error: err instanceof Error ? err.message : "Failed" });
-      throw err;
-    }
-  },
+  const roles = createEntityCrudHandlers<EmployeeRole>(set, get, {
+    entityType: "role",
+    listKey: "roles",
+    getLabel: nameLabel<EmployeeRole>(),
+    dbAdd: (data) => db.addRole(data),
+    dbUpdate: (id, data) => db.updateRole(id, data),
+    dbDelete: (id) => db.deleteRole(id),
+  });
 
-  updateDepartment: async (id, department) => {
-    try {
-      const existing = get().departments.find((d) => d.id === id);
-      const updatedDept = { ...existing, ...department, id, updatedAt: Date.now() };
+  return {
+    departments: [],
+    roles: [],
 
-      set((state) => ({
-        departments: state.departments.map((d) => (d.id === id ? updatedDept : d)),
-      }));
+    addDepartment: async (name) => departments.add({ name }),
+    updateDepartment: departments.update,
+    deleteDepartment: departments.remove,
 
-      await db.updateDepartment(id, department);
-      await recordChange(get, "department", id, department.name, "update", existing, updatedDept);
-    } catch (err) {
-      set({ error: err instanceof Error ? err.message : "Failed" });
-      await get().refreshAllData();
-      throw err;
-    }
-  },
+    addRole: roles.add,
+    updateRole: roles.update,
+    deleteRole: roles.remove,
 
-  deleteDepartment: async (id) => {
-    try {
-      const existing = get().departments.find((d) => d.id === id);
-
-      set((state) => ({
-        departments: state.departments.filter((d) => d.id !== id),
-      }));
-
-      await db.deleteDepartment(id);
-      await recordChange(get, "department", id, existing?.name || id, "delete", existing, null);
-    } catch (err) {
-      set({ error: err instanceof Error ? err.message : "Failed" });
-      await get().refreshAllData();
-      throw err;
-    }
-  },
-
-  addRole: async (role) => {
-    try {
-      const id = await db.addRole(role);
-      const newRole = { ...role, id, updatedAt: Date.now() };
-
-      set((state) => ({ roles: [...state.roles, newRole] }));
-
-      await recordChange(get, "role", id, role.name, "create", null, newRole);
-      return id;
-    } catch (err) {
-      set({ error: err instanceof Error ? err.message : "Failed" });
-      throw err;
-    }
-  },
-
-  updateRole: async (id, role) => {
-    try {
-      const existing = get().roles.find((r) => r.id === id);
-      const updatedRole = { ...existing, ...role, id, updatedAt: Date.now() };
-
-      set((state) => ({
-        roles: state.roles.map((r) => (r.id === id ? updatedRole : r)),
-      }));
-
-      await db.updateRole(id, role);
-      await recordChange(get, "role", id, role.name, "update", existing, updatedRole);
-    } catch (err) {
-      set({ error: err instanceof Error ? err.message : "Failed" });
-      await get().refreshAllData();
-      throw err;
-    }
-  },
-
-  deleteRole: async (id) => {
-    try {
-      const existing = get().roles.find((r) => r.id === id);
-
-      set((state) => ({
-        roles: state.roles.filter((r) => r.id !== id),
-      }));
-
-      await db.deleteRole(id);
-      await recordChange(get, "role", id, existing?.name || id, "delete", existing, null);
-    } catch (err) {
-      set({ error: err instanceof Error ? err.message : "Failed" });
-      await get().refreshAllData();
-      throw err;
-    }
-  },
-
-  updateSkillsForRole: async (roleId, skillIds) => {
-    try {
-      await db.updateSkillsForRole(roleId, skillIds);
-      await get().refreshAllData();
-    } catch (err) {
-      set({ error: err instanceof Error ? err.message : "Failed" });
-      throw err;
-    }
-  },
-});
+    updateSkillsForRole: async (roleId, skillIds) => {
+      try {
+        await db.updateSkillsForRole(roleId, skillIds);
+        await get().refreshAllData();
+      } catch (err) {
+        set({ error: err instanceof Error ? err.message : "Failed" });
+        throw err;
+      }
+    },
+  };
+};

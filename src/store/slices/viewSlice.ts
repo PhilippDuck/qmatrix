@@ -1,84 +1,56 @@
 import { db } from "../../services/indexeddb";
 import type { SavedView } from "../../types";
-import { recordChange } from "../recordChange";
+import { createEntityCrudHandlers, nameLabel } from "../createEntityCrud";
 import type { AppSlice, ViewSlice } from "../types";
 
-export const createViewSlice: AppSlice<ViewSlice> = (set, get) => ({
-  savedViews: [],
+export const createViewSlice: AppSlice<ViewSlice> = (set, get) => {
+  const crud = createEntityCrudHandlers<
+    SavedView,
+    Omit<SavedView, "id" | "updatedAt">
+  >(set, get, {
+    entityType: "savedView",
+    listKey: "savedViews",
+    getLabel: nameLabel<SavedView>(),
+    dbAdd: (data) => db.addSavedView(data),
+    dbUpdate: (id, data) => db.updateSavedView(id, data),
+    dbDelete: (id) => db.deleteSavedView(id),
+    afterAddList: (list) =>
+      [...list].sort((a, b) => (a.order ?? 9999) - (b.order ?? 9999)),
+  });
 
-  addSavedView: async (view) => {
-    try {
+  return {
+    savedViews: [],
+
+    addSavedView: async (view) => {
       const currentViews = get().savedViews;
       const maxOrder =
         currentViews.length > 0 ? Math.max(...currentViews.map((v) => v.order ?? 0)) : 0;
-      const viewWithOrder = { ...view, order: maxOrder + 1 };
-      const id = await db.addSavedView(viewWithOrder);
-      const newView = { ...viewWithOrder, id, updatedAt: Date.now() };
-      set((state) => ({
-        savedViews: [...state.savedViews, newView].sort(
-          (a, b) => (a.order ?? 9999) - (b.order ?? 9999)
-        ),
-      }));
-      await recordChange(get, "savedView", id, viewWithOrder.name, "create", null, newView);
-      return id;
-    } catch (err) {
-      set({ error: err instanceof Error ? err.message : "Failed" });
-      throw err;
-    }
-  },
+      return crud.add({ ...view, order: maxOrder + 1 });
+    },
 
-  updateSavedView: async (id, view) => {
-    try {
-      const existing = get().savedViews.find((v) => v.id === id);
-      const updatedView = { ...existing, ...view, id, updatedAt: Date.now() } as SavedView;
+    updateSavedView: crud.update,
+    deleteSavedView: crud.remove,
 
-      set((state) => ({
-        savedViews: state.savedViews.map((v) => (v.id === id ? updatedView : v)),
-      }));
+    reorderSavedViews: async (viewIds) => {
+      try {
+        const currentViews = [...get().savedViews];
+        const updatedViews = currentViews.map((v) => {
+          const newOrder = viewIds.indexOf(v.id!);
+          return { ...v, order: newOrder >= 0 ? newOrder : (v.order ?? 9999) };
+        });
 
-      await db.updateSavedView(id, view);
-      await recordChange(get, "savedView", id, view.name, "update", existing, updatedView);
-    } catch (err) {
-      set({ error: err instanceof Error ? err.message : "Failed" });
-      await get().refreshAllData();
-      throw err;
-    }
-  },
+        set({
+          savedViews: updatedViews.sort((a, b) => (a.order ?? 9999) - (b.order ?? 9999)),
+        });
 
-  deleteSavedView: async (id) => {
-    try {
-      const existing = get().savedViews.find((v) => v.id === id);
-
-      set((state) => ({
-        savedViews: state.savedViews.filter((v) => v.id !== id),
-      }));
-
-      await db.deleteSavedView(id);
-      await recordChange(get, "savedView", id, existing?.name || id, "delete", existing, null);
-    } catch (err) {
-      set({ error: err instanceof Error ? err.message : "Failed" });
-      await get().refreshAllData();
-      throw err;
-    }
-  },
-
-  reorderSavedViews: async (viewIds) => {
-    try {
-      const currentViews = [...get().savedViews];
-      const updatedViews = currentViews.map((v) => {
-        const newOrder = viewIds.indexOf(v.id!);
-        return { ...v, order: newOrder >= 0 ? newOrder : (v.order ?? 9999) };
-      });
-
-      set({
-        savedViews: updatedViews.sort((a, b) => (a.order ?? 9999) - (b.order ?? 9999)),
-      });
-
-      await Promise.all(updatedViews.map((v) => db.updateSavedView(v.id!, v)));
-    } catch (err) {
-      set({ error: err instanceof Error ? err.message : "Failed to reorder views" });
-      await get().refreshAllData();
-      throw err;
-    }
-  },
-});
+        await Promise.all(updatedViews.map((v) => db.updateSavedView(v.id!, v)));
+      } catch (err) {
+        set({
+          error: err instanceof Error ? err.message : "Failed to reorder views",
+        });
+        await get().refreshAllData();
+        throw err;
+      }
+    },
+  };
+};
