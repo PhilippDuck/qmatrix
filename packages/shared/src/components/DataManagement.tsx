@@ -103,7 +103,6 @@ export const DataManagement = () => {
   const [diffOpened, { open: openDiff, close: closeDiff }] = useDisclosure(false);
   const [isCatalogBusy, setIsCatalogBusy] = useState(false);
   const [catalogName, setCatalogName] = useState(projectTitle || "SkillGrid Katalog");
-  const [catalogVersion, setCatalogVersion] = useState("1.0.0");
   const [catalogId] = useState(() => {
     const key = "skillgrid-catalog-id";
     const existing = localStorage.getItem(key);
@@ -223,12 +222,21 @@ export const DataManagement = () => {
   const handleCatalogExtract = async () => {
     setIsCatalogBusy(true);
     try {
+      // Content-only export: no SemVer release. Manage is SoT for catalog versions.
       const result = await extractCatalog({
         catalogId,
         name: catalogName.trim() || "SkillGrid Katalog",
-        version: catalogVersion.trim() || "1.0.0",
+        version: "0.0.0",
         publisher: projectTitle || undefined,
         partial: false,
+        changelog: [
+          {
+            version: "0.0.0",
+            date: new Date().toISOString().slice(0, 10),
+            notes:
+              "Inhalts-Export aus Full/Team — Versionierung erfolgt in SkillGrid Manage",
+          },
+        ],
       });
       if (!result.ok || !result.package) {
         notifications.show({
@@ -243,11 +251,11 @@ export const DataManagement = () => {
       updateTimestamp("Katalog-Export");
       const warnCount = result.report.warnings.length;
       notifications.show({
-        title: "Katalog exportiert",
+        title: "Katalog exportiert (ohne Release-Version)",
         message:
           warnCount > 0
-            ? `Paket erstellt (${warnCount} Hinweis(e) – siehe Konsole).`
-            : `Katalog v${withHash.meta.version} heruntergeladen.`,
+            ? `Inhalte exportiert (${warnCount} Hinweis(e)). Versionen vergibt Manage.`
+            : "Inhalte heruntergeladen. SemVer-Versionen vergibt SkillGrid Manage.",
         color: warnCount > 0 ? "yellow" : "green",
       });
       if (warnCount > 0) {
@@ -385,25 +393,19 @@ export const DataManagement = () => {
               </Group>
               <Text size="xs" c="dimmed">
                 Katalog-Paket (Skills, Kategorien, Rollen) – getrennt vom vollständigen Backup.
+                Export ist <strong>inhaltsbasiert ohne Release-Version</strong> — SemVer und
+                Versionsarchiv verwaltet <strong>SkillGrid Manage</strong> (Single Source of Truth).
                 {canCatalogImport &&
                   " Import aktualisiert den Katalog, ohne Mitarbeiter und Bewertungen zu löschen."}
               </Text>
               {canCatalogExport && (
-                <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm">
-                  <TextInput
-                    label="Katalog-Name"
-                    value={catalogName}
-                    onChange={(e) => setCatalogName(e.currentTarget.value)}
-                    size="sm"
-                  />
-                  <TextInput
-                    label="Version (SemVer)"
-                    value={catalogVersion}
-                    onChange={(e) => setCatalogVersion(e.currentTarget.value)}
-                    placeholder="1.0.0"
-                    size="sm"
-                  />
-                </SimpleGrid>
+                <TextInput
+                  label="Katalog-Name"
+                  value={catalogName}
+                  onChange={(e) => setCatalogName(e.currentTarget.value)}
+                  size="sm"
+                  description="Keine Versionsnummer — die vergibt Manage beim Freigeben."
+                />
               )}
               <Group>
                 {canCatalogExport && (

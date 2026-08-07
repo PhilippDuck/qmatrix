@@ -193,10 +193,12 @@ export const CatalogMergeImport: React.FC = () => {
         0;
 
       if (hasUpserts) {
+        // Manage is SoT for SemVer — never install import package meta/version
         const result = await importCatalog(partialPkg, {
           missingPolicy: "keep",
           allowDowngrade: true,
           allowCatalogIdChange: true,
+          updateInstalledMeta: false,
         });
         if (!result.ok) {
           notifications.show({
@@ -295,9 +297,10 @@ export const CatalogMergeImport: React.FC = () => {
             </Group>
             <Text size="xs" c="dimmed">
               Importiert immer als <strong>Merge</strong> mit Auswahl. Unterstützte
-              Dateien: Katalog-JSON aus Full/Manage („Katalog exportieren“ /
-              Version freigeben), Full-Gesamtbackup (Diskette) und Manage-Global-Backup.
-              Unterschiede werden angezeigt — nichts wird ohne Auswahl übernommen.
+              Dateien: Katalog-JSON aus Full („Katalog exportieren“, ohne Version),
+              Manage-Release, Full-Backup und Manage-Global-Backup.{" "}
+              <strong>Import-Versionen werden ignoriert</strong> — Versionen vergibt
+              nur Manage. Nichts wird ohne Auswahl übernommen.
             </Text>
           </Box>
           <Group>
@@ -336,11 +339,11 @@ export const CatalogMergeImport: React.FC = () => {
           </Text>
           <Alert icon={<IconInfoCircle size={16} />} color="blue" variant="light">
             <Text size="xs">
-              <strong>Neu / aktualisiert:</strong> wird aus dem Import in den
-              Live-Katalog geschrieben.{" "}
-              <strong>Nur lokal:</strong> wenn gewählt, wird der lokale Eintrag
-              als veraltet markiert (nicht hart gelöscht). Eltern-Kategorien
-              werden bei Skills automatisch mitübernommen.
+              <strong>Neu / aktualisiert:</strong> Inhalte aus dem Import.{" "}
+              <strong>Nur lokal:</strong> optional als veraltet markieren.
+              Eltern-Kategorien werden bei Skills mitgezogen. Die freigegebene{" "}
+              <strong>Katalog-Version in Manage bleibt unverändert</strong> (SoT);
+              nach dem Merge ggf. neu freigeben.
             </Text>
           </Alert>
 

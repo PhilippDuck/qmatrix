@@ -131,6 +131,12 @@ export interface CatalogApplyOptions {
   allowDowngrade?: boolean;
   /** Allow switching catalogId */
   allowCatalogIdChange?: boolean;
+  /**
+   * When false, apply entity content only and leave installedCatalogMeta alone.
+   * Manage merge uses this — Manage is SoT for SemVer releases.
+   * Default true (Team/Full install of a catalog package).
+   */
+  updateInstalledMeta?: boolean;
 }
 
 export interface CatalogApplyReport {

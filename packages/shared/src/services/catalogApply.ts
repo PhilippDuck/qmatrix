@@ -94,6 +94,7 @@ export async function applyCatalogPackage(
 
   const pkg = validation.package;
   const partial = pkg.meta.partial === true;
+  const updateInstalledMeta = options.updateInstalledMeta !== false;
   // Fresh Manage DB may have no settings row yet
   const settings = (await db.getSettings()) ?? {
     id: "default",
@@ -102,39 +103,46 @@ export async function applyCatalogPackage(
   };
   const previousMeta = settings.installedCatalogMeta;
 
-  if (
-    previousMeta?.version &&
-    compareSemVer(pkg.meta.version, previousMeta.version) < 0 &&
-    !options.allowDowngrade
-  ) {
-    return {
-      ok: false,
-      errors: [
-        {
-          path: "meta.version",
-          message: `Version downgrade ${previousMeta.version} → ${pkg.meta.version} not allowed`,
-          severity: "error",
-        },
-      ],
-    };
+  // Version/catalogId gates only matter when we would install package meta (not content-only merge)
+  if (updateInstalledMeta) {
+    if (
+      previousMeta?.version &&
+      compareSemVer(pkg.meta.version, previousMeta.version) < 0 &&
+      !options.allowDowngrade
+    ) {
+      return {
+        ok: false,
+        errors: [
+          {
+            path: "meta.version",
+            message: `Version downgrade ${previousMeta.version} → ${pkg.meta.version} not allowed`,
+            severity: "error",
+          },
+        ],
+      };
+    }
+
+    if (
+      previousMeta?.catalogId &&
+      previousMeta.catalogId !== pkg.meta.catalogId &&
+      !options.allowCatalogIdChange
+    ) {
+      return {
+        ok: false,
+        errors: [
+          {
+            path: "meta.catalogId",
+            message: `Different catalogId (${previousMeta.catalogId} → ${pkg.meta.catalogId}); set allowCatalogIdChange`,
+            severity: "error",
+          },
+        ],
+      };
+    }
   }
 
-  if (
-    previousMeta?.catalogId &&
-    previousMeta.catalogId !== pkg.meta.catalogId &&
-    !options.allowCatalogIdChange
-  ) {
-    return {
-      ok: false,
-      errors: [
-        {
-          path: "meta.catalogId",
-          message: `Different catalogId (${previousMeta.catalogId} → ${pkg.meta.catalogId}); set allowCatalogIdChange`,
-          severity: "error",
-        },
-      ],
-    };
-  }
+  const effectiveMeta = updateInstalledMeta
+    ? pkg.meta
+    : previousMeta ?? pkg.meta;
 
   const report: CatalogApplyReport = {
     added: emptyCounts(),
@@ -145,10 +153,17 @@ export async function applyCatalogPackage(
     orphanAssessments: 0,
     orphanMeasures: 0,
     hierarchyWarnings: 0,
-    warnings: [...validation.warnings.map((w) => w.message)],
+    warnings: [
+      ...validation.warnings.map((w) => w.message),
+      ...(updateInstalledMeta
+        ? []
+        : [
+            "Import-Version/Meta ignoriert — Manage (oder installierte Meta) bleibt Versions-SoT",
+          ]),
+    ],
     previousVersion: previousMeta?.version,
-    newVersion: pkg.meta.version,
-    catalogId: pkg.meta.catalogId,
+    newVersion: effectiveMeta.version,
+    catalogId: effectiveMeta.catalogId,
   };
 
   if (!upsert) {
@@ -387,21 +402,32 @@ export async function applyCatalogPackage(
     // store may be empty / missing in tests
   }
 
-  // Settings meta
-  await db.saveSettings({
-    projectTitle: settings.projectTitle || "",
-    installedCatalogMeta: pkg.meta,
-  });
+  // Settings meta — Manage content-merge leaves installed catalog version untouched
+  if (updateInstalledMeta) {
+    await db.saveSettings({
+      projectTitle: settings.projectTitle || "",
+      installedCatalogMeta: pkg.meta,
+    });
+  } else if (!settings.projectTitle && !previousMeta) {
+    // Ensure a settings row exists on first content merge without inventing a release
+    await db.saveSettings({
+      projectTitle: settings.projectTitle || "",
+      installedCatalogMeta: previousMeta,
+    });
+  }
 
   if (db.addChangeHistoryEntry) {
     await db.addChangeHistoryEntry({
       entityType: "catalog",
-      entityId: pkg.meta.catalogId,
-      entityLabel: `Katalog v${pkg.meta.version}`,
+      entityId: effectiveMeta.catalogId,
+      entityLabel: updateInstalledMeta
+        ? `Katalog v${pkg.meta.version}`
+        : "Katalog-Inhalte gemerged (Version unverändert)",
       action: previousMeta ? "update" : "create",
       previousData: previousMeta ?? null,
       newData: {
-        meta: pkg.meta,
+        meta: updateInstalledMeta ? pkg.meta : previousMeta,
+        contentOnly: !updateInstalledMeta,
         reportSummary: {
           added: report.added,
           updated: report.updated,

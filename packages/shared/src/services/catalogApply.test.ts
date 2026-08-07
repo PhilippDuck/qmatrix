@@ -136,6 +136,36 @@ describe("applyCatalogPackage", () => {
     expect(settings.installedCatalogMeta?.version).toBe("1.0.0");
   });
 
+  it("content-only merge does not overwrite Manage installed version", async () => {
+    const db = createMemoryDb();
+    await db.saveSettings({
+      projectTitle: "Manage",
+      installedCatalogMeta: {
+        catalogId: "manage-line",
+        name: "SoT",
+        version: "2.5.0",
+        publishedAt: "2026-06-01T00:00:00.000Z",
+        changelog: [],
+        minAppFormatVersion: 1,
+      },
+    });
+    const incoming = {
+      ...pkgV1,
+      meta: { ...pkgV1.meta, version: "9.9.9", catalogId: "from-full" },
+    };
+    const result = await applyCatalogPackage(db, incoming, {
+      updateInstalledMeta: false,
+      allowCatalogIdChange: true,
+      allowDowngrade: true,
+      missingPolicy: "keep",
+    });
+    expect(result.ok).toBe(true);
+    expect(db.stores.skills.get("sk1")?.name).toBe("TS");
+    const settings = await db.getSettings();
+    expect(settings.installedCatalogMeta?.version).toBe("2.5.0");
+    expect(settings.installedCatalogMeta?.catalogId).toBe("manage-line");
+  });
+
   it("soft-deprecates missing catalog-sourced skills without deleting assessments", async () => {
     const db = createMemoryDb({
       categories: [
