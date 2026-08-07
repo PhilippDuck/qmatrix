@@ -32,6 +32,7 @@ import {
   IconChevronLeft,
   IconChevronRight,
   IconHistory,
+  IconDeviceFloppy,
   type Icon,
 } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
@@ -89,6 +90,99 @@ function ColorSchemeToggle() {
   );
 }
 
+/** Like Full SaveButton: one-click disaster-recovery JSON download. */
+function QuickBackupButton({
+  needsAttention,
+  lastUpdate,
+  onSave,
+}: {
+  needsAttention: boolean;
+  lastUpdate: number | null;
+  onSave: () => void | Promise<unknown>;
+}) {
+  const [wiggleAngle, setWiggleAngle] = useState(0);
+  const [saving, setSaving] = useState(false);
+
+  const lastUpdateStr = lastUpdate
+    ? new Date(lastUpdate).toLocaleTimeString("de-DE", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      })
+    : null;
+
+  const tooltipLabel = lastUpdateStr
+    ? `Schnellbackup (Letzte Änderung: ${lastUpdateStr})`
+    : "Schnellbackup — gesamter Manage-Stand (Katalog + Versionsarchiv)";
+
+  useEffect(() => {
+    let outerInterval: ReturnType<typeof setInterval> | undefined;
+    let wiggleSequence: ReturnType<typeof setInterval> | undefined;
+    if (needsAttention) {
+      const angles = [-15, 15, -10, 10, -5, 5, 0];
+      const playWiggle = () => {
+        let index = 0;
+        setWiggleAngle(angles[index]);
+        index++;
+        wiggleSequence = setInterval(() => {
+          if (index < angles.length) {
+            setWiggleAngle(angles[index]);
+            index++;
+          } else {
+            clearInterval(wiggleSequence);
+          }
+        }, 120);
+      };
+      playWiggle();
+      outerInterval = setInterval(playWiggle, 10000);
+    } else {
+      setWiggleAngle(0);
+    }
+    return () => {
+      if (outerInterval) clearInterval(outerInterval);
+      if (wiggleSequence) clearInterval(wiggleSequence);
+    };
+  }, [needsAttention]);
+
+  return (
+    <Tooltip label={tooltipLabel}>
+      <ActionIcon
+        variant="subtle"
+        color="gray"
+        size="md"
+        loading={saving}
+        onClick={() => {
+          setSaving(true);
+          void Promise.resolve(onSave()).finally(() => setSaving(false));
+        }}
+        style={{ position: "relative" }}
+      >
+        <div
+          style={{
+            transform: `rotate(${wiggleAngle}deg)`,
+            transition: "transform 0.15s ease-in-out",
+          }}
+        >
+          <IconDeviceFloppy size={18} />
+        </div>
+        {needsAttention && (
+          <div
+            style={{
+              position: "absolute",
+              top: 4,
+              right: 4,
+              width: 8,
+              height: 8,
+              backgroundColor: "var(--mantine-color-red-6)",
+              borderRadius: "50%",
+            }}
+          />
+        )}
+      </ActionIcon>
+    </Tooltip>
+  );
+}
+
 const App: FC = () => {
   const [opened, { toggle }] = useDisclosure();
   const [historyOpened, { open: openHistory, close: closeHistory }] =
@@ -116,6 +210,8 @@ const App: FC = () => {
     refreshCatalogDirtyState,
     changeHistory,
     undoChange,
+    hasUnsavedChanges,
+    exportManageBackup,
   } = useStore(
     useShallow((s) => ({
       loading: s.loading,
@@ -131,8 +227,33 @@ const App: FC = () => {
       refreshCatalogDirtyState: s.refreshCatalogDirtyState,
       changeHistory: s.changeHistory,
       undoChange: s.undoChange,
+      hasUnsavedChanges: s.hasUnsavedChanges,
+      exportManageBackup: s.exportManageBackup,
     }))
   );
+
+  const lastUpdate =
+    changeHistory.length > 0 ? changeHistory[0].timestamp : null;
+  const needsBackupAttention =
+    hasUnsavedChanges || hasUnpublishedCatalogChanges;
+
+  const handleQuickBackup = async () => {
+    try {
+      await exportManageBackup();
+      notifications.show({
+        title: "Schnellbackup erstellt",
+        message:
+          "Gesamter Manage-Stand heruntergeladen (Katalog + Versionsarchiv).",
+        color: "green",
+      });
+    } catch (e) {
+      notifications.show({
+        title: "Backup fehlgeschlagen",
+        message: e instanceof Error ? e.message : String(e),
+        color: "red",
+      });
+    }
+  };
 
   useEffect(() => {
     initDb();
@@ -272,6 +393,11 @@ const App: FC = () => {
                       {projectTitle}
                     </Text>
                   )}
+                  <QuickBackupButton
+                    needsAttention={needsBackupAttention}
+                    lastUpdate={lastUpdate}
+                    onSave={handleQuickBackup}
+                  />
                   <Tooltip label="Änderungshistorie (lokale Aktionen, unabhängig von Katalog-Versionen)">
                     <ActionIcon
                       variant="subtle"
