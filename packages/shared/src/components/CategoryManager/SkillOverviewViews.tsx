@@ -18,7 +18,6 @@ import {
   Tooltip,
   ActionIcon,
   Menu,
-  Button,
 } from "@mantine/core";
 import {
   IconSearch,
@@ -34,7 +33,6 @@ import {
   IconFold,
   IconFoldDown,
   IconFoldUp,
-  IconChevronDown as IconMenuChevron,
 } from "@tabler/icons-react";
 import type {
   Category,
@@ -384,64 +382,58 @@ export const SkillTreeView: React.FC<SkillOverviewData & SkillTreeActions> = ({
 
   return (
     <Stack gap="sm" h="100%" style={{ minHeight: 0 }}>
-      <Group gap="sm" wrap="wrap">
+      <Group gap="sm" wrap="nowrap">
+        <Menu shadow="sm" width={200} position="bottom-start">
+          <Menu.Target>
+            <Tooltip label="Ein- / Ausklappen">
+              <ActionIcon
+                variant="light"
+                color="gray"
+                size="lg"
+                disabled={maxExpandLevel === 0 && categories.length === 0}
+              >
+                <IconFold size={16} />
+              </ActionIcon>
+            </Tooltip>
+          </Menu.Target>
+          <Menu.Dropdown>
+            <Menu.Item
+              leftSection={<IconFold size={14} />}
+              onClick={collapseAll}
+              disabled={expandLevel === 0 && Object.keys(open).length === 0}
+            >
+              Alles einklappen
+            </Menu.Item>
+            <Menu.Item
+              leftSection={<IconFoldDown size={14} />}
+              onClick={expandOneMore}
+              disabled={maxExpandLevel === 0 || expandLevel >= maxExpandLevel}
+            >
+              Eine Stufe weiter
+              {expandLevel < maxExpandLevel
+                ? ` (${expandLevel}→${expandLevel + 1})`
+                : ""}
+            </Menu.Item>
+            <Menu.Item
+              leftSection={<IconFoldUp size={14} />}
+              onClick={expandAll}
+              disabled={maxExpandLevel === 0}
+            >
+              Alles ausklappen
+            </Menu.Item>
+          </Menu.Dropdown>
+        </Menu>
         <TextInput
           placeholder="Suchen in Kategorien, Bereichen, Skills…"
           leftSection={<IconSearch size={16} />}
           value={q}
           onChange={(e) => setQ(e.currentTarget.value)}
           size="sm"
-          style={{ flex: 1, minWidth: 180 }}
+          style={{ flex: 1, minWidth: 0 }}
         />
-        <Group gap={4} wrap="nowrap">
-          <Menu shadow="sm" width={200} position="bottom-end">
-            <Menu.Target>
-              <Button
-                variant="light"
-                color="gray"
-                size="compact-xs"
-                leftSection={<IconFold size={12} />}
-                rightSection={<IconMenuChevron size={12} />}
-                disabled={maxExpandLevel === 0 && categories.length === 0}
-                styles={{
-                  root: { fontWeight: 500 },
-                  section: { marginInline: 2 },
-                }}
-              >
-                Aufklappen
-              </Button>
-            </Menu.Target>
-            <Menu.Dropdown>
-              <Menu.Item
-                leftSection={<IconFold size={14} />}
-                onClick={collapseAll}
-                disabled={expandLevel === 0 && Object.keys(open).length === 0}
-              >
-                Alles einklappen
-              </Menu.Item>
-              <Menu.Item
-                leftSection={<IconFoldDown size={14} />}
-                onClick={expandOneMore}
-                disabled={maxExpandLevel === 0 || expandLevel >= maxExpandLevel}
-              >
-                Eine Stufe weiter
-                {expandLevel < maxExpandLevel
-                  ? ` (${expandLevel}→${expandLevel + 1})`
-                  : ""}
-              </Menu.Item>
-              <Menu.Item
-                leftSection={<IconFoldUp size={14} />}
-                onClick={expandAll}
-                disabled={maxExpandLevel === 0}
-              >
-                Alles ausklappen
-              </Menu.Item>
-            </Menu.Dropdown>
-          </Menu>
-          {canEdit && onAddCategory && (
-            <ButtonLikeAdd onClick={onAddCategory} label="Kategorie" />
-          )}
-        </Group>
+        {canEdit && onAddCategory && (
+          <ButtonLikeAdd onClick={onAddCategory} label="Kategorie" />
+        )}
       </Group>
       <ScrollArea style={{ flex: 1 }} offsetScrollbars type="auto">
         <style>{`
