@@ -1,7 +1,7 @@
 /**
  * Manage: version management — release catalog packages with SemVer + changelog history.
  */
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Title,
   Group,
@@ -18,6 +18,8 @@ import {
   ThemeIcon,
   Alert,
   Code,
+  Divider,
+  Box,
 } from "@mantine/core";
 import {
   IconRocket,
@@ -25,11 +27,18 @@ import {
   IconPackageExport,
   IconAlertCircle,
   IconTag,
+  IconFingerprint,
 } from "@tabler/icons-react";
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import { useStore, useShallow } from "../store/hooks";
-import { bumpSemVer, isValidSemVer, type SemVerBump } from "../services/catalog";
+import {
+  bumpSemVer,
+  isValidSemVer,
+  computeCatalogFingerprint,
+  extractCatalogFromState,
+  type SemVerBump,
+} from "../services/catalog";
 
 function stableCatalogId(): string {
   const key = "skillgrid-manage-catalog-id";
@@ -49,6 +58,7 @@ export const CatalogReleasePanel: React.FC = () => {
     projectTitle,
     installedCatalogMeta,
     categories,
+    subcategories,
     skills,
     roles,
     publishCatalogRelease,
@@ -57,6 +67,7 @@ export const CatalogReleasePanel: React.FC = () => {
       projectTitle: s.projectTitle,
       installedCatalogMeta: s.installedCatalogMeta,
       categories: s.categories,
+      subcategories: s.subcategories,
       skills: s.skills,
       roles: s.roles,
       publishCatalogRelease: s.publishCatalogRelease,
@@ -72,18 +83,40 @@ export const CatalogReleasePanel: React.FC = () => {
   const [manualVersion, setManualVersion] = useState("");
   const [notes, setNotes] = useState("");
   const [useManual, setUseManual] = useState(false);
+  const [catalogFingerprint, setCatalogFingerprint] = useState<string>("…");
 
   const catalogId = useMemo(() => stableCatalogId(), []);
   const currentVersion = installedCatalogMeta?.version || "—";
   const nextPreview = useMemo(() => {
     if (useManual && manualVersion.trim()) return manualVersion.trim();
-    return bumpSemVer(
-      installedCatalogMeta?.version || "0.0.0",
-      bump
-    );
+    return bumpSemVer(installedCatalogMeta?.version || "0.0.0", bump);
   }, [bump, useManual, manualVersion, installedCatalogMeta?.version]);
 
   const changelog = installedCatalogMeta?.changelog || [];
+
+  // Katalog-Fingerprint: nur Skills/Rollen/Kategorien (nicht Mitarbeiter)
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const extract = extractCatalogFromState(
+        { categories, subcategories, skills, roles },
+        {
+          catalogId: "fp",
+          name: "fp",
+          version: "0.0.0",
+        }
+      );
+      if (!extract.package) {
+        if (!cancelled) setCatalogFingerprint("—");
+        return;
+      }
+      const fp = await computeCatalogFingerprint(extract.package.entities);
+      if (!cancelled) setCatalogFingerprint(fp);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [categories, subcategories, skills, roles]);
 
   const handlePublish = async () => {
     if (useManual && !isValidSemVer(manualVersion.trim())) {
@@ -146,111 +179,173 @@ export const CatalogReleasePanel: React.FC = () => {
   };
 
   return (
-    <>
-      <Card withBorder shadow="sm" radius="md">
-        <Stack gap="md">
+    <Box style={{ width: "100%" }}>
+      <Title order={2} mb="lg">
+        Versionen & Releases
+      </Title>
+
+      <Stack gap="lg">
+        {/* Status: Katalog-Fingerprint + Zähler (ohne Mitarbeiter) */}
+        <Card withBorder shadow="xs" radius="md">
           <Group justify="space-between" align="flex-start">
             <Stack gap={4}>
               <Group gap="xs">
-                <IconRocket
-                  size={20}
-                  style={{ color: "var(--mantine-color-indigo-filled)" }}
+                <IconFingerprint
+                  size={18}
+                  style={{ color: "var(--mantine-color-dimmed)" }}
                 />
-                <Title order={4}>Versionen & Releases</Title>
-              </Group>
-              <Text size="sm" c="dimmed" maw={560}>
-                Hier veröffentlichst du den aktuellen Stand von Skills, Kategorien und
-                Rollen als versioniertes Katalog-Paket. Teams importieren diese Datei
-                als verbindliche Vorlage — ohne eigene Skills/Rollen anlegen zu müssen.
-              </Text>
-            </Stack>
-            <Stack gap={4} align="flex-end">
-              <Text size="xs" c="dimmed">
-                Aktuelle freigegebene Version
-              </Text>
-              <Badge size="xl" variant="light" color="indigo" leftSection={<IconTag size={14} />}>
-                {currentVersion === "—" ? "Noch kein Release" : `v${currentVersion}`}
-              </Badge>
-            </Stack>
-          </Group>
-
-          <Group gap="xl">
-            <Text size="sm">
-              <Text span c="dimmed" size="xs" display="block">
-                Kategorien
-              </Text>
-              <Text fw={600}>{categories.length}</Text>
-            </Text>
-            <Text size="sm">
-              <Text span c="dimmed" size="xs" display="block">
-                Skills
-              </Text>
-              <Text fw={600}>{skills.length}</Text>
-            </Text>
-            <Text size="sm">
-              <Text span c="dimmed" size="xs" display="block">
-                Rollen
-              </Text>
-              <Text fw={600}>{roles.length}</Text>
-            </Text>
-          </Group>
-
-          <Group>
-            <Button
-              leftSection={<IconPackageExport size={16} />}
-              color="indigo"
-              onClick={open}
-            >
-              Neue Version freigeben…
-            </Button>
-          </Group>
-
-          {changelog.length > 0 ? (
-            <Stack gap="sm" mt="sm">
-              <Group gap="xs">
-                <IconHistory size={16} />
                 <Text fw={600} size="sm">
-                  Versionsverlauf
+                  Katalog-Status
                 </Text>
               </Group>
-              <Timeline active={0} bulletSize={24} lineWidth={2} color="indigo">
-                {changelog.map((entry) => (
-                  <Timeline.Item
-                    key={`${entry.version}-${entry.date}`}
-                    bullet={
-                      <ThemeIcon size={22} radius="xl" color="indigo" variant="light">
-                        <IconTag size={12} />
-                      </ThemeIcon>
-                    }
-                    title={
-                      <Group gap="xs">
-                        <Code>v{entry.version}</Code>
-                        <Text size="xs" c="dimmed">
-                          {entry.date}
-                        </Text>
-                      </Group>
-                    }
-                  >
-                    <Text size="sm" mt={4}>
-                      {entry.notes}
-                    </Text>
-                  </Timeline.Item>
-                ))}
-              </Timeline>
+              <Text size="xs" c="dimmed" maw={420}>
+                Fingerprint aus <strong>Kategorien, Unterkategorien, Skills und
+                Rollen</strong> (SHA-256, 10 Zeichen). Mitarbeiter und
+                Bewertungen fließen nicht ein — nur der Katalog-Inhalt.
+              </Text>
             </Stack>
-          ) : (
-            <Alert
-              icon={<IconAlertCircle size={16} />}
-              color="gray"
-              variant="light"
-              title="Noch keine Releases"
-            >
-              Nach dem ersten Freigeben erscheint hier der Verlauf. Jede Version
-              erzeugt eine JSON-Datei für SkillGrid Team.
-            </Alert>
-          )}
-        </Stack>
-      </Card>
+            <Group gap="xl">
+              <Stack gap={0} align="center" style={{ minWidth: 100 }}>
+                <Text size="xs" c="dimmed" mb={2}>
+                  Katalog-Fingerprint
+                </Text>
+                <Badge
+                  variant="outline"
+                  color="indigo"
+                  size="lg"
+                  styles={{
+                    label: { fontFamily: "monospace", letterSpacing: "1px" },
+                  }}
+                  title="Ändert sich, sobald Skills/Rollen/Kategorien geändert werden"
+                >
+                  {catalogFingerprint}
+                </Badge>
+              </Stack>
+              <Divider orientation="vertical" />
+              <Stack gap={0} align="center">
+                <Text fw={700} size="xl">
+                  {categories.length}
+                </Text>
+                <Text size="xs" c="dimmed">
+                  Kategorien
+                </Text>
+              </Stack>
+              <Stack gap={0} align="center">
+                <Text fw={700} size="xl">
+                  {skills.length}
+                </Text>
+                <Text size="xs" c="dimmed">
+                  Skills
+                </Text>
+              </Stack>
+              <Stack gap={0} align="center">
+                <Text fw={700} size="xl">
+                  {roles.length}
+                </Text>
+                <Text size="xs" c="dimmed">
+                  Rollen
+                </Text>
+              </Stack>
+            </Group>
+          </Group>
+        </Card>
+
+        <Card withBorder shadow="sm" radius="md">
+          <Stack gap="md">
+            <Group justify="space-between" align="flex-start">
+              <Stack gap={4}>
+                <Group gap="xs">
+                  <IconRocket
+                    size={20}
+                    style={{ color: "var(--mantine-color-indigo-filled)" }}
+                  />
+                  <Title order={4}>Version freigeben</Title>
+                </Group>
+                <Text size="sm" c="dimmed" maw={560}>
+                  Veröffentliche den aktuellen Stand von Skills, Kategorien und
+                  Rollen als versioniertes Katalog-Paket. Teams importieren diese
+                  Datei als verbindliche Vorlage.
+                </Text>
+              </Stack>
+              <Stack gap={4} align="flex-end">
+                <Text size="xs" c="dimmed">
+                  Aktuelle freigegebene Version
+                </Text>
+                <Badge
+                  size="xl"
+                  variant="light"
+                  color="indigo"
+                  leftSection={<IconTag size={14} />}
+                >
+                  {currentVersion === "—"
+                    ? "Noch kein Release"
+                    : `v${currentVersion}`}
+                </Badge>
+              </Stack>
+            </Group>
+
+            <Group>
+              <Button
+                leftSection={<IconPackageExport size={16} />}
+                color="indigo"
+                onClick={open}
+              >
+                Neue Version freigeben…
+              </Button>
+            </Group>
+
+            {changelog.length > 0 ? (
+              <Stack gap="sm" mt="sm">
+                <Group gap="xs">
+                  <IconHistory size={16} />
+                  <Text fw={600} size="sm">
+                    Versionsverlauf
+                  </Text>
+                </Group>
+                <Timeline active={0} bulletSize={24} lineWidth={2} color="indigo">
+                  {changelog.map((entry) => (
+                    <Timeline.Item
+                      key={`${entry.version}-${entry.date}`}
+                      bullet={
+                        <ThemeIcon
+                          size={22}
+                          radius="xl"
+                          color="indigo"
+                          variant="light"
+                        >
+                          <IconTag size={12} />
+                        </ThemeIcon>
+                      }
+                      title={
+                        <Group gap="xs">
+                          <Code>v{entry.version}</Code>
+                          <Text size="xs" c="dimmed">
+                            {entry.date}
+                          </Text>
+                        </Group>
+                      }
+                    >
+                      <Text size="sm" mt={4}>
+                        {entry.notes}
+                      </Text>
+                    </Timeline.Item>
+                  ))}
+                </Timeline>
+              </Stack>
+            ) : (
+              <Alert
+                icon={<IconAlertCircle size={16} />}
+                color="gray"
+                variant="light"
+                title="Noch keine Releases"
+              >
+                Nach dem ersten Freigeben erscheint hier der Verlauf. Jede Version
+                erzeugt eine JSON-Datei für SkillGrid Team.
+              </Alert>
+            )}
+          </Stack>
+        </Card>
+      </Stack>
 
       <Modal
         opened={opened}
@@ -311,8 +406,9 @@ export const CatalogReleasePanel: React.FC = () => {
               />
             )}
             <Text size="xs" c="dimmed">
-              <strong>Patch</strong> = kleine Korrekturen · <strong>Minor</strong> = neue
-              Skills/Rollen · <strong>Major</strong> = harte Entfernungen / Breaking Changes
+              <strong>Patch</strong> = kleine Korrekturen ·{" "}
+              <strong>Minor</strong> = neue Skills/Rollen ·{" "}
+              <strong>Major</strong> = harte Entfernungen / Breaking Changes
             </Text>
           </Stack>
 
@@ -341,6 +437,6 @@ export const CatalogReleasePanel: React.FC = () => {
           </Group>
         </Stack>
       </Modal>
-    </>
+    </Box>
   );
 };

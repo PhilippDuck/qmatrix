@@ -28,6 +28,7 @@ export {
   extractCatalogFromState,
   extractCatalogFromExport,
   computeContentHash,
+  computeCatalogFingerprint,
   withContentHash,
   catalogDownloadFilename,
   recomputeRequiredByRoleIds,

@@ -347,6 +347,18 @@ export async function computeContentHash(
 }
 
 /**
+ * Short fingerprint of catalog-only data (categories, subcategories, skills, roles).
+ * Same idea as the app-wide dataHash, but excludes employees/assessments/etc.
+ * Display format: first 10 hex chars uppercase (like getDataHash).
+ */
+export async function computeCatalogFingerprint(
+  entities: CatalogEntities
+): Promise<string> {
+  const full = await computeContentHash(entities);
+  return full.substring(0, 10).toUpperCase();
+}
+
+/**
  * Extract catalog from live app state (or ExportData catalog fields).
  * requiredSkills on roles is SoT; skills omit requiredByRoleIds (K18).
  */

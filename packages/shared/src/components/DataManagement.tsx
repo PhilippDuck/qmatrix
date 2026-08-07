@@ -15,7 +15,6 @@ import {
   Badge,
   Checkbox,
   ScrollArea,
-  Collapse,
   ActionIcon,
   Select,
 } from "@mantine/core";
@@ -24,11 +23,9 @@ import {
   IconUpload,
   IconAlertCircle,
   IconHistory,
-  IconTrash,
   IconGitMerge,
   IconArrowsDiff,
   IconCheck,
-  IconChevronDown,
   IconFileText,
   IconPackage,
   IconPackageImport,
@@ -38,12 +35,10 @@ import { MergeReport, MergeDiff, MergeItemDiff } from "../store/hooks";
 import { useStore, useShallow } from "../store/hooks";
 import { generateQuarterlyReport } from "../services/pdfReportService";
 import { useDisclosure } from "@mantine/hooks";
-import { modals } from "@mantine/modals";
 import { notifications } from "@mantine/notifications";
 import {
   useCatalogExport,
   useCatalogImport,
-  useCatalogVersioning,
   useFullBackupExport,
   useFullBackupImport,
 } from "../hooks/useCatalogAuthoring";
@@ -51,6 +46,7 @@ import { useCapabilities } from "../store/hooks";
 import { withContentHash } from "../services/catalog";
 import { TextInput } from "@mantine/core";
 import { CatalogReleasePanel } from "./CatalogReleasePanel";
+import { SystemDangerZone } from "./SystemDangerZone";
 
 interface ActionInfo {
   type: string;
@@ -60,10 +56,10 @@ interface ActionInfo {
 export const DataManagement = () => {
   const canCatalogExport = useCatalogExport();
   const canCatalogImport = useCatalogImport();
-  const canCatalogVersioning = useCatalogVersioning();
   const canFullBackupExport = useFullBackupExport();
   const canFullBackupImport = useFullBackupImport();
-  const { pdfReports } = useCapabilities();
+  const { pdfReports, employees: showEmployees, variant } = useCapabilities();
+  const isManage = variant === "manage";
 
   const {
     exportData,
@@ -71,7 +67,6 @@ export const DataManagement = () => {
     mergeData,
     diffData,
     applyMerge,
-    clearAllData,
     employees,
     skills,
     projectTitle,
@@ -86,7 +81,6 @@ export const DataManagement = () => {
       mergeData: s.mergeData,
       diffData: s.diffData,
       applyMerge: s.applyMerge,
-      clearAllData: s.clearAllData,
       employees: s.employees,
       skills: s.skills,
       projectTitle: s.projectTitle,
@@ -107,7 +101,6 @@ export const DataManagement = () => {
   const [isMerging, setIsMerging] = useState(false);
   const [resultOpened, { open: openResult, close: closeResult }] = useDisclosure(false);
   const [diffOpened, { open: openDiff, close: closeDiff }] = useDisclosure(false);
-  const [dangerZoneOpened, { toggle: toggleDangerZone }] = useDisclosure(false);
   const [isCatalogBusy, setIsCatalogBusy] = useState(false);
   const [catalogName, setCatalogName] = useState(projectTitle || "SkillGrid Katalog");
   const [catalogVersion, setCatalogVersion] = useState("1.0.0");
@@ -213,30 +206,6 @@ export const DataManagement = () => {
     }
   };
 
-  const handleReset = async () => {
-    modals.openConfirmModal({
-      title: 'System zurücksetzen',
-      centered: true,
-      children: (
-        <Text size="sm">
-          ACHTUNG: Möchten Sie wirklich ALLE Daten löschen? Dies kann nicht rückgängig gemacht werden!
-        </Text>
-      ),
-      labels: { confirm: 'Alles löschen', cancel: 'Abbrechen' },
-      confirmProps: { color: 'red' },
-      onConfirm: async () => {
-        try {
-          await clearAllData();
-          updateTimestamp("Reset");
-          notifications.show({ title: 'Zurückgesetzt', message: 'Datenbank wurde vollständig geleert.', color: 'blue' });
-          setTimeout(() => window.location.reload(), 1000);
-        } catch (error) {
-          notifications.show({ title: 'Fehler', message: 'Fehler beim Zurücksetzen.', color: 'red' });
-        }
-      },
-    });
-  };
-
   const handleGenerateReport = async () => {
     setIsGeneratingReport(true);
     try {
@@ -327,6 +296,15 @@ export const DataManagement = () => {
     }
   };
 
+  // Manage uses CatalogReleasePanel + SystemDangerZone on separate tabs
+  if (isManage) {
+    return (
+      <Box style={{ width: "100%" }}>
+        <CatalogReleasePanel />
+      </Box>
+    );
+  }
+
   return (
     <Box style={{ width: "100%" }}>
       <Title order={2} mb="lg">
@@ -334,7 +312,7 @@ export const DataManagement = () => {
       </Title>
 
       <Stack gap="lg" style={{ width: "100%" }}>
-        {/* System-Status Card */}
+        {/* System-Status Card — Full/Team: full-DB fingerprint */}
         <Card withBorder shadow="xs" radius="md">
           <Group justify="space-between">
             <Stack gap={2}>
@@ -353,6 +331,10 @@ export const DataManagement = () => {
                   Keine Aktivitäten aufgezeichnet.
                 </Text>
               )}
+              <Text size="xs" c="dimmed" maw={360}>
+                Fingerprint = SHA-256 über den <strong>kompletten</strong> Datenstand
+                (Mitarbeiter, Skills, Rollen, Assessments, …), ohne Zeitstempel.
+              </Text>
             </Stack>
             <Group gap="xl">
               <Stack gap={0} align="center" style={{ minWidth: 100 }}>
@@ -362,20 +344,25 @@ export const DataManagement = () => {
                   color="gray"
                   size="lg"
                   styles={{ label: { fontFamily: 'monospace', letterSpacing: '1px' } }}
-                  title="Dieser Hash-Code ist identisch, wenn zwei Personen denselben Datenstand haben."
+                  title="Identisch, wenn der gesamte Datenstand übereinstimmt (inkl. Mitarbeiter)."
                 >
                   {dataHash || "CALC..."}
                 </Badge>
               </Stack>
+              {showEmployees && (
+                <>
+                  <Divider orientation="vertical" />
+                  <Stack gap={0} align="center">
+                    <Text fw={700} size="xl">
+                      {employees.length}
+                    </Text>
+                    <Text size="xs" c="dimmed">
+                      Mitarbeiter
+                    </Text>
+                  </Stack>
+                </>
+              )}
               <Divider orientation="vertical" />
-              <Stack gap={0} align="center">
-                <Text fw={700} size="xl">
-                  {employees.length}
-                </Text>
-                <Text size="xs" c="dimmed">
-                  Mitarbeiter
-                </Text>
-              </Stack>
               <Stack gap={0} align="center">
                 <Text fw={700} size="xl">
                   {skills.length}
@@ -388,11 +375,8 @@ export const DataManagement = () => {
           </Group>
         </Card>
 
-        {/* Manage: full release / version history UI */}
-        {canCatalogVersioning && <CatalogReleasePanel />}
-
-        {/* Full/Team: simple catalog extract or import without Manage release flow */}
-        {!canCatalogVersioning && (canCatalogExport || canCatalogImport) && (
+        {/* Full/Team: simple catalog extract or import */}
+        {(canCatalogExport || canCatalogImport) && (
           <Card withBorder shadow="sm" radius="md">
             <Stack gap="md">
               <Group gap="xs">
@@ -755,66 +739,8 @@ export const DataManagement = () => {
           </Stack>
         </Modal>
 
-        {/* Danger Zone */}
-        <Card
-          withBorder
-          shadow="sm"
-          radius="md"
-          style={{ borderColor: "var(--mantine-color-red-filled)" }}
-          p="md"
-        >
-          <Stack gap="md">
-            <Group justify="space-between" style={{ cursor: "pointer" }} onClick={toggleDangerZone}>
-              <Group gap="xs">
-                <IconAlertCircle size={20} style={{ color: "var(--mantine-color-red-filled)" }} />
-                <Title order={4} c="red">
-                  Gefahrenzone
-                </Title>
-              </Group>
-              <ActionIcon variant="subtle" color="red">
-                <IconChevronDown
-                  style={{
-                    transform: dangerZoneOpened ? "rotate(180deg)" : "none",
-                    transition: "transform 0.2s ease",
-                  }}
-                />
-              </ActionIcon>
-            </Group>
-
-            <Collapse in={dangerZoneOpened}>
-              <Stack gap="md">
-                <Divider />
-                <Box>
-                  <Text fw={600} size="sm">
-                    Datenbank vollständig leeren
-                  </Text>
-                  <Text size="xs" c="dimmed" mb="sm">
-                    Löscht alle Inhalte (Mitarbeiter, Kategorien, Skills und
-                    Assessments) unwiderruflich aus der lokalen Datenbank.
-                  </Text>
-                  <Button
-                    variant="outline"
-                    color="red"
-                    size="xs"
-                    leftSection={<IconTrash size={14} />}
-                    onClick={handleReset}
-                  >
-                    System zurücksetzen
-                  </Button>
-                </Box>
-              </Stack>
-            </Collapse>
-          </Stack>
-        </Card>
-
-        <Alert icon={<IconAlertCircle size={16} />} color="gray" radius="md">
-          <Text size="xs">
-            <strong>Wichtig:</strong> Da die Daten lokal im Browser gespeichert
-            werden, sollten Sie regelmäßig ein Backup (Export) erstellen, um
-            Datenverlust zu vermeiden.
-          </Text>
-        </Alert>
-      </Stack >
-    </Box >
+        <SystemDangerZone />
+      </Stack>
+    </Box>
   );
 };

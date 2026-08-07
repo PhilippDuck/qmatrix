@@ -8,6 +8,7 @@ import {
   recomputeRequiredByRoleIds,
   catalogDownloadFilename,
   computeContentHash,
+  computeCatalogFingerprint,
   withContentHash,
 } from "./catalog";
 import type { CatalogPackage } from "../types/catalog";
@@ -226,6 +227,9 @@ describe("contentHash + filename", () => {
 
     const withHash = await withContentHash(pkg);
     expect(withHash.contentHash).toBe(h1);
+
+    const fp = await computeCatalogFingerprint(pkg.entities);
+    expect(fp).toBe(h1.substring(0, 10).toUpperCase());
   });
 
   it("builds download filename", () => {

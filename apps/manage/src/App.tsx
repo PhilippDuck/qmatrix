@@ -27,6 +27,7 @@ import {
   IconRocket,
   IconTags,
   IconBadge,
+  IconSettings,
   IconChevronLeft,
   IconChevronRight,
   type Icon,
@@ -37,9 +38,11 @@ import { Notifications } from "@mantine/notifications";
 import { useStore, useShallow } from "@skillgrid/shared/store/hooks";
 import { CategoryManager } from "@skillgrid/shared/components/CategoryManager";
 import { RoleManager } from "@skillgrid/shared/components/organization/RoleManager";
-import { DataManagement } from "@skillgrid/shared/components/DataManagement";
+import { CatalogReleasePanel } from "@skillgrid/shared/components/CatalogReleasePanel";
+import { SystemDangerZone } from "@skillgrid/shared/components/SystemDangerZone";
 import { PrivacyProvider } from "@skillgrid/shared/context/PrivacyContext";
 import { SkillGridLogo } from "@skillgrid/shared/components/shared/SkillGridLogo";
+import { Title as MantineTitle, Box } from "@mantine/core";
 import "@mantine/core/styles.css";
 import "@mantine/dates/styles.css";
 import "@mantine/notifications/styles.css";
@@ -50,12 +53,13 @@ const theme = createTheme({
 
 const APP_VERSION = `v${__APP_VERSION__}`;
 
-type ManageTab = "skills" | "roles" | "releases";
+type ManageTab = "skills" | "roles" | "releases" | "system";
 
 const NAV_ITEMS: { value: ManageTab; label: string; icon: Icon }[] = [
   { value: "skills", label: "Skills & Kategorien", icon: IconTags },
   { value: "roles", label: "Rollen", icon: IconBadge },
   { value: "releases", label: "Versionen & Releases", icon: IconRocket },
+  { value: "system", label: "System", icon: IconSettings },
 ];
 
 function ColorSchemeToggle() {
@@ -207,7 +211,15 @@ const App: FC = () => {
             <AppShell.Main>
               {activeTab === "skills" && <CategoryManager />}
               {activeTab === "roles" && <RoleManager />}
-              {activeTab === "releases" && <DataManagement />}
+              {activeTab === "releases" && <CatalogReleasePanel />}
+              {activeTab === "system" && (
+                <Box style={{ width: "100%" }}>
+                  <MantineTitle order={2} mb="lg">
+                    System
+                  </MantineTitle>
+                  <SystemDangerZone catalogOnly />
+                </Box>
+              )}
             </AppShell.Main>
           </AppShell>
         </PrivacyProvider>
