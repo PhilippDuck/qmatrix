@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Box, Group, Title, Tabs, ActionIcon, Tooltip, Text, Button, Menu } from "@mantine/core";
+import { Box, Group, Title, Tabs, ActionIcon, Tooltip, Text, Button, Menu, Divider } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { modals } from "@mantine/modals";
 import { notifications } from "@mantine/notifications";
@@ -604,20 +604,32 @@ export const CategoryManager: React.FC = () => {
       <Tabs value={activeTab} onChange={setActiveTab} style={{ flex: 1, display: "flex", flexDirection: "column" }}>
         {/* ... Tabs List ... */}
         <Tabs.List mb="md">
+          {/* Bearbeiten / Struktur */}
           <Tabs.Tab value="list" leftSection={<IconList size={16} />}>
             Liste
           </Tabs.Tab>
           <Tabs.Tab value="tree" leftSection={<IconBinaryTree size={16} />}>
             Baum
           </Tabs.Tab>
+          <Tabs.Tab value="chart" leftSection={<IconHierarchy size={16} />}>
+            Organigramm
+          </Tabs.Tab>
+          {/* Nur Ansicht — optisch abgesetzt */}
+          <Divider orientation="vertical" mx="xs" my={6} />
+          <Text
+            size="xs"
+            c="dimmed"
+            px={4}
+            style={{ alignSelf: "center", userSelect: "none" }}
+            visibleFrom="sm"
+          >
+            Ansicht
+          </Text>
           <Tabs.Tab value="table" leftSection={<IconTable size={16} />}>
             Tabelle
           </Tabs.Tab>
           <Tabs.Tab value="matrix" leftSection={<IconLayoutGrid size={16} />}>
             Rollen-Matrix
-          </Tabs.Tab>
-          <Tabs.Tab value="chart" leftSection={<IconHierarchy size={16} />}>
-            Organigramm
           </Tabs.Tab>
         </Tabs.List>
 
@@ -683,28 +695,52 @@ export const CategoryManager: React.FC = () => {
               subcategories={subcategories}
               skills={skills}
               roles={roles}
-            />
-          </OverviewPanelShell>
-        </Tabs.Panel>
-
-        <Tabs.Panel value="table" style={{ flex: 1, overflow: "hidden", minHeight: 0 }}>
-          <OverviewPanelShell>
-            <SkillTableView
-              categories={categories}
-              subcategories={subcategories}
-              skills={skills}
-              roles={roles}
-            />
-          </OverviewPanelShell>
-        </Tabs.Panel>
-
-        <Tabs.Panel value="matrix" style={{ flex: 1, overflow: "hidden", minHeight: 0 }}>
-          <OverviewPanelShell>
-            <SkillRoleMatrixView
-              categories={categories}
-              subcategories={subcategories}
-              skills={skills}
-              roles={roles}
+              readOnly={!catalogAuthoring}
+              onEditCategory={(cat) =>
+                openForm("category", cat.id!, cat.name, cat.description || "")
+              }
+              onEditSubCategory={(sub) => {
+                setSelectedCategory(sub.categoryId);
+                openForm("subcategory", sub.id!, sub.name, sub.description || "");
+              }}
+              onEditSkill={(skill) => {
+                setSelectedSubCategory(skill.subCategoryId);
+                openForm(
+                  "skill",
+                  skill.id!,
+                  skill.name,
+                  skill.description || "",
+                  skill.departmentId || null,
+                  skill.requiredByRoleIds || []
+                );
+              }}
+              onAddCategory={
+                catalogAuthoring ? () => openForm("category") : undefined
+              }
+              onAddSubCategory={
+                catalogAuthoring
+                  ? (catId, parentSubId) => {
+                      setSelectedCategory(catId);
+                      openForm(
+                        "subcategory",
+                        null,
+                        "",
+                        "",
+                        null,
+                        [],
+                        parentSubId
+                      );
+                    }
+                  : undefined
+              }
+              onAddSkill={
+                catalogAuthoring
+                  ? (subId) => {
+                      setSelectedSubCategory(subId);
+                      openForm("skill");
+                    }
+                  : undefined
+              }
             />
           </OverviewPanelShell>
         </Tabs.Panel>
@@ -756,6 +792,29 @@ export const CategoryManager: React.FC = () => {
               onPaste={catalogAuthoring ? handlePaste : undefined}
             />
           </Box>
+        </Tabs.Panel>
+
+        {/* Read-only overview panels */}
+        <Tabs.Panel value="table" style={{ flex: 1, overflow: "hidden", minHeight: 0 }}>
+          <OverviewPanelShell>
+            <SkillTableView
+              categories={categories}
+              subcategories={subcategories}
+              skills={skills}
+              roles={roles}
+            />
+          </OverviewPanelShell>
+        </Tabs.Panel>
+
+        <Tabs.Panel value="matrix" style={{ flex: 1, overflow: "hidden", minHeight: 0 }}>
+          <OverviewPanelShell>
+            <SkillRoleMatrixView
+              categories={categories}
+              subcategories={subcategories}
+              skills={skills}
+              roles={roles}
+            />
+          </OverviewPanelShell>
         </Tabs.Panel>
       </Tabs>
 
