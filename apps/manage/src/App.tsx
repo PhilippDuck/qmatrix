@@ -376,22 +376,25 @@ const App: FC = () => {
                       <IconChevronLeft size={18} />
                     )}
                   </ActionIcon>
-                  <SkillGridLogo size={28} />
+                  <SkillGridLogo size={collapsed ? 28 : 32} />
                   <Group gap={6} wrap="nowrap" style={{ minWidth: 0 }}>
-                    <Title
-                      order={4}
-                      c="blue"
-                      style={{
-                        letterSpacing: -0.5,
-                        fontSize: "1.05rem",
-                        userSelect: "none",
-                        whiteSpace: "nowrap",
-                        flexShrink: 0,
-                        marginRight: 6,
-                      }}
-                    >
-                      {collapsed ? "Manage" : "SkillGrid Manage"}
-                    </Title>
+                    {!collapsed && (
+                      <Title
+                        order={4}
+                        c="blue"
+                        style={{
+                          letterSpacing: -0.5,
+                          fontSize: "1.1rem",
+                          transition: "all 0.2s ease",
+                          userSelect: "none",
+                          whiteSpace: "nowrap",
+                          flexShrink: 0,
+                          marginRight: 6,
+                        }}
+                      >
+                        SKILLGRID
+                      </Title>
+                    )}
                     {installedCatalogMeta?.version ? (
                       <Tooltip label="Freigegebene Katalog-Version (Live)">
                         <Badge variant="outline" color="gray" size="sm" style={{ flexShrink: 0 }}>
