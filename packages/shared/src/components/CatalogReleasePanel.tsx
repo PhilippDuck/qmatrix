@@ -140,6 +140,14 @@ export const CatalogReleasePanel: React.FC = () => {
 
   const releases: StoredCatalogRelease[] = storedCatalogReleases || [];
 
+  /** Live freigegebene Version (nach Publish/Rollback) — nicht „neueste im Archiv“. */
+  const isActiveRelease = (release: StoredCatalogRelease): boolean => {
+    if (!installedCatalogMeta?.version) return false;
+    if (release.version === installedCatalogMeta.version) return true;
+    // id is stored as version string on publish
+    return release.id === installedCatalogMeta.version;
+  };
+
   // Fingerprint + dirty when catalog entities change
   useEffect(() => {
     let cancelled = false;
@@ -507,15 +515,17 @@ export const CatalogReleasePanel: React.FC = () => {
                     variant="separated"
                     radius="sm"
                   >
-                    {releases.map((release, index) => (
+                    {releases.map((release) => {
+                      const active = isActiveRelease(release);
+                      return (
                       <Accordion.Item key={release.id} value={release.id}>
                         <Accordion.Control
                           icon={
                             <ThemeIcon
                               size={22}
                               radius="xl"
-                              color="indigo"
-                              variant={index === 0 ? "filled" : "light"}
+                              color={active ? "green" : "indigo"}
+                              variant={active ? "filled" : "light"}
                             >
                               <IconTag size={12} />
                             </ThemeIcon>
@@ -526,7 +536,7 @@ export const CatalogReleasePanel: React.FC = () => {
                             <Text size="xs" c="dimmed">
                               {release.publishedAt.slice(0, 10)}
                             </Text>
-                            {index === 0 && (
+                            {active && (
                               <Badge size="xs" variant="light" color="green">
                                 Aktuell freigegeben
                               </Badge>
@@ -580,12 +590,19 @@ export const CatalogReleasePanel: React.FC = () => {
                                   Download
                                 </Button>
                               </Tooltip>
-                              <Tooltip label="Live-Katalog auf diesen Stand setzen">
+                              <Tooltip
+                                label={
+                                  active
+                                    ? "Bereits der aktuelle Live-Stand"
+                                    : "Live-Katalog auf diesen Stand setzen"
+                                }
+                              >
                                 <Button
                                   size="compact-xs"
                                   variant="light"
                                   color="orange"
                                   leftSection={<IconArrowBackUp size={12} />}
+                                  disabled={active || busy}
                                   onClick={() => handleRollback(release)}
                                 >
                                   Rollback
@@ -595,7 +612,8 @@ export const CatalogReleasePanel: React.FC = () => {
                           </Stack>
                         </Accordion.Panel>
                       </Accordion.Item>
-                    ))}
+                      );
+                    })}
                   </Accordion>
                 )}
               </Accordion.Panel>

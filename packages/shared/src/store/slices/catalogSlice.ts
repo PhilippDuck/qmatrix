@@ -464,9 +464,11 @@ export const createCatalogSlice =
       });
 
       if (result.ok) {
+        // Point "aktuell freigegeben" at the restored snapshot (not newest archive entry)
         await get().setInstalledCatalogMeta(release.package.meta);
         await get().refreshAllData();
         await get().refreshCatalogReleases();
+        await get().refreshCatalogDirtyState();
       } else {
         set({
           error:
