@@ -232,8 +232,11 @@ describe("contentHash + filename", () => {
     expect(fp).toBe(h1.substring(0, 10).toUpperCase());
   });
 
-  it("builds download filename", () => {
+  it("builds download filename with date and time", () => {
     const name = catalogDownloadFilename(makePkg().meta);
-    expect(name).toMatch(/Test_Catalog_Katalog_v1\.0\.0_2026-08-07\.json/);
+    // date from publishedAt + local time stamp
+    expect(name).toMatch(
+      /^Test_Catalog_Katalog_v1\.0\.0_2026-08-07_\d{2}-\d{2}-\d{2}\.json$/
+    );
   });
 });

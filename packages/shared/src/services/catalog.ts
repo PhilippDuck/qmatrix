@@ -572,8 +572,14 @@ export async function withContentHash(
 
 export function catalogDownloadFilename(meta: CatalogMeta): string {
   const safeName = (meta.name || "Katalog").replace(/[^a-z0-9]+/gi, "_");
-  const date = meta.publishedAt?.slice(0, 10) || new Date().toISOString().slice(0, 10);
-  return `${safeName}_Katalog_v${meta.version}_${date}.json`;
+  const published = meta.publishedAt
+    ? new Date(meta.publishedAt)
+    : new Date();
+  const valid = !Number.isNaN(published.getTime()) ? published : new Date();
+  const date = valid.toISOString().slice(0, 10);
+  // Local time like Full backup / Manage global backup (HH-MM-SS)
+  const time = valid.toLocaleTimeString("de-DE", { hour12: false }).replace(/:/g, "-");
+  return `${safeName}_Katalog_v${meta.version}_${date}_${time}.json`;
 }
 
 /** Re-derive skill.requiredByRoleIds from roles (K18). */
