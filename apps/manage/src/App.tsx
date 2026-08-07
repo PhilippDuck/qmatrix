@@ -379,143 +379,165 @@ const App: FC = () => {
             transitionDuration={0}
             styles={{ root: { height: "100dvh" } }}
           >
-            <AppShell.Header style={{ position: "relative" }}>
-              <Group h="100%" px="md" justify="space-between" wrap="nowrap">
-                <Group gap="sm" wrap="nowrap" style={{ minWidth: 0, flex: 1 }}>
-                  <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
-                  {/* Sidebar collapse — same place as Full (header, left of logo) */}
-                  <ActionIcon
-                    variant="subtle"
-                    onClick={() => setCollapsed((c) => !c)}
-                    visibleFrom="sm"
-                    color="gray"
-                    size="md"
-                    style={{ flexShrink: 0 }}
-                  >
-                    {collapsed ? (
-                      <IconChevronRight size={18} />
-                    ) : (
-                      <IconChevronLeft size={18} />
-                    )}
-                  </ActionIcon>
-                  <SkillGridLogo size={collapsed ? 28 : 32} />
-                  <Group gap={6} wrap="nowrap" style={{ minWidth: 0 }}>
-                    <Title
-                      order={4}
-                      c="blue"
-                      style={{
-                        letterSpacing: -0.5,
-                        fontSize: "1.1rem",
-                        transition: "all 0.2s ease",
-                        userSelect: "none",
-                        whiteSpace: "nowrap",
-                        flexShrink: 0,
-                        marginRight: 6,
-                      }}
-                    >
-                      {collapsed ? "MANAGE" : "SKILLGRID Manage"}
-                    </Title>
-                    {installedCatalogMeta?.version ? (
-                      <Tooltip label="Freigegebene Katalog-Version (Live)">
-                        <Badge variant="outline" color="gray" size="sm" style={{ flexShrink: 0 }}>
-                          Katalog v{installedCatalogMeta.version}
-                        </Badge>
-                      </Tooltip>
-                    ) : (
-                      <Badge variant="outline" color="gray" size="sm" style={{ flexShrink: 0 }}>
-                        Katalog —
-                      </Badge>
-                    )}
-                    <UnpublishedCatalogBadge
-                      size="sm"
-                      label="ungesichert"
-                      onPublish={() => setActiveTab("releases")}
-                    />
-                  </Group>
-                </Group>
-
-                {/* Catalog name — SoT for organigram root, releases, header */}
-                <Box
-                  style={{
-                    position: "absolute",
-                    left: "50%",
-                    transform: "translateX(-50%)",
-                    maxWidth: "min(360px, 40vw)",
-                  }}
-                  visibleFrom="sm"
-                >
-                  {isEditingCatalogName ? (
-                    <TextInput
-                      value={tempCatalogName}
-                      onChange={(e) => setTempCatalogName(e.currentTarget.value)}
-                      onBlur={handleCatalogNameSave}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          e.currentTarget.blur();
-                        }
-                        if (e.key === "Escape") setIsEditingCatalogName(false);
-                      }}
-                      size="sm"
-                      autoFocus
-                      placeholder="Katalogname"
-                      styles={{
-                        input: {
-                          textAlign: "center",
-                          fontWeight: 700,
-                          fontSize: "var(--mantine-font-size-md)",
-                        },
-                      }}
-                    />
-                  ) : (
-                    <Tooltip label="Katalogname bearbeiten (Organigramm, Releases)">
-                      <Group
-                        gap={6}
-                        justify="center"
-                        wrap="nowrap"
-                        onClick={() => {
-                          setTempCatalogName(projectTitle || "");
-                          setIsEditingCatalogName(true);
-                        }}
-                        style={{ cursor: "pointer", userSelect: "none" }}
-                      >
-                        <Text
-                          fw={700}
-                          size="md"
-                          lineClamp={1}
-                          c={projectTitle ? undefined : "dimmed"}
-                        >
-                          {projectTitle || "Katalogname eingeben"}
-                        </Text>
-                        <IconEdit
-                          size={16}
-                          color="var(--mantine-color-gray-5)"
-                          style={{ opacity: 0.5, flexShrink: 0 }}
-                        />
-                      </Group>
-                    </Tooltip>
-                  )}
-                </Box>
-
-                <Group gap="xs" wrap="nowrap" style={{ flexShrink: 0 }}>
-                  <QuickBackupButton
-                    needsAttention={needsBackupAttention}
-                    lastUpdate={lastUpdate}
-                    onSave={handleQuickBackup}
-                  />
-                  <Tooltip label="Änderungshistorie (lokale Aktionen, unabhängig von Katalog-Versionen)">
+            <AppShell.Header>
+              {/* Inner relative wrapper — do NOT set position on Header itself
+                  (would override AppShell fixed and double the main top offset). */}
+              <Box
+                h="100%"
+                px="md"
+                style={{ position: "relative" }}
+              >
+                <Group h="100%" justify="space-between" wrap="nowrap">
+                  <Group gap="sm" wrap="nowrap" style={{ minWidth: 0, flex: 1 }}>
+                    <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
                     <ActionIcon
                       variant="subtle"
+                      onClick={() => setCollapsed((c) => !c)}
+                      visibleFrom="sm"
                       color="gray"
                       size="md"
-                      onClick={openHistory}
+                      style={{ flexShrink: 0 }}
                     >
-                      <IconHistory size={18} />
+                      {collapsed ? (
+                        <IconChevronRight size={18} />
+                      ) : (
+                        <IconChevronLeft size={18} />
+                      )}
                     </ActionIcon>
-                  </Tooltip>
-                  <ColorSchemeToggle />
+                    <SkillGridLogo size={collapsed ? 28 : 32} />
+                    <Group gap={6} wrap="nowrap" style={{ minWidth: 0 }}>
+                      <Title
+                        order={4}
+                        c="blue"
+                        style={{
+                          letterSpacing: -0.5,
+                          fontSize: "1.1rem",
+                          transition: "all 0.2s ease",
+                          userSelect: "none",
+                          whiteSpace: "nowrap",
+                          flexShrink: 0,
+                          marginRight: 6,
+                        }}
+                      >
+                        {collapsed ? "MANAGE" : "SKILLGRID Manage"}
+                      </Title>
+                      {installedCatalogMeta?.version ? (
+                        <Tooltip label="Freigegebene Katalog-Version (Live)">
+                          <Badge
+                            variant="outline"
+                            color="gray"
+                            size="sm"
+                            style={{ flexShrink: 0 }}
+                          >
+                            Katalog v{installedCatalogMeta.version}
+                          </Badge>
+                        </Tooltip>
+                      ) : (
+                        <Badge
+                          variant="outline"
+                          color="gray"
+                          size="sm"
+                          style={{ flexShrink: 0 }}
+                        >
+                          Katalog —
+                        </Badge>
+                      )}
+                      <UnpublishedCatalogBadge
+                        size="sm"
+                        label="ungesichert"
+                        onPublish={() => setActiveTab("releases")}
+                      />
+                    </Group>
+                  </Group>
+
+                  {/* Catalog name — centered in header (organigram / releases SoT) */}
+                  <Box
+                    visibleFrom="sm"
+                    style={{
+                      position: "absolute",
+                      left: "50%",
+                      top: "50%",
+                      transform: "translate(-50%, -50%)",
+                      maxWidth: "min(360px, 40vw)",
+                      zIndex: 1,
+                    }}
+                  >
+                    {isEditingCatalogName ? (
+                      <TextInput
+                        value={tempCatalogName}
+                        onChange={(e) =>
+                          setTempCatalogName(e.currentTarget.value)
+                        }
+                        onBlur={handleCatalogNameSave}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            e.currentTarget.blur();
+                          }
+                          if (e.key === "Escape")
+                            setIsEditingCatalogName(false);
+                        }}
+                        size="sm"
+                        autoFocus
+                        placeholder="Katalogname"
+                        styles={{
+                          input: {
+                            textAlign: "center",
+                            fontWeight: 700,
+                            fontSize: "var(--mantine-font-size-md)",
+                          },
+                        }}
+                      />
+                    ) : (
+                      <Tooltip label="Katalogname bearbeiten (Organigramm, Releases)">
+                        <Group
+                          gap={6}
+                          justify="center"
+                          wrap="nowrap"
+                          onClick={() => {
+                            setTempCatalogName(projectTitle || "");
+                            setIsEditingCatalogName(true);
+                          }}
+                          style={{ cursor: "pointer", userSelect: "none" }}
+                        >
+                          <Text
+                            fw={700}
+                            size="md"
+                            lineClamp={1}
+                            c={projectTitle ? undefined : "dimmed"}
+                          >
+                            {projectTitle || "Katalogname eingeben"}
+                          </Text>
+                          <IconEdit
+                            size={16}
+                            color="var(--mantine-color-gray-5)"
+                            style={{ opacity: 0.5, flexShrink: 0 }}
+                          />
+                        </Group>
+                      </Tooltip>
+                    )}
+                  </Box>
+
+                  <Group gap="xs" wrap="nowrap" style={{ flexShrink: 0 }}>
+                    <QuickBackupButton
+                      needsAttention={needsBackupAttention}
+                      lastUpdate={lastUpdate}
+                      onSave={handleQuickBackup}
+                    />
+                    <Tooltip label="Änderungshistorie (lokale Aktionen, unabhängig von Katalog-Versionen)">
+                      <ActionIcon
+                        variant="subtle"
+                        color="gray"
+                        size="md"
+                        onClick={openHistory}
+                      >
+                        <IconHistory size={18} />
+                      </ActionIcon>
+                    </Tooltip>
+                    <ColorSchemeToggle />
+                  </Group>
                 </Group>
-              </Group>
+              </Box>
             </AppShell.Header>
 
             <AppShell.Navbar p="xs" style={{ display: "flex", flexDirection: "column" }}>
