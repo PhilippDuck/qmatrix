@@ -16,5 +16,6 @@ export {
 } from "./UnpublishedCatalogBadge";
 export { CatalogMergeImport } from "./CatalogMergeImport";
 export { ManageDemoGenerator } from "./ManageDemoGenerator";
+export { ManageEmptyOnboarding } from "./ManageEmptyOnboarding";
 export { ManageGlobalBackup } from "./ManageGlobalBackup";
 export { SystemDangerZone } from "./SystemDangerZone";

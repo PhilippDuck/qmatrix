@@ -48,6 +48,7 @@ import { CatalogReleasePanel } from "@skillgrid/shared/components/CatalogRelease
 import { SystemDangerZone } from "@skillgrid/shared/components/SystemDangerZone";
 import { ManageGlobalBackup } from "@skillgrid/shared/components/ManageGlobalBackup";
 import { ManageDemoGenerator } from "@skillgrid/shared/components/ManageDemoGenerator";
+import { ManageEmptyOnboarding } from "@skillgrid/shared/components/ManageEmptyOnboarding";
 import { HistoryDrawer } from "@skillgrid/shared/components/shared/HistoryDrawer";
 import { UnpublishedCatalogBadge } from "@skillgrid/shared/components/UnpublishedCatalogBadge";
 import { PrivacyProvider } from "@skillgrid/shared/context/PrivacyContext";
@@ -627,20 +628,32 @@ const App: FC = () => {
             </AppShell.Navbar>
 
             <AppShell.Main>
-              {activeTab === "skills" && <CategoryManager />}
-              {activeTab === "roles" && <RoleManager />}
-              {activeTab === "releases" && <CatalogReleasePanel />}
-              {activeTab === "system" && (
-                <Box style={{ width: "100%" }}>
-                  <Title order={2} mb="lg">
-                    System
-                  </Title>
-                  <Stack gap="lg">
-                    <ManageGlobalBackup />
-                    <ManageDemoGenerator />
-                    <SystemDangerZone catalogOnly />
-                  </Stack>
-                </Box>
+              {!loading &&
+              categories.length === 0 &&
+              skills.length === 0 &&
+              roles.length === 0 ? (
+                <ManageEmptyOnboarding
+                  onStartSkills={() => setActiveTab("skills")}
+                  onStartImport={() => setActiveTab("releases")}
+                />
+              ) : (
+                <>
+                  {activeTab === "skills" && <CategoryManager />}
+                  {activeTab === "roles" && <RoleManager />}
+                  {activeTab === "releases" && <CatalogReleasePanel />}
+                  {activeTab === "system" && (
+                    <Box style={{ width: "100%" }}>
+                      <Title order={2} mb="lg">
+                        System
+                      </Title>
+                      <Stack gap="lg">
+                        <ManageGlobalBackup />
+                        <ManageDemoGenerator />
+                        <SystemDangerZone catalogOnly />
+                      </Stack>
+                    </Box>
+                  )}
+                </>
               )}
             </AppShell.Main>
             <HistoryDrawer opened={historyOpened} onClose={closeHistory} />
