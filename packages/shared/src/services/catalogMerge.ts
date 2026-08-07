@@ -12,7 +12,10 @@ import {
   CATALOG_FORMAT_VERSION,
 } from "../types/catalog";
 import type { CatalogDiffItem } from "./catalogDiff";
-import { validateCatalogPackage } from "./catalog";
+import {
+  extractCatalogFromState,
+  validateCatalogPackage,
+} from "./catalog";
 import { validateManageBackup } from "./manageBackup";
 
 const KINDS: CatalogEntityKind[] = [
@@ -26,8 +29,21 @@ export function selectionKey(item: CatalogDiffItem): string {
   return `${item.kind}:${item.id}:${item.change}`;
 }
 
+function looksLikeFullExportData(obj: Record<string, unknown>): boolean {
+  // Full App backup / ExportData — no skillgrid-catalog format field
+  if (obj.format === CATALOG_FORMAT || obj.format === "skillgrid-manage-backup") {
+    return false;
+  }
+  return (
+    Array.isArray(obj.categories) &&
+    Array.isArray(obj.subcategories) &&
+    Array.isArray(obj.skills) &&
+    Array.isArray(obj.roles)
+  );
+}
+
 /**
- * Accept skillgrid-catalog or manage-backup JSON → CatalogPackage.
+ * Accept skillgrid-catalog, manage-backup, or Full ExportData → CatalogPackage.
  */
 export function parseImportAsCatalogPackage(
   raw: unknown
@@ -68,12 +84,64 @@ export function parseImportAsCatalogPackage(
     return { ok: true, package: pkg };
   }
 
+  // Full App Gesamt-Backup / ExportData (Diskette) — Katalog-Anteil extrahieren
+  if (looksLikeFullExportData(obj)) {
+    const settings = (obj.settings || {}) as {
+      projectTitle?: string;
+      installedCatalogMeta?: CatalogPackage["meta"];
+    };
+    const meta = settings.installedCatalogMeta;
+    const extract = extractCatalogFromState(
+      {
+        categories: (obj.categories || []) as never,
+        subcategories: (obj.subcategories || []) as never,
+        skills: (obj.skills || []) as never,
+        roles: (obj.roles || []) as never,
+      },
+      {
+        catalogId: meta?.catalogId || "imported-from-full-export",
+        name:
+          meta?.name ||
+          settings.projectTitle ||
+          "Katalog aus Full-Backup",
+        version: meta?.version || "1.0.0",
+        publisher: meta?.publisher || settings.projectTitle,
+        changelog: meta?.changelog || [
+          {
+            version: meta?.version || "1.0.0",
+            date: new Date().toISOString().slice(0, 10),
+            notes: "Import aus Full-Backup / ExportData",
+          },
+        ],
+        minAppFormatVersion: meta?.minAppFormatVersion ?? 1,
+        partial: false,
+      }
+    );
+    if (!extract.ok || !extract.package) {
+      return {
+        ok: false,
+        errors: extract.errors.map((e) => e.message),
+      };
+    }
+    return { ok: true, package: extract.package };
+  }
+
   const v = validateCatalogPackage(raw);
   if (!v.ok || !v.package) {
-    return {
-      ok: false,
-      errors: v.errors.map((e) => e.message),
-    };
+    const msgs = v.errors.map((e) => e.message);
+    // Helpful hint when user mixed up Full backup vs catalog
+    if (
+      msgs.some(
+        (m) =>
+          m.toLowerCase().includes("format") ||
+          m.toLowerCase().includes("meta")
+      )
+    ) {
+      msgs.push(
+        "Tipp: In Full „Katalog exportieren“ nutzen — oder ein Full-Backup (Diskette); beides wird unterstützt."
+      );
+    }
+    return { ok: false, errors: msgs };
   }
   return { ok: true, package: v.package };
 }
@@ -123,23 +191,51 @@ export function buildSelectiveMergePackage(
     if (sub?.categoryId) byKind.categories.add(sub.categoryId);
   }
 
-  // Role inheritsFrom if selected
+  // Role inheritsFrom + requiredSkills → pull parent roles/skills into package
   const srcRoles = new Map((source.entities.roles || []).map((r) => [r.id, r]));
-  let added = true;
-  while (added) {
-    added = false;
+  let grow = true;
+  while (grow) {
+    grow = false;
     for (const roleId of [...byKind.roles]) {
       const role = srcRoles.get(roleId);
-      if (role?.inheritsFromId && !byKind.roles.has(role.inheritsFromId)) {
-        // only if parent exists in package
-        if (srcRoles.has(role.inheritsFromId)) {
+      if (!role) continue;
+      if (role.inheritsFromId && srcRoles.has(role.inheritsFromId)) {
+        if (!byKind.roles.has(role.inheritsFromId)) {
           byKind.roles.add(role.inheritsFromId);
-          added = true;
+          grow = true;
+        }
+      }
+      for (const req of role.requiredSkills || []) {
+        if (srcSkills.has(req.skillId) && !byKind.skills.has(req.skillId)) {
+          byKind.skills.add(req.skillId);
+          grow = true;
+          // parents of newly added skills
+          const skill = srcSkills.get(req.skillId);
+          if (skill?.subCategoryId) {
+            byKind.subcategories.add(skill.subCategoryId);
+            const sub = srcSubs.get(skill.subCategoryId);
+            if (sub?.categoryId) byKind.categories.add(sub.categoryId);
+          }
         }
       }
     }
   }
 
+  // Re-walk skill parents after role skill expansion
+  for (const skillId of byKind.skills) {
+    const skill = srcSkills.get(skillId);
+    if (skill?.subCategoryId) {
+      byKind.subcategories.add(skill.subCategoryId);
+      const sub = srcSubs.get(skill.subCategoryId);
+      if (sub?.categoryId) byKind.categories.add(sub.categoryId);
+    }
+  }
+  for (const subId of byKind.subcategories) {
+    const sub = srcSubs.get(subId);
+    if (sub?.categoryId) byKind.categories.add(sub.categoryId);
+  }
+
+  const skillIdSet = byKind.skills;
   const entities: CatalogEntities = {
     categories: (source.entities.categories || []).filter((c) =>
       byKind.categories.has(c.id)
@@ -150,7 +246,15 @@ export function buildSelectiveMergePackage(
     skills: (source.entities.skills || []).filter((s) =>
       byKind.skills.has(s.id)
     ),
-    roles: (source.entities.roles || []).filter((r) => byKind.roles.has(r.id)),
+    roles: (source.entities.roles || [])
+      .filter((r) => byKind.roles.has(r.id))
+      .map((r) => ({
+        ...r,
+        // Drop skill refs not in this partial package (keeps validateCatalogPackage happy)
+        requiredSkills: (r.requiredSkills || []).filter((req) =>
+          skillIdSet.has(req.skillId)
+        ),
+      })),
   };
 
   const pkg: CatalogPackage = {

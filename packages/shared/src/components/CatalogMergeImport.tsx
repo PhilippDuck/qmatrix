@@ -294,10 +294,10 @@ export const CatalogMergeImport: React.FC = () => {
               <Title order={4}>Katalog importieren</Title>
             </Group>
             <Text size="xs" c="dimmed">
-              Importiert eine Katalog-JSON (oder Manage-Backup) immer als{" "}
-              <strong>Merge</strong>: Alle Unterschiede werden angezeigt, Sie
-              wählen, was übernommen wird. Nichts wird ohne Bestätigung
-              überschrieben.
+              Importiert immer als <strong>Merge</strong> mit Auswahl. Unterstützte
+              Dateien: Katalog-JSON aus Full/Manage („Katalog exportieren“ /
+              Version freigeben), Full-Gesamtbackup (Diskette) und Manage-Global-Backup.
+              Unterschiede werden angezeigt — nichts wird ohne Auswahl übernommen.
             </Text>
           </Box>
           <Group>
