@@ -1,4 +1,12 @@
 
+## [2.25.0] - 2026-08-07
+
+### Neue Funktionen
+- **Skills-Hierarchie exportieren**: Im Stammdatenbereich unter Kategorien & Skills gibt es ein Export-Menü:
+  - **Markdown (.md)** und **Textbaum (.txt)** – nur Namen, ideal zum Teilen der Struktur
+  - **JSON (.json)** – vollständig mit IDs, Beschreibungen und Rollenbezügen
+  - Unabhängig vom vollständigen System-Backup
+
 ## [2.24.0] - 2026-08-04
 
 ### Verbesserungen

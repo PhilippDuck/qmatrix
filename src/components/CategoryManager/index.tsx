@@ -1,14 +1,30 @@
 import React, { useState } from "react";
-import { Box, Group, Title, Tabs, Badge, ActionIcon, Tooltip, Text } from "@mantine/core";
+import { Box, Group, Title, Tabs, ActionIcon, Tooltip, Text, Button, Menu } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { modals } from "@mantine/modals";
-import { IconList, IconHierarchy, IconClipboardOff } from "@tabler/icons-react";
+import { notifications } from "@mantine/notifications";
+import {
+  IconList,
+  IconHierarchy,
+  IconClipboardOff,
+  IconDownload,
+  IconChevronDown,
+  IconFileTypeTxt,
+  IconMarkdown,
+  IconBraces,
+} from "@tabler/icons-react";
 import { useStore, useShallow } from "../../store/useStore";
 import { CategoryColumn } from "./CategoryColumn";
 import { SubcategoryColumn } from "./SubcategoryColumn";
 import { SkillColumn } from "./SkillColumn";
 import { EntityFormDrawer, FormMode, EntityFormValues } from "./EntityFormDrawer";
 import SkillOrgChart, { ClipboardItem } from "../organization/SkillOrgChart";
+import {
+  buildSkillsHierarchyExport,
+  downloadSkillsHierarchyJson,
+  downloadSkillsHierarchyMarkdown,
+  downloadSkillsHierarchyTree,
+} from "../../utils/skillsHierarchyExport";
 
 export const CategoryManager: React.FC = () => {
   const {
@@ -451,6 +467,47 @@ export const CategoryManager: React.FC = () => {
     }
   }
 
+  type ExportFormat = "markdown" | "tree" | "json";
+
+  const handleExportSkillsHierarchy = (format: ExportFormat) => {
+    try {
+      const payload = buildSkillsHierarchyExport(
+        categories,
+        subcategories,
+        skills,
+        projectTitle
+      );
+
+      if (format === "markdown") {
+        downloadSkillsHierarchyMarkdown(payload, projectTitle);
+      } else if (format === "tree") {
+        downloadSkillsHierarchyTree(payload, projectTitle);
+      } else {
+        downloadSkillsHierarchyJson(payload, projectTitle);
+      }
+
+      const formatLabel =
+        format === "markdown"
+          ? "Markdown (nur Namen)"
+          : format === "tree"
+            ? "Textbaum (nur Namen)"
+            : "JSON (vollständig)";
+
+      notifications.show({
+        title: "Export erstellt",
+        message: `${payload.counts.categories} Kategorien · ${payload.counts.subcategories} Bereiche · ${payload.counts.skills} Skills als ${formatLabel}.`,
+        color: "green",
+      });
+    } catch (error) {
+      console.error("Skills-Export fehlgeschlagen:", error);
+      notifications.show({
+        title: "Export fehlgeschlagen",
+        message: "Die Skills-Hierarchie konnte nicht exportiert werden.",
+        color: "red",
+      });
+    }
+  };
+
   return (
     <Box style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column" }}>
       <Group justify="space-between" mb="lg">
@@ -458,26 +515,74 @@ export const CategoryManager: React.FC = () => {
           Kategorien & Skills
         </Title>
 
-        {/* Sticky Clipboard Indicator */}
-        {clipboardItem && (
-          <Group
-            gap="xs"
-            bg="var(--mantine-color-blue-light)"
-            px="sm"
-            py={4}
-            style={{ borderRadius: 'var(--mantine-radius-md)', border: '1px solid var(--mantine-color-blue-3)' }}
-          >
-            <Text size="sm" fw={500} c="blue">
-              {clipboardItem.mode === 'cut' ? 'Ausschneiden:' : 'Kopieren:'}
-              <span style={{ fontWeight: 700, marginLeft: 4 }}>{clipboardItem.data.name}</span>
-            </Text>
-            <Tooltip label="Zwischenablage leeren">
-              <ActionIcon variant="subtle" color="gray" size="sm" onClick={() => setClipboardItem(null)}>
-                <IconClipboardOff size={14} />
-              </ActionIcon>
-            </Tooltip>
-          </Group>
-        )}
+        <Group gap="sm">
+          {/* Sticky Clipboard Indicator */}
+          {clipboardItem && (
+            <Group
+              gap="xs"
+              bg="var(--mantine-color-blue-light)"
+              px="sm"
+              py={4}
+              style={{ borderRadius: 'var(--mantine-radius-md)', border: '1px solid var(--mantine-color-blue-3)' }}
+            >
+              <Text size="sm" fw={500} c="blue">
+                {clipboardItem.mode === 'cut' ? 'Ausschneiden:' : 'Kopieren:'}
+                <span style={{ fontWeight: 700, marginLeft: 4 }}>{clipboardItem.data.name}</span>
+              </Text>
+              <Tooltip label="Zwischenablage leeren">
+                <ActionIcon variant="subtle" color="gray" size="sm" onClick={() => setClipboardItem(null)}>
+                  <IconClipboardOff size={14} />
+                </ActionIcon>
+              </Tooltip>
+            </Group>
+          )}
+
+          <Menu shadow="md" width={320} position="bottom-end">
+            <Menu.Target>
+              <Button
+                variant="light"
+                color="blue"
+                size="sm"
+                leftSection={<IconDownload size={16} />}
+                rightSection={<IconChevronDown size={14} />}
+              >
+                Exportieren
+              </Button>
+            </Menu.Target>
+            <Menu.Dropdown>
+              <Menu.Label>Nur Struktur (Namen)</Menu.Label>
+              <Menu.Item
+                leftSection={<IconMarkdown size={16} />}
+                onClick={() => handleExportSkillsHierarchy("markdown")}
+              >
+                Markdown (.md)
+                <Text size="xs" c="dimmed">
+                  Gut lesbar in Chat, Mail, Notion, GitHub
+                </Text>
+              </Menu.Item>
+              <Menu.Item
+                leftSection={<IconFileTypeTxt size={16} />}
+                onClick={() => handleExportSkillsHierarchy("tree")}
+              >
+                Textbaum (.txt)
+                <Text size="xs" c="dimmed">
+                  Baumansicht, maximal übersichtlich
+                </Text>
+              </Menu.Item>
+              <Menu.Divider />
+              <Menu.Label>Vollständig</Menu.Label>
+              <Menu.Item
+                leftSection={<IconBraces size={16} />}
+                onClick={() => handleExportSkillsHierarchy("json")}
+              >
+                JSON (.json)
+                <Text size="xs" c="dimmed">
+                  Mit IDs, Beschreibungen und Rollenbezügen
+                </Text>
+              </Menu.Item>
+            </Menu.Dropdown>
+          </Menu>
+        </Group>
       </Group>
 
       {/* ... tabs ... */}
