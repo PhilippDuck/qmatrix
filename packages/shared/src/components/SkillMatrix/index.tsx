@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect, useDeferredValue, useCallback } from "react";
+import React, { useMemo, useState, useEffect, useDeferredValue, useCallback, useRef } from "react";
 import { MATRIX_LAYOUT } from "../../constants/skillLevels";
 import {
   Box,
@@ -98,6 +98,7 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = React.memo(({ onNavigate 
     deleteSkill,
     deleteEmployee,
     importData,
+    importCatalog,
     assessments,
     loading,
   } = useStore(
@@ -131,10 +132,13 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = React.memo(({ onNavigate 
       deleteSkill: s.deleteSkill,
       deleteEmployee: s.deleteEmployee,
       importData: s.importData,
+      importCatalog: s.importCatalog,
       assessments: s.assessments,
       loading: s.loading,
     }))
   );
+
+  const catalogFileRef = useRef<HTMLInputElement>(null);
 
   // Defer assessment updates so the matrix structure renders immediately
   // and expensive calculations run in a lower-priority background pass
@@ -695,19 +699,54 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = React.memo(({ onNavigate 
       }}
     >
       {employees.length === 0 && categories.length === 0 ? (
-        <EmptyState
-          onAddEmployee={() => setEmployeeDrawerOpened(true)}
-          onAddSkill={() => setSkillDrawerOpened(true)}
-          onImport={async (file) => {
-            try {
-              const text = await file.text();
-              await importData(text);
-            } catch (error) {
-              console.error("Import failed:", error);
-              alert("Fehler beim Importieren der Datei. Bitte prüfen Sie das Format.");
-            }
-          }}
-        />
+        <>
+          <input
+            ref={catalogFileRef}
+            type="file"
+            accept=".json,application/json"
+            style={{ display: "none" }}
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              e.target.value = "";
+              if (!file) return;
+              try {
+                const text = await file.text();
+                const result = await importCatalog(text, {
+                  missingPolicy: "soft",
+                  allowDowngrade: true,
+                  allowCatalogIdChange: true,
+                });
+                if (!result.ok) {
+                  alert(
+                    result.errors.map((err) => err.message).join("; ") ||
+                      "Katalog-Import fehlgeschlagen."
+                  );
+                }
+              } catch (error) {
+                console.error("Catalog import failed:", error);
+                alert(
+                  "Fehler beim Laden des Katalogs. Bitte SkillGrid-Manage-Release (JSON) verwenden."
+                );
+              }
+            }}
+          />
+          <EmptyState
+            onAddEmployee={() => setEmployeeDrawerOpened(true)}
+            onAddSkill={() => setSkillDrawerOpened(true)}
+            onLoadCatalog={() => catalogFileRef.current?.click()}
+            onImport={async (file) => {
+              try {
+                const text = await file.text();
+                await importData(text);
+              } catch (error) {
+                console.error("Import failed:", error);
+                alert(
+                  "Fehler beim Importieren der Datei. Bitte prüfen Sie das Format."
+                );
+              }
+            }}
+          />
+        </>
       ) : (
         <Stack gap="md" h="100%" style={{ overflow: "hidden", minHeight: 0 }}>
           <MatrixToolbar

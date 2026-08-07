@@ -1,18 +1,46 @@
 import React, { useRef } from "react";
-import { Box, Stack, Text, Title, Button, Group, useMantineTheme, rem, Center, Anchor, Card } from "@mantine/core";
-import { IconRocket, IconUpload, IconUserPlus, IconBulb, IconX, IconPackageImport } from "@tabler/icons-react";
-import { Dropzone, MIME_TYPES, FileRejection } from "@mantine/dropzone";
+import {
+  Box,
+  Stack,
+  Text,
+  Title,
+  Button,
+  Group,
+  rem,
+  Center,
+  Anchor,
+  Card,
+} from "@mantine/core";
+import {
+  IconRocket,
+  IconUpload,
+  IconUserPlus,
+  IconBulb,
+  IconX,
+  IconPackageImport,
+} from "@tabler/icons-react";
+import { Dropzone, FileRejection } from "@mantine/dropzone";
 import classes from "./EmptyState.module.css";
+import { useCatalogAuthoring } from "../../hooks/useCatalogAuthoring";
 
 interface EmptyStateProps {
   onAddEmployee: () => void;
   onAddSkill: () => void;
+  /** Team / ops: load catalog package from Manage (preferred over creating skills). */
+  onLoadCatalog?: () => void;
   onImport: (file: File) => Promise<void>;
 }
 
-export const EmptyState: React.FC<EmptyStateProps> = ({ onAddEmployee, onAddSkill, onImport }) => {
-  const theme = useMantineTheme();
+export const EmptyState: React.FC<EmptyStateProps> = ({
+  onAddEmployee,
+  onAddSkill,
+  onLoadCatalog,
+  onImport,
+}) => {
   const openRef = useRef<() => void>(null);
+  const catalogAuthoring = useCatalogAuthoring();
+  // Team: no authoring → Katalog laden; Full: Skill erstellen
+  const showCatalogLoad = !catalogAuthoring && !!onLoadCatalog;
 
   const handleDrop = async (files: File[]) => {
     if (files.length > 0) {
@@ -21,7 +49,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({ onAddEmployee, onAddSkil
   };
 
   return (
-    <Box h="100%" style={{ display: 'flex', flexDirection: 'column' }}>
+    <Box h="100%" style={{ display: "flex", flexDirection: "column" }}>
       <Group mb="lg" justify="space-between">
         <Title order={2}>Skill-Matrix</Title>
       </Group>
@@ -43,18 +71,22 @@ export const EmptyState: React.FC<EmptyStateProps> = ({ onAddEmployee, onAddSkil
             style={{
               width: rem(80),
               height: rem(80),
-              borderRadius: '50%',
-              backgroundColor: 'var(--mantine-color-primary-light)',
-              color: 'var(--mantine-color-primary-filled)',
+              borderRadius: "50%",
+              backgroundColor: "var(--mantine-color-primary-light)",
+              color: "var(--mantine-color-primary-filled)",
             }}
           >
             <IconRocket size={48} stroke={1.5} />
           </Center>
 
           <Stack align="center" gap={0}>
-            <Title order={3} ta="center">Herzlich willkommen</Title>
-            <Text size="md" c="dimmed" ta="center" maw={400}>
-              Ihre Skill-Matrix ist noch leer. Fügen Sie Mitarbeiter und Skills hinzu, um zu beginnen.
+            <Title order={3} ta="center">
+              Herzlich willkommen
+            </Title>
+            <Text size="md" c="dimmed" ta="center" maw={420}>
+              {showCatalogLoad
+                ? "Ihre Skill-Matrix ist noch leer. Laden Sie zuerst den Katalog aus SkillGrid Manage, dann legen Sie Mitarbeiter an."
+                : "Ihre Skill-Matrix ist noch leer. Fügen Sie Mitarbeiter und Skills hinzu, um zu beginnen."}
             </Text>
           </Stack>
 
@@ -66,48 +98,92 @@ export const EmptyState: React.FC<EmptyStateProps> = ({ onAddEmployee, onAddSkil
             >
               Ersten Mitarbeiter anlegen
             </Button>
-            <Button
-              leftSection={<IconBulb size={20} />}
-              variant="default"
-              size="md"
-              onClick={onAddSkill}
-            >
-              Ersten Skill erstellen
-            </Button>
+            {showCatalogLoad ? (
+              <Button
+                leftSection={<IconPackageImport size={20} />}
+                variant="default"
+                size="md"
+                onClick={onLoadCatalog}
+              >
+                Katalog laden
+              </Button>
+            ) : (
+              <Button
+                leftSection={<IconBulb size={20} />}
+                variant="default"
+                size="md"
+                onClick={onAddSkill}
+              >
+                Ersten Skill erstellen
+              </Button>
+            )}
           </Group>
 
           <Box w="100%" mt="lg">
             <Dropzone
               openRef={openRef}
               onDrop={handleDrop}
-              onReject={(files: FileRejection[]) => console.log('rejected files', files)}
+              onReject={(files: FileRejection[]) =>
+                console.log("rejected files", files)
+              }
               maxSize={5 * 1024 ** 2}
-              accept={['application/json']}
+              accept={["application/json"]}
               radius="md"
               classNames={{ root: classes.dropzone }}
             >
-              <Stack align="center" gap="xs" style={{ minHeight: rem(100), justifyContent: 'center', pointerEvents: 'none' }}>
+              <Stack
+                align="center"
+                gap="xs"
+                style={{
+                  minHeight: rem(100),
+                  justifyContent: "center",
+                  pointerEvents: "none",
+                }}
+              >
                 <Dropzone.Accept>
                   <IconUpload
-                    style={{ width: rem(40), height: rem(40), color: 'var(--mantine-color-blue-6)' }}
+                    style={{
+                      width: rem(40),
+                      height: rem(40),
+                      color: "var(--mantine-color-blue-6)",
+                    }}
                     stroke={1.5}
                   />
                 </Dropzone.Accept>
                 <Dropzone.Reject>
                   <IconX
-                    style={{ width: rem(40), height: rem(40), color: 'var(--mantine-color-red-6)' }}
+                    style={{
+                      width: rem(40),
+                      height: rem(40),
+                      color: "var(--mantine-color-red-6)",
+                    }}
                     stroke={1.5}
                   />
                 </Dropzone.Reject>
                 <Dropzone.Idle>
                   <IconPackageImport
-                    style={{ width: rem(40), height: rem(40), color: 'var(--mantine-color-dimmed)' }}
+                    style={{
+                      width: rem(40),
+                      height: rem(40),
+                      color: "var(--mantine-color-dimmed)",
+                    }}
                     stroke={1.5}
                   />
                 </Dropzone.Idle>
 
                 <Text size="sm" c="dimmed" inline>
-                  Daten aus einem <Anchor component="button" type="button" onClick={(e) => { e.stopPropagation(); openRef.current?.() }} style={{ pointerEvents: 'all' }}>Backup wiederherstellen</Anchor>
+                  Daten aus einem{" "}
+                  <Anchor
+                    component="button"
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openRef.current?.();
+                    }}
+                    style={{ pointerEvents: "all" }}
+                  >
+                    Backup wiederherstellen
+                  </Anchor>
                 </Text>
                 <Text size="xs" c="dimmed">
                   JSON-Datei hierher ziehen
