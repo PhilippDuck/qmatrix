@@ -542,9 +542,10 @@ function AppContent() {
                       fontSize: "1.1rem",
                       transition: "all 0.2s ease",
                       userSelect: "none",
+                      whiteSpace: "nowrap",
                     }}
                   >
-                    SKILLGRID
+                    SKILLGRID Team
                   </Title>
 
                   <Tooltip label="Changelog anzeigen">
