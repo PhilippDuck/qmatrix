@@ -45,6 +45,7 @@ import { RoleManager } from "@skillgrid/shared/components/organization/RoleManag
 import { CatalogReleasePanel } from "@skillgrid/shared/components/CatalogReleasePanel";
 import { SystemDangerZone } from "@skillgrid/shared/components/SystemDangerZone";
 import { ManageGlobalBackup } from "@skillgrid/shared/components/ManageGlobalBackup";
+import { ManageDemoGenerator } from "@skillgrid/shared/components/ManageDemoGenerator";
 import { HistoryDrawer } from "@skillgrid/shared/components/shared/HistoryDrawer";
 import { UnpublishedCatalogBadge } from "@skillgrid/shared/components/UnpublishedCatalogBadge";
 import { PrivacyProvider } from "@skillgrid/shared/context/PrivacyContext";
@@ -533,6 +534,7 @@ const App: FC = () => {
                     System
                   </Title>
                   <Stack gap="lg">
+                    <ManageDemoGenerator />
                     <ManageGlobalBackup />
                     <SystemDangerZone catalogOnly />
                   </Stack>

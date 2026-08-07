@@ -63,6 +63,10 @@ export {
   validateManageBackup,
   manageBackupFilename,
 } from "./manageBackup";
+export {
+  buildManageDemoCatalogPackage,
+  manageDemoCatalogSummary,
+} from "./manageDemoCatalog";
 export type {
   ManageBackupPackage,
   ManageBackupData,
