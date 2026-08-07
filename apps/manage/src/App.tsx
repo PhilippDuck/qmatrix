@@ -19,6 +19,7 @@ import {
   Badge,
   useMantineColorScheme,
   useComputedColorScheme,
+  Box,
 } from "@mantine/core";
 import { useDisclosure, useLocalStorage } from "@mantine/hooks";
 import {
@@ -42,7 +43,6 @@ import { CatalogReleasePanel } from "@skillgrid/shared/components/CatalogRelease
 import { SystemDangerZone } from "@skillgrid/shared/components/SystemDangerZone";
 import { PrivacyProvider } from "@skillgrid/shared/context/PrivacyContext";
 import { SkillGridLogo } from "@skillgrid/shared/components/shared/SkillGridLogo";
-import { Title as MantineTitle, Box } from "@mantine/core";
 import "@mantine/core/styles.css";
 import "@mantine/dates/styles.css";
 import "@mantine/notifications/styles.css";
@@ -214,9 +214,9 @@ const App: FC = () => {
               {activeTab === "releases" && <CatalogReleasePanel />}
               {activeTab === "system" && (
                 <Box style={{ width: "100%" }}>
-                  <MantineTitle order={2} mb="lg">
+                  <Title order={2} mb="lg">
                     System
-                  </MantineTitle>
+                  </Title>
                   <SystemDangerZone catalogOnly />
                 </Box>
               )}
