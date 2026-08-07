@@ -13,9 +13,16 @@ export const SHARED_SPIKE = "skillgrid-shared-ok" as const;
 
 export const SHARED_SPIKE_META = {
   package: "@skillgrid/shared",
-  phase: "pr2a-types-constants-utils",
+  phase: "pr2b-services-store",
 } as const;
 
 export type * from "./types";
 export { LEVELS, MATRIX_LAYOUT } from "./constants";
 export * from "./utils";
+export { db } from "./services/indexeddb";
+export {
+  generateQuarterlyReport,
+  exportQualificationPlanPDF,
+} from "./services/pdfReportService";
+export { useStore, useShallow } from "./store/useStore";
+export type { AppState } from "./store/types";

@@ -41,6 +41,11 @@ export default defineConfig({
         repoRoot,
         "packages/shared/src/utils/index.ts"
       ),
+      "@skillgrid/shared/services": path.join(
+        repoRoot,
+        "packages/shared/src/services"
+      ),
+      "@skillgrid/shared/store": path.join(repoRoot, "packages/shared/src/store"),
     },
   },
   server: {

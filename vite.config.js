@@ -30,6 +30,14 @@ export default defineConfig({
         __dirname,
         "packages/shared/src/utils/index.ts"
       ),
+      "@skillgrid/shared/services": path.resolve(
+        __dirname,
+        "packages/shared/src/services"
+      ),
+      "@skillgrid/shared/store": path.resolve(
+        __dirname,
+        "packages/shared/src/store"
+      ),
     },
   },
   server: {
