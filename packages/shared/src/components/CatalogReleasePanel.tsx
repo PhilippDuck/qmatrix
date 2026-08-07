@@ -67,6 +67,20 @@ function stableCatalogId(): string {
   }
 }
 
+/** Date + local time for release archive rows. */
+function formatReleasePublishedAt(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso.slice(0, 10) || iso;
+  return d.toLocaleString("de-DE", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+}
+
 const KIND_LABEL: Record<string, string> = {
   categories: "Kategorie",
   subcategories: "Unterkategorie",
@@ -277,7 +291,7 @@ export const CatalogReleasePanel: React.FC = () => {
       children: (
         <Text size="sm">
           Der Live-Katalog wird auf den Stand von <strong>v{release.version}</strong>{" "}
-          ({release.publishedAt.slice(0, 10)}) zurückgesetzt. Skills/Rollen, die
+          ({formatReleasePublishedAt(release.publishedAt)}) zurückgesetzt. Skills/Rollen, die
           in dieser Version nicht enthalten sind, werden als{" "}
           <em>veraltet</em> markiert (nicht hart gelöscht).
         </Text>
