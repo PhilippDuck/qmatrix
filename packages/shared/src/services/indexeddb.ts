@@ -1212,6 +1212,74 @@ export class IndexedDBService {
     return this.getCatalogReleases();
   }
 
+  /** Replace entire release archive (used by global backup restore). */
+  async replaceCatalogReleases(
+    releases: StoredCatalogRelease[]
+  ): Promise<void> {
+    if (!this.db) await this.init();
+    if (!this.db!.objectStoreNames.contains("catalogReleases")) {
+      throw new Error(
+        "catalogReleases store missing — bitte App neu laden (DB-Upgrade v13)"
+      );
+    }
+    await this.execute("catalogReleases", "clear");
+    const sorted = [...releases]
+      .sort((a, b) =>
+        String(b.publishedAt).localeCompare(String(a.publishedAt))
+      )
+      .slice(0, MAX_STORED_CATALOG_RELEASES);
+    for (const r of sorted) {
+      await this.execute("catalogReleases", "put", r);
+    }
+  }
+
+  /**
+   * Restore Manage catalog + releases from a validated backup package body.
+   * Does not touch employees/assessments (Manage DB is catalog-focused).
+   */
+  async importManageCatalogData(data: {
+    categories: Category[];
+    subcategories: SubCategory[];
+    skills: Skill[];
+    roles: EmployeeRole[];
+    settings: AppSettings;
+    catalogReleases: StoredCatalogRelease[];
+  }): Promise<void> {
+    if (!this.db) await this.init();
+
+    for (const store of [
+      "categories",
+      "subcategories",
+      "skills",
+      "roles",
+    ] as const) {
+      await this.execute(store, "clear");
+    }
+
+    for (const row of data.categories || []) {
+      if (row.id) await this.execute("categories", "put", row);
+    }
+    for (const row of data.subcategories || []) {
+      if (row.id) await this.execute("subcategories", "put", row);
+    }
+    for (const row of data.skills || []) {
+      if (row.id) await this.execute("skills", "put", row);
+    }
+    for (const row of data.roles || []) {
+      if (row.id) await this.execute("roles", "put", row);
+    }
+
+    const settings: AppSettings = {
+      id: "default",
+      projectTitle: data.settings?.projectTitle || "",
+      updatedAt: Date.now(),
+      installedCatalogMeta: data.settings?.installedCatalogMeta,
+    };
+    await this.execute("settings", "put", settings);
+
+    await this.replaceCatalogReleases(data.catalogReleases || []);
+  }
+
   // Generate a stable hash of all data for comparison
   async getDataHash(): Promise<string> {
     const data = await this.exportData();

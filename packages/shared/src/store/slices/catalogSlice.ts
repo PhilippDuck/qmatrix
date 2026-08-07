@@ -32,6 +32,13 @@ import {
   diffCatalogEntities,
   type CatalogDiffResult,
 } from "../../services/catalogDiff";
+import {
+  MANAGE_BACKUP_FORMAT,
+  MANAGE_BACKUP_FORMAT_VERSION,
+  manageBackupFilename,
+  validateManageBackup,
+  type ManageBackupPackage,
+} from "../../services/manageBackup";
 import { checkCapability } from "../capabilities";
 import type { AppSlice } from "../types";
 
@@ -74,6 +81,12 @@ export interface CatalogSlice {
   /** Restore live catalog to a stored release snapshot. */
   rollbackToRelease: (releaseId: string) => Promise<CatalogApplyResult>;
   redownloadRelease: (releaseId: string) => Promise<void>;
+  /**
+   * Disaster-recovery backup: live catalog + up to 10 release snapshots + settings.
+   * Always allowed for Manage (catalogVersioning); independent of fullBackupExport.
+   */
+  exportManageBackup: (label?: string) => Promise<ManageBackupPackage>;
+  importManageBackup: (jsonData: string) => Promise<void>;
   importCatalog: (
     jsonOrPackage: string | unknown,
     options?: CatalogApplyOptions
@@ -469,6 +482,83 @@ export const createCatalogSlice =
         throw new Error(`Release ${releaseId} nicht gefunden`);
       }
       get().downloadCatalogPackage(release.package);
+    },
+
+    exportManageBackup: async (label) => {
+      // Manage disaster recovery — not gated by fullBackupExport
+      if (caps.variant !== "manage" && !caps.catalogVersioning) {
+        throw new Error(
+          "Globales Manage-Backup nur in SkillGrid Manage verfügbar"
+        );
+      }
+
+      const state = get();
+      const settings = await db.getSettings();
+      let releases = state.storedCatalogReleases;
+      if (!releases.length) {
+        releases = await db.getCatalogReleases();
+      }
+
+      const pkg: ManageBackupPackage = {
+        format: MANAGE_BACKUP_FORMAT,
+        formatVersion: MANAGE_BACKUP_FORMAT_VERSION,
+        exportedAt: new Date().toISOString(),
+        label: label || state.projectTitle || "SkillGrid Manage",
+        data: {
+          categories: state.categories,
+          subcategories: state.subcategories,
+          skills: state.skills,
+          roles: state.roles,
+          settings: {
+            id: "default",
+            projectTitle: state.projectTitle || settings.projectTitle || "",
+            updatedAt: Date.now(),
+            installedCatalogMeta:
+              state.installedCatalogMeta ??
+              settings.installedCatalogMeta ??
+              undefined,
+          },
+          catalogReleases: releases,
+        },
+      };
+
+      const blob = new Blob([JSON.stringify(pkg, null, 2)], {
+        type: "application/json",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = manageBackupFilename(pkg.label);
+      a.click();
+      URL.revokeObjectURL(url);
+
+      set({ hasUnsavedChanges: false });
+      return pkg;
+    },
+
+    importManageBackup: async (jsonData) => {
+      if (caps.variant !== "manage" && !caps.catalogVersioning) {
+        throw new Error(
+          "Globales Manage-Backup nur in SkillGrid Manage verfügbar"
+        );
+      }
+
+      let raw: unknown;
+      try {
+        raw = JSON.parse(jsonData);
+      } catch {
+        throw new Error("Ungültige JSON-Datei");
+      }
+
+      const validation = validateManageBackup(raw);
+      if (!validation.ok || !validation.package) {
+        throw new Error(validation.errors.join("; "));
+      }
+
+      const backup = validation.package;
+      await db.importManageCatalogData(backup.data);
+      await get().refreshAllData();
+      await get().refreshCatalogReleases();
     },
 
     importCatalog: async (jsonOrPackage, options) => {

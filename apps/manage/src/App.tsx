@@ -41,6 +41,7 @@ import { CategoryManager } from "@skillgrid/shared/components/CategoryManager";
 import { RoleManager } from "@skillgrid/shared/components/organization/RoleManager";
 import { CatalogReleasePanel } from "@skillgrid/shared/components/CatalogReleasePanel";
 import { SystemDangerZone } from "@skillgrid/shared/components/SystemDangerZone";
+import { ManageGlobalBackup } from "@skillgrid/shared/components/ManageGlobalBackup";
 import { PrivacyProvider } from "@skillgrid/shared/context/PrivacyContext";
 import { SkillGridLogo } from "@skillgrid/shared/components/shared/SkillGridLogo";
 import "@mantine/core/styles.css";
@@ -247,7 +248,10 @@ const App: FC = () => {
                   <Title order={2} mb="lg">
                     System
                   </Title>
-                  <SystemDangerZone catalogOnly />
+                  <Stack gap="lg">
+                    <ManageGlobalBackup />
+                    <SystemDangerZone catalogOnly />
+                  </Stack>
                 </Box>
               )}
             </AppShell.Main>

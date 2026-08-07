@@ -51,3 +51,13 @@ export type {
 } from "./catalogDiff";
 export type { StoredCatalogRelease } from "./indexeddb";
 export { MAX_STORED_CATALOG_RELEASES } from "./indexeddb";
+export {
+  MANAGE_BACKUP_FORMAT,
+  MANAGE_BACKUP_FORMAT_VERSION,
+  validateManageBackup,
+  manageBackupFilename,
+} from "./manageBackup";
+export type {
+  ManageBackupPackage,
+  ManageBackupData,
+} from "./manageBackup";
