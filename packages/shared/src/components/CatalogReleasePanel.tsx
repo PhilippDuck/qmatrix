@@ -249,7 +249,7 @@ export const CatalogReleasePanel: React.FC = () => {
       notifications.show({
         title: `Version ${result.package?.meta.version} freigegeben`,
         message:
-          "Snapshot lokal gespeichert (max. 10) und JSON heruntergeladen.",
+          "Snapshot gespeichert (max. 10). JSON + TXT (Änderungsbeschreibung) heruntergeladen.",
         color: "green",
       });
       setNotes("");

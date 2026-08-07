@@ -49,6 +49,12 @@ export type {
   CatalogDiffResult,
   CatalogDiffChangeKind,
 } from "./catalogDiff";
+export {
+  buildCatalogReleaseNotesText,
+  catalogReleaseNotesFilename,
+  downloadTextFile,
+} from "./catalogReleaseNotes";
+export type { BuildReleaseNotesInput } from "./catalogReleaseNotes";
 export type { StoredCatalogRelease } from "./indexeddb";
 export { MAX_STORED_CATALOG_RELEASES } from "./indexeddb";
 export {

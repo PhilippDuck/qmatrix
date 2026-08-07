@@ -33,6 +33,11 @@ import {
   type CatalogDiffResult,
 } from "../../services/catalogDiff";
 import {
+  buildCatalogReleaseNotesText,
+  catalogReleaseNotesFilename,
+  downloadTextFile,
+} from "../../services/catalogReleaseNotes";
+import {
   MANAGE_BACKUP_FORMAT,
   MANAGE_BACKUP_FORMAT_VERSION,
   manageBackupFilename,
@@ -66,7 +71,13 @@ export interface CatalogSlice {
   extractCatalog: (
     meta: CatalogExtractMetaInput
   ) => Promise<CatalogExtractResult>;
-  downloadCatalogPackage: (pkg: CatalogPackage) => void;
+  downloadCatalogPackage: (
+    pkg: CatalogPackage,
+    options?: {
+      /** Pre-built release notes TXT (always downloaded with Manage releases). */
+      notesText?: string;
+    }
+  ) => void;
   /**
    * Manage release: bump version, append changelog, persist snapshot (max 10), download.
    */
@@ -182,7 +193,7 @@ export const createCatalogSlice =
       return result;
     },
 
-    downloadCatalogPackage: (pkg) => {
+    downloadCatalogPackage: (pkg, options) => {
       const blob = new Blob([JSON.stringify(pkg, null, 2)], {
         type: "application/json",
       });
@@ -192,6 +203,17 @@ export const createCatalogSlice =
       a.download = catalogDownloadFilename(pkg.meta);
       a.click();
       URL.revokeObjectURL(url);
+
+      // Companion TXT with human-readable change description
+      if (options?.notesText) {
+        // slight delay so browsers don't drop the second download
+        window.setTimeout(() => {
+          downloadTextFile(
+            catalogReleaseNotesFilename(pkg.meta),
+            options.notesText!
+          );
+        }, 150);
+      }
     },
 
     publishCatalogRelease: async (options) => {
@@ -323,6 +345,20 @@ export const createCatalogSlice =
       let pkg = extract.package;
       pkg = await withContentHash(pkg);
 
+      // Baseline for TXT change list = previous latest release (before we archive)
+      let previousList =
+        get().storedCatalogReleases.length > 0
+          ? get().storedCatalogReleases
+          : await db.getCatalogReleases();
+      const previousRelease = previousList[0] ?? null;
+
+      const notesText = buildCatalogReleaseNotesText({
+        pkg,
+        notes: newEntry.notes,
+        previousPackage: previousRelease?.package ?? null,
+        previousVersion: previousRelease?.version ?? null,
+      });
+
       const meta: CatalogMeta = pkg.meta;
       await get().setInstalledCatalogMeta(meta);
 
@@ -347,7 +383,7 @@ export const createCatalogSlice =
       }
 
       if (options.download !== false) {
-        get().downloadCatalogPackage(pkg);
+        get().downloadCatalogPackage(pkg, { notesText });
       }
 
       set({
@@ -484,7 +520,20 @@ export const createCatalogSlice =
       if (!release) {
         throw new Error(`Release ${releaseId} nicht gefunden`);
       }
-      get().downloadCatalogPackage(release.package);
+      let list =
+        get().storedCatalogReleases.length > 0
+          ? get().storedCatalogReleases
+          : await db.getCatalogReleases();
+      const idx = list.findIndex((r) => r.id === release.id);
+      // list is newest-first; previous release is the next older entry
+      const previous = idx >= 0 ? list[idx + 1] : null;
+      const notesText = buildCatalogReleaseNotesText({
+        pkg: release.package,
+        notes: release.notes,
+        previousPackage: previous?.package ?? null,
+        previousVersion: previous?.version ?? null,
+      });
+      get().downloadCatalogPackage(release.package, { notesText });
     },
 
     exportManageBackup: async (label) => {
