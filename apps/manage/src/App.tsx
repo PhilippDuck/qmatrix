@@ -21,7 +21,7 @@ import {
   useComputedColorScheme,
   Box,
 } from "@mantine/core";
-import { useDisclosure, useLocalStorage } from "@mantine/hooks";
+import { useDisclosure, useLocalStorage, useHotkeys } from "@mantine/hooks";
 import {
   IconSun,
   IconMoon,
@@ -31,6 +31,7 @@ import {
   IconSettings,
   IconChevronLeft,
   IconChevronRight,
+  IconHistory,
   type Icon,
 } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
@@ -42,6 +43,7 @@ import { RoleManager } from "@skillgrid/shared/components/organization/RoleManag
 import { CatalogReleasePanel } from "@skillgrid/shared/components/CatalogReleasePanel";
 import { SystemDangerZone } from "@skillgrid/shared/components/SystemDangerZone";
 import { ManageGlobalBackup } from "@skillgrid/shared/components/ManageGlobalBackup";
+import { HistoryDrawer } from "@skillgrid/shared/components/shared/HistoryDrawer";
 import { PrivacyProvider } from "@skillgrid/shared/context/PrivacyContext";
 import { SkillGridLogo } from "@skillgrid/shared/components/shared/SkillGridLogo";
 /** Always in sync with apps/manage/package.json (not Katalog-Release, not Full). */
@@ -88,6 +90,8 @@ function ColorSchemeToggle() {
 
 const App: FC = () => {
   const [opened, { toggle }] = useDisclosure();
+  const [historyOpened, { open: openHistory, close: closeHistory }] =
+    useDisclosure(false);
   const [collapsed, setCollapsed] = useLocalStorage({
     key: "skillgrid-manage-nav-collapsed",
     defaultValue: false,
@@ -109,6 +113,8 @@ const App: FC = () => {
     skills,
     roles,
     refreshCatalogDirtyState,
+    changeHistory,
+    undoChange,
   } = useStore(
     useShallow((s) => ({
       loading: s.loading,
@@ -122,6 +128,8 @@ const App: FC = () => {
       skills: s.skills,
       roles: s.roles,
       refreshCatalogDirtyState: s.refreshCatalogDirtyState,
+      changeHistory: s.changeHistory,
+      undoChange: s.undoChange,
     }))
   );
 
@@ -141,6 +149,37 @@ const App: FC = () => {
       notifications.show({ title: "Fehler", message: error, color: "red" });
     }
   }, [error]);
+
+  // Same as Full: last local actions (not catalog SemVer releases)
+  useHotkeys([
+    [
+      "mod+z",
+      () => {
+        const lastUndoable = changeHistory.find((h) => !h.undone);
+        if (lastUndoable?.id) {
+          void undoChange(lastUndoable.id)
+            .then(() => {
+              notifications.show({
+                title: "Rückgängig",
+                message: `"${lastUndoable.entityLabel}" wurde rückgängig gemacht`,
+                color: "blue",
+                autoClose: 3000,
+              });
+            })
+            .catch((err: unknown) => {
+              notifications.show({
+                title: "Fehler",
+                message:
+                  err instanceof Error
+                    ? err.message
+                    : "Konnte nicht rückgängig gemacht werden",
+                color: "red",
+              });
+            });
+        }
+      },
+    ],
+  ]);
 
   if (loading) {
     return (
@@ -232,6 +271,16 @@ const App: FC = () => {
                       {projectTitle}
                     </Text>
                   )}
+                  <Tooltip label="Änderungshistorie (lokale Aktionen, unabhängig von Katalog-Versionen)">
+                    <ActionIcon
+                      variant="subtle"
+                      color="gray"
+                      size="md"
+                      onClick={openHistory}
+                    >
+                      <IconHistory size={18} />
+                    </ActionIcon>
+                  </Tooltip>
                   <ColorSchemeToggle />
                 </Group>
               </Group>
@@ -339,6 +388,7 @@ const App: FC = () => {
                 </Box>
               )}
             </AppShell.Main>
+            <HistoryDrawer opened={historyOpened} onClose={closeHistory} />
           </AppShell>
         </PrivacyProvider>
       </ModalsProvider>
