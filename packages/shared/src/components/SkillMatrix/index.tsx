@@ -68,6 +68,7 @@ interface SkillMatrixProps {
 
 export const SkillMatrix: React.FC<SkillMatrixProps> = React.memo(({ onNavigate }) => {
   const catalogAuthoring = useCatalogAuthoring();
+
   const {
     employees,
     categories,
@@ -147,6 +148,12 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = React.memo(({ onNavigate 
 
   const [focusEmployeeId, setFocusEmployeeId] = useState<string | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
+  // Team: never allow matrix structure edit mode
+  useEffect(() => {
+    if (!catalogAuthoring) {
+      setIsEditMode(false);
+    }
+  }, [catalogAuthoring]);
 
   // Employee Drawer state
   const [employeeDrawerOpened, setEmployeeDrawerOpened] = useState(false);

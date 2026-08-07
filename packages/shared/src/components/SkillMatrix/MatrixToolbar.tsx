@@ -10,6 +10,7 @@ import { Department, EmployeeRole, Category, SavedView, Employee, Skill } from '
 import { SubCategory } from '../../services/indexeddb';
 import { MetricMode } from '../../hooks/useMatrixState';
 import { usePrivacy } from '../../context/PrivacyContext';
+import { useCatalogAuthoring } from '../../hooks/useCatalogAuthoring';
 
 interface MatrixToolbarProps {
     groupingMode: 'none' | 'department' | 'role';
@@ -74,6 +75,7 @@ export const MatrixToolbar: React.FC<MatrixToolbarProps> = ({
     setSaveViewModalOpened, focusEmployeeId, setFocusEmployeeId, reorderSavedViews
 }) => {
     const { anonymizeName } = usePrivacy();
+    const catalogAuthoring = useCatalogAuthoring();
 
     const groupedSkillOptions = useMemo(() => {
         const result: { group: string; items: { value: string; label: string }[] }[] = [];
@@ -269,28 +271,32 @@ export const MatrixToolbar: React.FC<MatrixToolbarProps> = ({
                         </Popover>
                     </Group>
 
-                    {/* Actions Group */}
+                    {/* Actions Group — catalog edit only when authoring (Full), not Team */}
                     <Group gap="xs" style={{ borderLeft: '1px solid var(--mantine-color-default-border)', paddingLeft: '12px' }}>
-                        <Tooltip label={isEditMode ? "Bearbeitungsmodus beenden" : "Bearbeitungsmodus aktivieren"}>
-                            <ActionIcon
-                                variant="light"
-                                color={isEditMode ? "blue" : "gray"}
-                                onClick={() => setIsEditMode(!isEditMode)}
-                                size="lg"
-                            >
-                                <IconEdit size={20} />
-                            </ActionIcon>
-                        </Tooltip>
-                        <Tooltip label="Skill erstellen">
-                            <ActionIcon
-                                variant="light"
-                                color="gray"
-                                onClick={() => setSkillDrawerOpened(true)}
-                                size="lg"
-                            >
-                                <IconCubePlus size={20} />
-                            </ActionIcon>
-                        </Tooltip>
+                        {catalogAuthoring && (
+                            <>
+                                <Tooltip label={isEditMode ? "Bearbeitungsmodus beenden" : "Bearbeitungsmodus aktivieren"}>
+                                    <ActionIcon
+                                        variant="light"
+                                        color={isEditMode ? "blue" : "gray"}
+                                        onClick={() => setIsEditMode(!isEditMode)}
+                                        size="lg"
+                                    >
+                                        <IconEdit size={20} />
+                                    </ActionIcon>
+                                </Tooltip>
+                                <Tooltip label="Skill erstellen">
+                                    <ActionIcon
+                                        variant="light"
+                                        color="gray"
+                                        onClick={() => setSkillDrawerOpened(true)}
+                                        size="lg"
+                                    >
+                                        <IconCubePlus size={20} />
+                                    </ActionIcon>
+                                </Tooltip>
+                            </>
+                        )}
                         <Tooltip label="Mitarbeiter hinzufügen">
                             <ActionIcon
                                 variant="light"
