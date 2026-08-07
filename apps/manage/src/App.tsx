@@ -36,6 +36,7 @@ import {
   IconHistory,
   IconDeviceFloppy,
   IconEdit,
+  IconHeart,
   type Icon,
 } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
@@ -603,7 +604,7 @@ const App: FC = () => {
                   </Tooltip>
                 ))}
               </Stack>
-              {/* App version footer (package version, not Katalog) */}
+              {/* Credit + app version footer (package version, not Katalog) */}
               <Box
                 py="sm"
                 px="xs"
@@ -612,10 +613,30 @@ const App: FC = () => {
                   marginTop: "auto",
                 }}
               >
+                {!collapsed && (
+                  <>
+                    <Text size="xs" c="dimmed" ta="center">
+                      Designed with{" "}
+                      <IconHeart
+                        size={12}
+                        style={{
+                          verticalAlign: "middle",
+                          color: "var(--mantine-color-red-6)",
+                        }}
+                        fill="var(--mantine-color-red-6)"
+                      />{" "}
+                      by
+                    </Text>
+                    <Text size="xs" c="dimmed" ta="center" fw={500}>
+                      Philipp-Marcel Duck
+                    </Text>
+                  </>
+                )}
                 <AppVersionBadge
                   version={APP_VERSION}
                   expanded={!collapsed}
                   onClick={openChangelog}
+                  withTopMargin
                 />
               </Box>
             </AppShell.Navbar>
