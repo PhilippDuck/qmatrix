@@ -204,7 +204,7 @@ const App: FC = () => {
                         flexShrink: 0,
                       }}
                     >
-                      Manage
+                      {collapsed ? "Manage" : "SkillGrid Manage"}
                     </Title>
                     <Badge variant="light" color="indigo" size="sm" style={{ flexShrink: 0 }}>
                       Katalog
