@@ -53,6 +53,7 @@ import {
   OPEN_PUBLISH_SESSION_KEY,
   UnpublishedCatalogBadge,
 } from "./UnpublishedCatalogBadge";
+import { CatalogMergeImport } from "./CatalogMergeImport";
 
 function stableCatalogId(): string {
   const key = "skillgrid-manage-catalog-id";
@@ -344,6 +345,8 @@ export const CatalogReleasePanel: React.FC = () => {
       </Group>
 
       <Stack gap="lg">
+        <CatalogMergeImport />
+
         {hasUnpublishedCatalogChanges && (
           <Alert
             icon={<IconAlertCircle size={16} />}
