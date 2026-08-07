@@ -536,11 +536,16 @@ function ButtonLikeAdd({
   label: string;
 }) {
   return (
-    <Tooltip label={`${label} hinzufügen`}>
-      <ActionIcon variant="light" color="blue" onClick={onClick} size="lg">
-        <IconPlus size={16} />
-      </ActionIcon>
-    </Tooltip>
+    <Button
+      variant="light"
+      color="blue"
+      size="sm"
+      leftSection={<IconPlus size={16} />}
+      onClick={onClick}
+      style={{ flexShrink: 0 }}
+    >
+      {label} hinzufügen
+    </Button>
   );
 }
 
