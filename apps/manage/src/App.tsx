@@ -191,7 +191,6 @@ const App: FC = () => {
                     )}
                   </ActionIcon>
                   <SkillGridLogo size={28} />
-                  {/* Always visible (also when sidebar collapsed): Manage · Katalog · versions */}
                   <Group gap={6} wrap="nowrap" style={{ minWidth: 0 }}>
                     <Title
                       order={4}
@@ -206,13 +205,10 @@ const App: FC = () => {
                     >
                       {collapsed ? "Manage" : "SkillGrid Manage"}
                     </Title>
-                    <Badge variant="light" color="indigo" size="sm" style={{ flexShrink: 0 }}>
-                      Katalog
-                    </Badge>
                     {installedCatalogMeta?.version ? (
                       <Tooltip label="Freigegebene Katalog-Version (Live)">
                         <Badge variant="outline" color="gray" size="sm" style={{ flexShrink: 0 }}>
-                          Katalog v{installedCatalogMeta.version}
+                          v{installedCatalogMeta.version}
                         </Badge>
                       </Tooltip>
                     ) : (
@@ -283,7 +279,7 @@ const App: FC = () => {
                   </Tooltip>
                 ))}
               </Stack>
-              {/* App version at sidebar bottom (like Full) — from apps/manage/package.json */}
+              {/* App version footer — same quiet style as Full */}
               <Box
                 py="sm"
                 px="xs"
@@ -292,14 +288,27 @@ const App: FC = () => {
                   marginTop: "auto",
                 }}
               >
-                {!collapsed && (
-                  <Text size="xs" c="dimmed" mb={6}>
-                    Nach Änderungen eine <strong>Version freigeben</strong> und
-                    die Datei in Team importieren.
-                  </Text>
-                )}
-                {collapsed ? (
-                  <Tooltip label={`SkillGrid Manage ${APP_VERSION}`} position="right" withArrow>
+                {!collapsed ? (
+                  <>
+                    <Text size="xs" c="dimmed" ta="center" mb={4}>
+                      SkillGrid Manage
+                    </Text>
+                    <Badge
+                      variant="subtle"
+                      color="gray"
+                      size="xs"
+                      fullWidth
+                      styles={{ root: { textTransform: "none", opacity: 0.7 } }}
+                    >
+                      {APP_VERSION}
+                    </Badge>
+                  </>
+                ) : (
+                  <Tooltip
+                    label={`SkillGrid Manage ${APP_VERSION}`}
+                    position="right"
+                    withArrow
+                  >
                     <Badge
                       variant="subtle"
                       color="gray"
@@ -308,7 +317,7 @@ const App: FC = () => {
                       styles={{
                         root: {
                           textTransform: "none",
-                          opacity: 0.8,
+                          opacity: 0.7,
                           paddingInline: 4,
                         },
                       }}
@@ -316,16 +325,6 @@ const App: FC = () => {
                       {APP_VERSION.replace(/^v/, "")}
                     </Badge>
                   </Tooltip>
-                ) : (
-                  <Badge
-                    variant="subtle"
-                    color="gray"
-                    size="xs"
-                    fullWidth
-                    styles={{ root: { textTransform: "none", opacity: 0.8 } }}
-                  >
-                    App {APP_VERSION}
-                  </Badge>
                 )}
               </Box>
             </AppShell.Navbar>
