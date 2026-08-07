@@ -172,8 +172,8 @@ const App: FC = () => {
             styles={{ root: { height: "100dvh" } }}
           >
             <AppShell.Header>
-              <Group h="100%" px="md" justify="space-between">
-                <Group gap="sm">
+              <Group h="100%" px="md" justify="space-between" wrap="nowrap">
+                <Group gap="sm" wrap="nowrap" style={{ minWidth: 0 }}>
                   <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
                   {/* Sidebar collapse — same place as Full (header, left of logo) */}
                   <ActionIcon
@@ -182,6 +182,7 @@ const App: FC = () => {
                     visibleFrom="sm"
                     color="gray"
                     size="md"
+                    style={{ flexShrink: 0 }}
                   >
                     {collapsed ? (
                       <IconChevronRight size={18} />
@@ -189,52 +190,54 @@ const App: FC = () => {
                       <IconChevronLeft size={18} />
                     )}
                   </ActionIcon>
-                  <Group gap="xs">
-                    <SkillGridLogo size={collapsed ? 28 : 32} />
-                    {!collapsed && (
-                      <>
-                        <Title
-                          order={4}
-                          c="indigo"
-                          style={{
-                            letterSpacing: -0.5,
-                            fontSize: "1.1rem",
-                            userSelect: "none",
-                          }}
-                        >
-                          SkillGrid Manage
-                        </Title>
-                        <Badge variant="light" color="indigo" size="xs">
-                          Katalog
+                  <SkillGridLogo size={28} />
+                  {/* Always visible (also when sidebar collapsed): Manage · Katalog · versions */}
+                  <Group gap={6} wrap="nowrap" style={{ minWidth: 0 }}>
+                    <Title
+                      order={4}
+                      c="indigo"
+                      style={{
+                        letterSpacing: -0.5,
+                        fontSize: "1.05rem",
+                        userSelect: "none",
+                        whiteSpace: "nowrap",
+                        flexShrink: 0,
+                      }}
+                    >
+                      Manage
+                    </Title>
+                    <Badge variant="light" color="indigo" size="sm" style={{ flexShrink: 0 }}>
+                      Katalog
+                    </Badge>
+                    {installedCatalogMeta?.version ? (
+                      <Tooltip label="Freigegebene Katalog-Version (Live)">
+                        <Badge variant="outline" color="gray" size="sm" style={{ flexShrink: 0 }}>
+                          Katalog v{installedCatalogMeta.version}
                         </Badge>
-                        {installedCatalogMeta?.version && (
-                          <Badge variant="outline" color="gray" size="xs">
-                            v{installedCatalogMeta.version}
-                          </Badge>
-                        )}
-                        {hasUnpublishedCatalogChanges && (
-                          <Badge variant="filled" color="orange" size="xs">
-                            ungesichert
-                          </Badge>
-                        )}
-                      </>
+                      </Tooltip>
+                    ) : (
+                      <Badge variant="outline" color="gray" size="sm" style={{ flexShrink: 0 }}>
+                        kein Release
+                      </Badge>
                     )}
-                    {collapsed && hasUnpublishedCatalogChanges && (
-                      <Badge variant="filled" color="orange" size="xs">
-                        ·
+                    {hasUnpublishedCatalogChanges && (
+                      <Badge variant="filled" color="orange" size="sm" style={{ flexShrink: 0 }}>
+                        ungesichert
                       </Badge>
                     )}
                   </Group>
                 </Group>
-                <Group gap="xs">
-                  {!collapsed && projectTitle && (
-                    <Text size="sm" c="dimmed" visibleFrom="md" lineClamp={1} maw={220}>
+                <Group gap="xs" wrap="nowrap" style={{ flexShrink: 0 }}>
+                  {projectTitle && (
+                    <Text size="sm" c="dimmed" visibleFrom="lg" lineClamp={1} maw={180}>
                       {projectTitle}
                     </Text>
                   )}
-                  <Badge variant="outline" color="gray" size="sm">
-                    Manage {APP_VERSION}
-                  </Badge>
+                  <Tooltip label="App-Version (SkillGrid Manage)">
+                    <Badge variant="outline" color="indigo" size="sm">
+                      App {APP_VERSION}
+                    </Badge>
+                  </Tooltip>
                   <ColorSchemeToggle />
                 </Group>
               </Group>
