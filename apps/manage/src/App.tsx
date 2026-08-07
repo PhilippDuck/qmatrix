@@ -51,11 +51,14 @@ import { ManageDemoGenerator } from "@skillgrid/shared/components/ManageDemoGene
 import { ManageEmptyOnboarding } from "@skillgrid/shared/components/ManageEmptyOnboarding";
 import { HistoryDrawer } from "@skillgrid/shared/components/shared/HistoryDrawer";
 import { UnpublishedCatalogBadge } from "@skillgrid/shared/components/UnpublishedCatalogBadge";
+import { ChangelogModal } from "@skillgrid/shared/components/ChangelogModal";
 import { PrivacyProvider } from "@skillgrid/shared/context/PrivacyContext";
 import { SkillGridLogo } from "@skillgrid/shared/components/shared/SkillGridLogo";
 import { AppVersionBadge } from "@skillgrid/shared/components/shared/AppVersionBadge";
 /** Always in sync with apps/manage/package.json (not Katalog-Release, not Full). */
 import managePackage from "../package.json";
+/** Manage-only changelog — not the Full/repo CHANGELOG */
+import manageChangelog from "../CHANGELOG.md?raw";
 import "@mantine/core/styles.css";
 import "@mantine/dates/styles.css";
 import "@mantine/notifications/styles.css";
