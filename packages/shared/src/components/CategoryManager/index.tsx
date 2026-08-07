@@ -12,6 +12,9 @@ import {
   IconFileTypeTxt,
   IconMarkdown,
   IconBraces,
+  IconBinaryTree,
+  IconTable,
+  IconLayoutGrid,
 } from "@tabler/icons-react";
 import { useStore, useShallow } from "../../store/hooks";
 import { useCatalogAuthoring } from "../../hooks/useCatalogAuthoring";
@@ -20,6 +23,12 @@ import { SubcategoryColumn } from "./SubcategoryColumn";
 import { SkillColumn } from "./SkillColumn";
 import { EntityFormDrawer, FormMode, EntityFormValues } from "./EntityFormDrawer";
 import SkillOrgChart, { ClipboardItem } from "../organization/SkillOrgChart";
+import {
+  SkillTreeView,
+  SkillTableView,
+  SkillRoleMatrixView,
+  OverviewPanelShell,
+} from "./SkillOverviewViews";
 import {
   buildSkillsHierarchyExport,
   downloadSkillsHierarchyJson,
@@ -595,8 +604,21 @@ export const CategoryManager: React.FC = () => {
       <Tabs value={activeTab} onChange={setActiveTab} style={{ flex: 1, display: "flex", flexDirection: "column" }}>
         {/* ... Tabs List ... */}
         <Tabs.List mb="md">
-          <Tabs.Tab value="list" leftSection={<IconList size={16} />}>Liste</Tabs.Tab>
-          <Tabs.Tab value="chart" leftSection={<IconHierarchy size={16} />}>Organigramm</Tabs.Tab>
+          <Tabs.Tab value="list" leftSection={<IconList size={16} />}>
+            Liste
+          </Tabs.Tab>
+          <Tabs.Tab value="tree" leftSection={<IconBinaryTree size={16} />}>
+            Baum
+          </Tabs.Tab>
+          <Tabs.Tab value="table" leftSection={<IconTable size={16} />}>
+            Tabelle
+          </Tabs.Tab>
+          <Tabs.Tab value="matrix" leftSection={<IconLayoutGrid size={16} />}>
+            Rollen-Matrix
+          </Tabs.Tab>
+          <Tabs.Tab value="chart" leftSection={<IconHierarchy size={16} />}>
+            Organigramm
+          </Tabs.Tab>
         </Tabs.List>
 
         <Tabs.Panel value="list" style={{ flex: 1, overflow: "hidden" }}>
@@ -652,6 +674,39 @@ export const CategoryManager: React.FC = () => {
               readOnly={!catalogAuthoring}
             />
           </Group>
+        </Tabs.Panel>
+
+        <Tabs.Panel value="tree" style={{ flex: 1, overflow: "hidden", minHeight: 0 }}>
+          <OverviewPanelShell>
+            <SkillTreeView
+              categories={categories}
+              subcategories={subcategories}
+              skills={skills}
+              roles={roles}
+            />
+          </OverviewPanelShell>
+        </Tabs.Panel>
+
+        <Tabs.Panel value="table" style={{ flex: 1, overflow: "hidden", minHeight: 0 }}>
+          <OverviewPanelShell>
+            <SkillTableView
+              categories={categories}
+              subcategories={subcategories}
+              skills={skills}
+              roles={roles}
+            />
+          </OverviewPanelShell>
+        </Tabs.Panel>
+
+        <Tabs.Panel value="matrix" style={{ flex: 1, overflow: "hidden", minHeight: 0 }}>
+          <OverviewPanelShell>
+            <SkillRoleMatrixView
+              categories={categories}
+              subcategories={subcategories}
+              skills={skills}
+              roles={roles}
+            />
+          </OverviewPanelShell>
         </Tabs.Panel>
 
         <Tabs.Panel value="chart" style={{ flex: 1, overflow: "hidden" }}>
