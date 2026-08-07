@@ -17,6 +17,8 @@ import {
   SegmentedControl,
   Tooltip,
   ActionIcon,
+  Menu,
+  Button,
 } from "@mantine/core";
 import {
   IconSearch,
@@ -32,6 +34,7 @@ import {
   IconFold,
   IconFoldDown,
   IconFoldUp,
+  IconChevronDown as IconMenuChevron,
 } from "@tabler/icons-react";
 import type {
   Category,
@@ -385,45 +388,46 @@ export const SkillTreeView: React.FC<SkillOverviewData & SkillTreeActions> = ({
           style={{ flex: 1, minWidth: 180 }}
         />
         <Group gap={4} wrap="nowrap">
-          <Tooltip label="Alles einklappen">
-            <ActionIcon
-              variant="light"
-              color="gray"
-              size="lg"
-              onClick={collapseAll}
-              disabled={expandLevel === 0 && Object.keys(open).length === 0}
-            >
-              <IconFold size={16} />
-            </ActionIcon>
-          </Tooltip>
-          <Tooltip
-            label={
-              expandLevel >= maxExpandLevel
-                ? "Bereits voll ausgeklappt"
-                : `Eine Stufe weiter aufklappen (${expandLevel} → ${Math.min(expandLevel + 1, maxExpandLevel)})`
-            }
-          >
-            <ActionIcon
-              variant="light"
-              color="blue"
-              size="lg"
-              onClick={expandOneMore}
-              disabled={maxExpandLevel === 0 || expandLevel >= maxExpandLevel}
-            >
-              <IconFoldDown size={16} />
-            </ActionIcon>
-          </Tooltip>
-          <Tooltip label="Alles ausklappen">
-            <ActionIcon
-              variant="light"
-              color="blue"
-              size="lg"
-              onClick={expandAll}
-              disabled={maxExpandLevel === 0}
-            >
-              <IconFoldUp size={16} />
-            </ActionIcon>
-          </Tooltip>
+          <Menu shadow="sm" width={220} position="bottom-end">
+            <Menu.Target>
+              <Button
+                variant="light"
+                color="gray"
+                size="sm"
+                leftSection={<IconFold size={16} />}
+                rightSection={<IconMenuChevron size={14} />}
+                disabled={maxExpandLevel === 0 && categories.length === 0}
+              >
+                Aufklappen
+              </Button>
+            </Menu.Target>
+            <Menu.Dropdown>
+              <Menu.Item
+                leftSection={<IconFold size={14} />}
+                onClick={collapseAll}
+                disabled={expandLevel === 0 && Object.keys(open).length === 0}
+              >
+                Alles einklappen
+              </Menu.Item>
+              <Menu.Item
+                leftSection={<IconFoldDown size={14} />}
+                onClick={expandOneMore}
+                disabled={maxExpandLevel === 0 || expandLevel >= maxExpandLevel}
+              >
+                Eine Stufe weiter
+                {expandLevel < maxExpandLevel
+                  ? ` (${expandLevel}→${expandLevel + 1})`
+                  : ""}
+              </Menu.Item>
+              <Menu.Item
+                leftSection={<IconFoldUp size={14} />}
+                onClick={expandAll}
+                disabled={maxExpandLevel === 0}
+              >
+                Alles ausklappen
+              </Menu.Item>
+            </Menu.Dropdown>
+          </Menu>
           {canEdit && onAddCategory && (
             <ButtonLikeAdd onClick={onAddCategory} label="Kategorie" />
           )}
