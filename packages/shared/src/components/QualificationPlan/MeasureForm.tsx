@@ -30,8 +30,8 @@ import {
   IconUser,
   IconBook,
 } from "@tabler/icons-react";
-import { QualificationMeasure, SkillGap } from "../../store/useStore";
-import { useStore, useShallow } from "../../store/useStore";
+import { QualificationMeasure, SkillGap } from "../../store/hooks";
+import { useStore, useShallow } from "../../store/hooks";
 import { usePrivacy } from "../../context/PrivacyContext";
 import { MentorSuggestion } from "./MentorSuggestion";
 

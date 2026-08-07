@@ -1,13 +1,13 @@
-import { db } from "../../services/indexeddb";
+import type { DbService } from "../../services/indexeddb";
 import type { Department, EmployeeRole } from "../../types";
 import { createEntityCrudHandlers, nameLabel } from "../createEntityCrud";
 import type { AppSlice, OrgSlice } from "../types";
 
-export const createOrgSlice: AppSlice<OrgSlice> = (set, get) => {
+export const createOrgSlice = (db: DbService): AppSlice<OrgSlice> => (set, get) => {
   const departments = createEntityCrudHandlers<
     Department,
     Omit<Department, "id" | "updatedAt">
-  >(set, get, {
+  >(db, set, get, {
     entityType: "department",
     listKey: "departments",
     getLabel: nameLabel<Department>(),
@@ -16,7 +16,7 @@ export const createOrgSlice: AppSlice<OrgSlice> = (set, get) => {
     dbDelete: (id) => db.deleteDepartment(id),
   });
 
-  const roles = createEntityCrudHandlers<EmployeeRole>(set, get, {
+  const roles = createEntityCrudHandlers<EmployeeRole>(db, set, get, {
     entityType: "role",
     listKey: "roles",
     getLabel: nameLabel<EmployeeRole>(),

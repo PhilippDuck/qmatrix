@@ -1,9 +1,9 @@
-import { db } from "../../services/indexeddb";
+import type { DbService } from "../../services/indexeddb";
 import type { Assessment, AssessmentLogEntry } from "../../types";
 import { recordChange } from "../recordChange";
 import type { AppSlice, AssessmentSlice } from "../types";
 
-export const createAssessmentSlice: AppSlice<AssessmentSlice> = (set, get) => ({
+export const createAssessmentSlice = (db: DbService): AppSlice<AssessmentSlice> => (set, get) => ({
   assessments: [],
 
   setAssessment: async (employeeId, skillId, level, note?: string) => {
@@ -38,6 +38,7 @@ export const createAssessmentSlice: AppSlice<AssessmentSlice> = (set, get) => ({
 
       await db.setAssessment(employeeId, skillId, level, note);
       await recordChange(
+        db,
         get,
         "assessment",
         assessmentId,
@@ -82,6 +83,7 @@ export const createAssessmentSlice: AppSlice<AssessmentSlice> = (set, get) => ({
 
       await db.setTargetLevel(employeeId, skillId, targetLevel);
       await recordChange(
+        db,
         get,
         "assessment",
         assessmentId,

@@ -33,8 +33,8 @@ import {
   IconCalendar,
   IconTrendingUp,
 } from "@tabler/icons-react";
-import { QualificationPlan as QualificationPlanType } from "../../store/useStore";
-import { useStore, useShallow } from "../../store/useStore";
+import { QualificationPlan as QualificationPlanType } from "../../store/hooks";
+import { useStore, useShallow } from "../../store/hooks";
 import { usePrivacy } from "../../context/PrivacyContext";
 import { PlanForm } from "./PlanForm";
 import { PlanDetail } from "./PlanDetail";

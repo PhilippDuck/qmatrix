@@ -46,19 +46,32 @@ export type {
   SkillLevel,
 } from "../types";
 
-const DB_NAME = "QualificationMatrixDB";
-const DB_VERSION = 12;
+/** Legacy Full DB name — do not change (K9). */
+export const DEFAULT_DB_NAME = "QualificationMatrixDB";
+export const DEFAULT_DB_VERSION = 12;
 
-class IndexedDBService {
+export interface IndexedDBServiceOptions {
+  dbName: string;
+  dbVersion?: number;
+}
+
+export class IndexedDBService {
   private db: IDBDatabase | null = null;
   private initPromise: Promise<void> | null = null;
+  readonly dbName: string;
+  readonly dbVersion: number;
+
+  constructor(options: IndexedDBServiceOptions) {
+    this.dbName = options.dbName;
+    this.dbVersion = options.dbVersion ?? DEFAULT_DB_VERSION;
+  }
 
   async init(): Promise<void> {
     if (this.db) return Promise.resolve();
     if (this.initPromise) return this.initPromise;
 
     this.initPromise = new Promise((resolve, reject) => {
-      const request = indexedDB.open(DB_NAME, DB_VERSION);
+      const request = indexedDB.open(this.dbName, this.dbVersion);
 
       request.onerror = () => {
         this.initPromise = null;
@@ -1125,4 +1138,11 @@ class IndexedDBService {
   }
 }
 
-export const db = new IndexedDBService();
+/** Public DB surface used by store slices (avoids coupling to class name). */
+export type DbService = IndexedDBService;
+
+export function createIndexedDBService(
+  options: IndexedDBServiceOptions
+): DbService {
+  return new IndexedDBService(options);
+}

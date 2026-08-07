@@ -43,8 +43,8 @@ import {
     IconEyeOff,
     IconSettings,
 } from "@tabler/icons-react";
-import { AssessmentLogEntry } from "../../store/useStore";
-import { useStore, useShallow } from "../../store/useStore";
+import { AssessmentLogEntry } from "../../store/hooks";
+import { useStore, useShallow } from "../../store/hooks";
 import { getScoreColor } from "../../utils/skillCalculations";
 import { getIconByName } from "../shared/RoleIconPicker";
 import {

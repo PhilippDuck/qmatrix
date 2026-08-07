@@ -1,13 +1,15 @@
 /**
  * Shared change-history recorder used by all store slices.
  * Uses `get()` so it never imports the store singleton (avoids cycles).
+ * `db` is injected (no module singleton).
  */
 
-import { db } from "../services/indexeddb";
+import type { DbService } from "../services/indexeddb";
 import type { ChangeAction, EntityType } from "../types";
 import type { AppState } from "./types";
 
 export async function recordChange(
+  db: DbService,
   get: () => AppState,
   entityType: EntityType,
   entityId: string,

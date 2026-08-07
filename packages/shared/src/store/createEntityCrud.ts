@@ -3,6 +3,7 @@
  * Covers: create → set state → history; update with rollback; delete with optional cascade.
  */
 
+import type { DbService } from "../services/indexeddb";
 import type { EntityType } from "../types";
 import { recordChange, failAndMaybeReload } from "./recordChange";
 import type { AppState } from "./types";
@@ -80,6 +81,7 @@ export function createEntityCrudHandlers<
   TCreate = Omit<T, "id" | "updatedAt">,
   TUpdate = TCreate,
 >(
+  db: DbService,
   set: Set,
   get: Get,
   config: EntityCrudConfig<T, TCreate, TUpdate>
@@ -103,6 +105,7 @@ export function createEntityCrudHandlers<
         const list = [...getList(), entity];
         setList(config.afterAddList ? config.afterAddList(list, entity) : list);
         await recordChange(
+          db,
           get,
           config.entityType,
           id,
@@ -126,6 +129,7 @@ export function createEntityCrudHandlers<
         setList(getList().map((e) => (e.id === id ? updated : e)));
         await config.dbUpdate(id, data);
         await recordChange(
+          db,
           get,
           config.entityType,
           id,
@@ -154,6 +158,7 @@ export function createEntityCrudHandlers<
 
         await config.dbDelete(id);
         await recordChange(
+          db,
           get,
           config.entityType,
           id,

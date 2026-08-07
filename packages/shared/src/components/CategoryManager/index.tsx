@@ -13,7 +13,7 @@ import {
   IconMarkdown,
   IconBraces,
 } from "@tabler/icons-react";
-import { useStore, useShallow } from "../../store/useStore";
+import { useStore, useShallow } from "../../store/hooks";
 import { CategoryColumn } from "./CategoryColumn";
 import { SubcategoryColumn } from "./SubcategoryColumn";
 import { SkillColumn } from "./SkillColumn";

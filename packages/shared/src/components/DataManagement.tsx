@@ -31,8 +31,8 @@ import {
   IconChevronDown,
   IconFileText,
 } from "@tabler/icons-react";
-import { MergeReport, MergeDiff, MergeItemDiff } from "../store/useStore";
-import { useStore, useShallow } from "../store/useStore";
+import { MergeReport, MergeDiff, MergeItemDiff } from "../store/hooks";
+import { useStore, useShallow } from "../store/hooks";
 import { generateQuarterlyReport } from "../services/pdfReportService";
 import { useDisclosure } from "@mantine/hooks";
 import { modals } from "@mantine/modals";

@@ -29,7 +29,7 @@ import {
     IconCalendarStats,
     IconSum,
 } from "@tabler/icons-react";
-import { useStore, useShallow } from "../../store/useStore";
+import { useStore, useShallow } from "../../store/hooks";
 import { usePrivacy } from "../../context/PrivacyContext";
 import {
     generateForecastWithPlans,

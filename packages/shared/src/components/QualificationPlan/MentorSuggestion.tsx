@@ -11,7 +11,7 @@ import {
   ThemeIcon,
 } from "@mantine/core";
 import { IconCheck, IconUser, IconStar } from "@tabler/icons-react";
-import { Employee, useStore } from "../../store/useStore";
+import { Employee, useStore } from "../../store/hooks";
 
 import { usePrivacy } from "../../context/PrivacyContext";
 

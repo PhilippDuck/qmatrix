@@ -1,13 +1,13 @@
-import { db } from "../../services/indexeddb";
+import type { DbService } from "../../services/indexeddb";
 import type { SavedView } from "../../types";
 import { createEntityCrudHandlers, nameLabel } from "../createEntityCrud";
 import type { AppSlice, ViewSlice } from "../types";
 
-export const createViewSlice: AppSlice<ViewSlice> = (set, get) => {
+export const createViewSlice = (db: DbService): AppSlice<ViewSlice> => (set, get) => {
   const crud = createEntityCrudHandlers<
     SavedView,
     Omit<SavedView, "id" | "updatedAt">
-  >(set, get, {
+  >(db, set, get, {
     entityType: "savedView",
     listKey: "savedViews",
     getLabel: nameLabel<SavedView>(),

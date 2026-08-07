@@ -14,7 +14,7 @@ import {
     Button,
 } from "@mantine/core";
 import { IconArrowUpRight, IconEdit } from "@tabler/icons-react";
-import { useStore, useShallow } from "../../store/useStore";
+import { useStore, useShallow } from "../../store/hooks";
 import { EmployeeRole } from "../../services/indexeddb";
 import { getIconByName } from "./RoleIconPicker";
 import { LEVELS } from "../../constants/skillLevels";

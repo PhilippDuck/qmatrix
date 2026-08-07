@@ -22,7 +22,7 @@ import { modals } from "@mantine/modals";
 import { notifications } from "@mantine/notifications";
 import { IconPlus, IconHistory, IconUser } from "@tabler/icons-react";
 import { HistoryTimeline } from "./HistoryTimeline";
-import { useStore, useShallow } from "../../store/useStore";
+import { useStore, useShallow } from "../../store/hooks";
 
 interface EmployeeDrawerProps {
   opened: boolean;

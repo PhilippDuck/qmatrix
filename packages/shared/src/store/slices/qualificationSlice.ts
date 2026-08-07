@@ -1,4 +1,4 @@
-import { db } from "../../services/indexeddb";
+import type { DbService } from "../../services/indexeddb";
 import {
   computeSkillGapsForEmployee,
   findPotentialMentors,
@@ -7,7 +7,7 @@ import type { QualificationMeasure, QualificationPlan } from "../../types";
 import { createEntityCrudHandlers } from "../createEntityCrud";
 import type { AppSlice, QualificationSlice } from "../types";
 
-export const createQualificationSlice: AppSlice<QualificationSlice> = (set, get) => {
+export const createQualificationSlice = (db: DbService): AppSlice<QualificationSlice> => (set, get) => {
   const planLabel = (item: Partial<QualificationPlan>, fallbackId = "") => {
     const emp = get().employees.find((e) => e.id === item.employeeId);
     return `Plan für ${emp?.name || item.employeeId || fallbackId}`;
@@ -22,7 +22,7 @@ export const createQualificationSlice: AppSlice<QualificationSlice> = (set, get)
     QualificationPlan,
     Omit<QualificationPlan, "id" | "createdAt" | "updatedAt">,
     Partial<Omit<QualificationPlan, "id" | "createdAt">>
-  >(set, get, {
+  >(db, set, get, {
     entityType: "qualificationPlan",
     listKey: "qualificationPlans",
     getLabel: planLabel,
@@ -54,7 +54,7 @@ export const createQualificationSlice: AppSlice<QualificationSlice> = (set, get)
     QualificationMeasure,
     Omit<QualificationMeasure, "id" | "updatedAt">,
     Partial<Omit<QualificationMeasure, "id">>
-  >(set, get, {
+  >(db, set, get, {
     entityType: "qualificationMeasure",
     listKey: "qualificationMeasures",
     getLabel: measureLabel,

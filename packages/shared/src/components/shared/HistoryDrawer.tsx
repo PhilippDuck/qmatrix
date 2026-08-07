@@ -28,7 +28,7 @@ import {
   IconMinus,
   IconEye,
 } from '@tabler/icons-react';
-import { ChangeHistoryEntry, EntityType, Employee, Skill, SubCategory, Category, Department, EmployeeRole, useStore, useShallow } from "../../store/useStore";
+import { ChangeHistoryEntry, EntityType, Employee, Skill, SubCategory, Category, Department, EmployeeRole, useStore, useShallow } from "../../store/hooks";
 
 interface HistoryDrawerProps {
   opened: boolean;

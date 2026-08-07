@@ -1,10 +1,10 @@
-import { db } from "../../services/indexeddb";
+import type { DbService } from "../../services/indexeddb";
 import type { Category, Skill, SubCategory } from "../../types";
 import { createEntityCrudHandlers, nameLabel } from "../createEntityCrud";
 import type { AppSlice, HierarchySlice } from "../types";
 
-export const createHierarchySlice: AppSlice<HierarchySlice> = (set, get) => {
-  const categories = createEntityCrudHandlers<Category>(set, get, {
+export const createHierarchySlice = (db: DbService): AppSlice<HierarchySlice> => (set, get) => {
+  const categories = createEntityCrudHandlers<Category>(db, set, get, {
     entityType: "category",
     listKey: "categories",
     getLabel: nameLabel<Category>(),
@@ -40,7 +40,7 @@ export const createHierarchySlice: AppSlice<HierarchySlice> = (set, get) => {
     },
   });
 
-  const subcategories = createEntityCrudHandlers<SubCategory>(set, get, {
+  const subcategories = createEntityCrudHandlers<SubCategory>(db, set, get, {
     entityType: "subcategory",
     listKey: "subcategories",
     getLabel: nameLabel<SubCategory>(),
@@ -83,7 +83,7 @@ export const createHierarchySlice: AppSlice<HierarchySlice> = (set, get) => {
     },
   });
 
-  const skills = createEntityCrudHandlers<Skill>(set, get, {
+  const skills = createEntityCrudHandlers<Skill>(db, set, get, {
     entityType: "skill",
     listKey: "skills",
     getLabel: nameLabel<Skill>(),

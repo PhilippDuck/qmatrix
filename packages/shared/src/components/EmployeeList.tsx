@@ -12,7 +12,7 @@ import {
 import { useDisclosure, useHotkeys } from "@mantine/hooks";
 import { modals } from "@mantine/modals";
 import { IconPlus, IconEdit, IconTrash, IconUser, IconUserOff } from "@tabler/icons-react";
-import { useStore, useShallow } from "../store/useStore";
+import { useStore, useShallow } from "../store/hooks";
 import { usePrivacy } from "../context/PrivacyContext";
 import { Employee } from "../services/indexeddb";
 import { EmployeeDrawer } from "./shared/EmployeeDrawer";

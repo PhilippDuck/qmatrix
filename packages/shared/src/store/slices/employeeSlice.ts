@@ -1,10 +1,12 @@
-import { db } from "../../services/indexeddb";
+import type { DbService } from "../../services/indexeddb";
 import type { Employee } from "../../types";
 import { createEntityCrudHandlers, nameLabel } from "../createEntityCrud";
 import type { AppSlice, EmployeeSlice } from "../types";
 
-export const createEmployeeSlice: AppSlice<EmployeeSlice> = (set, get) => {
-  const crud = createEntityCrudHandlers<Employee>(set, get, {
+export const createEmployeeSlice =
+  (db: DbService): AppSlice<EmployeeSlice> =>
+  (set, get) => {
+  const crud = createEntityCrudHandlers<Employee>(db, set, get, {
     entityType: "employee",
     listKey: "employees",
     getLabel: nameLabel<Employee>(),

@@ -1,5 +1,5 @@
 import { useMemo, useCallback } from "react";
-import { Employee, Category, SubCategory, Skill, Assessment, Department, EmployeeRole } from "../store/useStore";
+import { Employee, Category, SubCategory, Skill, Assessment, Department, EmployeeRole } from "../store/hooks";
 import { getMaxRoleTargetForSkill } from "../utils/skillCalculations";
 import { MatrixColumn } from "../components/SkillMatrix/types";
 import { MetricMode } from "./useMatrixState";

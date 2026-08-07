@@ -44,7 +44,7 @@ import {
 } from "@tabler/icons-react";
 
 import { modals } from "@mantine/modals";
-import { useStore, useShallow } from "@skillgrid/shared/store/useStore";
+import { useStore, useShallow } from "@skillgrid/shared/store/hooks";
 import { UnifiedDataView } from "@skillgrid/shared/components/UnifiedDataView";
 import { SkillMatrix } from "@skillgrid/shared/components/SkillMatrix";
 import { DataManagement } from "@skillgrid/shared/components/DataManagement";

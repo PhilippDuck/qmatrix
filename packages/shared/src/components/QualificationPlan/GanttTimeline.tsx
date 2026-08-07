@@ -22,8 +22,8 @@ import {
     IconPlayerPlay,
     IconCircleX,
 } from "@tabler/icons-react";
-import { QualificationMeasure, QualificationPlan, Employee, Skill, Category, SubCategory } from "../../store/useStore";
-import { useStore, useShallow } from "../../store/useStore";
+import { QualificationMeasure, QualificationPlan, Employee, Skill, Category, SubCategory } from "../../store/hooks";
+import { useStore, useShallow } from "../../store/hooks";
 import { usePrivacy } from "../../context/PrivacyContext";
 
 // ─── Helpers ────────────────────────────────────────────────

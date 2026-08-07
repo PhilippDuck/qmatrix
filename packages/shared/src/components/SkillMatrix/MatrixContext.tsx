@@ -6,7 +6,7 @@ import type {
   QualificationMeasure,
   QualificationPlan,
   Skill,
-} from "../../store/useStore";
+} from "../../store/hooks";
 import type { NavigateFn } from "../../types";
 import type { MatrixColumn } from "./types";
 

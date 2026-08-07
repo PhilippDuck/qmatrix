@@ -23,3 +23,11 @@ export type {
 } from "./domain";
 
 export type { AppTab, NavParams, NavigateFn } from "./navigation";
+
+export type {
+  AppVariant,
+  AppCapabilities,
+  CapabilityFlag,
+} from "./capabilities";
+export { fullCapabilities } from "./capabilities";
+

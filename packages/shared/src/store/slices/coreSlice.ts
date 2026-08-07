@@ -1,17 +1,18 @@
-import { db } from "../../services/indexeddb";
+import type { DbService } from "../../services/indexeddb";
+import type { PrefixedStorage } from "../prefixedStorage";
 import { runLoadTimeMigrations } from "../../services/dataMigrations";
 import type { Assessment } from "../../types";
 import type { AppSlice, CoreSlice } from "../types";
 
-export const createCoreSlice: AppSlice<CoreSlice> = (set, get) => ({
+export const createCoreSlice = (db: DbService, storage: PrefixedStorage): AppSlice<CoreSlice> => (set, get) => ({
   projectTitle: "",
   dataHash: "",
   loading: true,
   error: null,
-  hasUnsavedChanges: localStorage.getItem("skillgrid-has-unsaved-changes") === "true",
+  hasUnsavedChanges: storage.getItem("has-unsaved-changes") === "true",
 
   setHasUnsavedChanges: (val) => {
-    localStorage.setItem("skillgrid-has-unsaved-changes", val.toString());
+    storage.setItem("has-unsaved-changes", val.toString());
     set({ hasUnsavedChanges: val });
   },
 

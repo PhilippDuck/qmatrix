@@ -1,8 +1,8 @@
 import React, { useMemo } from "react";
 import { Paper, Group, ThemeIcon, Text, Button, SimpleGrid, Stack } from "@mantine/core";
 import { IconTarget, IconPlus } from "@tabler/icons-react";
-import { QualificationMeasure, SkillGap } from "../../store/useStore";
-import { useStore, useShallow } from "../../store/useStore";
+import { QualificationMeasure, SkillGap } from "../../store/hooks";
+import { useStore, useShallow } from "../../store/hooks";
 import { MeasureCard } from "./MeasureCard";
 
 interface SkillMeasureGroupProps {

@@ -1,8 +1,8 @@
 import React from "react";
 import { Card, Group, ThemeIcon, Text, Menu, ActionIcon, Stack, Badge, Progress, Button } from "@mantine/core";
 import { IconUser, IconDotsVertical, IconEye, IconEdit, IconArchive, IconTrash } from "@tabler/icons-react";
-import { QualificationPlan } from "../../store/useStore";
-import { useStore, useShallow } from "../../store/useStore";
+import { QualificationPlan } from "../../store/hooks";
+import { useStore, useShallow } from "../../store/hooks";
 import { usePrivacy } from "../../context/PrivacyContext";
 
 interface PlanCardProps {

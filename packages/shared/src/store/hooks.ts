@@ -1,6 +1,6 @@
 /**
- * @deprecated Prefer `createAppStore` + `AppProviders` + `useAppStore` from `./hooks`.
- * This module re-exports hooks and types for backward-compatible paths.
+ * Shared React entry for store access.
+ * Components should import `useStore` / `useShallow` from here (not a module singleton).
  */
 
 export {
@@ -12,11 +12,9 @@ export {
   AppProviders,
 } from "./StoreProvider";
 
-export { createAppStore } from "./createAppStore";
-export type { AppStoreApi, CreateAppStoreDeps } from "./createAppStore";
-
 export type { AppState } from "./types";
 
+// Domain type re-exports for drop-in migration from old useStore imports
 export type {
   Employee,
   Category,
@@ -29,6 +27,7 @@ export type {
   ExportData,
   MergeReport,
   MergeDiff,
+  MergeItemDiff,
   QualificationPlan,
   QualificationMeasure,
   SavedView,

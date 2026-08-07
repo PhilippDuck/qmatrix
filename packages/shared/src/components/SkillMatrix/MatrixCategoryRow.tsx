@@ -7,7 +7,7 @@ import { getAllSubcategoryIdsForCategory, getAllSkillIdsForCategory, getAllSkill
 import { InfoTooltip } from "../shared/InfoTooltip";
 import { BulkLevelMenu } from "./BulkLevelMenu";
 import { MatrixSubcategoryRow } from "./MatrixSubcategoryRow";
-import type { Category, SubCategory, Skill } from "../../store/useStore";
+import type { Category, SubCategory, Skill } from "../../store/hooks";
 import { usePrivacy } from "../../context/PrivacyContext";
 import { useMatrixContext } from "./MatrixContext";
 

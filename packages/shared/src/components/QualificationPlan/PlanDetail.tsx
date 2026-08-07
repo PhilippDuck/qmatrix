@@ -30,8 +30,8 @@ import {
   IconAlertCircle,
   IconDownload,
 } from "@tabler/icons-react";
-import { QualificationPlan, QualificationMeasure } from "../../store/useStore";
-import { useStore, useShallow } from "../../store/useStore";
+import { QualificationPlan, QualificationMeasure } from "../../store/hooks";
+import { useStore, useShallow } from "../../store/hooks";
 import { exportQualificationPlanPDF } from "../../services/pdfReportService";
 import { usePrivacy } from "../../context/PrivacyContext";
 import { SkillGapAnalysis } from "./SkillGapAnalysis";

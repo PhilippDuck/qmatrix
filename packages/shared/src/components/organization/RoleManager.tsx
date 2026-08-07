@@ -26,7 +26,7 @@ import {
 } from "@mantine/core";
 import { IconPlus, IconTrash, IconBadge, IconArrowUpRight, IconEdit, IconList, IconHierarchy, IconX, IconEye } from "@tabler/icons-react";
 import { useDisclosure } from "@mantine/hooks";
-import { useStore, useShallow } from "../../store/useStore";
+import { useStore, useShallow } from "../../store/hooks";
 import { EmployeeRole } from "../../services/indexeddb";
 import { RoleOrgChart } from "./RoleOrgChart";
 import { RoleIconPicker, getIconByName } from "../shared/RoleIconPicker";

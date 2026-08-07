@@ -4,7 +4,12 @@ import "@mantine/core/styles.css";
 import "@mantine/charts/styles.css";
 import "@mantine/tiptap/styles.css";
 
-import { SHARED_SPIKE, SHARED_SPIKE_META } from "@skillgrid/shared";
+import {
+  AppProviders,
+  fullCapabilities,
+  SHARED_SPIKE,
+  SHARED_SPIKE_META,
+} from "@skillgrid/shared";
 import App from "./App";
 
 (globalThis as typeof globalThis & {
@@ -22,6 +27,8 @@ if (!rootEl) {
 
 createRoot(rootEl).render(
   <StrictMode>
-    <App />
+    <AppProviders capabilities={fullCapabilities}>
+      <App />
+    </AppProviders>
   </StrictMode>
 );

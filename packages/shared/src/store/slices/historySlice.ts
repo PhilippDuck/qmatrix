@@ -1,7 +1,7 @@
-import { db } from "../../services/indexeddb";
+import type { DbService } from "../../services/indexeddb";
 import type { AppSlice, HistorySlice } from "../types";
 
-export const createHistorySlice: AppSlice<HistorySlice> = (set, get) => ({
+export const createHistorySlice = (db: DbService): AppSlice<HistorySlice> => (set, get) => ({
   changeHistory: [],
 
   refreshChangeHistory: async () => {

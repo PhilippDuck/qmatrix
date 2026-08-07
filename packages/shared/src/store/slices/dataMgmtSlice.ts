@@ -1,8 +1,8 @@
-import { db } from "../../services/indexeddb";
+import type { DbService } from "../../services/indexeddb";
 import type { ExportData } from "../../types";
 import type { AppSlice, DataMgmtSlice } from "../types";
 
-export const createDataMgmtSlice: AppSlice<DataMgmtSlice> = (set, get) => ({
+export const createDataMgmtSlice = (db: DbService): AppSlice<DataMgmtSlice> => (set, get) => ({
   exportData: async () => {
     try {
       const dbData = await db.exportData();

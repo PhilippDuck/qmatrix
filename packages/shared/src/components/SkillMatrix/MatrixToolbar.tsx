@@ -6,7 +6,7 @@ import {
     IconEyeOff, IconColumnsOff, IconX, IconCubePlus, IconTargetOff
 } from '@tabler/icons-react';
 import { ViewTabs } from './ViewTabs';
-import { Department, EmployeeRole, Category, SavedView, Employee, Skill } from '../../store/useStore';
+import { Department, EmployeeRole, Category, SavedView, Employee, Skill } from '../../store/hooks';
 import { SubCategory } from '../../services/indexeddb';
 import { MetricMode } from '../../hooks/useMatrixState';
 import { usePrivacy } from '../../context/PrivacyContext';

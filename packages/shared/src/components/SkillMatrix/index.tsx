@@ -32,8 +32,8 @@ import {
   IconColumnsOff,
   IconUserOff,
 } from "@tabler/icons-react";
-import { Employee, SavedView } from "../../store/useStore";
-import { useStore, useShallow } from "../../store/useStore";
+import { Employee, SavedView } from "../../store/hooks";
+import { useStore, useShallow } from "../../store/hooks";
 import { ViewTabs } from "./ViewTabs";
 import { SaveViewModal } from "./SaveViewModal";
 import { CreateContextMenu } from "../shared/CreateContextMenu";

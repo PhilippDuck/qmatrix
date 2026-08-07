@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from "react";
 import { useLocalStorage } from "@mantine/hooks";
-import { SavedView } from "../store/useStore";
+import { SavedView } from "../store/hooks";
 
 export type MetricMode = 'avg' | 'max' | 'fulfillment';
 

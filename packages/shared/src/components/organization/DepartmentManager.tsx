@@ -17,7 +17,7 @@ import {
 } from "@mantine/core";
 import { IconPlus, IconTrash, IconBuilding, IconEdit } from "@tabler/icons-react";
 import { useDisclosure } from "@mantine/hooks";
-import { useStore, useShallow } from "../../store/useStore";
+import { useStore, useShallow } from "../../store/hooks";
 import { usePrivacy } from "../../context/PrivacyContext";
 import { Department } from "../../services/indexeddb";
 
