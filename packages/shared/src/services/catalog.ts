@@ -381,13 +381,31 @@ export function extractCatalogFromState(
     errors.push(err("meta.version", "version must be valid SemVer"));
   }
 
+  // Only catalog payload fields — never catalogSource/catalogDeprecated/updatedAt
+  // (those caused false "unpublished changes" while Diff stayed empty).
   const categories = (input.categories || [])
     .filter((c): c is typeof c & { id: string } => !!c.id)
-    .map((c) => ({ ...c, id: c.id! }));
+    .map((c) => ({
+      id: c.id!,
+      name: c.name,
+      ...(c.description != null && c.description !== ""
+        ? { description: c.description }
+        : {}),
+    }));
 
   const subcategories = (input.subcategories || [])
     .filter((s): s is typeof s & { id: string } => !!s.id)
-    .map((s) => ({ ...s, id: s.id! }));
+    .map((s) => ({
+      id: s.id!,
+      categoryId: s.categoryId,
+      name: s.name,
+      ...(s.parentSubCategoryId
+        ? { parentSubCategoryId: s.parentSubCategoryId }
+        : {}),
+      ...(s.description != null && s.description !== ""
+        ? { description: s.description }
+        : {}),
+    }));
 
   const skillIds = new Set(
     (input.skills || []).map((s) => s.id).filter(Boolean) as string[]
@@ -396,8 +414,13 @@ export function extractCatalogFromState(
   const roles: CatalogRole[] = (input.roles || [])
     .filter((r): r is typeof r & { id: string } => !!r.id)
     .map((r) => ({
-      ...r,
       id: r.id!,
+      name: r.name,
+      ...(r.description != null && r.description !== ""
+        ? { description: r.description }
+        : {}),
+      ...(r.inheritsFromId ? { inheritsFromId: r.inheritsFromId } : {}),
+      ...(r.icon ? { icon: r.icon } : {}),
       requiredSkills: (r.requiredSkills || []).filter((req) => {
         if (!skillIds.has(req.skillId)) {
           warnings.push(
@@ -437,15 +460,14 @@ export function extractCatalogFromState(
 
   const skills: CatalogSkill[] = (input.skills || [])
     .filter((s): s is typeof s & { id: string } => !!s.id)
-    .map((s) => {
-      const {
-        departmentId: _d,
-        requiredByRoleIds: _r,
-        id,
-        ...rest
-      } = s;
-      return { ...rest, id } as CatalogSkill;
-    });
+    .map((s) => ({
+      id: s.id!,
+      subCategoryId: s.subCategoryId,
+      name: s.name,
+      ...(s.description != null && s.description !== ""
+        ? { description: s.description }
+        : {}),
+    }));
 
   if (errors.length > 0) {
     return {

@@ -393,10 +393,11 @@ export const createCatalogSlice =
           set({ hasUnpublishedCatalogChanges: hasAny });
           return;
         }
-        const liveHash = await computeContentHash(live);
-        set({
-          hasUnpublishedCatalogChanges: liveHash !== latest.contentHash,
-        });
+        // MUST use same comparison as Diff UI (not raw contentHash — that
+        // falsely flagged catalogSource / requiredByRoleIds noise).
+        const baseline = latest.package?.entities ?? live;
+        const diff = diffCatalogEntities(live, baseline);
+        set({ hasUnpublishedCatalogChanges: !diff.isIdentical });
       } catch (e) {
         console.error(e);
         set({ hasUnpublishedCatalogChanges: false });

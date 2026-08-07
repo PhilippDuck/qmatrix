@@ -48,4 +48,13 @@ describe("diffCatalogEntities", () => {
     const d = diffCatalogEntities(current, base);
     expect(d.isIdentical).toBe(true);
   });
+
+  it("ignores catalogSource / empty description noise", () => {
+    const current = structuredClone(base);
+    (current.categories[0] as { catalogSource?: string }).catalogSource =
+      "catalog";
+    (current.skills[0] as { description?: string }).description = "";
+    const d = diffCatalogEntities(current, base);
+    expect(d.isIdentical).toBe(true);
+  });
 });

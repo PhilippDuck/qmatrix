@@ -35,7 +35,7 @@ function entityLabel(kind: CatalogEntityKind, entity: { id: string; name?: strin
   return entity.name?.trim() || entity.id;
 }
 
-/** Normalize for comparison: drop volatile / derived fields. */
+/** Normalize for comparison: drop volatile / derived / empty optional fields. */
 function normalizeEntity(
   kind: CatalogEntityKind,
   entity: Record<string, unknown>
@@ -47,6 +47,12 @@ function normalizeEntity(
   if (kind === "skills") {
     delete copy.departmentId;
     delete copy.requiredByRoleIds; // derived (K18)
+  }
+  // Treat empty optional strings as absent (avoids "" vs missing false positives)
+  for (const key of Object.keys(copy)) {
+    if (copy[key] === "" || copy[key] === undefined || copy[key] === null) {
+      delete copy[key];
+    }
   }
   // stable JSON
   return JSON.stringify(sortKeysDeep(copy));
