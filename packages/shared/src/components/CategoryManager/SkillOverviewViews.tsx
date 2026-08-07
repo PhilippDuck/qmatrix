@@ -245,8 +245,14 @@ export const SkillTreeView: React.FC<SkillOverviewData & SkillTreeActions> = ({
     const expanded = isOpen(id);
     const hasKids = node.children.length > 0 || node.skills.length > 0;
     return (
-      <Box key={id} className="skill-tree-row">
-        <Group gap={4} wrap="nowrap" style={rowStyle(depth)}>
+      <Box key={id}>
+        {/* class only on the row itself — not the wrapper, so parent rows don't stay "hovered" */}
+        <Group
+          gap={4}
+          wrap="nowrap"
+          className="skill-tree-row"
+          style={rowStyle(depth)}
+        >
           <UnstyledButton
             onClick={() => toggle(id)}
             style={{
@@ -388,15 +394,19 @@ export const SkillTreeView: React.FC<SkillOverviewData & SkillTreeActions> = ({
           style={{ flex: 1, minWidth: 180 }}
         />
         <Group gap={4} wrap="nowrap">
-          <Menu shadow="sm" width={220} position="bottom-end">
+          <Menu shadow="sm" width={200} position="bottom-end">
             <Menu.Target>
               <Button
                 variant="light"
                 color="gray"
-                size="sm"
-                leftSection={<IconFold size={16} />}
-                rightSection={<IconMenuChevron size={14} />}
+                size="compact-xs"
+                leftSection={<IconFold size={12} />}
+                rightSection={<IconMenuChevron size={12} />}
                 disabled={maxExpandLevel === 0 && categories.length === 0}
+                styles={{
+                  root: { fontWeight: 500 },
+                  section: { marginInline: 2 },
+                }}
               >
                 Aufklappen
               </Button>
@@ -435,8 +445,9 @@ export const SkillTreeView: React.FC<SkillOverviewData & SkillTreeActions> = ({
       </Group>
       <ScrollArea style={{ flex: 1 }} offsetScrollbars type="auto">
         <style>{`
-          .skill-tree-inline { opacity: 0; transition: opacity 0.12s ease; }
-          .skill-tree-row:hover .skill-tree-inline { opacity: 1; }
+          /* Hover only on the row Group (children are siblings, not nested inside the row) */
+          .skill-tree-inline { opacity: 0; pointer-events: none; transition: opacity 0.12s ease; }
+          .skill-tree-row:hover .skill-tree-inline { opacity: 1; pointer-events: auto; }
         `}</style>
         {tree.length === 0 ? (
           <Text c="dimmed" size="sm" ta="center" py="xl">
@@ -447,10 +458,11 @@ export const SkillTreeView: React.FC<SkillOverviewData & SkillTreeActions> = ({
             const id = cat.id!;
             const expanded = isOpen(id);
             return (
-              <Box key={id} mb={4} className="skill-tree-row">
+              <Box key={id} mb={4}>
                 <Group
                   gap={4}
                   wrap="nowrap"
+                  className="skill-tree-row"
                   style={rowStyle(0, "var(--mantine-color-default-hover)")}
                 >
                   <UnstyledButton
