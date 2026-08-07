@@ -19,3 +19,16 @@ export {
   generateQuarterlyReport,
   exportQualificationPlanPDF,
 } from "./pdfReportService";
+export {
+  isValidSemVer,
+  parseSemVer,
+  compareSemVer,
+  validateCatalogPackage,
+  extractCatalogFromState,
+  extractCatalogFromExport,
+  computeContentHash,
+  withContentHash,
+  catalogDownloadFilename,
+  recomputeRequiredByRoleIds,
+  canonicalEntitiesJson,
+} from "./catalog";

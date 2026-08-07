@@ -8,7 +8,7 @@ export const SHARED_SPIKE = "skillgrid-shared-ok" as const;
 
 export const SHARED_SPIKE_META = {
   package: "@skillgrid/shared",
-  phase: "pr4-capability-guards",
+  phase: "pr6-catalog-schema",
 } as const;
 
 export type * from "./types";
@@ -31,6 +31,22 @@ export {
   generateQuarterlyReport,
   exportQualificationPlanPDF,
 } from "./services/pdfReportService";
+export {
+  isValidSemVer,
+  parseSemVer,
+  compareSemVer,
+  validateCatalogPackage,
+  extractCatalogFromState,
+  extractCatalogFromExport,
+  computeContentHash,
+  withContentHash,
+  catalogDownloadFilename,
+  recomputeRequiredByRoleIds,
+} from "./services/catalog";
+export {
+  CATALOG_FORMAT,
+  CATALOG_FORMAT_VERSION,
+} from "./types/catalog";
 export {
   AppProviders,
   useAppStore,

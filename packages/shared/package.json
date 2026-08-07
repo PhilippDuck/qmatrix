@@ -9,7 +9,10 @@
     "./constants": "./src/constants/index.ts",
     "./utils": "./src/utils/index.ts",
     "./services": "./src/services/index.ts",
+    "./services/catalog": "./src/services/catalog.ts",
     "./services/*": "./src/services/*",
+    "./types/catalog": "./src/types/catalog.ts",
+
     "./store": "./src/store/index.ts",
     "./store/hooks": "./src/store/hooks.ts",
     "./store/*": "./src/store/*",

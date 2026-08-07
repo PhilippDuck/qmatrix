@@ -31,3 +31,23 @@ export type {
 } from "./capabilities";
 export { fullCapabilities } from "./capabilities";
 
+export type {
+  SemVer,
+  CatalogEntityKind,
+  CatalogChangelogEntry,
+  CatalogMeta,
+  CatalogCategory,
+  CatalogSubCategory,
+  CatalogSkill,
+  CatalogRole,
+  CatalogEntities,
+  CatalogPackage,
+  CatalogValidationIssue,
+  CatalogValidationResult,
+  CatalogExtractInput,
+  CatalogExtractMetaInput,
+  CatalogExtractReport,
+  CatalogExtractResult,
+} from "./catalog";
+export { CATALOG_FORMAT, CATALOG_FORMAT_VERSION } from "./catalog";
+
