@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Tabs, Title, Box, Paper } from "@mantine/core";
+import { Tabs, Title, Box, Paper, Group } from "@mantine/core";
 import {
     IconUsers,
     IconBuilding,
@@ -13,6 +13,7 @@ import { DepartmentManager } from "./organization/DepartmentManager";
 import { RoleManager } from "./organization/RoleManager";
 import { CategoryManager } from "./CategoryManager";
 import { DataManagement } from "./DataManagement";
+import { InstalledCatalogBadge } from "./shared/InstalledCatalogBadge";
 
 import type { NavParams } from "../types";
 
@@ -43,9 +44,12 @@ export const UnifiedDataView: React.FC<UnifiedDataViewProps> = ({ navParams, onC
 
     return (
         <Box style={{ width: '100%', maxWidth: '100%' }}>
-            <Title order={2} mb="lg">
-                Stammdaten
-            </Title>
+            <Group gap="md" align="center" mb="lg">
+                <Title order={2}>
+                    Stammdaten
+                </Title>
+                <InstalledCatalogBadge size="sm" showWhenEmpty />
+            </Group>
 
             <Paper shadow="xs" p="md" radius="md" withBorder>
                 <Tabs value={activeTab} onChange={setActiveTab} keepMounted={false}>

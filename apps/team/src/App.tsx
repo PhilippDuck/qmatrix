@@ -54,6 +54,7 @@ import { ChangelogModal } from "@skillgrid/shared/components/ChangelogModal";
 import { PrivacyModal } from "@skillgrid/shared/components/PrivacyModal";
 import { HistoryDrawer } from "@skillgrid/shared/components/shared/HistoryDrawer";
 import { AppVersionBadge } from "@skillgrid/shared/components/shared/AppVersionBadge";
+import { InstalledCatalogBadge } from "@skillgrid/shared/components/shared/InstalledCatalogBadge";
 import { PrivacyProvider, usePrivacy } from "@skillgrid/shared/context/PrivacyContext";
 import { ModalsProvider } from "@mantine/modals";
 import { Notifications } from "@mantine/notifications";
@@ -549,6 +550,8 @@ function AppContent() {
                   >
                     SKILLGRID Team
                   </Title>
+
+                  <InstalledCatalogBadge size="sm" showWhenEmpty />
 
                   <Tooltip label="Datenschutzerklärung">
                     <ActionIcon

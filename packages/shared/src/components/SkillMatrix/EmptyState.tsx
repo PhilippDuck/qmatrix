@@ -25,6 +25,7 @@ import {
   useCatalogAuthoring,
   useCatalogImport,
 } from "../../hooks/useCatalogAuthoring";
+import { InstalledCatalogBadge } from "../shared/InstalledCatalogBadge";
 
 interface EmptyStateProps {
   onAddEmployee: () => void;
@@ -74,8 +75,11 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
 
   return (
     <Box h="100%" style={{ display: "flex", flexDirection: "column" }}>
-      <Group mb="lg" justify="space-between">
-        <Title order={2}>Skill-Matrix</Title>
+      <Group mb="lg" justify="space-between" align="center">
+        <Group gap="md" align="center">
+          <Title order={2}>Skill-Matrix</Title>
+          <InstalledCatalogBadge size="sm" showWhenEmpty />
+        </Group>
       </Group>
 
       <Card

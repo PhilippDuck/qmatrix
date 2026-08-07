@@ -47,6 +47,7 @@ import { AssessmentLogEntry } from "../../store/hooks";
 import { useStore, useShallow } from "../../store/hooks";
 import { getScoreColor } from "../../utils/skillCalculations";
 import { getIconByName } from "../shared/RoleIconPicker";
+import { InstalledCatalogBadge } from "../shared/InstalledCatalogBadge";
 import {
     calculateHistoricalXP,
     getPeriodBoundaries,
@@ -514,7 +515,10 @@ export const Dashboard: React.FC = () => {
     return (
         <Stack gap="lg" style={{ height: '100%', overflow: 'auto' }}>
             <Group justify="space-between" align="center">
-                <Title order={2}>Dashboard</Title>
+                <Group gap="md" align="center">
+                    <Title order={2}>Dashboard</Title>
+                    <InstalledCatalogBadge size="sm" showWhenEmpty />
+                </Group>
                 <Group gap="sm">
                     <IconCalendar size={16} color="gray" />
                     <SegmentedControl

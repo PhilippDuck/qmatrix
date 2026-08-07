@@ -41,6 +41,7 @@ import { PlanDetail } from "./PlanDetail";
 import { PlanCard } from "./PlanCard";
 import { GanttTimeline } from "./GanttTimeline";
 import { ForecastView } from "./ForecastView";
+import { InstalledCatalogBadge } from "../shared/InstalledCatalogBadge";
 
 interface QualificationPlanProps {
   initialEmployeeId?: string | null;
@@ -256,7 +257,10 @@ export const QualificationPlan: React.FC<QualificationPlanProps> = React.memo(({
   return (
     <Box style={{ width: "100%", maxWidth: "100%" }} pr="md">
       <Group justify="space-between" mb="lg">
-        <Title order={2}>Qualifizierungspläne</Title>
+        <Group gap="md" align="center">
+          <Title order={2}>Qualifizierungspläne</Title>
+          <InstalledCatalogBadge size="sm" showWhenEmpty />
+        </Group>
         <Button leftSection={<IconPlus size={16} />} onClick={handleNewPlan}>
           Neuer Plan
         </Button>

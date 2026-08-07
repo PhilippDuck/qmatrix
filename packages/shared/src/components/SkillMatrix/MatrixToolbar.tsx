@@ -11,6 +11,7 @@ import { SubCategory } from '../../services/indexeddb';
 import { MetricMode } from '../../hooks/useMatrixState';
 import { usePrivacy } from '../../context/PrivacyContext';
 import { useCatalogAuthoring } from '../../hooks/useCatalogAuthoring';
+import { InstalledCatalogBadge } from '../shared/InstalledCatalogBadge';
 
 interface MatrixToolbarProps {
     groupingMode: 'none' | 'department' | 'role';
@@ -105,6 +106,7 @@ export const MatrixToolbar: React.FC<MatrixToolbarProps> = ({
             <Group justify="space-between" align="center">
                 <Group gap="md" align="center">
                     <Title order={2}>Skill-Matrix</Title>
+                    <InstalledCatalogBadge size="sm" showWhenEmpty />
 
                     {/* View Controls Group */}
                     <Group gap="xs" style={{ borderLeft: '1px solid var(--mantine-color-default-border)', paddingLeft: '12px' }}>

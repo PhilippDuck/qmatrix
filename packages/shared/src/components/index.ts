@@ -14,6 +14,7 @@ export {
   formatAppVersionLabel,
   bareAppVersion,
 } from "./shared/AppVersionBadge";
+export { InstalledCatalogBadge } from "./shared/InstalledCatalogBadge";
 export { CatalogReleasePanel } from "./CatalogReleasePanel";
 export {
   UnpublishedCatalogBadge,

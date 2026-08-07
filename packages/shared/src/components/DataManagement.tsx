@@ -47,6 +47,7 @@ import { withContentHash } from "../services/catalog";
 import { TextInput } from "@mantine/core";
 import { CatalogReleasePanel } from "./CatalogReleasePanel";
 import { SystemDangerZone } from "./SystemDangerZone";
+import { InstalledCatalogBadge } from "./shared/InstalledCatalogBadge";
 
 interface ActionInfo {
   type: string;
@@ -315,9 +316,10 @@ export const DataManagement = () => {
 
   return (
     <Box style={{ width: "100%" }}>
-      <Title order={2} mb="lg">
-        System
-      </Title>
+      <Group gap="md" align="center" mb="lg">
+        <Title order={2}>System</Title>
+        {canCatalogImport && <InstalledCatalogBadge size="sm" showWhenEmpty />}
+      </Group>
 
       <Stack gap="lg" style={{ width: "100%" }}>
         {/* System-Status Card — Full/Team: full-DB fingerprint */}
@@ -387,9 +389,14 @@ export const DataManagement = () => {
         {(canCatalogExport || canCatalogImport) && (
           <Card withBorder shadow="sm" radius="md">
             <Stack gap="md">
-              <Group gap="xs">
-                <IconPackage size={20} style={{ color: "var(--mantine-color-indigo-filled)" }} />
-                <Title order={4}>Skill- & Rollen-Katalog</Title>
+              <Group gap="xs" justify="space-between" wrap="wrap">
+                <Group gap="xs">
+                  <IconPackage size={20} style={{ color: "var(--mantine-color-indigo-filled)" }} />
+                  <Title order={4}>Skill- & Rollen-Katalog</Title>
+                </Group>
+                {canCatalogImport && (
+                  <InstalledCatalogBadge size="sm" showWhenEmpty />
+                )}
               </Group>
               <Text size="xs" c="dimmed">
                 Katalog-Paket (Skills, Kategorien, Rollen) – getrennt vom vollständigen Backup.
