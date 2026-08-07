@@ -561,21 +561,34 @@ export const CatalogReleasePanel: React.FC = () => {
                             </ThemeIcon>
                           }
                         >
-                          <Group gap="xs" wrap="wrap">
-                            <Code>v{release.version}</Code>
-                            <Text size="xs" c="dimmed">
-                              {release.publishedAt.slice(0, 10)}
-                            </Text>
-                            {active && (
-                              <Badge size="xs" variant="light" color="green">
-                                Aktuell freigegeben
-                              </Badge>
-                            )}
-                          </Group>
+                          <Stack gap={2} style={{ minWidth: 0, flex: 1 }}>
+                            <Group gap="xs" wrap="wrap">
+                              <Code>v{release.version}</Code>
+                              <Text size="xs" c="dimmed">
+                                {formatReleasePublishedAt(release.publishedAt)}
+                              </Text>
+                              {active && (
+                                <Badge size="xs" variant="light" color="green">
+                                  Aktuell freigegeben
+                                </Badge>
+                              )}
+                            </Group>
+                            {release.notes?.trim() ? (
+                              <Text size="xs" c="dimmed" lineClamp={2} style={{ textAlign: "left" }}>
+                                {release.notes.trim()}
+                              </Text>
+                            ) : null}
+                          </Stack>
                         </Accordion.Control>
                         <Accordion.Panel>
                           <Stack gap="xs">
-                            <Text size="sm">{release.notes}</Text>
+                            {release.notes?.trim() ? (
+                              <Text size="sm">{release.notes}</Text>
+                            ) : (
+                              <Text size="sm" c="dimmed" fs="italic">
+                                Kein Änderungsgrund hinterlegt
+                              </Text>
+                            )}
                             <Group gap="xs">
                               <Tooltip label="Unterschiede zum Live-Katalog">
                                 <Button
