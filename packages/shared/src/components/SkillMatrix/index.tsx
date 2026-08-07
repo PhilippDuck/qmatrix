@@ -10,6 +10,7 @@ import {
   Tooltip,
   Text,
   Loader,
+  Alert,
   useMantineColorScheme,
 } from "@mantine/core";
 import { getMaxRoleTargetForSkill } from "../../utils/skillCalculations";
@@ -31,6 +32,7 @@ import {
   IconDeviceFloppy,
   IconColumnsOff,
   IconUserOff,
+  IconPackageImport,
 } from "@tabler/icons-react";
 import { Employee, SavedView } from "../../store/hooks";
 import { useStore, useShallow } from "../../store/hooks";
@@ -51,7 +53,10 @@ import { MatrixHeader } from "./MatrixHeader";
 import { MatrixCategoryRow } from "./MatrixCategoryRow";
 import { MatrixLegend } from "./MatrixLegend";
 import { QuickAddDrawer } from "./QuickAddDrawer";
-import { useCatalogAuthoring } from "../../hooks/useCatalogAuthoring";
+import {
+  useCatalogAuthoring,
+  useCatalogImport,
+} from "../../hooks/useCatalogAuthoring";
 import { EntityFormDrawer, FormMode, EntityFormValues } from "../CategoryManager/EntityFormDrawer";
 import { useMatrixState } from "../../hooks/useMatrixState";
 import { useMatrixCalculations } from "../../hooks/useMatrixCalculations";
@@ -68,6 +73,7 @@ interface SkillMatrixProps {
 
 export const SkillMatrix: React.FC<SkillMatrixProps> = React.memo(({ onNavigate }) => {
   const catalogAuthoring = useCatalogAuthoring();
+  const catalogImport = useCatalogImport();
 
   const {
     employees,
@@ -699,6 +705,31 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = React.memo(({ onNavigate 
     onNavigate,
   });
 
+  const hasCatalog = categories.length > 0 || skills.length > 0;
+  const isCompletelyEmpty = employees.length === 0 && !hasCatalog;
+
+  const handleLoadCatalogFile = useCallback(async (file: File) => {
+    try {
+      const text = await file.text();
+      const result = await importCatalog(text, {
+        missingPolicy: "soft",
+        allowDowngrade: true,
+        allowCatalogIdChange: true,
+      });
+      if (!result.ok) {
+        alert(
+          result.errors.map((err) => err.message).join("; ") ||
+            "Katalog-Import fehlgeschlagen."
+        );
+      }
+    } catch (error) {
+      console.error("Catalog import failed:", error);
+      alert(
+        "Fehler beim Laden des Katalogs. Bitte SkillGrid-Manage-Release (JSON) verwenden."
+      );
+    }
+  }, [importCatalog]);
+
   return (
     <Box
       style={{
@@ -706,57 +737,37 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = React.memo(({ onNavigate 
         // ... (unchanged) ...
       }}
     >
-      {/* No skills/categories yet — offer catalog import even if employees exist */}
-      {categories.length === 0 && skills.length === 0 ? (
-        <>
-          <input
-            ref={catalogFileRef}
-            type="file"
-            accept=".json,application/json"
-            style={{ display: "none" }}
-            onChange={async (e) => {
-              const file = e.target.files?.[0];
-              e.target.value = "";
-              if (!file) return;
-              try {
-                const text = await file.text();
-                const result = await importCatalog(text, {
-                  missingPolicy: "soft",
-                  allowDowngrade: true,
-                  allowCatalogIdChange: true,
-                });
-                if (!result.ok) {
-                  alert(
-                    result.errors.map((err) => err.message).join("; ") ||
-                      "Katalog-Import fehlgeschlagen."
-                  );
-                }
-              } catch (error) {
-                console.error("Catalog import failed:", error);
-                alert(
-                  "Fehler beim Laden des Katalogs. Bitte SkillGrid-Manage-Release (JSON) verwenden."
-                );
-              }
-            }}
-          />
-          <EmptyState
-            hasEmployees={employees.length > 0}
-            onAddEmployee={() => setEmployeeDrawerOpened(true)}
-            onAddSkill={() => setSkillDrawerOpened(true)}
-            onLoadCatalog={() => catalogFileRef.current?.click()}
-            onImport={async (file) => {
-              try {
-                const text = await file.text();
-                await importData(text);
-              } catch (error) {
-                console.error("Import failed:", error);
-                alert(
-                  "Fehler beim Importieren der Datei. Bitte prüfen Sie das Format."
-                );
-              }
-            }}
-          />
-        </>
+      <input
+        ref={catalogFileRef}
+        type="file"
+        accept=".json,application/json"
+        style={{ display: "none" }}
+        onChange={async (e) => {
+          const file = e.target.files?.[0];
+          e.target.value = "";
+          if (!file) return;
+          await handleLoadCatalogFile(file);
+        }}
+      />
+
+      {/* Only full welcome empty state when nothing exists yet */}
+      {isCompletelyEmpty ? (
+        <EmptyState
+          onAddEmployee={() => setEmployeeDrawerOpened(true)}
+          onAddSkill={() => setSkillDrawerOpened(true)}
+          onLoadCatalog={() => catalogFileRef.current?.click()}
+          onImport={async (file) => {
+            try {
+              const text = await file.text();
+              await importData(text);
+            } catch (error) {
+              console.error("Import failed:", error);
+              alert(
+                "Fehler beim Importieren der Datei. Bitte prüfen Sie das Format."
+              );
+            }
+          }}
+        />
       ) : (
         <Stack gap="md" h="100%" style={{ overflow: "hidden", minHeight: 0 }}>
           <MatrixToolbar
@@ -810,6 +821,30 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = React.memo(({ onNavigate 
             reorderSavedViews={reorderSavedViews}
           />
 
+          {/* Employees exist but no skills/categories — keep matrix, offer catalog */}
+          {!hasCatalog && catalogImport && (
+            <Alert
+              variant="light"
+              color="blue"
+              title="Skill-Katalog fehlt"
+              icon={<IconPackageImport size={18} />}
+            >
+              <Group justify="space-between" align="center" wrap="wrap" gap="sm">
+                <Text size="sm">
+                  Es sind noch keine Skills oder Kategorien geladen. Mitarbeiter
+                  können Sie weiter anlegen; für die Bewertung laden Sie den
+                  Katalog aus SkillGrid Manage.
+                </Text>
+                <Button
+                  size="xs"
+                  leftSection={<IconPackageImport size={14} />}
+                  onClick={() => catalogFileRef.current?.click()}
+                >
+                  Katalog laden
+                </Button>
+              </Group>
+            </Alert>
+          )}
 
           <Card
             withBorder
@@ -919,8 +954,7 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = React.memo(({ onNavigate 
             </MatrixProvider>
           </Card>
         </Stack>
-      )
-      }
+      )}
 
 
       {/* Employee Drawer - same as on Mitarbeiter page */}
