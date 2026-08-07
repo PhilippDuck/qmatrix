@@ -173,32 +173,53 @@ const App: FC = () => {
               <Group h="100%" px="md" justify="space-between">
                 <Group gap="sm">
                   <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
-                  <SkillGridLogo size={32} />
-                  <div>
-                    <Group gap="xs">
-                      <Title order={4} c="indigo">
-                        SkillGrid Manage
-                      </Title>
-                      <Badge variant="light" color="indigo" size="sm">
-                        Katalog-Verwaltung
-                      </Badge>
-                      {installedCatalogMeta?.version && (
-                        <Badge variant="outline" color="gray" size="sm">
-                          freigegeben v{installedCatalogMeta.version}
-                        </Badge>
-                      )}
-                      {hasUnpublishedCatalogChanges && (
-                        <Badge variant="filled" color="orange" size="sm">
-                          ungesicherte Änderungen
-                        </Badge>
-                      )}
-                    </Group>
-                    {projectTitle && (
-                      <Text size="xs" c="dimmed">
-                        {projectTitle}
-                      </Text>
+                  {/* Same placement as Full: chevron left of logo in header */}
+                  <ActionIcon
+                    variant="subtle"
+                    onClick={() => setCollapsed((c) => !c)}
+                    visibleFrom="sm"
+                    color="gray"
+                    size="md"
+                  >
+                    {collapsed ? (
+                      <IconChevronRight size={18} />
+                    ) : (
+                      <IconChevronLeft size={18} />
                     )}
-                  </div>
+                  </ActionIcon>
+                  <SkillGridLogo size={collapsed ? 28 : 32} />
+                  {!collapsed && (
+                    <div>
+                      <Group gap="xs">
+                        <Title order={4} c="indigo">
+                          SkillGrid Manage
+                        </Title>
+                        <Badge variant="light" color="indigo" size="sm">
+                          Katalog-Verwaltung
+                        </Badge>
+                        {installedCatalogMeta?.version && (
+                          <Badge variant="outline" color="gray" size="sm">
+                            freigegeben v{installedCatalogMeta.version}
+                          </Badge>
+                        )}
+                        {hasUnpublishedCatalogChanges && (
+                          <Badge variant="filled" color="orange" size="sm">
+                            ungesicherte Änderungen
+                          </Badge>
+                        )}
+                      </Group>
+                      {projectTitle && (
+                        <Text size="xs" c="dimmed">
+                          {projectTitle}
+                        </Text>
+                      )}
+                    </div>
+                  )}
+                  {collapsed && hasUnpublishedCatalogChanges && (
+                    <Badge variant="filled" color="orange" size="sm">
+                      ungesichert
+                    </Badge>
+                  )}
                 </Group>
                 <Group gap="xs">
                   <Badge variant="outline" color="gray" size="sm">
@@ -231,13 +252,6 @@ const App: FC = () => {
                   importieren.
                 </Text>
               )}
-              <ActionIcon
-                variant="subtle"
-                onClick={() => setCollapsed((c) => !c)}
-                visibleFrom="sm"
-              >
-                {collapsed ? <IconChevronRight size={16} /> : <IconChevronLeft size={16} />}
-              </ActionIcon>
             </AppShell.Navbar>
 
             <AppShell.Main>
