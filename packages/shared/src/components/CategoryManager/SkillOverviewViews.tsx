@@ -176,7 +176,16 @@ export const SkillTreeView: React.FC<SkillOverviewData & SkillTreeActions> = ({
           .filter((s) => s.categoryId === cat.id && !s.parentSubCategoryId)
           .sort((a, b) => a.name.localeCompare(b.name, "de"));
 
-        const buildSub = (sub: SubCategory): {
+        const catHit = !query || match(cat.name, cat.description);
+
+        /**
+         * forceInclude: parent category/sub matched → show full subtree
+         * (all nested subs + all skills), not only name matches.
+         */
+        const buildSub = (
+          sub: SubCategory,
+          forceInclude: boolean
+        ): {
           sub: SubCategory;
           skills: Skill[];
           children: ReturnType<typeof buildSub>[];
@@ -188,33 +197,43 @@ export const SkillTreeView: React.FC<SkillOverviewData & SkillTreeActions> = ({
           const subSkills = skills
             .filter((sk) => sk.subCategoryId === sub.id)
             .sort((a, b) => a.name.localeCompare(b.name, "de"));
-          const children = childSubs.map(buildSub);
-          const skillHit = subSkills.some((sk) => match(sk.name, sk.description));
           const selfHit = match(sub.name, sub.description);
+          const includeAll = forceInclude || selfHit || !query;
+          const children = childSubs.map((cs) =>
+            buildSub(cs, includeAll)
+          );
+          const skillHit = subSkills.some((sk) =>
+            match(sk.name, sk.description)
+          );
           const childHit = children.some((c) => c.visible);
-          const visible = !query || selfHit || skillHit || childHit;
+          const visible = includeAll || skillHit || childHit;
           return {
             sub,
-            skills: query
-              ? subSkills.filter(
-                  (sk) =>
-                    match(sk.name, sk.description) ||
-                    selfHit ||
-                    match(sub.name, sub.description)
-                )
-              : subSkills,
-            children: children.filter((c) => c.visible),
+            // Parent/self match → alle Skills dieses Bereichs
+            skills: includeAll
+              ? subSkills
+              : subSkills.filter((sk) => match(sk.name, sk.description)),
+            children: includeAll
+              ? children
+              : children.filter((c) => c.visible),
             visible,
           };
         };
 
-        const subs = catSubs.map(buildSub).filter((s) => s.visible);
-        const catHit = match(cat.name, cat.description);
-        const visible = !query || catHit || subs.length > 0;
-        return { cat, subs, visible, skillCount: skills.filter((sk) => {
-          const sub = subcategories.find((s) => s.id === sk.subCategoryId);
-          return sub?.categoryId === cat.id;
-        }).length };
+        // Category hit → entire category tree (all subs + skills)
+        const subs = catSubs
+          .map((s) => buildSub(s, catHit))
+          .filter((s) => catHit || s.visible);
+        const visible = catHit || subs.length > 0;
+        return {
+          cat,
+          subs,
+          visible,
+          skillCount: skills.filter((sk) => {
+            const sub = subcategories.find((s) => s.id === sk.subCategoryId);
+            return sub?.categoryId === cat.id;
+          }).length,
+        };
       })
       .filter((n) => n.visible);
   }, [categories, subcategories, skills, query]);
