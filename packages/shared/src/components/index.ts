@@ -9,6 +9,11 @@ export { ChangelogModal } from "./ChangelogModal";
 export { PrivacyModal } from "./PrivacyModal";
 export { HistoryDrawer } from "./shared/HistoryDrawer";
 export { SkillGridLogo } from "./shared/SkillGridLogo";
+export {
+  AppVersionBadge,
+  formatAppVersionLabel,
+  bareAppVersion,
+} from "./shared/AppVersionBadge";
 export { CatalogReleasePanel } from "./CatalogReleasePanel";
 export {
   UnpublishedCatalogBadge,

@@ -53,6 +53,7 @@ import { HistoryDrawer } from "@skillgrid/shared/components/shared/HistoryDrawer
 import { UnpublishedCatalogBadge } from "@skillgrid/shared/components/UnpublishedCatalogBadge";
 import { PrivacyProvider } from "@skillgrid/shared/context/PrivacyContext";
 import { SkillGridLogo } from "@skillgrid/shared/components/shared/SkillGridLogo";
+import { AppVersionBadge } from "@skillgrid/shared/components/shared/AppVersionBadge";
 /** Always in sync with apps/manage/package.json (not Katalog-Release, not Full). */
 import managePackage from "../package.json";
 import "@mantine/core/styles.css";
@@ -79,9 +80,8 @@ const theme = createTheme({
   // Mantine default system stack (= Full): no custom fontFamily
 });
 
-/** Source of truth: apps/manage/package.json → shown as "App vX.Y.Z". */
-const APP_VERSION = `v${managePackage.version}`;
-const APP_VERSION_LABEL = `App ${APP_VERSION}`;
+/** Source of truth: apps/manage/package.json → shown as "APP x.x.x". */
+const APP_VERSION = managePackage.version;
 
 type ManageTab = "skills" | "roles" | "releases" | "system";
 
@@ -598,7 +598,7 @@ const App: FC = () => {
                   </Tooltip>
                 ))}
               </Stack>
-              {/* App version footer (apps/manage package version, not Katalog) */}
+              {/* App version footer (package version, not Katalog) */}
               <Box
                 py="sm"
                 px="xs"
@@ -607,35 +607,7 @@ const App: FC = () => {
                   marginTop: "auto",
                 }}
               >
-                {!collapsed ? (
-                  <Badge
-                    variant="subtle"
-                    color="gray"
-                    size="xs"
-                    fullWidth
-                    styles={{ root: { textTransform: "none", opacity: 0.75 } }}
-                  >
-                    {APP_VERSION_LABEL}
-                  </Badge>
-                ) : (
-                  <Tooltip label={APP_VERSION_LABEL} position="right" withArrow>
-                    <Badge
-                      variant="subtle"
-                      color="gray"
-                      size="xs"
-                      fullWidth
-                      styles={{
-                        root: {
-                          textTransform: "none",
-                          opacity: 0.75,
-                          paddingInline: 4,
-                        },
-                      }}
-                    >
-                      {APP_VERSION.replace(/^v/, "")}
-                    </Badge>
-                  </Tooltip>
-                )}
+                <AppVersionBadge version={APP_VERSION} expanded={!collapsed} />
               </Box>
             </AppShell.Navbar>
 

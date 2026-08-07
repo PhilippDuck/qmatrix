@@ -13,7 +13,6 @@ import {
   ActionIcon,
   Tooltip,
   Text,
-  Badge,
   Box,
   useMantineColorScheme,
   useComputedColorScheme,
@@ -54,6 +53,7 @@ import { WelcomeModal } from "@skillgrid/shared/components/WelcomeModal";
 import { ChangelogModal } from "@skillgrid/shared/components/ChangelogModal";
 import { PrivacyModal } from "@skillgrid/shared/components/PrivacyModal";
 import { HistoryDrawer } from "@skillgrid/shared/components/shared/HistoryDrawer";
+import { AppVersionBadge } from "@skillgrid/shared/components/shared/AppVersionBadge";
 import { PrivacyProvider, usePrivacy } from "@skillgrid/shared/context/PrivacyContext";
 import { ModalsProvider } from "@mantine/modals";
 import { Notifications } from "@mantine/notifications";
@@ -80,7 +80,7 @@ const theme = createTheme({
   },
 });
 
-const APP_VERSION = `v${__APP_VERSION__}`;
+const APP_VERSION = __APP_VERSION__;
 
 const NAV_ITEMS: { value: AppTab; label: string; icon: Icon }[] = [
   { value: "dashboard", label: "Dashboard", icon: IconDashboard },
@@ -547,19 +547,6 @@ function AppContent() {
                     SKILLGRID
                   </Title>
 
-                  <Tooltip label="Changelog anzeigen">
-                    <Badge
-                      variant="subtle"
-                      color="gray"
-                      size="xs"
-                      onClick={openChangelog}
-                      style={{ cursor: "pointer" }}
-                      styles={{ root: { textTransform: "none", opacity: 0.7 } }}
-                    >
-                      {APP_VERSION}
-                    </Badge>
-                  </Tooltip>
-
                   <Tooltip label="Datenschutzerklärung">
                     <ActionIcon
                       variant="subtle"
@@ -702,7 +689,7 @@ function AppContent() {
             marginTop: "auto",
           }}
         >
-          {desktopOpened ? (
+          {desktopOpened && (
             <>
               <Text size="xs" c="dimmed" ta="center">
                 Designed with{" "}
@@ -716,36 +703,14 @@ function AppContent() {
               <Text size="xs" c="dimmed" ta="center" fw={500}>
                 Philipp-Marcel Duck
               </Text>
-              <Tooltip label="Changelog anzeigen">
-                <Badge
-                  variant="subtle"
-                  color="gray"
-                  size="xs"
-                  fullWidth
-                  mt={6}
-                  onClick={openChangelog}
-                  style={{ cursor: "pointer" }}
-                  styles={{ root: { textTransform: "none", opacity: 0.7 } }}
-                >
-                  {APP_VERSION}
-                </Badge>
-              </Tooltip>
             </>
-          ) : (
-            <Tooltip label={`Changelog (${APP_VERSION})`} position="right" withArrow>
-              <Badge
-                variant="subtle"
-                color="gray"
-                size="xs"
-                fullWidth
-                onClick={openChangelog}
-                style={{ cursor: "pointer" }}
-                styles={{ root: { textTransform: "none", opacity: 0.7, paddingInline: 4 } }}
-              >
-                {APP_VERSION.replace(/^v/, "")}
-              </Badge>
-            </Tooltip>
           )}
+          <AppVersionBadge
+            version={APP_VERSION}
+            expanded={desktopOpened}
+            onClick={openChangelog}
+            withTopMargin
+          />
         </Box>
       </AppShell.Navbar>
 
