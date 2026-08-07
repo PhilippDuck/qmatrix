@@ -534,8 +534,8 @@ const App: FC = () => {
                     System
                   </Title>
                   <Stack gap="lg">
-                    <ManageDemoGenerator />
                     <ManageGlobalBackup />
+                    <ManageDemoGenerator />
                     <SystemDangerZone catalogOnly />
                   </Stack>
                 </Box>

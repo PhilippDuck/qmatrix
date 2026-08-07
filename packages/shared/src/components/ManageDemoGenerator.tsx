@@ -1,5 +1,5 @@
 /**
- * Demo catalog generator for Manage (System tab).
+ * Demo catalog generator for Manage — collapsed accordion above danger zone.
  */
 import React, { useState } from "react";
 import {
@@ -13,6 +13,8 @@ import {
   Badge,
   Alert,
   Code,
+  Accordion,
+  Box,
 } from "@mantine/core";
 import { IconFlask, IconPlayerPlay, IconInfoCircle } from "@tabler/icons-react";
 import { modals } from "@mantine/modals";
@@ -67,7 +69,6 @@ export const ManageDemoGenerator: React.FC = () => {
         missingPolicy: clearFirst ? "soft" : "keep",
         allowDowngrade: true,
         allowCatalogIdChange: true,
-        // Demo is content only — Manage remains version SoT
         updateInstalledMeta: false,
       });
 
@@ -154,53 +155,72 @@ export const ManageDemoGenerator: React.FC = () => {
   };
 
   return (
-    <Card withBorder shadow="sm" radius="md">
-      <Stack gap="md">
-        <Group gap="xs" wrap="wrap">
-          <IconFlask
-            size={20}
-            style={{ color: "var(--mantine-color-violet-filled)" }}
-          />
-          <Title order={4}>Demo-Generator</Title>
-          <Badge size="sm" variant="light" color="violet">
-            Präsentation
-          </Badge>
-        </Group>
-
-        <Text size="sm" c="dimmed">
-          Erzeugt einen realistischen IT-Katalog (Kategorien, Skills, Rollen mit
-          Soll-Levels) für Demos und Screenshots. Keine Mitarbeiter und keine
-          freigegebene Version — die vergibt ihr unter Versionen & Releases.
-        </Text>
-
-        <List size="sm" spacing={4}>
-          <List.Item>
-            <strong>{summary.categories}</strong> Kategorien ·{" "}
-            <strong>{summary.subcategories}</strong> Unterkategorien
-          </List.Item>
-          <List.Item>
-            <strong>{summary.skills}</strong> Skills ·{" "}
-            <strong>{summary.roles}</strong> Rollen (Junior/Senior Dev, SM, PO)
-          </List.Item>
-        </List>
-
-        <Alert icon={<IconInfoCircle size={16} />} color="violet" variant="light">
-          <Text size="xs">
-            Demo-IDs beginnen mit <Code>demo-</Code>. Nach dem Laden ggf.
-            „ungesichert“ und unter Versionen freigeben.
-          </Text>
-        </Alert>
-
-        <Button
-          leftSection={<IconPlayerPlay size={16} />}
-          color="violet"
-          variant="light"
-          loading={busy}
-          onClick={openChooser}
-        >
-          {hasData ? "Demo-Katalog laden…" : "Demo-Katalog erzeugen"}
-        </Button>
-      </Stack>
+    <Card withBorder shadow="sm" radius="md" p={0} padding={0}>
+      <Accordion chevronPosition="right" variant="default" radius="md">
+        <Accordion.Item value="demo" style={{ border: "none" }}>
+          <Accordion.Control
+            icon={
+              <IconFlask
+                size={18}
+                style={{ color: "var(--mantine-color-dimmed)" }}
+              />
+            }
+          >
+            <Group gap="xs" wrap="nowrap">
+              <Title order={5} c="dimmed" fw={600}>
+                Erweiterte Optionen
+              </Title>
+              <Badge size="xs" variant="outline" color="gray">
+                Demo
+              </Badge>
+            </Group>
+          </Accordion.Control>
+          <Accordion.Panel>
+            <Box>
+              <Text size="sm" fw={600} mb={4}>
+                Demo-Katalog erzeugen
+              </Text>
+              <Text size="xs" c="dimmed" mb="sm">
+                Realistischer IT-Katalog für Präsentationen (
+                {summary.categories} Kategorien, {summary.skills} Skills,{" "}
+                {summary.roles} Rollen). Ohne freigegebene Version — Manage
+                bleibt Versions-SoT.
+              </Text>
+              <List size="xs" spacing={2} mb="sm" c="dimmed">
+                <List.Item>
+                  {summary.subcategories} Unterkategorien · IDs mit{" "}
+                  <Code>demo-</Code>
+                </List.Item>
+                <List.Item>
+                  Rollen: Junior/Senior Dev, Scrum Master, Product Owner
+                </List.Item>
+              </List>
+              <Alert
+                icon={<IconInfoCircle size={14} />}
+                color="gray"
+                variant="light"
+                mb="sm"
+                p="xs"
+              >
+                <Text size="xs">
+                  Nur für Demos. Bei bestehenden Daten wählbar: Ersetzen oder
+                  Mergen.
+                </Text>
+              </Alert>
+              <Button
+                size="xs"
+                leftSection={<IconPlayerPlay size={14} />}
+                color="gray"
+                variant="light"
+                loading={busy}
+                onClick={openChooser}
+              >
+                {hasData ? "Demo-Katalog laden…" : "Demo-Katalog erzeugen"}
+              </Button>
+            </Box>
+          </Accordion.Panel>
+        </Accordion.Item>
+      </Accordion>
     </Card>
   );
 };
