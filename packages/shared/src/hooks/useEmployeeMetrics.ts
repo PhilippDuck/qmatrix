@@ -1,6 +1,13 @@
 import { useMemo } from 'react';
-import { Employee, Skill, Assessment, QualificationPlan, QualificationMeasure, EmployeeRole } from '../context/DataContext';
-import { getMaxRoleTargetForSkill } from '../utils/skillCalculations';
+import type {
+  Employee,
+  Skill,
+  Assessment,
+  QualificationPlan,
+  QualificationMeasure,
+  EmployeeRole,
+} from "../types";
+import { getMaxRoleTargetForSkill } from "../utils/skillCalculations";
 
 interface UseEmployeeMetricsProps {
     employee: Employee;

@@ -30,6 +30,18 @@ export default defineConfig({
         __dirname,
         "packages/shared/src/store"
       ),
+      "@skillgrid/shared/components": path.resolve(
+        __dirname,
+        "packages/shared/src/components"
+      ),
+      "@skillgrid/shared/context": path.resolve(
+        __dirname,
+        "packages/shared/src/context"
+      ),
+      "@skillgrid/shared/hooks": path.resolve(
+        __dirname,
+        "packages/shared/src/hooks"
+      ),
     },
   },
   test: {

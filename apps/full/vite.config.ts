@@ -12,13 +12,10 @@ const pkg = JSON.parse(readFileSync(path.join(__dirname, "package.json"), "utf-8
 const isDev = process.env.NODE_ENV !== "production";
 
 /**
- * SkillGrid Full — monorepo app shell (PR1).
+ * SkillGrid Full — monorepo app shell.
  *
- * Root `src/` stays canonical until PR 2a–2c. This config:
- * - uses apps/full as Vite root (own index.html + main)
- * - imports the live app from repo `src/`
- * - resolves `@skillgrid/shared` from packages/shared/src (source alias, K12)
- * - keeps singlefile + PWA production build (spike proof)
+ * App shell lives in apps/full; domain UI/store/services live in @skillgrid/shared.
+ * Resolves shared source via aliases (K12, no dist build of shared in phase 1).
  */
 export default defineConfig({
   root: __dirname,
@@ -27,33 +24,54 @@ export default defineConfig({
     __APP_VERSION__: JSON.stringify(pkg.version),
   },
   resolve: {
-    alias: {
-      "@skillgrid/shared": path.join(repoRoot, "packages/shared/src"),
-      "@skillgrid/shared/types": path.join(
-        repoRoot,
-        "packages/shared/src/types/index.ts"
-      ),
-      "@skillgrid/shared/constants": path.join(
-        repoRoot,
-        "packages/shared/src/constants/index.ts"
-      ),
-      "@skillgrid/shared/utils": path.join(
-        repoRoot,
-        "packages/shared/src/utils/index.ts"
-      ),
-      "@skillgrid/shared/services": path.join(
-        repoRoot,
-        "packages/shared/src/services"
-      ),
-      "@skillgrid/shared/store": path.join(repoRoot, "packages/shared/src/store"),
-    },
+    // Longer / more specific finds first
+    alias: [
+      {
+        find: "@skillgrid/shared/types",
+        replacement: path.join(repoRoot, "packages/shared/src/types/index.ts"),
+      },
+      {
+        find: "@skillgrid/shared/constants",
+        replacement: path.join(
+          repoRoot,
+          "packages/shared/src/constants/index.ts"
+        ),
+      },
+      {
+        find: "@skillgrid/shared/utils",
+        replacement: path.join(repoRoot, "packages/shared/src/utils/index.ts"),
+      },
+      {
+        find: "@skillgrid/shared/services",
+        replacement: path.join(repoRoot, "packages/shared/src/services"),
+      },
+      {
+        find: "@skillgrid/shared/store",
+        replacement: path.join(repoRoot, "packages/shared/src/store"),
+      },
+      {
+        find: "@skillgrid/shared/components",
+        replacement: path.join(repoRoot, "packages/shared/src/components"),
+      },
+      {
+        find: "@skillgrid/shared/context",
+        replacement: path.join(repoRoot, "packages/shared/src/context"),
+      },
+      {
+        find: "@skillgrid/shared/hooks",
+        replacement: path.join(repoRoot, "packages/shared/src/hooks"),
+      },
+      {
+        find: "@skillgrid/shared",
+        replacement: path.join(repoRoot, "packages/shared/src"),
+      },
+    ],
   },
   server: {
     port: 5173,
     // GitHub Codespaces proxies WS through port 443
     hmr: { clientPort: 443 },
     fs: {
-      // Allow importing canonical app sources outside apps/full
       allow: [repoRoot],
     },
   },

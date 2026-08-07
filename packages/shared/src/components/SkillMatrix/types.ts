@@ -1,5 +1,5 @@
 
-import { Employee } from "../../context/DataContext";
+import type { Employee } from "../../types";
 
 export type MatrixColumn =
     | { type: 'employee'; id: string; employee: Employee; groupId?: string; backgroundColor?: string }

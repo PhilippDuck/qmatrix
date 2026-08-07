@@ -13,7 +13,7 @@ export const SHARED_SPIKE = "skillgrid-shared-ok" as const;
 
 export const SHARED_SPIKE_META = {
   package: "@skillgrid/shared",
-  phase: "pr2b-services-store",
+  phase: "pr2c-components-hooks",
 } as const;
 
 export type * from "./types";

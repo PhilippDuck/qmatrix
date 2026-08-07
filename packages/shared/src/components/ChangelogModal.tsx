@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { Modal, Text, ScrollArea, Group, ThemeIcon, Code, Accordion, Title, Divider, Stack } from "@mantine/core";
 import { IconCheck, IconExclamationCircle, IconList, IconRocket } from "@tabler/icons-react";
+// packages/shared/src/CHANGELOG.md → symlink to repo-root CHANGELOG.md
+import changelogMarkdown from "../CHANGELOG.md?raw";
 
 interface ChangelogModalProps {
     opened: boolean;
@@ -112,16 +114,12 @@ export const ChangelogModal: React.FC<ChangelogModalProps> = ({ opened, onClose 
     const [content, setContent] = useState("");
 
     useEffect(() => {
-        // Import using raw loader or fetch
-        // Since we copied CHANGELOG.md to src/CHANGELOG.md, we can try to import it or fetch it.
-        // If it's pure logic, we might need a raw import.
-        // In Vite, ?raw is supported.
-        import("../../CHANGELOG.md?raw")
-            .then(module => setContent(module.default))
-            .catch(err => {
-                console.error("Failed to load changelog", err);
-                setContent("Changelog konnte nicht geladen werden.");
-            });
+        if (!opened) return;
+        setContent(
+            typeof changelogMarkdown === "string"
+                ? changelogMarkdown
+                : "Changelog konnte nicht geladen werden."
+        );
     }, [opened]);
 
     return (

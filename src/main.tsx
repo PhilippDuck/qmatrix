@@ -1,18 +1,5 @@
-import { StrictMode } from "react";
-import { createRoot } from "react-dom/client";
-import "@mantine/core/styles.css";
-import "@mantine/charts/styles.css";
-import "@mantine/tiptap/styles.css";
-
-import App from "./App";
-
-const rootEl = document.getElementById("root");
-if (!rootEl) {
-  throw new Error("Root element #root not found");
-}
-
-createRoot(rootEl).render(
-  <StrictMode>
-    <App />
-  </StrictMode>
-);
+/**
+ * Legacy root entry — the active app entry is `apps/full`.
+ * Kept so `npm run dev:legacy` can still resolve until root Vite is removed.
+ */
+import "../apps/full/src/main.tsx";

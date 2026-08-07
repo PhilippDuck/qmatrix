@@ -49,9 +49,9 @@ Das Repo nutzt **npm workspaces** als Vorbereitung auf drei Apps (Full / Manage 
 
 | Pfad | Package | Status |
 |------|---------|--------|
-| `apps/full` | `@skillgrid/full` | aktive App (gleicher Funktionsumfang) |
-| `packages/shared` | `@skillgrid/shared` | Spike-Exports; Domain/UI folgen |
-| Root `src/` | – | kanonischer App-Code bis Extract (PR 2a–2c) |
+| `apps/full` | `@skillgrid/full` | App-Shell (Entry, Vite, PWA) |
+| `packages/shared` | `@skillgrid/shared` | Domain, Store, Services, UI-Komponenten |
+| Root `src/` | – | Kompatibilitäts-Re-Exports (legacy) |
 
 ```bash
 npm run dev          # = dev:full
