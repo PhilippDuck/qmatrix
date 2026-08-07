@@ -30,6 +30,9 @@ import {
   IconCheck,
   IconChevronDown,
   IconFileText,
+  IconPackage,
+  IconPackageImport,
+  IconPackageExport,
 } from "@tabler/icons-react";
 import { MergeReport, MergeDiff, MergeItemDiff } from "../store/hooks";
 import { useStore, useShallow } from "../store/hooks";
@@ -37,6 +40,15 @@ import { generateQuarterlyReport } from "../services/pdfReportService";
 import { useDisclosure } from "@mantine/hooks";
 import { modals } from "@mantine/modals";
 import { notifications } from "@mantine/notifications";
+import {
+  useCatalogExport,
+  useCatalogImport,
+  useCatalogVersioning,
+  useFullBackupExport,
+  useFullBackupImport,
+} from "../hooks/useCatalogAuthoring";
+import { withContentHash } from "../services/catalog";
+import { TextInput } from "@mantine/core";
 
 interface ActionInfo {
   type: string;
@@ -44,7 +56,27 @@ interface ActionInfo {
 }
 
 export const DataManagement = () => {
-  const { exportData, importData, mergeData, diffData, applyMerge, clearAllData, employees, skills, projectTitle, dataHash } = useStore(
+  const canCatalogExport = useCatalogExport();
+  const canCatalogImport = useCatalogImport();
+  const canCatalogVersioning = useCatalogVersioning();
+  const canFullBackupExport = useFullBackupExport();
+  const canFullBackupImport = useFullBackupImport();
+
+  const {
+    exportData,
+    importData,
+    mergeData,
+    diffData,
+    applyMerge,
+    clearAllData,
+    employees,
+    skills,
+    projectTitle,
+    dataHash,
+    extractCatalog,
+    downloadCatalogPackage,
+    importCatalog,
+  } = useStore(
     useShallow((s) => ({
       exportData: s.exportData,
       importData: s.importData,
@@ -56,11 +88,15 @@ export const DataManagement = () => {
       skills: s.skills,
       projectTitle: s.projectTitle,
       dataHash: s.dataHash,
+      extractCatalog: s.extractCatalog,
+      downloadCatalogPackage: s.downloadCatalogPackage,
+      importCatalog: s.importCatalog,
     }))
   );
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mergeInputRef = useRef<HTMLInputElement>(null);
+  const catalogInputRef = useRef<HTMLInputElement>(null);
   const [lastAction, setLastAction] = useState<ActionInfo | null>(null);
   const [mergeReport, setMergeReport] = useState<MergeReport | null>(null);
   const [currentDiff, setCurrentDiff] = useState<MergeDiff | null>(null);
@@ -69,6 +105,17 @@ export const DataManagement = () => {
   const [resultOpened, { open: openResult, close: closeResult }] = useDisclosure(false);
   const [diffOpened, { open: openDiff, close: closeDiff }] = useDisclosure(false);
   const [dangerZoneOpened, { toggle: toggleDangerZone }] = useDisclosure(false);
+  const [isCatalogBusy, setIsCatalogBusy] = useState(false);
+  const [catalogName, setCatalogName] = useState(projectTitle || "SkillGrid Katalog");
+  const [catalogVersion, setCatalogVersion] = useState("1.0.0");
+  const [catalogId] = useState(() => {
+    const key = "skillgrid-catalog-id";
+    const existing = localStorage.getItem(key);
+    if (existing) return existing;
+    const id = crypto.randomUUID();
+    localStorage.setItem(key, id);
+    return id;
+  });
 
   // Report state
   const [reportYear, setReportYear] = useState<string>(new Date().getFullYear().toString());
@@ -201,6 +248,82 @@ export const DataManagement = () => {
     }
   };
 
+  const handleCatalogExtract = async () => {
+    setIsCatalogBusy(true);
+    try {
+      const result = await extractCatalog({
+        catalogId,
+        name: catalogName.trim() || "SkillGrid Katalog",
+        version: catalogVersion.trim() || "1.0.0",
+        publisher: projectTitle || undefined,
+        partial: false,
+      });
+      if (!result.ok || !result.package) {
+        notifications.show({
+          title: "Katalog-Export fehlgeschlagen",
+          message: result.errors.map((e) => e.message).join("; ") || "Unbekannter Fehler",
+          color: "red",
+        });
+        return;
+      }
+      const withHash = await withContentHash(result.package);
+      downloadCatalogPackage(withHash);
+      updateTimestamp("Katalog-Export");
+      const warnCount = result.report.warnings.length;
+      notifications.show({
+        title: "Katalog exportiert",
+        message:
+          warnCount > 0
+            ? `Paket erstellt (${warnCount} Hinweis(e) – siehe Konsole).`
+            : `Katalog v${withHash.meta.version} heruntergeladen.`,
+        color: warnCount > 0 ? "yellow" : "green",
+      });
+      if (warnCount > 0) {
+        console.warn("[catalog extract]", result.report);
+      }
+    } catch (error: any) {
+      notifications.show({
+        title: "Fehler",
+        message: error.message,
+        color: "red",
+      });
+    } finally {
+      setIsCatalogBusy(false);
+    }
+  };
+
+  const handleCatalogImport = async (file: File | null) => {
+    if (!file) return;
+    setIsCatalogBusy(true);
+    try {
+      const text = await file.text();
+      const result = await importCatalog(text, { missingPolicy: "soft" });
+      if (!result.ok) {
+        notifications.show({
+          title: "Katalog-Import fehlgeschlagen",
+          message: result.errors.map((e) => e.message).join("; "),
+          color: "red",
+        });
+        return;
+      }
+      updateTimestamp("Katalog-Import");
+      notifications.show({
+        title: "Katalog importiert",
+        message: `Version ${result.report?.newVersion ?? "?"} angewendet (Soft-Deprecate).`,
+        color: "green",
+      });
+    } catch (error: any) {
+      notifications.show({
+        title: "Fehler",
+        message: error.message,
+        color: "red",
+      });
+    } finally {
+      setIsCatalogBusy(false);
+      if (catalogInputRef.current) catalogInputRef.current.value = "";
+    }
+  };
+
   return (
     <Box style={{ width: "100%" }}>
       <Title order={2} mb="lg">
@@ -262,8 +385,78 @@ export const DataManagement = () => {
           </Group>
         </Card>
 
+        {(canCatalogExport || canCatalogImport) && (
+          <Card withBorder shadow="sm" radius="md">
+            <Stack gap="md">
+              <Group gap="xs">
+                <IconPackage size={20} style={{ color: "var(--mantine-color-indigo-filled)" }} />
+                <Title order={4}>
+                  {canCatalogVersioning ? "Katalog veröffentlichen" : "Skill- & Rollen-Katalog"}
+                </Title>
+              </Group>
+              <Text size="xs" c="dimmed">
+                Versioniertes Katalog-Paket (Skills, Kategorien, Rollen) – getrennt vom
+                vollständigen Backup. Source of Truth für SkillGrid Team.
+              </Text>
+              {canCatalogExport && (
+                <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm">
+                  <TextInput
+                    label="Katalog-Name"
+                    value={catalogName}
+                    onChange={(e) => setCatalogName(e.currentTarget.value)}
+                    size="sm"
+                  />
+                  <TextInput
+                    label="Version (SemVer)"
+                    value={catalogVersion}
+                    onChange={(e) => setCatalogVersion(e.currentTarget.value)}
+                    placeholder="1.0.0"
+                    size="sm"
+                  />
+                </SimpleGrid>
+              )}
+              <Group>
+                {canCatalogExport && (
+                  <Button
+                    leftSection={<IconPackageExport size={16} />}
+                    onClick={handleCatalogExtract}
+                    loading={isCatalogBusy}
+                    variant="light"
+                    color="indigo"
+                  >
+                    {canCatalogVersioning ? "Veröffentlichen" : "Katalog exportieren"}
+                  </Button>
+                )}
+                {canCatalogImport && (
+                  <>
+                    <Button
+                      leftSection={<IconPackageImport size={16} />}
+                      onClick={() => catalogInputRef.current?.click()}
+                      loading={isCatalogBusy}
+                      variant="light"
+                      color="teal"
+                    >
+                      Katalog importieren
+                    </Button>
+                    <input
+                      type="file"
+                      ref={catalogInputRef}
+                      onChange={(e) =>
+                        handleCatalogImport(e.target.files ? e.target.files[0] : null)
+                      }
+                      style={{ display: "none" }}
+                      accept=".json"
+                    />
+                  </>
+                )}
+              </Group>
+            </Stack>
+          </Card>
+        )}
+
         <SimpleGrid cols={{ base: 1, md: 3 }} spacing="lg">
           {/* Export Bereich */}
+          {canFullBackupExport && (
           <Card withBorder shadow="sm" radius="md">
             <Stack gap="md" h="100%" justify="space-between">
               <Box>
@@ -288,8 +481,10 @@ export const DataManagement = () => {
               </Button>
             </Stack>
           </Card>
+          )}
 
           {/* Merge Bereich */}
+          {canFullBackupImport && (
           <Card withBorder shadow="sm" radius="md">
             <Stack gap="md" h="100%" justify="space-between">
               <Box>
@@ -320,8 +515,10 @@ export const DataManagement = () => {
               />
             </Stack>
           </Card>
+          )}
 
           {/* Import Bereich */}
+          {canFullBackupImport && (
           <Card withBorder shadow="sm" radius="md">
             <Stack gap="md" h="100%" justify="space-between">
               <Box>
@@ -351,7 +548,7 @@ export const DataManagement = () => {
               />
             </Stack>
           </Card>
-
+          )}
 
         </SimpleGrid>
 

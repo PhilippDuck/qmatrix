@@ -11,7 +11,7 @@
     "dev": "npm run dev -w @skillgrid/full",
     "dev:full": "npm run dev -w @skillgrid/full",
     "dev:legacy": "vite",
-    "build": "npm run build:full",
+    "build": "npm run build:full && npm run build:manage && npm run build:team",
     "build:full": "npm run build -w @skillgrid/full",
     "lint": "eslint .",
     "preview": "npm run preview -w @skillgrid/full",
@@ -21,7 +21,11 @@
     "e2e": "playwright test",
     "e2e:headless": "playwright test --headless",
     "e2e:ui": "playwright test --ui",
-    "generate-icons": "node scripts/generate-icons.js"
+    "generate-icons": "node scripts/generate-icons.js",
+    "dev:manage": "npm run dev -w @skillgrid/manage",
+    "dev:team": "npm run dev -w @skillgrid/team",
+    "build:manage": "npm run build -w @skillgrid/manage",
+    "build:team": "npm run build -w @skillgrid/team"
   },
   "dependencies": {
     "@mantine/charts": "^8.3.16",

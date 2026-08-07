@@ -14,11 +14,12 @@ export const SHARED_SPIKE_META = {
 export type * from "./types";
 export {
   fullCapabilities,
+  manageCapabilities,
+  teamCapabilities,
   type AppCapabilities,
   type AppVariant,
   type CapabilityFlag,
-} from "./types/capabilities";
-export { LEVELS, MATRIX_LAYOUT } from "./constants";
+} from "./types/capabilities";export { LEVELS, MATRIX_LAYOUT } from "./constants";
 export * from "./utils";
 export {
   createIndexedDBService,

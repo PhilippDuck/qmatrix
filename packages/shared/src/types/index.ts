@@ -29,7 +29,11 @@ export type {
   AppCapabilities,
   CapabilityFlag,
 } from "./capabilities";
-export { fullCapabilities } from "./capabilities";
+export {
+  fullCapabilities,
+  manageCapabilities,
+  teamCapabilities,
+} from "./capabilities";
 
 export type {
   SemVer,

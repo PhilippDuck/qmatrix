@@ -47,16 +47,22 @@ Voraussetzung: [Node.js](https://nodejs.org/) ist installiert.
 
 Das Repo nutzt **npm workspaces** als Vorbereitung auf drei Apps (Full / Manage / Team). Aktuell:
 
-| Pfad | Package | Status |
-|------|---------|--------|
-| `apps/full` | `@skillgrid/full` | App-Shell (Entry, Vite, PWA) |
-| `packages/shared` | `@skillgrid/shared` | Domain, Store, Services, UI-Komponenten |
-| Root `src/` | – | Kompatibilitäts-Re-Exports (legacy) |
+| Pfad | Package | Port | Status |
+|------|---------|------|--------|
+| `apps/full` | `@skillgrid/full` | 5173 | Vollversion (Autorenschaft + Ops) |
+| `apps/manage` | `@skillgrid/manage` | 5174 | Katalog SoT (Skills/Rollen/Publish) |
+| `apps/team` | `@skillgrid/team` | 5175 | Ops, Katalog read-only + Import |
+| `packages/shared` | `@skillgrid/shared` | – | Domain, Store, Catalog, UI |
+| Root `src/` | – | – | Kompatibilitäts-Re-Exports (legacy) |
 
 ```bash
-npm run dev          # = dev:full
-npm run build:full   # Tests + singlefile/PWA-Build von apps/full
-npm run dev:legacy   # optional: altes Root-Vite (src/ + vite.config.js)
+npm run dev            # Full :5173
+npm run dev:manage     # Manage :5174
+npm run dev:team       # Team :5175
+npm run build:full     # Tests + Full singlefile/PWA
+npm run build:manage
+npm run build:team
+npm run build          # alle drei Apps
 ```
 
 Design: [`docs/design-monorepo-full-manage-team.md`](./docs/design-monorepo-full-manage-team.md)
