@@ -233,11 +233,6 @@ const App: FC = () => {
                       {projectTitle}
                     </Text>
                   )}
-                  <Tooltip label="App-Version (SkillGrid Manage)">
-                    <Badge variant="outline" color="indigo" size="sm">
-                      App {APP_VERSION}
-                    </Badge>
-                  </Tooltip>
                   <ColorSchemeToggle />
                 </Group>
               </Group>
@@ -288,21 +283,51 @@ const App: FC = () => {
                   </Tooltip>
                 ))}
               </Stack>
-              {!collapsed && (
-                <Box
-                  py="sm"
-                  px="xs"
-                  style={{
-                    borderTop: "1px solid var(--mantine-color-default-border)",
-                    marginTop: "auto",
-                  }}
-                >
-                  <Text size="xs" c="dimmed">
+              {/* App version at sidebar bottom (like Full) — from apps/manage/package.json */}
+              <Box
+                py="sm"
+                px="xs"
+                style={{
+                  borderTop: "1px solid var(--mantine-color-default-border)",
+                  marginTop: "auto",
+                }}
+              >
+                {!collapsed && (
+                  <Text size="xs" c="dimmed" mb={6}>
                     Nach Änderungen eine <strong>Version freigeben</strong> und
                     die Datei in Team importieren.
                   </Text>
-                </Box>
-              )}
+                )}
+                {collapsed ? (
+                  <Tooltip label={`SkillGrid Manage ${APP_VERSION}`} position="right" withArrow>
+                    <Badge
+                      variant="subtle"
+                      color="gray"
+                      size="xs"
+                      fullWidth
+                      styles={{
+                        root: {
+                          textTransform: "none",
+                          opacity: 0.8,
+                          paddingInline: 4,
+                        },
+                      }}
+                    >
+                      {APP_VERSION.replace(/^v/, "")}
+                    </Badge>
+                  </Tooltip>
+                ) : (
+                  <Badge
+                    variant="subtle"
+                    color="gray"
+                    size="xs"
+                    fullWidth
+                    styles={{ root: { textTransform: "none", opacity: 0.8 } }}
+                  >
+                    App {APP_VERSION}
+                  </Badge>
+                )}
+              </Box>
             </AppShell.Navbar>
 
             <AppShell.Main>
