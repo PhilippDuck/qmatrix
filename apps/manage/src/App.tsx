@@ -52,8 +52,12 @@ const theme = createTheme({
   primaryColor: "indigo",
 });
 
-/** App version from apps/manage/package.json (independent of Full 2.x). */
+/**
+ * App version from apps/manage/package.json via Vite define
+ * (independent of Full 2.x and of Katalog-Release-Version).
+ */
 const APP_VERSION = `v${__APP_VERSION__}`;
+const APP_VERSION_LABEL = `App ${APP_VERSION}`;
 
 type ManageTab = "skills" | "roles" | "releases" | "system";
 
@@ -208,12 +212,12 @@ const App: FC = () => {
                     {installedCatalogMeta?.version ? (
                       <Tooltip label="Freigegebene Katalog-Version (Live)">
                         <Badge variant="outline" color="gray" size="sm" style={{ flexShrink: 0 }}>
-                          v{installedCatalogMeta.version}
+                          Katalog v{installedCatalogMeta.version}
                         </Badge>
                       </Tooltip>
                     ) : (
                       <Badge variant="outline" color="gray" size="sm" style={{ flexShrink: 0 }}>
-                        kein Release
+                        Katalog —
                       </Badge>
                     )}
                     {hasUnpublishedCatalogChanges && (
@@ -279,7 +283,7 @@ const App: FC = () => {
                   </Tooltip>
                 ))}
               </Stack>
-              {/* App version footer — same quiet style as Full */}
+              {/* App version footer (apps/manage package version, not Katalog) */}
               <Box
                 py="sm"
                 px="xs"
@@ -289,26 +293,17 @@ const App: FC = () => {
                 }}
               >
                 {!collapsed ? (
-                  <>
-                    <Text size="xs" c="dimmed" ta="center" mb={4}>
-                      SkillGrid Manage
-                    </Text>
-                    <Badge
-                      variant="subtle"
-                      color="gray"
-                      size="xs"
-                      fullWidth
-                      styles={{ root: { textTransform: "none", opacity: 0.7 } }}
-                    >
-                      {APP_VERSION}
-                    </Badge>
-                  </>
-                ) : (
-                  <Tooltip
-                    label={`SkillGrid Manage ${APP_VERSION}`}
-                    position="right"
-                    withArrow
+                  <Badge
+                    variant="subtle"
+                    color="gray"
+                    size="xs"
+                    fullWidth
+                    styles={{ root: { textTransform: "none", opacity: 0.75 } }}
                   >
+                    {APP_VERSION_LABEL}
+                  </Badge>
+                ) : (
+                  <Tooltip label={APP_VERSION_LABEL} position="right" withArrow>
                     <Badge
                       variant="subtle"
                       color="gray"
@@ -317,7 +312,7 @@ const App: FC = () => {
                       styles={{
                         root: {
                           textTransform: "none",
-                          opacity: 0.7,
+                          opacity: 0.75,
                           paddingInline: 4,
                         },
                       }}
