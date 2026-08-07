@@ -14,7 +14,6 @@ import {
   Textarea,
   SegmentedControl,
   Modal,
-  Timeline,
   ThemeIcon,
   Alert,
   Code,
@@ -23,6 +22,9 @@ import {
   Table,
   ScrollArea,
   Tooltip,
+  Collapse,
+  ActionIcon,
+  UnstyledButton,
 } from "@mantine/core";
 import {
   IconRocket,
@@ -35,6 +37,7 @@ import {
   IconArrowBackUp,
   IconDownload,
   IconCircleDot,
+  IconChevronDown,
 } from "@tabler/icons-react";
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
@@ -115,6 +118,10 @@ export const CatalogReleasePanel: React.FC = () => {
   const [publishOpen, { open: openPublish, close: closePublish }] =
     useDisclosure(false);
   const [diffOpen, { open: openDiff, close: closeDiff }] = useDisclosure(false);
+  const [archiveOpen, { toggle: toggleArchive }] = useDisclosure(true);
+  const [expandedReleaseIds, setExpandedReleaseIds] = useState<Set<string>>(
+    () => new Set()
+  );
   const [busy, setBusy] = useState(false);
   const [catalogName, setCatalogName] = useState(
     installedCatalogMeta?.name || projectTitle || "Unternehmens-Katalog"
@@ -126,6 +133,19 @@ export const CatalogReleasePanel: React.FC = () => {
   const [catalogFingerprint, setCatalogFingerprint] = useState<string>("…");
   const [activeDiff, setActiveDiff] = useState<CatalogDiffResult | null>(null);
   const [diffTitle, setDiffTitle] = useState("");
+
+  const canPublish = hasUnpublishedCatalogChanges;
+  const canDiffLatest =
+    hasUnpublishedCatalogChanges && (storedCatalogReleases?.length ?? 0) > 0;
+
+  const toggleReleaseExpanded = (id: string) => {
+    setExpandedReleaseIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   const catalogId = useMemo(() => stableCatalogId(), []);
   const currentVersion = installedCatalogMeta?.version || "—";
@@ -315,6 +335,7 @@ export const CatalogReleasePanel: React.FC = () => {
             <Button
               variant="subtle"
               size="compact-xs"
+              disabled={!canDiffLatest}
               onClick={() => showDiff(undefined, "Aktuell vs. letzte Version")}
             >
               Unterschiede anzeigen
@@ -414,138 +435,211 @@ export const CatalogReleasePanel: React.FC = () => {
             </Group>
 
             <Group>
-              <Button
-                leftSection={<IconPackageExport size={16} />}
-                color="indigo"
-                onClick={openPublish}
+              <Tooltip
+                label={
+                  canPublish
+                    ? "Aktuellen Katalogstand als Version speichern"
+                    : releases.length === 0
+                      ? "Zuerst Skills/Rollen anlegen"
+                      : "Keine Änderungen seit der letzten Version"
+                }
               >
-                Neue Version freigeben…
-              </Button>
-              {releases[0] && (
                 <Button
-                  variant="light"
-                  leftSection={<IconGitCompare size={16} />}
-                  loading={busy}
-                  onClick={() =>
-                    showDiff(releases[0].id, `Aktuell vs. v${releases[0].version}`)
+                  leftSection={<IconPackageExport size={16} />}
+                  color="indigo"
+                  onClick={openPublish}
+                  disabled={!canPublish}
+                >
+                  Neue Version freigeben…
+                </Button>
+              </Tooltip>
+              {releases[0] && (
+                <Tooltip
+                  label={
+                    canDiffLatest
+                      ? "Unterschiede zur zuletzt freigegebenen Version"
+                      : "Keine unveröffentlichten Änderungen"
                   }
                 >
-                  Diff zur letzten Version
-                </Button>
+                  <Button
+                    variant="light"
+                    color="gray"
+                    leftSection={<IconGitCompare size={16} />}
+                    loading={busy}
+                    disabled={!canDiffLatest}
+                    onClick={() =>
+                      showDiff(
+                        releases[0].id,
+                        `Aktuell vs. v${releases[0].version}`
+                      )
+                    }
+                  >
+                    Diff zur letzten Version
+                  </Button>
+                </Tooltip>
               )}
             </Group>
           </Stack>
         </Card>
 
-        <Card withBorder shadow="sm" radius="md">
+        {/* Archiv — collapsible like Full Gefahrenzone */}
+        <Card withBorder shadow="sm" radius="md" p="md">
           <Stack gap="md">
-            <Group gap="xs">
-              <IconHistory size={16} />
-              <Text fw={600} size="sm">
-                Archiv (letzte {releases.length}/10 Versionen)
-              </Text>
+            <Group
+              justify="space-between"
+              style={{ cursor: "pointer" }}
+              onClick={toggleArchive}
+            >
+              <Group gap="xs">
+                <IconHistory size={18} style={{ color: "var(--mantine-color-dimmed)" }} />
+                <Text fw={600} size="sm">
+                  Archiv (letzte {releases.length}/10 Versionen)
+                </Text>
+              </Group>
+              <ActionIcon variant="subtle" color="gray">
+                <IconChevronDown
+                  style={{
+                    transform: archiveOpen ? "rotate(180deg)" : "none",
+                    transition: "transform 0.2s ease",
+                  }}
+                />
+              </ActionIcon>
             </Group>
 
-            {releases.length === 0 ? (
-              <Alert
-                icon={<IconAlertCircle size={16} />}
-                color="gray"
-                variant="light"
-                title="Noch keine Releases"
-              >
-                Nach dem ersten Freigeben erscheinen hier bis zu 10 vollständige
-                Snapshots zum Diff, erneuten Download und Rollback.
-              </Alert>
-            ) : (
-              <Timeline active={0} bulletSize={24} lineWidth={2} color="indigo">
-                {releases.map((release, index) => (
-                  <Timeline.Item
-                    key={release.id}
-                    bullet={
-                      <ThemeIcon
-                        size={22}
-                        radius="xl"
-                        color="indigo"
-                        variant={index === 0 ? "filled" : "light"}
-                      >
-                        <IconTag size={12} />
-                      </ThemeIcon>
-                    }
-                    title={
-                      <Group gap="xs" wrap="wrap">
-                        <Code>v{release.version}</Code>
-                        <Text size="xs" c="dimmed">
-                          {release.publishedAt.slice(0, 10)}
-                        </Text>
-                        {index === 0 && (
-                          <Badge size="xs" variant="light" color="green">
-                            Aktuell freigegeben
-                          </Badge>
-                        )}
-                      </Group>
-                    }
+            <Collapse in={archiveOpen}>
+              <Stack gap="sm">
+                <Divider />
+                {releases.length === 0 ? (
+                  <Alert
+                    icon={<IconAlertCircle size={16} />}
+                    color="gray"
+                    variant="light"
+                    title="Noch keine Releases"
                   >
-                    <Text size="sm" mt={4} mb="xs">
-                      {release.notes}
-                    </Text>
-                    <Group gap="xs">
-                      <Tooltip label="Unterschiede zum Live-Katalog">
-                        <Button
-                          size="compact-xs"
-                          variant="light"
-                          leftSection={<IconGitCompare size={12} />}
-                          onClick={() =>
-                            showDiff(
-                              release.id,
-                              `Aktuell vs. v${release.version}`
-                            )
-                          }
+                    Nach dem ersten Freigeben erscheinen hier bis zu 10 vollständige
+                    Snapshots zum Diff, erneuten Download und Rollback.
+                  </Alert>
+                ) : (
+                  releases.map((release, index) => {
+                    const expanded = expandedReleaseIds.has(release.id);
+                    return (
+                      <Card
+                        key={release.id}
+                        withBorder
+                        padding="sm"
+                        radius="md"
+                        bg={
+                          index === 0
+                            ? "var(--mantine-color-default-hover)"
+                            : undefined
+                        }
+                      >
+                        <UnstyledButton
+                          onClick={() => toggleReleaseExpanded(release.id)}
+                          w="100%"
+                          style={{ textAlign: "left" }}
                         >
-                          Diff
-                        </Button>
-                      </Tooltip>
-                      <Tooltip label="JSON erneut herunterladen">
-                        <Button
-                          size="compact-xs"
-                          variant="light"
-                          leftSection={<IconDownload size={12} />}
-                          onClick={async () => {
-                            try {
-                              await redownloadRelease(release.id);
-                              notifications.show({
-                                title: "Download",
-                                message: `v${release.version}`,
-                                color: "blue",
-                              });
-                            } catch (e) {
-                              notifications.show({
-                                title: "Fehler",
-                                message:
-                                  e instanceof Error ? e.message : String(e),
-                                color: "red",
-                              });
-                            }
-                          }}
-                        >
-                          Download
-                        </Button>
-                      </Tooltip>
-                      <Tooltip label="Live-Katalog auf diesen Stand setzen">
-                        <Button
-                          size="compact-xs"
-                          variant="light"
-                          color="orange"
-                          leftSection={<IconArrowBackUp size={12} />}
-                          onClick={() => handleRollback(release)}
-                        >
-                          Rollback
-                        </Button>
-                      </Tooltip>
-                    </Group>
-                  </Timeline.Item>
-                ))}
-              </Timeline>
-            )}
+                          <Group justify="space-between" wrap="nowrap">
+                            <Group gap="xs" wrap="wrap">
+                              <ThemeIcon
+                                size={22}
+                                radius="xl"
+                                color="indigo"
+                                variant={index === 0 ? "filled" : "light"}
+                              >
+                                <IconTag size={12} />
+                              </ThemeIcon>
+                              <Code>v{release.version}</Code>
+                              <Text size="xs" c="dimmed">
+                                {release.publishedAt.slice(0, 10)}
+                              </Text>
+                              {index === 0 && (
+                                <Badge size="xs" variant="light" color="green">
+                                  Aktuell freigegeben
+                                </Badge>
+                              )}
+                            </Group>
+                            <IconChevronDown
+                              size={16}
+                              style={{
+                                transform: expanded
+                                  ? "rotate(180deg)"
+                                  : "none",
+                                transition: "transform 0.2s ease",
+                                color: "var(--mantine-color-dimmed)",
+                                flexShrink: 0,
+                              }}
+                            />
+                          </Group>
+                        </UnstyledButton>
+
+                        <Collapse in={expanded}>
+                          <Stack gap="xs" mt="sm" pl={4}>
+                            <Text size="sm">{release.notes}</Text>
+                            <Group gap="xs">
+                              <Tooltip label="Unterschiede zum Live-Katalog">
+                                <Button
+                                  size="compact-xs"
+                                  variant="light"
+                                  leftSection={<IconGitCompare size={12} />}
+                                  onClick={() =>
+                                    showDiff(
+                                      release.id,
+                                      `Aktuell vs. v${release.version}`
+                                    )
+                                  }
+                                >
+                                  Diff
+                                </Button>
+                              </Tooltip>
+                              <Tooltip label="JSON erneut herunterladen">
+                                <Button
+                                  size="compact-xs"
+                                  variant="light"
+                                  leftSection={<IconDownload size={12} />}
+                                  onClick={async () => {
+                                    try {
+                                      await redownloadRelease(release.id);
+                                      notifications.show({
+                                        title: "Download",
+                                        message: `v${release.version}`,
+                                        color: "blue",
+                                      });
+                                    } catch (e) {
+                                      notifications.show({
+                                        title: "Fehler",
+                                        message:
+                                          e instanceof Error
+                                            ? e.message
+                                            : String(e),
+                                        color: "red",
+                                      });
+                                    }
+                                  }}
+                                >
+                                  Download
+                                </Button>
+                              </Tooltip>
+                              <Tooltip label="Live-Katalog auf diesen Stand setzen">
+                                <Button
+                                  size="compact-xs"
+                                  variant="light"
+                                  color="orange"
+                                  leftSection={<IconArrowBackUp size={12} />}
+                                  onClick={() => handleRollback(release)}
+                                >
+                                  Rollback
+                                </Button>
+                              </Tooltip>
+                            </Group>
+                          </Stack>
+                        </Collapse>
+                      </Card>
+                    );
+                  })
+                )}
+              </Stack>
+            </Collapse>
           </Stack>
         </Card>
       </Stack>

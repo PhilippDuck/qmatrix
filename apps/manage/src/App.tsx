@@ -52,6 +52,7 @@ const theme = createTheme({
   primaryColor: "indigo",
 });
 
+/** App version from apps/manage/package.json (independent of Full 2.x). */
 const APP_VERSION = `v${__APP_VERSION__}`;
 
 type ManageTab = "skills" | "roles" | "releases" | "system";
@@ -200,9 +201,9 @@ const App: FC = () => {
                   </div>
                 </Group>
                 <Group gap="xs">
-                  <Text size="xs" c="dimmed">
-                    {APP_VERSION}
-                  </Text>
+                  <Badge variant="outline" color="gray" size="sm">
+                    Manage {APP_VERSION}
+                  </Badge>
                   <ColorSchemeToggle />
                 </Group>
               </Group>
