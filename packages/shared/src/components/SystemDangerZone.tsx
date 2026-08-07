@@ -7,13 +7,10 @@ import {
   Card,
   Text,
   Box,
-  Divider,
-  ActionIcon,
-  Collapse,
   Alert,
+  Accordion,
 } from "@mantine/core";
-import { IconAlertCircle, IconTrash, IconChevronDown } from "@tabler/icons-react";
-import { useDisclosure } from "@mantine/hooks";
+import { IconAlertCircle, IconTrash } from "@tabler/icons-react";
 import { modals } from "@mantine/modals";
 import { notifications } from "@mantine/notifications";
 import { useStore, useCapabilities } from "../store/hooks";
@@ -26,7 +23,6 @@ interface SystemDangerZoneProps {
 export const SystemDangerZone: React.FC<SystemDangerZoneProps> = ({
   catalogOnly = false,
 }) => {
-  const [opened, { toggle }] = useDisclosure(false);
   const clearAllData = useStore((s) => s.clearAllData);
   const { displayName } = useCapabilities();
 
@@ -75,36 +71,25 @@ export const SystemDangerZone: React.FC<SystemDangerZoneProps> = ({
         shadow="sm"
         radius="md"
         style={{ borderColor: "var(--mantine-color-red-filled)" }}
-        p="md"
+        p={0}
+        padding={0}
       >
-        <Stack gap="md">
-          <Group
-            justify="space-between"
-            style={{ cursor: "pointer" }}
-            onClick={toggle}
-          >
-            <Group gap="xs">
-              <IconAlertCircle
-                size={20}
-                style={{ color: "var(--mantine-color-red-filled)" }}
-              />
+        {/* Accordion = same chevron placement as Full RoleManager */}
+        <Accordion chevronPosition="right" variant="default" radius="md">
+          <Accordion.Item value="danger" style={{ border: "none" }}>
+            <Accordion.Control
+              icon={
+                <IconAlertCircle
+                  size={20}
+                  style={{ color: "var(--mantine-color-red-filled)" }}
+                />
+              }
+            >
               <Title order={4} c="red">
                 Gefahrenzone
               </Title>
-            </Group>
-            <ActionIcon variant="subtle" color="red">
-              <IconChevronDown
-                style={{
-                  transform: opened ? "rotate(180deg)" : "none",
-                  transition: "transform 0.2s ease",
-                }}
-              />
-            </ActionIcon>
-          </Group>
-
-          <Collapse in={opened}>
-            <Stack gap="md">
-              <Divider />
+            </Accordion.Control>
+            <Accordion.Panel>
               <Box>
                 <Text fw={600} size="sm">
                   {catalogOnly
@@ -126,9 +111,9 @@ export const SystemDangerZone: React.FC<SystemDangerZoneProps> = ({
                   {catalogOnly ? "Katalog zurücksetzen" : "System zurücksetzen"}
                 </Button>
               </Box>
-            </Stack>
-          </Collapse>
-        </Stack>
+            </Accordion.Panel>
+          </Accordion.Item>
+        </Accordion>
       </Card>
 
       <Alert icon={<IconAlertCircle size={16} />} color="gray" radius="md">

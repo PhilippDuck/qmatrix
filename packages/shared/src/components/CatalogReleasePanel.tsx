@@ -22,9 +22,7 @@ import {
   Table,
   ScrollArea,
   Tooltip,
-  Collapse,
-  ActionIcon,
-  UnstyledButton,
+  Accordion,
 } from "@mantine/core";
 import {
   IconRocket,
@@ -37,7 +35,6 @@ import {
   IconArrowBackUp,
   IconDownload,
   IconCircleDot,
-  IconChevronDown,
 } from "@tabler/icons-react";
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
@@ -118,10 +115,6 @@ export const CatalogReleasePanel: React.FC = () => {
   const [publishOpen, { open: openPublish, close: closePublish }] =
     useDisclosure(false);
   const [diffOpen, { open: openDiff, close: closeDiff }] = useDisclosure(false);
-  const [archiveOpen, { toggle: toggleArchive }] = useDisclosure(true);
-  const [expandedReleaseIds, setExpandedReleaseIds] = useState<Set<string>>(
-    () => new Set()
-  );
   const [busy, setBusy] = useState(false);
   const [catalogName, setCatalogName] = useState(
     installedCatalogMeta?.name || projectTitle || "Unternehmens-Katalog"
@@ -137,15 +130,6 @@ export const CatalogReleasePanel: React.FC = () => {
   const canPublish = hasUnpublishedCatalogChanges;
   const canDiffLatest =
     hasUnpublishedCatalogChanges && (storedCatalogReleases?.length ?? 0) > 0;
-
-  const toggleReleaseExpanded = (id: string) => {
-    setExpandedReleaseIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
 
   const catalogId = useMemo(() => stableCatalogId(), []);
   const currentVersion = installedCatalogMeta?.version || "—";
@@ -482,33 +466,29 @@ export const CatalogReleasePanel: React.FC = () => {
           </Stack>
         </Card>
 
-        {/* Archiv — collapsible like Full Gefahrenzone */}
-        <Card withBorder shadow="sm" radius="md" p="md">
-          <Stack gap="md">
-            <Group
-              justify="space-between"
-              style={{ cursor: "pointer" }}
-              onClick={toggleArchive}
-            >
-              <Group gap="xs">
-                <IconHistory size={18} style={{ color: "var(--mantine-color-dimmed)" }} />
+        {/* Archiv — Mantine Accordion (chevron right, same as Full RoleManager) */}
+        <Card withBorder shadow="sm" radius="md" p={0}>
+          <Accordion
+            chevronPosition="right"
+            multiple
+            defaultValue={["archive"]}
+            variant="default"
+            radius="md"
+          >
+            <Accordion.Item value="archive" style={{ border: "none" }}>
+              <Accordion.Control
+                icon={
+                  <IconHistory
+                    size={18}
+                    style={{ color: "var(--mantine-color-dimmed)" }}
+                  />
+                }
+              >
                 <Text fw={600} size="sm">
                   Archiv (letzte {releases.length}/10 Versionen)
                 </Text>
-              </Group>
-              <ActionIcon variant="subtle" color="gray">
-                <IconChevronDown
-                  style={{
-                    transform: archiveOpen ? "rotate(180deg)" : "none",
-                    transition: "transform 0.2s ease",
-                  }}
-                />
-              </ActionIcon>
-            </Group>
-
-            <Collapse in={archiveOpen}>
-              <Stack gap="sm">
-                <Divider />
+              </Accordion.Control>
+              <Accordion.Panel>
                 {releases.length === 0 ? (
                   <Alert
                     icon={<IconAlertCircle size={16} />}
@@ -516,65 +496,45 @@ export const CatalogReleasePanel: React.FC = () => {
                     variant="light"
                     title="Noch keine Releases"
                   >
-                    Nach dem ersten Freigeben erscheinen hier bis zu 10 vollständige
-                    Snapshots zum Diff, erneuten Download und Rollback.
+                    Nach dem ersten Freigeben erscheinen hier bis zu 10
+                    vollständige Snapshots zum Diff, erneuten Download und
+                    Rollback.
                   </Alert>
                 ) : (
-                  releases.map((release, index) => {
-                    const expanded = expandedReleaseIds.has(release.id);
-                    return (
-                      <Card
-                        key={release.id}
-                        withBorder
-                        padding="sm"
-                        radius="md"
-                        bg={
-                          index === 0
-                            ? "var(--mantine-color-default-hover)"
-                            : undefined
-                        }
-                      >
-                        <UnstyledButton
-                          onClick={() => toggleReleaseExpanded(release.id)}
-                          w="100%"
-                          style={{ textAlign: "left" }}
+                  <Accordion
+                    chevronPosition="right"
+                    multiple
+                    variant="separated"
+                    radius="sm"
+                  >
+                    {releases.map((release, index) => (
+                      <Accordion.Item key={release.id} value={release.id}>
+                        <Accordion.Control
+                          icon={
+                            <ThemeIcon
+                              size={22}
+                              radius="xl"
+                              color="indigo"
+                              variant={index === 0 ? "filled" : "light"}
+                            >
+                              <IconTag size={12} />
+                            </ThemeIcon>
+                          }
                         >
-                          <Group justify="space-between" wrap="nowrap">
-                            <Group gap="xs" wrap="wrap">
-                              <ThemeIcon
-                                size={22}
-                                radius="xl"
-                                color="indigo"
-                                variant={index === 0 ? "filled" : "light"}
-                              >
-                                <IconTag size={12} />
-                              </ThemeIcon>
-                              <Code>v{release.version}</Code>
-                              <Text size="xs" c="dimmed">
-                                {release.publishedAt.slice(0, 10)}
-                              </Text>
-                              {index === 0 && (
-                                <Badge size="xs" variant="light" color="green">
-                                  Aktuell freigegeben
-                                </Badge>
-                              )}
-                            </Group>
-                            <IconChevronDown
-                              size={16}
-                              style={{
-                                transform: expanded
-                                  ? "rotate(180deg)"
-                                  : "none",
-                                transition: "transform 0.2s ease",
-                                color: "var(--mantine-color-dimmed)",
-                                flexShrink: 0,
-                              }}
-                            />
+                          <Group gap="xs" wrap="wrap">
+                            <Code>v{release.version}</Code>
+                            <Text size="xs" c="dimmed">
+                              {release.publishedAt.slice(0, 10)}
+                            </Text>
+                            {index === 0 && (
+                              <Badge size="xs" variant="light" color="green">
+                                Aktuell freigegeben
+                              </Badge>
+                            )}
                           </Group>
-                        </UnstyledButton>
-
-                        <Collapse in={expanded}>
-                          <Stack gap="xs" mt="sm" pl={4}>
+                        </Accordion.Control>
+                        <Accordion.Panel>
+                          <Stack gap="xs">
                             <Text size="sm">{release.notes}</Text>
                             <Group gap="xs">
                               <Tooltip label="Unterschiede zum Live-Katalog">
@@ -633,14 +593,14 @@ export const CatalogReleasePanel: React.FC = () => {
                               </Tooltip>
                             </Group>
                           </Stack>
-                        </Collapse>
-                      </Card>
-                    );
-                  })
+                        </Accordion.Panel>
+                      </Accordion.Item>
+                    ))}
+                  </Accordion>
                 )}
-              </Stack>
-            </Collapse>
-          </Stack>
+              </Accordion.Panel>
+            </Accordion.Item>
+          </Accordion>
         </Card>
       </Stack>
 
