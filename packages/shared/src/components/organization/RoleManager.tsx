@@ -33,6 +33,7 @@ import { RoleIconPicker, getIconByName } from "../shared/RoleIconPicker";
 import { RoleDetailDrawer } from "../shared/RoleDetailDrawer";
 import { RoleRichTextEditorField } from "../shared/RoleRichTextEditor";
 import { LEVELS } from "../../constants/skillLevels";
+import { useCatalogAuthoring } from "../../hooks/useCatalogAuthoring";
 
 const stripHtml = (html: string) => html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 
@@ -91,6 +92,7 @@ interface RoleManagerProps {
 }
 
 export const RoleManager: React.FC<RoleManagerProps> = ({ initialEditRoleId, onClearParams }) => {
+    const catalogAuthoring = useCatalogAuthoring();
     const { roles, skills, employees, categories, subcategories, addRole, updateRole, deleteRole, updateSkillsForRole } = useStore(
         useShallow((s) => ({
             roles: s.roles,
@@ -351,9 +353,11 @@ export const RoleManager: React.FC<RoleManagerProps> = ({ initialEditRoleId, onC
         <Stack gap="lg" style={{ height: '100%' }}>
             <Group justify="space-between">
                 <Title order={3}>Rollen & Qualifikations-Level verwalten</Title>
-                <Button leftSection={<IconPlus size={16} />} onClick={handleOpenAdd}>
-                    Rolle hinzufügen
-                </Button>
+                {catalogAuthoring && (
+                    <Button leftSection={<IconPlus size={16} />} onClick={handleOpenAdd}>
+                        Rolle hinzufügen
+                    </Button>
+                )}
             </Group>
 
             <Tabs defaultValue="list" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
@@ -477,16 +481,20 @@ export const RoleManager: React.FC<RoleManagerProps> = ({ initialEditRoleId, onC
                                                                 <IconEye size={16} />
                                                             </ActionIcon>
                                                         </Tooltip>
-                                                        <Tooltip label="Bearbeiten" withArrow position="top">
-                                                            <ActionIcon variant="subtle" color="blue" onClick={() => handleOpenEdit(role)}>
-                                                                <IconEdit size={16} />
-                                                            </ActionIcon>
-                                                        </Tooltip>
-                                                        <Tooltip label="Löschen" withArrow position="top">
-                                                            <ActionIcon color="red" variant="subtle" onClick={() => handleDelete(role.id!, role.name)}>
-                                                                <IconTrash size={16} />
-                                                            </ActionIcon>
-                                                        </Tooltip>
+                                                        {catalogAuthoring && (
+                                                            <>
+                                                                <Tooltip label="Bearbeiten" withArrow position="top">
+                                                                    <ActionIcon variant="subtle" color="blue" onClick={() => handleOpenEdit(role)}>
+                                                                        <IconEdit size={16} />
+                                                                    </ActionIcon>
+                                                                </Tooltip>
+                                                                <Tooltip label="Löschen" withArrow position="top">
+                                                                    <ActionIcon color="red" variant="subtle" onClick={() => handleDelete(role.id!, role.name)}>
+                                                                        <IconTrash size={16} />
+                                                                    </ActionIcon>
+                                                                </Tooltip>
+                                                            </>
+                                                        )}
                                                     </Group>
                                                 </Table.Td>
                                             </Table.Tr>
@@ -786,7 +794,7 @@ export const RoleManager: React.FC<RoleManagerProps> = ({ initialEditRoleId, onC
                         </Stack>
                     </Box>
                     <Group justify="space-between" mt="md" pt="md" style={{ borderTop: '1px solid var(--mantine-color-default-border)' }}>
-                        {editingId ? (
+                        {editingId && catalogAuthoring ? (
                             <Button
                                 color="red"
                                 variant="light"
@@ -802,11 +810,13 @@ export const RoleManager: React.FC<RoleManagerProps> = ({ initialEditRoleId, onC
                         )}
                         <Group>
                             <Button variant="default" onClick={handleCloseAttempt}>
-                                Abbrechen
+                                {catalogAuthoring ? "Abbrechen" : "Schließen"}
                             </Button>
-                            <Button onClick={handleSave} loading={loading}>
-                                Speichern
-                            </Button>
+                            {catalogAuthoring && (
+                                <Button onClick={handleSave} loading={loading}>
+                                    Speichern
+                                </Button>
+                            )}
                         </Group>
                     </Group>
                 </Stack>

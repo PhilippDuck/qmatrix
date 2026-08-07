@@ -51,6 +51,7 @@ import { MatrixHeader } from "./MatrixHeader";
 import { MatrixCategoryRow } from "./MatrixCategoryRow";
 import { MatrixLegend } from "./MatrixLegend";
 import { QuickAddDrawer } from "./QuickAddDrawer";
+import { useCatalogAuthoring } from "../../hooks/useCatalogAuthoring";
 import { EntityFormDrawer, FormMode, EntityFormValues } from "../CategoryManager/EntityFormDrawer";
 import { useMatrixState } from "../../hooks/useMatrixState";
 import { useMatrixCalculations } from "../../hooks/useMatrixCalculations";
@@ -66,6 +67,7 @@ interface SkillMatrixProps {
 }
 
 export const SkillMatrix: React.FC<SkillMatrixProps> = React.memo(({ onNavigate }) => {
+  const catalogAuthoring = useCatalogAuthoring();
   const {
     employees,
     categories,
@@ -920,30 +922,33 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = React.memo(({ onNavigate 
         onDepartmentChange={setEditEntityDepartmentId}
         onRolesChange={setEditEntityRoleIds}
         onSave={handleSaveEditedEntity}
-        onDelete={handleDeleteEntity}
+        onDelete={catalogAuthoring ? handleDeleteEntity : undefined}
         parentContext={parentContext}
         initialValues={initialValues}
         departments={departments}
         roles={roles}
+        readOnly={!catalogAuthoring}
       />
 
-      {/* Skill Quick Add Drawer */}
-      <QuickAddDrawer
-        opened={skillDrawerOpened}
-        onClose={() => setSkillDrawerOpened(false)}
-        mode="skill"
-        categories={categories}
-        subcategories={subcategories}
-        preselectedSubcategoryId={null}
-        onAddEmployee={async () => { }}
-        onAddSkill={handleAddSkill}
-        onAddCategory={async (name) => {
-          return await addCategory({ name });
-        }}
-        onAddSubCategory={async (categoryId, name, parentSubCategoryId) => {
-          return await addSubCategory({ categoryId, name, parentSubCategoryId });
-        }}
-      />
+      {/* Skill Quick Add Drawer — catalog authoring only */}
+      {catalogAuthoring && (
+        <QuickAddDrawer
+          opened={skillDrawerOpened}
+          onClose={() => setSkillDrawerOpened(false)}
+          mode="skill"
+          categories={categories}
+          subcategories={subcategories}
+          preselectedSubcategoryId={null}
+          onAddEmployee={async () => { }}
+          onAddSkill={handleAddSkill}
+          onAddCategory={async (name) => {
+            return await addCategory({ name });
+          }}
+          onAddSubCategory={async (categoryId, name, parentSubCategoryId) => {
+            return await addSubCategory({ categoryId, name, parentSubCategoryId });
+          }}
+        />
+      )}
 
       <CreateContextMenu
         opened={!!contextMenuPos}
@@ -954,7 +959,7 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = React.memo(({ onNavigate 
           setContextMenuPos(null);
           if (type === 'employee') {
             setEmployeeDrawerOpened(true);
-          } else if (type === 'skill') {
+          } else if (type === 'skill' && catalogAuthoring) {
             setSkillDrawerOpened(true);
           }
         }}

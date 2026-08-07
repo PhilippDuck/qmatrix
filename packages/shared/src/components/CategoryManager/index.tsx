@@ -14,6 +14,7 @@ import {
   IconBraces,
 } from "@tabler/icons-react";
 import { useStore, useShallow } from "../../store/hooks";
+import { useCatalogAuthoring } from "../../hooks/useCatalogAuthoring";
 import { CategoryColumn } from "./CategoryColumn";
 import { SubcategoryColumn } from "./SubcategoryColumn";
 import { SkillColumn } from "./SkillColumn";
@@ -27,6 +28,7 @@ import {
 } from "../../utils/skillsHierarchyExport";
 
 export const CategoryManager: React.FC = () => {
+  const catalogAuthoring = useCatalogAuthoring();
   const {
     categories,
     addCategory,
@@ -150,21 +152,23 @@ export const CategoryManager: React.FC = () => {
             description: inputDescription,
           });
       } else if (formMode === "skill" && selectedSubCategory) {
+        // K18: do not write requiredByRoleIds from skill form (RoleManager is SoT)
+        const existing = editingId
+          ? skills.find((s) => s.id === editingId)
+          : undefined;
         const skillData = {
           subCategoryId: selectedSubCategory,
           name: inputValue,
           description: inputDescription,
           departmentId: selectedDepartmentId || undefined,
-          requiredByRoleIds: selectedRoleIds.length > 0 ? selectedRoleIds : undefined,
+          requiredByRoleIds: existing?.requiredByRoleIds,
         };
 
         if (editingId) {
           await updateSkill(editingId, skillData);
         } else {
-          // Add to current selected subcategory
           await addSkill({ ...skillData, subCategoryId: selectedSubCategory });
 
-          // Add to other selected subcategories
           if (selectedSubCategoryIds.length > 0) {
             await Promise.all(selectedSubCategoryIds.map(subCatId =>
               addSkill({ ...skillData, subCategoryId: subCatId })
@@ -613,6 +617,7 @@ export const CategoryManager: React.FC = () => {
               onEdit={(cat) => openForm("category", cat.id!, cat.name, cat.description || "")}
               onDelete={deleteCategory}
               getSubcategoryCount={(id) => getSubCategoriesByCategory(id).length}
+              readOnly={!catalogAuthoring}
             />
 
             <SubcategoryColumn
@@ -624,7 +629,8 @@ export const CategoryManager: React.FC = () => {
               onEdit={(sub) => openForm("subcategory", sub.id!, sub.name, sub.description || "")}
               onDelete={deleteSubCategory}
               getSkillCount={(id) => getSkillsBySubCategory(id).length}
-              onAddNested={(parentId) => openForm("subcategory", null, "", "", null, [], parentId)} // New nested add
+              onAddNested={(parentId) => openForm("subcategory", null, "", "", null, [], parentId)}
+              readOnly={!catalogAuthoring}
             />
 
             <SkillColumn
@@ -642,6 +648,7 @@ export const CategoryManager: React.FC = () => {
                 )
               }
               onDelete={deleteSkill}
+              readOnly={!catalogAuthoring}
             />
           </Group>
         </Tabs.Panel>
@@ -670,20 +677,27 @@ export const CategoryManager: React.FC = () => {
                   skill.requiredByRoleIds || []
                 );
               }}
-              onAddCategory={() => openForm("category")}
-              onAddSubCategory={(catId, parentSubId) => {
-                setSelectedCategory(catId);
-                openForm("subcategory", null, "", "", null, [], parentSubId);
-              }}
-              onAddSkill={(subCatId) => {
-                setSelectedSubCategory(subCatId);
-                openForm("skill");
-              }}
-              // Clipboard Props
-              clipboardItem={clipboardItem}
-              onCopy={setClipboardItem}
-              onCut={setClipboardItem}
-              onPaste={handlePaste}
+              onAddCategory={catalogAuthoring ? () => openForm("category") : undefined}
+              onAddSubCategory={
+                catalogAuthoring
+                  ? (catId, parentSubId) => {
+                      setSelectedCategory(catId);
+                      openForm("subcategory", null, "", "", null, [], parentSubId);
+                    }
+                  : undefined
+              }
+              onAddSkill={
+                catalogAuthoring
+                  ? (subCatId) => {
+                      setSelectedSubCategory(subCatId);
+                      openForm("skill");
+                    }
+                  : undefined
+              }
+              clipboardItem={catalogAuthoring ? clipboardItem : null}
+              onCopy={catalogAuthoring ? setClipboardItem : undefined}
+              onCut={catalogAuthoring ? setClipboardItem : undefined}
+              onPaste={catalogAuthoring ? handlePaste : undefined}
             />
           </Box>
         </Tabs.Panel>
@@ -705,12 +719,13 @@ export const CategoryManager: React.FC = () => {
         onRolesChange={setSelectedRoleIds}
         onSubcategoriesChange={setSelectedSubCategoryIds}
         onSave={handleSave}
-        onDelete={handleDelete}
+        onDelete={catalogAuthoring ? handleDelete : undefined}
         departments={departments}
         roles={roles}
         subcategories={subcategoryOptions}
         initialValues={initialValues}
         parentContext={parentContextString}
+        readOnly={!catalogAuthoring}
       />
 
     </Box>

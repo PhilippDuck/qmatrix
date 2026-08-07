@@ -29,6 +29,7 @@ interface SubcategoryColumnProps {
   onDelete: (subcategoryId: string) => void;
   getSkillCount: (subcategoryId: string) => number;
   onAddNested: (parentId: string) => void;
+  readOnly?: boolean;
 }
 
 export const SubcategoryColumn: React.FC<SubcategoryColumnProps> = ({
@@ -41,6 +42,7 @@ export const SubcategoryColumn: React.FC<SubcategoryColumnProps> = ({
   onDelete,
   getSkillCount,
   onAddNested,
+  readOnly = false,
 }) => {
 
   const renderSubcategoryRow = (sub: SubCategory, depth: number = 0) => {
@@ -89,42 +91,44 @@ export const SubcategoryColumn: React.FC<SubcategoryColumnProps> = ({
             </Group>
           </Table.Td>
           <Table.Td style={{ width: 100 }}>
-            <Group gap={4} justify="flex-end">
-              <ActionIcon
-                size="sm"
-                variant="subtle"
-                color="blue"
-                title="Untergruppe hinzufügen"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onAddNested(sub.id!);
-                }}
-              >
-                <IconPlus size={14} />
-              </ActionIcon>
-              <ActionIcon
-                size="sm"
-                variant="subtle"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onEdit(sub);
-                }}
-              >
-                <IconEdit size={14} />
-              </ActionIcon>
-              <ActionIcon
-                size="sm"
-                variant="subtle"
-                color="red"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (confirm("Unterkategorie löschen?"))
-                    onDelete(sub.id!);
-                }}
-              >
-                <IconTrash size={14} />
-              </ActionIcon>
-            </Group>
+            {!readOnly && (
+              <Group gap={4} justify="flex-end">
+                <ActionIcon
+                  size="sm"
+                  variant="subtle"
+                  color="blue"
+                  title="Untergruppe hinzufügen"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onAddNested(sub.id!);
+                  }}
+                >
+                  <IconPlus size={14} />
+                </ActionIcon>
+                <ActionIcon
+                  size="sm"
+                  variant="subtle"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEdit(sub);
+                  }}
+                >
+                  <IconEdit size={14} />
+                </ActionIcon>
+                <ActionIcon
+                  size="sm"
+                  variant="subtle"
+                  color="red"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (confirm("Unterkategorie löschen?"))
+                      onDelete(sub.id!);
+                  }}
+                >
+                  <IconTrash size={14} />
+                </ActionIcon>
+              </Group>
+            )}
           </Table.Td>
         </Table.Tr>
         {/* Render Children */}
@@ -164,15 +168,17 @@ export const SubcategoryColumn: React.FC<SubcategoryColumnProps> = ({
           <IconArrowRight size={20} style={{ color: "var(--mantine-color-dimmed)" }} />
           <Title order={4}>Unterkategorien</Title>
         </Group>
-        <Button
-          size="compact-xs"
-          variant="light"
-          disabled={!isEnabled}
-          leftSection={<IconPlus size={14} />}
-          onClick={onAdd}
-        >
-          Neu
-        </Button>
+        {!readOnly && (
+          <Button
+            size="compact-xs"
+            variant="light"
+            disabled={!isEnabled}
+            leftSection={<IconPlus size={14} />}
+            onClick={onAdd}
+          >
+            Neu
+          </Button>
+        )}
       </Group>
 
       {isEnabled ? (

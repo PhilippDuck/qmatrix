@@ -24,6 +24,7 @@ import { IconPlus, IconHistory, IconUser } from "@tabler/icons-react";
 import { HistoryTimeline } from "./HistoryTimeline";
 import { useStore, useShallow } from "../../store/hooks";
 import { findRole, roleLabels, toRoleIds } from "../../utils/roleRefs";
+import { useCatalogAuthoring } from "../../hooks/useCatalogAuthoring";
 
 interface EmployeeDrawerProps {
   opened: boolean;
@@ -44,6 +45,7 @@ export const EmployeeDrawer: React.FC<EmployeeDrawerProps> = ({
   isEditing = false,
   employeeId,
 }) => {
+  const catalogAuthoring = useCatalogAuthoring();
   const { employees, departments, roles, addDepartment, addRole } = useStore(
     useShallow((s) => ({
       employees: s.employees,
@@ -114,13 +116,21 @@ export const EmployeeDrawer: React.FC<EmployeeDrawerProps> = ({
         }
       }
 
-      // Resolve/create roles → store IDs (K17)
+      // Resolve/create roles → store IDs (K17). Creating roles requires catalogAuthoring.
       let rolesSnapshot = roles;
       const finalRoleIds: string[] = [];
       const seen = new Set<string>();
       for (const roleName of trimmedRoles) {
         let role = findRole(roleName, rolesSnapshot);
         if (!role?.id) {
+          if (!catalogAuthoring) {
+            notifications.show({
+              title: "Rolle unbekannt",
+              message: `„${roleName}“ ist nicht im Katalog. Rollen werden über SkillGrid Manage gepflegt.`,
+              color: "orange",
+            });
+            continue;
+          }
           const newId = await addRole({ name: roleName });
           rolesSnapshot = [
             ...rolesSnapshot,

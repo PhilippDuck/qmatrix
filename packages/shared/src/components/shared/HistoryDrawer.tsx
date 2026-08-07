@@ -29,6 +29,8 @@ import {
   IconEye,
 } from '@tabler/icons-react';
 import { ChangeHistoryEntry, EntityType, Employee, Skill, SubCategory, Category, Department, EmployeeRole, useStore, useShallow } from "../../store/hooks";
+import { useHistoryUndoCatalog } from "../../hooks/useCatalogAuthoring";
+import { CATALOG_ENTITY_TYPES } from "../../store/capabilities";
 
 interface HistoryDrawerProps {
   opened: boolean;
@@ -55,6 +57,7 @@ const entityTypeConfig: Record<EntityType, { icon: React.ElementType; label: str
   qualificationMeasure: { icon: IconTargetArrow, label: 'Maßnahme', color: 'indigo' },
   assessment: { icon: IconCheck, label: 'Bewertung', color: 'green' },
   savedView: { icon: IconEye, label: 'Ansicht', color: 'gray' },
+  catalog: { icon: IconClipboardList, label: 'Katalog', color: 'violet' },
 };
 
 const actionLabels: Record<string, { label: string; color: string }> = {
@@ -328,11 +331,28 @@ function TrendIcon({ trend }: { trend?: 'up' | 'down' | 'none' }) {
   return null;
 }
 
-function HistoryEntryCard({ entry, onUndo, ctx }: { entry: ChangeHistoryEntry; onUndo: () => void; ctx: DataContext }) {
-  const config = entityTypeConfig[entry.entityType];
+function HistoryEntryCard({
+  entry,
+  onUndo,
+  ctx,
+  allowCatalogUndo,
+}: {
+  entry: ChangeHistoryEntry;
+  onUndo: () => void;
+  ctx: DataContext;
+  allowCatalogUndo: boolean;
+}) {
+  const config = entityTypeConfig[entry.entityType] ?? {
+    icon: IconMinus,
+    label: entry.entityType,
+    color: "gray",
+  };
   const actionConfig = actionLabels[entry.action];
   const Icon = config.icon;
   const { description, trend } = generateDescription(entry, ctx);
+  const isCatalogEntity =
+    CATALOG_ENTITY_TYPES.has(entry.entityType) || entry.entityType === "catalog";
+  const canUndo = !entry.undone && (!isCatalogEntity || allowCatalogUndo);
 
   return (
     <Paper p="sm" withBorder radius="md" style={{ opacity: entry.undone ? 0.5 : 1 }}>
@@ -364,7 +384,7 @@ function HistoryEntryCard({ entry, onUndo, ctx }: { entry: ChangeHistoryEntry; o
           </Box>
         </Group>
 
-        {!entry.undone && (
+        {canUndo && (
           <Tooltip label={entry.action === 'delete' ? 'Wiederherstellen' : 'Rückgängig'}>
             <ActionIcon
               variant="subtle"
@@ -375,6 +395,14 @@ function HistoryEntryCard({ entry, onUndo, ctx }: { entry: ChangeHistoryEntry; o
             >
               <IconArrowBack size={16} />
             </ActionIcon>
+          </Tooltip>
+        )}
+
+        {!entry.undone && isCatalogEntity && !allowCatalogUndo && (
+          <Tooltip label="Katalog-Änderungen hier nicht rückgängig (Team)">
+            <Badge size="xs" variant="outline" color="gray" mt={2}>
+              Katalog
+            </Badge>
           </Tooltip>
         )}
 
@@ -389,6 +417,7 @@ function HistoryEntryCard({ entry, onUndo, ctx }: { entry: ChangeHistoryEntry; o
 }
 
 export function HistoryDrawer({ opened, onClose }: HistoryDrawerProps) {
+  const allowCatalogUndo = useHistoryUndoCatalog();
   const { changeHistory, undoChange, employees, skills, subcategories, categories, departments, roles } = useStore(
     useShallow((s) => ({
       changeHistory: s.changeHistory,
@@ -441,6 +470,7 @@ export function HistoryDrawer({ opened, onClose }: HistoryDrawerProps) {
                 entry={entry}
                 onUndo={() => handleUndo(entry.id!)}
                 ctx={ctx}
+                allowCatalogUndo={allowCatalogUndo}
               />
             ))}
           </Stack>

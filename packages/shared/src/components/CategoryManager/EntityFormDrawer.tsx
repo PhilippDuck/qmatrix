@@ -53,6 +53,8 @@ interface EntityFormDrawerProps {
   departments: Department[];
   roles: EmployeeRole[];
   subcategories?: any[]; // Allow grouped or flat data
+  /** Catalog read-only: view only, no save/delete (Team). */
+  readOnly?: boolean;
 }
 
 const MODE_LABELS: Record<FormMode, string> = {
@@ -83,6 +85,7 @@ export const EntityFormDrawer: React.FC<EntityFormDrawerProps> = ({
   departments,
   roles,
   subcategories = [],
+  readOnly = false,
 }) => {
   const [confirmationOpen, setConfirmationOpen] = React.useState(false);
 
@@ -164,13 +167,14 @@ export const EntityFormDrawer: React.FC<EntityFormDrawerProps> = ({
                 value={inputValue}
                 onChange={(e) => onInputChange(e.currentTarget.value)}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter" && inputValue.trim()) {
+                  if (e.key === "Enter" && inputValue.trim() && !readOnly) {
                     e.preventDefault();
                     handleCreate();
                   }
                 }}
                 data-autofocus
                 required
+                readOnly={readOnly}
               />
 
               <Textarea
@@ -180,6 +184,7 @@ export const EntityFormDrawer: React.FC<EntityFormDrawerProps> = ({
                 onChange={(e) => onDescriptionChange(e.currentTarget.value)}
                 minRows={4}
                 autosize
+                readOnly={readOnly}
               />
 
               {formMode === "skill" && (
@@ -194,19 +199,23 @@ export const EntityFormDrawer: React.FC<EntityFormDrawerProps> = ({
                     onChange={(val) => onDepartmentChange?.(val)}
                     clearable
                     searchable
+                    disabled={readOnly}
                   />
 
+                  {/* K18: role membership is SoT on RoleManager — skill form is reverse index only */}
                   <MultiSelect
-                    label="Erforderlich für Rollen / Level (Optional)"
-                    placeholder="Wähle Rollen aus"
+                    label="Gefordert von Rollen (Anzeige)"
+                    description="Rollen-Zuordnung und Level unter Stammdaten → Rollen bearbeiten"
+                    placeholder="Keine Rollen verknüpft"
                     data={roles.map(r => ({ value: r.id!, label: r.name }))}
                     value={selectedRoleIds || []}
-                    onChange={(vals) => onRolesChange?.(vals)}
+                    onChange={() => { /* read-only reverse index */ }}
                     searchable
-                    clearable
+                    readOnly
+                    disabled
                   />
 
-                  {!editingId && onSubcategoriesChange && (
+                  {!editingId && !readOnly && onSubcategoriesChange && (
                     <MultiSelect
                       label="Auch anderen Kategorien hinzufügen (Kopie)"
                       placeholder="Wähle weitere Unterkategorien"
@@ -225,20 +234,22 @@ export const EntityFormDrawer: React.FC<EntityFormDrawerProps> = ({
           </Box>
 
           <Group justify="space-between" mt="md" pt="md" style={{ borderTop: '1px solid var(--mantine-color-default-border)' }}>
-            {editingId && onDelete ? (
+            {editingId && onDelete && !readOnly ? (
               <Button variant="light" color="red" onClick={onDelete}>
                 Löschen
               </Button>
             ) : (
-              <div /> // Spacer if no delete button
+              <div />
             )}
             <Group gap="sm">
               <Button variant="subtle" color="gray" onClick={handleCloseAttempt}>
-                Abbrechen
+                {readOnly ? "Schließen" : "Abbrechen"}
               </Button>
-              <Button onClick={handleCreate} color="blue">
-                Speichern
-              </Button>
+              {!readOnly && (
+                <Button onClick={handleCreate} color="blue">
+                  Speichern
+                </Button>
+              )}
             </Group>
           </Group>
         </Stack>

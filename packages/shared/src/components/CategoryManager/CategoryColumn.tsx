@@ -27,6 +27,8 @@ interface CategoryColumnProps {
   onEdit: (category: Category) => void;
   onDelete: (categoryId: string) => void;
   getSubcategoryCount: (categoryId: string) => number;
+  /** When true, hide add/edit/delete (Team catalog read-only). */
+  readOnly?: boolean;
 }
 
 export const CategoryColumn: React.FC<CategoryColumnProps> = ({
@@ -37,6 +39,7 @@ export const CategoryColumn: React.FC<CategoryColumnProps> = ({
   onEdit,
   onDelete,
   getSubcategoryCount,
+  readOnly = false,
 }) => {
   return (
     <Card withBorder shadow="sm" radius="md" style={{ flex: 1 }}>
@@ -45,14 +48,16 @@ export const CategoryColumn: React.FC<CategoryColumnProps> = ({
           <IconCategory size={20} style={{ color: "var(--mantine-color-dimmed)" }} />
           <Title order={4}>Kategorien</Title>
         </Group>
-        <Button
-          size="compact-xs"
-          variant="light"
-          leftSection={<IconPlus size={14} />}
-          onClick={onAdd}
-        >
-          Neu
-        </Button>
+        {!readOnly && (
+          <Button
+            size="compact-xs"
+            variant="light"
+            leftSection={<IconPlus size={14} />}
+            onClick={onAdd}
+          >
+            Neu
+          </Button>
+        )}
       </Group>
 
       <Table verticalSpacing="sm" highlightOnHover>
@@ -99,29 +104,36 @@ export const CategoryColumn: React.FC<CategoryColumnProps> = ({
                 </Group>
               </Table.Td>
               <Table.Td style={{ width: 70 }}>
-                <Group gap={4} justify="flex-end">
-                  <ActionIcon
-                    size="sm"
-                    variant="subtle"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onEdit(cat);
-                    }}
-                  >
-                    <IconEdit size={14} />
-                  </ActionIcon>
-                  <ActionIcon
-                    size="sm"
-                    variant="subtle"
-                    color="red"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (confirm("Kategorie löschen?")) onDelete(cat.id!);
-                    }}
-                  >
-                    <IconTrash size={14} />
-                  </ActionIcon>
-                </Group>
+                {!readOnly && (
+                  <Group gap={4} justify="flex-end">
+                    <ActionIcon
+                      size="sm"
+                      variant="subtle"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEdit(cat);
+                      }}
+                    >
+                      <IconEdit size={14} />
+                    </ActionIcon>
+                    <ActionIcon
+                      size="sm"
+                      variant="subtle"
+                      color="red"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (confirm("Kategorie löschen?")) onDelete(cat.id!);
+                      }}
+                    >
+                      <IconTrash size={14} />
+                    </ActionIcon>
+                  </Group>
+                )}
+                {cat.catalogDeprecated && (
+                  <Badge size="xs" color="gray" variant="outline">
+                    Veraltet
+                  </Badge>
+                )}
               </Table.Td>
             </Table.Tr>
           ))}

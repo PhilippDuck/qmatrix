@@ -8,6 +8,7 @@ import {
   Title,
   Text,
   Tooltip,
+  Badge,
 } from "@mantine/core";
 import {
   IconPlus,
@@ -24,6 +25,7 @@ interface SkillColumnProps {
   onAdd: () => void;
   onEdit: (skill: Skill) => void;
   onDelete: (skillId: string) => void;
+  readOnly?: boolean;
 }
 
 export const SkillColumn: React.FC<SkillColumnProps> = ({
@@ -32,6 +34,7 @@ export const SkillColumn: React.FC<SkillColumnProps> = ({
   onAdd,
   onEdit,
   onDelete,
+  readOnly = false,
 }) => {
   return (
     <Card
@@ -45,15 +48,17 @@ export const SkillColumn: React.FC<SkillColumnProps> = ({
           <IconTarget size={20} style={{ color: "var(--mantine-color-dimmed)" }} />
           <Title order={4}>Skills</Title>
         </Group>
-        <Button
-          size="compact-xs"
-          variant="light"
-          disabled={!isEnabled}
-          leftSection={<IconPlus size={14} />}
-          onClick={onAdd}
-        >
-          Neu
-        </Button>
+        {!readOnly && (
+          <Button
+            size="compact-xs"
+            variant="light"
+            disabled={!isEnabled}
+            leftSection={<IconPlus size={14} />}
+            onClick={onAdd}
+          >
+            Neu
+          </Button>
+        )}
       </Group>
 
       {isEnabled ? (
@@ -63,7 +68,14 @@ export const SkillColumn: React.FC<SkillColumnProps> = ({
               <Table.Tr key={skill.id}>
                 <Table.Td>
                   <Group gap="xs">
-                    <Text size="sm">{skill.name}</Text>
+                    <Text size="sm" c={skill.catalogDeprecated ? "dimmed" : undefined}>
+                      {skill.name}
+                    </Text>
+                    {skill.catalogDeprecated && (
+                      <Badge size="xs" color="gray" variant="outline">
+                        Veraltet
+                      </Badge>
+                    )}
                     {skill.description && (
                       <Tooltip
                         label={skill.description}
@@ -77,25 +89,38 @@ export const SkillColumn: React.FC<SkillColumnProps> = ({
                   </Group>
                 </Table.Td>
                 <Table.Td style={{ width: 70 }}>
-                  <Group gap={4} justify="flex-end">
-                    <ActionIcon
-                      size="sm"
-                      variant="subtle"
-                      onClick={() => onEdit(skill)}
-                    >
-                      <IconEdit size={14} />
-                    </ActionIcon>
-                    <ActionIcon
-                      size="sm"
-                      variant="subtle"
-                      color="red"
-                      onClick={() => {
-                        if (confirm("Skill löschen?")) onDelete(skill.id!);
-                      }}
-                    >
-                      <IconTrash size={14} />
-                    </ActionIcon>
-                  </Group>
+                  {!readOnly ? (
+                    <Group gap={4} justify="flex-end">
+                      <ActionIcon
+                        size="sm"
+                        variant="subtle"
+                        onClick={() => onEdit(skill)}
+                      >
+                        <IconEdit size={14} />
+                      </ActionIcon>
+                      <ActionIcon
+                        size="sm"
+                        variant="subtle"
+                        color="red"
+                        onClick={() => {
+                          if (confirm("Skill löschen?")) onDelete(skill.id!);
+                        }}
+                      >
+                        <IconTrash size={14} />
+                      </ActionIcon>
+                    </Group>
+                  ) : (
+                    <Group gap={4} justify="flex-end">
+                      <ActionIcon
+                        size="sm"
+                        variant="subtle"
+                        onClick={() => onEdit(skill)}
+                        title="Details anzeigen"
+                      >
+                        <IconEdit size={14} />
+                      </ActionIcon>
+                    </Group>
+                  )}
                 </Table.Td>
               </Table.Tr>
             ))}
