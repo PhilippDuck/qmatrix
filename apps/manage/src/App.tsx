@@ -161,19 +161,21 @@ const App: FC = () => {
         <Notifications position="top-right" />
         <PrivacyProvider>
           <AppShell
-            header={{ height: 56 }}
+            header={{ height: 60 }}
             navbar={{
-              width: collapsed ? 72 : 260,
+              width: collapsed ? 70 : 240,
               breakpoint: "sm",
               collapsed: { mobile: !opened },
             }}
             padding="md"
+            transitionDuration={0}
+            styles={{ root: { height: "100dvh" } }}
           >
             <AppShell.Header>
               <Group h="100%" px="md" justify="space-between">
                 <Group gap="sm">
                   <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
-                  {/* Same placement as Full: chevron left of logo in header */}
+                  {/* Sidebar collapse — same place as Full (header, left of logo) */}
                   <ActionIcon
                     variant="subtle"
                     onClick={() => setCollapsed((c) => !c)}
@@ -187,41 +189,49 @@ const App: FC = () => {
                       <IconChevronLeft size={18} />
                     )}
                   </ActionIcon>
-                  <SkillGridLogo size={collapsed ? 28 : 32} />
-                  {!collapsed && (
-                    <div>
-                      <Group gap="xs">
-                        <Title order={4} c="indigo">
+                  <Group gap="xs">
+                    <SkillGridLogo size={collapsed ? 28 : 32} />
+                    {!collapsed && (
+                      <>
+                        <Title
+                          order={4}
+                          c="indigo"
+                          style={{
+                            letterSpacing: -0.5,
+                            fontSize: "1.1rem",
+                            userSelect: "none",
+                          }}
+                        >
                           SkillGrid Manage
                         </Title>
-                        <Badge variant="light" color="indigo" size="sm">
-                          Katalog-Verwaltung
+                        <Badge variant="light" color="indigo" size="xs">
+                          Katalog
                         </Badge>
                         {installedCatalogMeta?.version && (
-                          <Badge variant="outline" color="gray" size="sm">
-                            freigegeben v{installedCatalogMeta.version}
+                          <Badge variant="outline" color="gray" size="xs">
+                            v{installedCatalogMeta.version}
                           </Badge>
                         )}
                         {hasUnpublishedCatalogChanges && (
-                          <Badge variant="filled" color="orange" size="sm">
-                            ungesicherte Änderungen
+                          <Badge variant="filled" color="orange" size="xs">
+                            ungesichert
                           </Badge>
                         )}
-                      </Group>
-                      {projectTitle && (
-                        <Text size="xs" c="dimmed">
-                          {projectTitle}
-                        </Text>
-                      )}
-                    </div>
-                  )}
-                  {collapsed && hasUnpublishedCatalogChanges && (
-                    <Badge variant="filled" color="orange" size="sm">
-                      ungesichert
-                    </Badge>
-                  )}
+                      </>
+                    )}
+                    {collapsed && hasUnpublishedCatalogChanges && (
+                      <Badge variant="filled" color="orange" size="xs">
+                        ·
+                      </Badge>
+                    )}
+                  </Group>
                 </Group>
                 <Group gap="xs">
+                  {!collapsed && projectTitle && (
+                    <Text size="sm" c="dimmed" visibleFrom="md" lineClamp={1} maw={220}>
+                      {projectTitle}
+                    </Text>
+                  )}
                   <Badge variant="outline" color="gray" size="sm">
                     Manage {APP_VERSION}
                   </Badge>
@@ -230,27 +240,65 @@ const App: FC = () => {
               </Group>
             </AppShell.Header>
 
-            <AppShell.Navbar p="md">
-              <Stack gap="xs" style={{ flex: 1 }}>
+            <AppShell.Navbar p="xs" style={{ display: "flex", flexDirection: "column" }}>
+              <Stack gap={4} style={{ flex: 1 }}>
                 {NAV_ITEMS.map((item) => (
-                  <NavLink
+                  <Tooltip
                     key={item.value}
-                    label={collapsed ? undefined : item.label}
-                    leftSection={<item.icon size={18} />}
-                    active={activeTab === item.value}
-                    onClick={() => {
-                      setActiveTab(item.value);
-                      if (opened) toggle();
-                    }}
-                  />
+                    label={item.label}
+                    position="right"
+                    disabled={!collapsed}
+                    withArrow
+                    offset={15}
+                  >
+                    <NavLink
+                      label={
+                        !collapsed ? (
+                          <Text size="sm" fw={500}>
+                            {item.label}
+                          </Text>
+                        ) : null
+                      }
+                      leftSection={
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                        >
+                          <item.icon size={18} stroke={1.5} />
+                        </div>
+                      }
+                      active={activeTab === item.value}
+                      onClick={() => {
+                        setActiveTab(item.value);
+                        if (opened) toggle();
+                      }}
+                      variant="light"
+                      color="indigo"
+                      style={{
+                        borderRadius: 6,
+                        height: 40,
+                      }}
+                    />
+                  </Tooltip>
                 ))}
               </Stack>
               {!collapsed && (
-                <Text size="xs" c="dimmed" px="xs" mb="sm">
-                  Zentrale Pflege von Skills & Rollen. Nach Änderungen eine{" "}
-                  <strong>Version freigeben</strong> und die Datei in Team
-                  importieren.
-                </Text>
+                <Box
+                  py="sm"
+                  px="xs"
+                  style={{
+                    borderTop: "1px solid var(--mantine-color-default-border)",
+                    marginTop: "auto",
+                  }}
+                >
+                  <Text size="xs" c="dimmed">
+                    Nach Änderungen eine <strong>Version freigeben</strong> und
+                    die Datei in Team importieren.
+                  </Text>
+                </Box>
               )}
             </AppShell.Navbar>
 
