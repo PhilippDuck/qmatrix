@@ -58,6 +58,8 @@ import { PrivacyProvider, usePrivacy } from "@skillgrid/shared/context/PrivacyCo
 import { ModalsProvider } from "@mantine/modals";
 import { Notifications } from "@mantine/notifications";
 import type { AppTab, NavParams } from "@skillgrid/shared/types";
+/** Team-only changelog — not the Full/repo CHANGELOG */
+import teamChangelog from "../CHANGELOG.md?raw";
 import "@mantine/core/styles.css";
 import "@mantine/dates/styles.css";
 import "@mantine/notifications/styles.css";
@@ -752,7 +754,12 @@ function AppContent() {
       </AppShell.Main>
       <HistoryDrawer opened={historyOpened} onClose={closeHistory} />
       {/* No WelcomeModal in Team — start with catalog import / ops data, not skill authoring */}
-      <ChangelogModal opened={changelogOpened} onClose={closeChangelog} />
+      <ChangelogModal
+        opened={changelogOpened}
+        onClose={closeChangelog}
+        content={teamChangelog}
+        appName="SkillGrid Team"
+      />
       <PrivacyModal opened={privacyOpened} onClose={closePrivacy} />
     </AppShell>
   );

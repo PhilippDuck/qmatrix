@@ -751,7 +751,11 @@ function AppContent() {
       </AppShell.Main>
       <HistoryDrawer opened={historyOpened} onClose={closeHistory} />
       <WelcomeModal />
-      <ChangelogModal opened={changelogOpened} onClose={closeChangelog} />
+      <ChangelogModal
+        opened={changelogOpened}
+        onClose={closeChangelog}
+        appName="SkillGrid"
+      />
       <PrivacyModal opened={privacyOpened} onClose={closePrivacy} />
     </AppShell>
   );
