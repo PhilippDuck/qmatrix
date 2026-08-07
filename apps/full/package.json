@@ -1,0 +1,17 @@
+{
+  "name": "@skillgrid/full",
+  "private": true,
+  "version": "2.25.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port 5173",
+    "prebuild": "npm run test:run --prefix ../..",
+    "build": "vite build",
+    "preview": "vite preview --port 4173",
+    "test": "npm run test --prefix ../..",
+    "test:run": "npm run test:run --prefix ../.."
+  },
+  "dependencies": {
+    "@skillgrid/shared": "*"
+  }
+}

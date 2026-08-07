@@ -43,6 +43,24 @@ Voraussetzung: [Node.js](https://nodejs.org/) ist installiert.
     ```
 4.  Browser öffnen auf `http://localhost:5173`.
 
+### Monorepo (in Arbeit)
+
+Das Repo nutzt **npm workspaces** als Vorbereitung auf drei Apps (Full / Manage / Team). Aktuell:
+
+| Pfad | Package | Status |
+|------|---------|--------|
+| `apps/full` | `@skillgrid/full` | aktive App (gleicher Funktionsumfang) |
+| `packages/shared` | `@skillgrid/shared` | Spike-Exports; Domain/UI folgen |
+| Root `src/` | – | kanonischer App-Code bis Extract (PR 2a–2c) |
+
+```bash
+npm run dev          # = dev:full
+npm run build:full   # Tests + singlefile/PWA-Build von apps/full
+npm run dev:legacy   # optional: altes Root-Vite (src/ + vite.config.js)
+```
+
+Design: [`docs/design-monorepo-full-manage-team.md`](./docs/design-monorepo-full-manage-team.md)
+
 ## Nutzungshinweise
 
 ### Datenhaltung

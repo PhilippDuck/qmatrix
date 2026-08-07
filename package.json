@@ -1,14 +1,20 @@
 {
-  "name": "skillgrid",
+  "name": "skillgrid-monorepo",
   "private": true,
   "version": "2.25.0",
   "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
   "scripts": {
-    "dev": "vite",
-    "prebuild": "vitest run",
-    "build": "vite build",
+    "dev": "npm run dev -w @skillgrid/full",
+    "dev:full": "npm run dev -w @skillgrid/full",
+    "dev:legacy": "vite",
+    "build": "npm run build:full",
+    "build:full": "npm run build -w @skillgrid/full",
     "lint": "eslint .",
-    "preview": "vite preview",
+    "preview": "npm run preview -w @skillgrid/full",
     "test": "vitest",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
