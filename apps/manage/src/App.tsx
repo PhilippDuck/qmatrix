@@ -44,6 +44,8 @@ import { SystemDangerZone } from "@skillgrid/shared/components/SystemDangerZone"
 import { ManageGlobalBackup } from "@skillgrid/shared/components/ManageGlobalBackup";
 import { PrivacyProvider } from "@skillgrid/shared/context/PrivacyContext";
 import { SkillGridLogo } from "@skillgrid/shared/components/shared/SkillGridLogo";
+/** Always in sync with apps/manage/package.json (not Katalog-Release, not Full). */
+import managePackage from "../package.json";
 import "@mantine/core/styles.css";
 import "@mantine/dates/styles.css";
 import "@mantine/notifications/styles.css";
@@ -52,11 +54,8 @@ const theme = createTheme({
   primaryColor: "indigo",
 });
 
-/**
- * App version from apps/manage/package.json via Vite define
- * (independent of Full 2.x and of Katalog-Release-Version).
- */
-const APP_VERSION = `v${__APP_VERSION__}`;
+/** Source of truth: apps/manage/package.json → shown as "App vX.Y.Z". */
+const APP_VERSION = `v${managePackage.version}`;
 const APP_VERSION_LABEL = `App ${APP_VERSION}`;
 
 type ManageTab = "skills" | "roles" | "releases" | "system";

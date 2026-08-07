@@ -8,20 +8,24 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "../..");
-const pkg = JSON.parse(readFileSync(path.join(__dirname, "package.json"), "utf-8"));
+const pkg = JSON.parse(
+  readFileSync(path.join(__dirname, "package.json"), "utf-8")
+) as { version: string };
 const isDev = process.env.NODE_ENV !== "production";
 
 /**
  * SkillGrid manage — monorepo app shell.
  *
- * App shell lives in apps/full; domain UI/store/services live in @skillgrid/shared.
+ * App version: apps/manage/package.json (imported in App.tsx + define fallback).
  * Resolves shared source via aliases (K12, no dist build of shared in phase 1).
  */
 export default defineConfig({
   root: __dirname,
   publicDir: path.join(repoRoot, "public"),
   define: {
+    // Fallback if anything still references the global; App.tsx imports package.json
     __APP_VERSION__: JSON.stringify(pkg.version),
+    "import.meta.env.VITE_APP_VERSION": JSON.stringify(pkg.version),
   },
   resolve: {
     // Longer / more specific finds first

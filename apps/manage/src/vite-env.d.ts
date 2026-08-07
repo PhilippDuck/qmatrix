@@ -1,4 +1,9 @@
 /// <reference types="vite/client" />
 
-/** Injected by Vite define in apps/full/vite.config.ts */
+/** Fallback inject from apps/manage/vite.config.ts (prefer package.json import). */
 declare const __APP_VERSION__: string;
+
+declare module "*.json" {
+  const value: { name?: string; version: string; [key: string]: unknown };
+  export default value;
+}
