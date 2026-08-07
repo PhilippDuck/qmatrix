@@ -145,6 +145,9 @@ export interface DataMgmtSlice {
   clearAllData: () => Promise<void>;
 }
 
+// CatalogSlice defined in slices/catalogSlice to keep apply types co-located
+export type { CatalogSlice } from "./slices/catalogSlice";
+
 export type AppState = CoreSlice &
   EmployeeSlice &
   HierarchySlice &
@@ -153,4 +156,5 @@ export type AppState = CoreSlice &
   QualificationSlice &
   ViewSlice &
   HistorySlice &
-  DataMgmtSlice;
+  DataMgmtSlice &
+  import("./slices/catalogSlice").CatalogSlice;

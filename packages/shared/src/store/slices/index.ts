@@ -7,3 +7,5 @@ export { createQualificationSlice } from "./qualificationSlice";
 export { createViewSlice } from "./viewSlice";
 export { createHistorySlice } from "./historySlice";
 export { createDataMgmtSlice } from "./dataMgmtSlice";
+export { createCatalogSlice } from "./catalogSlice";
+export type { CatalogSlice } from "./catalogSlice";

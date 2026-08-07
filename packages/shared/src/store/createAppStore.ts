@@ -13,6 +13,7 @@ import {
   createViewSlice,
   createHistorySlice,
   createDataMgmtSlice,
+  createCatalogSlice,
 } from "./slices";
 
 export interface CreateAppStoreDeps {
@@ -40,5 +41,6 @@ export function createAppStore(deps: CreateAppStoreDeps): AppStoreApi {
     ...createViewSlice(db, caps)(...a),
     ...createHistorySlice(db, caps)(...a),
     ...createDataMgmtSlice(db, caps)(...a),
+    ...createCatalogSlice(db, caps)(...a),
   }));
 }

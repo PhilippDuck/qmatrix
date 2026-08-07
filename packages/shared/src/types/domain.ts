@@ -15,11 +15,16 @@ export interface Employee {
   updatedAt?: number;
 }
 
+/** Provenance of catalog entities after Manage/Team import (K20). */
+export type CatalogSource = "catalog" | "local";
+
 export interface Category {
   id?: string;
   name: string;
   description?: string;
   updatedAt?: number;
+  catalogSource?: CatalogSource;
+  catalogDeprecated?: boolean;
 }
 
 export interface SubCategory {
@@ -29,6 +34,8 @@ export interface SubCategory {
   name: string;
   description?: string;
   updatedAt?: number;
+  catalogSource?: CatalogSource;
+  catalogDeprecated?: boolean;
 }
 
 export interface Skill {
@@ -39,6 +46,8 @@ export interface Skill {
   departmentId?: string;
   requiredByRoleIds?: string[];
   updatedAt?: number;
+  catalogSource?: CatalogSource;
+  catalogDeprecated?: boolean;
 }
 
 export type SkillLevel = -1 | 0 | 25 | 50 | 75 | 100;
@@ -76,12 +85,25 @@ export interface EmployeeRole {
   icon?: string; // Tabler icon name, e.g. "IconUser"
   requiredSkills?: { skillId: string; level: number }[];
   updatedAt?: number;
+  catalogSource?: CatalogSource;
+  catalogDeprecated?: boolean;
 }
 
 export interface AppSettings {
   id: string; // usually 'default'
   projectTitle: string;
   updatedAt: number;
+  /** Last successfully applied catalog package meta (Manage SoT). */
+  installedCatalogMeta?: {
+    catalogId: string;
+    name: string;
+    version: string;
+    publishedAt: string;
+    publisher?: string;
+    changelog: { version: string; date: string; notes: string }[];
+    minAppFormatVersion: number;
+    partial?: boolean;
+  };
 }
 
 export interface QualificationPlan {
@@ -160,7 +182,8 @@ export type EntityType =
   | "qualificationPlan"
   | "qualificationMeasure"
   | "assessment"
-  | "savedView";
+  | "savedView"
+  | "catalog";
 
 export type ChangeAction = "create" | "update" | "delete";
 

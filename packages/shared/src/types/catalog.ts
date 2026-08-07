@@ -121,3 +121,55 @@ export interface CatalogExtractResult {
   report: CatalogExtractReport;
   errors: CatalogValidationIssue[];
 }
+
+export type CatalogMissingPolicy = "soft" | "hard" | "keep";
+
+export interface CatalogApplyOptions {
+  upsert?: boolean; // default true
+  missingPolicy?: CatalogMissingPolicy; // default soft
+  /** Allow installing a lower SemVer than currently installed */
+  allowDowngrade?: boolean;
+  /** Allow switching catalogId */
+  allowCatalogIdChange?: boolean;
+}
+
+export interface CatalogApplyReport {
+  added: Record<CatalogEntityKind, number>;
+  updated: Record<CatalogEntityKind, number>;
+  deprecated: Record<CatalogEntityKind, number>;
+  hardRemoved: Record<CatalogEntityKind, number>;
+  roleNameRewrites: number;
+  orphanAssessments: number;
+  orphanMeasures: number;
+  hierarchyWarnings: number;
+  warnings: string[];
+  previousVersion?: SemVer;
+  newVersion: SemVer;
+  catalogId: string;
+}
+
+export interface CatalogApplyResult {
+  ok: boolean;
+  report?: CatalogApplyReport;
+  errors: CatalogValidationIssue[];
+}
+
+/** Selective ops import from ExportData without catalog stores (Team MVP). */
+export interface OpsImportOptions {
+  employees?: boolean;
+  departments?: boolean;
+  assessments?: boolean;
+  history?: boolean;
+  qualificationPlans?: boolean;
+  qualificationMeasures?: boolean;
+  savedViews?: boolean;
+  settings?: boolean;
+  /** default false — never overwrite catalog via this path */
+  includeCatalog?: boolean;
+}
+
+export interface OpsImportReport {
+  imported: Partial<Record<string, number>>;
+  skipped: string[];
+  warnings: string[];
+}

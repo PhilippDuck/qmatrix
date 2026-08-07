@@ -32,3 +32,8 @@ export {
   recomputeRequiredByRoleIds,
   canonicalEntitiesJson,
 } from "./catalog";
+export {
+  applyCatalogPackage,
+  importOpsFromExportData,
+} from "./catalogApply";
+export type { CatalogApplyDb } from "./catalogApply";

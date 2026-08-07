@@ -8,7 +8,7 @@ export const SHARED_SPIKE = "skillgrid-shared-ok" as const;
 
 export const SHARED_SPIKE_META = {
   package: "@skillgrid/shared",
-  phase: "pr6-catalog-schema",
+  phase: "pr7-catalog-apply",
 } as const;
 
 export type * from "./types";
@@ -43,6 +43,10 @@ export {
   catalogDownloadFilename,
   recomputeRequiredByRoleIds,
 } from "./services/catalog";
+export {
+  applyCatalogPackage,
+  importOpsFromExportData,
+} from "./services/catalogApply";
 export {
   CATALOG_FORMAT,
   CATALOG_FORMAT_VERSION,
