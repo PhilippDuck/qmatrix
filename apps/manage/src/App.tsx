@@ -219,6 +219,8 @@ const App: FC = () => {
 
   const [isEditingCatalogName, setIsEditingCatalogName] = useState(false);
   const [tempCatalogName, setTempCatalogName] = useState("");
+  /** User dismissed empty welcome (can still use nav while catalog is empty). */
+  const [skipEmptyOnboarding, setSkipEmptyOnboarding] = useState(false);
 
   const {
     loading,
@@ -292,6 +294,16 @@ const App: FC = () => {
       void updateProjectTitle(installedCatalogMeta.name.trim());
     }
   }, [loading, projectTitle, installedCatalogMeta?.name, updateProjectTitle]);
+
+  const isCatalogEmpty =
+    categories.length === 0 && skills.length === 0 && roles.length === 0;
+
+  // After data exists, allow onboarding again if catalog is later wiped
+  useEffect(() => {
+    if (!isCatalogEmpty) {
+      setSkipEmptyOnboarding(false);
+    }
+  }, [isCatalogEmpty]);
 
   // Keep header "ungesicherte Änderungen" badge in sync while editing skills/roles
   useEffect(() => {
@@ -628,13 +640,16 @@ const App: FC = () => {
             </AppShell.Navbar>
 
             <AppShell.Main>
-              {!loading &&
-              categories.length === 0 &&
-              skills.length === 0 &&
-              roles.length === 0 ? (
+              {!loading && isCatalogEmpty && !skipEmptyOnboarding ? (
                 <ManageEmptyOnboarding
-                  onStartSkills={() => setActiveTab("skills")}
-                  onStartImport={() => setActiveTab("releases")}
+                  onStartSkills={() => {
+                    setSkipEmptyOnboarding(true);
+                    setActiveTab("skills");
+                  }}
+                  onStartImport={() => {
+                    setSkipEmptyOnboarding(true);
+                    setActiveTab("releases");
+                  }}
                 />
               ) : (
                 <>

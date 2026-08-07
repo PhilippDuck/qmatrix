@@ -141,8 +141,13 @@ export const ManageEmptyOnboarding: React.FC<ManageEmptyOnboardingProps> = ({
               loading={busy}
               onClick={() => void loadDemo()}
               fullWidth
+              styles={{
+                root: { height: "auto", minHeight: 36, paddingBlock: 8 },
+                label: { whiteSpace: "normal", lineHeight: 1.3 },
+                inner: { flexWrap: "wrap" },
+              }}
             >
-              Demo-Katalog laden
+              Demo laden
             </Button>
           </Stack>
         </Card>
@@ -166,8 +171,13 @@ export const ManageEmptyOnboarding: React.FC<ManageEmptyOnboardingProps> = ({
               onClick={onStartSkills}
               fullWidth
               disabled={busy}
+              styles={{
+                root: { height: "auto", minHeight: 36, paddingBlock: 8 },
+                label: { whiteSpace: "normal", lineHeight: 1.3 },
+                inner: { flexWrap: "wrap" },
+              }}
             >
-              Zu Skills & Kategorien
+              Skills öffnen
             </Button>
           </Stack>
         </Card>
@@ -191,8 +201,13 @@ export const ManageEmptyOnboarding: React.FC<ManageEmptyOnboardingProps> = ({
               onClick={onStartImport}
               fullWidth
               disabled={busy}
+              styles={{
+                root: { height: "auto", minHeight: 36, paddingBlock: 8 },
+                label: { whiteSpace: "normal", lineHeight: 1.3 },
+                inner: { flexWrap: "wrap" },
+              }}
             >
-              Zu Versionen & Import
+              Import öffnen
             </Button>
           </Stack>
         </Card>
