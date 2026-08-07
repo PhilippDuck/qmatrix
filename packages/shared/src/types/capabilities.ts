@@ -69,7 +69,7 @@ export const fullCapabilities: AppCapabilities = {
   stammdatenRoles: true,
   stammdatenSkills: true,
   dbName: "QualificationMatrixDB",
-  dbVersion: 12,
+  dbVersion: 13,
   localStoragePrefix: "skillgrid-full-",
 };
 
@@ -97,7 +97,7 @@ export const manageCapabilities: AppCapabilities = {
   stammdatenRoles: true,
   stammdatenSkills: true,
   dbName: "SkillGridManageDB",
-  dbVersion: 12,
+  dbVersion: 13,
   localStoragePrefix: "skillgrid-manage-",
 };
 
@@ -125,6 +125,6 @@ export const teamCapabilities: AppCapabilities = {
   stammdatenRoles: true,
   stammdatenSkills: true,
   dbName: "SkillGridTeamDB",
-  dbVersion: 12,
+  dbVersion: 13,
   localStoragePrefix: "skillgrid-team-",
 };

@@ -88,6 +88,13 @@ export const createCoreSlice = (db: DbService, storage: PrefixedStorage, _caps: 
         loading: false,
         error: null,
       });
+
+      // Load catalog release archive + dirty flag (Manage / optional)
+      try {
+        await get().refreshCatalogReleases?.();
+      } catch {
+        /* optional until catalog slice present */
+      }
     } catch (err) {
       set({
         error: err instanceof Error ? err.message : "Failed to load data",

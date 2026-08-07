@@ -1,8 +1,12 @@
-import type { DbService } from "../../services/indexeddb";
+import type {
+  DbService,
+  StoredCatalogRelease,
+} from "../../services/indexeddb";
 import type { AppCapabilities } from "../../types/capabilities";
 import type {
   CatalogApplyOptions,
   CatalogApplyResult,
+  CatalogEntities,
   CatalogExtractMetaInput,
   CatalogExtractResult,
   CatalogPackage,
@@ -17,12 +21,17 @@ import {
   catalogDownloadFilename,
   bumpSemVer,
   isValidSemVer,
+  computeContentHash,
   type SemVerBump,
 } from "../../services/catalog";
 import {
   applyCatalogPackage,
   importOpsFromExportData,
 } from "../../services/catalogApply";
+import {
+  diffCatalogEntities,
+  type CatalogDiffResult,
+} from "../../services/catalogDiff";
 import { checkCapability } from "../capabilities";
 import type { AppSlice } from "../types";
 
@@ -42,17 +51,29 @@ export interface PublishCatalogOptions {
 export interface CatalogSlice {
   lastCatalogApplyReport: CatalogApplyResult["report"] | null;
   lastCatalogExtractWarnings: string[];
+  /** Last 10 published snapshots (newest first), loaded from IndexedDB. */
+  storedCatalogReleases: StoredCatalogRelease[];
+  /** Live catalog differs from newest stored release. */
+  hasUnpublishedCatalogChanges: boolean;
 
   extractCatalog: (
     meta: CatalogExtractMetaInput
   ) => Promise<CatalogExtractResult>;
   downloadCatalogPackage: (pkg: CatalogPackage) => void;
   /**
-   * Manage release: bump version, append changelog, persist meta, download package.
+   * Manage release: bump version, append changelog, persist snapshot (max 10), download.
    */
   publishCatalogRelease: (
     options: PublishCatalogOptions
   ) => Promise<CatalogExtractResult>;
+  refreshCatalogReleases: () => Promise<void>;
+  /** Recompute dirty flag vs latest stored release. */
+  refreshCatalogDirtyState: () => Promise<void>;
+  /** Diff current live catalog against a stored release (or latest if id omitted). */
+  diffAgainstRelease: (releaseId?: string) => Promise<CatalogDiffResult | null>;
+  /** Restore live catalog to a stored release snapshot. */
+  rollbackToRelease: (releaseId: string) => Promise<CatalogApplyResult>;
+  redownloadRelease: (releaseId: string) => Promise<void>;
   importCatalog: (
     jsonOrPackage: string | unknown,
     options?: CatalogApplyOptions
@@ -63,11 +84,47 @@ export interface CatalogSlice {
   ) => Promise<OpsImportReport>;
 }
 
+function liveEntitiesFromState(state: {
+  categories: { id?: string; name: string; description?: string }[];
+  subcategories: {
+    id?: string;
+    categoryId: string;
+    parentSubCategoryId?: string;
+    name: string;
+    description?: string;
+  }[];
+  skills: {
+    id?: string;
+    subCategoryId: string;
+    name: string;
+    description?: string;
+    requiredByRoleIds?: string[];
+    departmentId?: string;
+  }[];
+  roles: {
+    id?: string;
+    name: string;
+    description?: string;
+    inheritsFromId?: string;
+    icon?: string;
+    requiredSkills?: { skillId: string; level: number }[];
+  }[];
+}): CatalogEntities | null {
+  const extract = extractCatalogFromState(state, {
+    catalogId: "live",
+    name: "live",
+    version: "0.0.0",
+  });
+  return extract.package?.entities ?? null;
+}
+
 export const createCatalogSlice =
   (db: DbService, caps: AppCapabilities): AppSlice<CatalogSlice> =>
   (set, get) => ({
     lastCatalogApplyReport: null,
     lastCatalogExtractWarnings: [],
+    storedCatalogReleases: [],
+    hasUnpublishedCatalogChanges: false,
 
     extractCatalog: async (meta) => {
       const denied = checkCapability(caps, "catalogExport", "extractCatalog");
@@ -256,6 +313,26 @@ export const createCatalogSlice =
       const meta: CatalogMeta = pkg.meta;
       await get().setInstalledCatalogMeta(meta);
 
+      // Archive full snapshot (keep last 10)
+      try {
+        const release: StoredCatalogRelease = {
+          id: pkg.meta.version,
+          version: pkg.meta.version,
+          publishedAt: pkg.meta.publishedAt,
+          notes: newEntry.notes,
+          contentHash: pkg.contentHash || (await computeContentHash(pkg.entities)),
+          package: pkg,
+        };
+        const list = await db.saveCatalogRelease(release);
+        set({
+          storedCatalogReleases: list,
+          hasUnpublishedCatalogChanges: false,
+        });
+      } catch (e) {
+        console.error("Failed to archive catalog release", e);
+        // still return success for download path
+      }
+
       if (options.download !== false) {
         get().downloadCatalogPackage(pkg);
       }
@@ -267,6 +344,131 @@ export const createCatalogSlice =
       });
 
       return { ...extract, package: pkg, ok: true };
+    },
+
+    refreshCatalogReleases: async () => {
+      try {
+        const list = await db.getCatalogReleases();
+        set({ storedCatalogReleases: list });
+        await get().refreshCatalogDirtyState();
+      } catch (e) {
+        console.error(e);
+        set({ storedCatalogReleases: [] });
+      }
+    },
+
+    refreshCatalogDirtyState: async () => {
+      try {
+        const state = get();
+        const live = liveEntitiesFromState(state);
+        if (!live) {
+          set({ hasUnpublishedCatalogChanges: false });
+          return;
+        }
+        const releases =
+          state.storedCatalogReleases.length > 0
+            ? state.storedCatalogReleases
+            : await db.getCatalogReleases();
+        const latest = releases[0];
+        if (!latest) {
+          // No release yet: dirty if catalog has any entities
+          const hasAny =
+            live.categories.length +
+              live.skills.length +
+              live.roles.length >
+            0;
+          set({ hasUnpublishedCatalogChanges: hasAny });
+          return;
+        }
+        const liveHash = await computeContentHash(live);
+        set({
+          hasUnpublishedCatalogChanges: liveHash !== latest.contentHash,
+        });
+      } catch (e) {
+        console.error(e);
+        set({ hasUnpublishedCatalogChanges: false });
+      }
+    },
+
+    diffAgainstRelease: async (releaseId) => {
+      const state = get();
+      const live = liveEntitiesFromState(state);
+      if (!live) return null;
+
+      let release: StoredCatalogRelease | null = null;
+      if (releaseId) {
+        release = await db.getCatalogRelease(releaseId);
+      } else {
+        const list =
+          state.storedCatalogReleases.length > 0
+            ? state.storedCatalogReleases
+            : await db.getCatalogReleases();
+        release = list[0] ?? null;
+      }
+      if (!release) return null;
+
+      return diffCatalogEntities(live, release.package.entities);
+    },
+
+    rollbackToRelease: async (releaseId) => {
+      const denied = checkCapability(
+        caps,
+        "catalogAuthoring",
+        "rollbackToRelease"
+      );
+      if (!denied.ok) {
+        set({ error: denied.reason });
+        return {
+          ok: false,
+          errors: [
+            {
+              path: "capabilities",
+              message: denied.reason,
+              severity: "error" as const,
+            },
+          ],
+        };
+      }
+
+      const release = await db.getCatalogRelease(releaseId);
+      if (!release) {
+        const message = `Release ${releaseId} nicht gefunden`;
+        set({ error: message });
+        return {
+          ok: false,
+          errors: [
+            { path: "releaseId", message, severity: "error" as const },
+          ],
+        };
+      }
+
+      // Restore exact snapshot: soft-deprecate anything not in that release
+      const result = await applyCatalogPackage(db, release.package, {
+        missingPolicy: "soft",
+        allowDowngrade: true,
+        allowCatalogIdChange: true,
+      });
+
+      if (result.ok) {
+        await get().setInstalledCatalogMeta(release.package.meta);
+        await get().refreshAllData();
+        await get().refreshCatalogReleases();
+      } else {
+        set({
+          error:
+            result.errors.map((e) => e.message).join("; ") ||
+            "Rollback fehlgeschlagen",
+        });
+      }
+      return result;
+    },
+
+    redownloadRelease: async (releaseId) => {
+      const release = await db.getCatalogRelease(releaseId);
+      if (!release) {
+        throw new Error(`Release ${releaseId} nicht gefunden`);
+      }
+      get().downloadCatalogPackage(release.package);
     },
 
     importCatalog: async (jsonOrPackage, options) => {

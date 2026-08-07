@@ -92,19 +92,44 @@ const App: FC = () => {
     defaultValue: "skills",
   });
 
-  const { loading, error, initDb, projectTitle, installedCatalogMeta } = useStore(
+  const {
+    loading,
+    error,
+    initDb,
+    projectTitle,
+    installedCatalogMeta,
+    hasUnpublishedCatalogChanges,
+    categories,
+    subcategories,
+    skills,
+    roles,
+    refreshCatalogDirtyState,
+  } = useStore(
     useShallow((s) => ({
       loading: s.loading,
       error: s.error,
       initDb: s.initDb,
       projectTitle: s.projectTitle,
       installedCatalogMeta: s.installedCatalogMeta,
+      hasUnpublishedCatalogChanges: s.hasUnpublishedCatalogChanges,
+      categories: s.categories,
+      subcategories: s.subcategories,
+      skills: s.skills,
+      roles: s.roles,
+      refreshCatalogDirtyState: s.refreshCatalogDirtyState,
     }))
   );
 
   useEffect(() => {
     initDb();
   }, [initDb]);
+
+  // Keep header "ungesicherte Änderungen" badge in sync while editing skills/roles
+  useEffect(() => {
+    if (!loading) {
+      void refreshCatalogDirtyState();
+    }
+  }, [loading, categories, subcategories, skills, roles, refreshCatalogDirtyState]);
 
   useEffect(() => {
     if (error) {
@@ -158,6 +183,11 @@ const App: FC = () => {
                       {installedCatalogMeta?.version && (
                         <Badge variant="outline" color="gray" size="sm">
                           freigegeben v{installedCatalogMeta.version}
+                        </Badge>
+                      )}
+                      {hasUnpublishedCatalogChanges && (
+                        <Badge variant="filled" color="orange" size="sm">
+                          ungesicherte Änderungen
                         </Badge>
                       )}
                     </Group>

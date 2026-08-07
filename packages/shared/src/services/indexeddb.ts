@@ -21,6 +21,18 @@ import type {
   MergeDiff,
   SkillLevel,
 } from "../types";
+import type { CatalogPackage } from "../types/catalog";
+
+/** Stored published catalog snapshot (Manage archive, max N entries). */
+export interface StoredCatalogRelease {
+  /** Same as package.meta.version for uniqueness per product line */
+  id: string;
+  version: string;
+  publishedAt: string;
+  notes: string;
+  contentHash: string;
+  package: CatalogPackage;
+}
 
 // Re-export domain types for backward-compatible imports from this module
 export type {
@@ -48,7 +60,10 @@ export type {
 
 /** Legacy Full DB name — do not change (K9). */
 export const DEFAULT_DB_NAME = "QualificationMatrixDB";
-export const DEFAULT_DB_VERSION = 12;
+/** v13: catalogReleases store (last N published snapshots for Manage). */
+export const DEFAULT_DB_VERSION = 13;
+
+export const MAX_STORED_CATALOG_RELEASES = 10;
 
 export interface IndexedDBServiceOptions {
   dbName: string;
@@ -229,6 +244,15 @@ export class IndexedDBService {
           const historyStore = db.createObjectStore("changeHistory", { keyPath: "id" });
           historyStore.createIndex("timestamp", "timestamp", { unique: false });
           historyStore.createIndex("entityType", "entityType", { unique: false });
+        }
+
+        // Catalog release snapshots (v13) — Manage version archive
+        if (!db.objectStoreNames.contains("catalogReleases")) {
+          const releaseStore = db.createObjectStore("catalogReleases", {
+            keyPath: "id",
+          });
+          releaseStore.createIndex("version", "version", { unique: false });
+          releaseStore.createIndex("publishedAt", "publishedAt", { unique: false });
         }
       };
     });
@@ -860,7 +884,23 @@ export class IndexedDBService {
 
   async clearAllData(): Promise<void> {
     if (!this.db) return;
-    const stores = ["employees", "categories", "subcategories", "skills", "assessments", "departments", "roles", "assessment_logs", "settings", "qualificationPlans", "qualificationMeasures", "savedViews", "changeHistory"];
+    const all = [
+      "employees",
+      "categories",
+      "subcategories",
+      "skills",
+      "assessments",
+      "departments",
+      "roles",
+      "assessment_logs",
+      "settings",
+      "qualificationPlans",
+      "qualificationMeasures",
+      "savedViews",
+      "changeHistory",
+      "catalogReleases",
+    ];
+    const stores = all.filter((s) => this.db!.objectStoreNames.contains(s));
     const transaction = this.db.transaction(stores, "readwrite");
     for (const storeName of stores) {
       const store = transaction.objectStore(storeName);
@@ -877,7 +917,23 @@ export class IndexedDBService {
     // Clear all stores
     if (!this.db) return;
 
-    const stores = ["employees", "categories", "subcategories", "skills", "assessments", "departments", "roles", "assessment_logs", "settings", "qualificationPlans", "qualificationMeasures", "savedViews", "changeHistory"];
+    const all = [
+      "employees",
+      "categories",
+      "subcategories",
+      "skills",
+      "assessments",
+      "departments",
+      "roles",
+      "assessment_logs",
+      "settings",
+      "qualificationPlans",
+      "qualificationMeasures",
+      "savedViews",
+      "changeHistory",
+      "catalogReleases",
+    ];
+    const stores = all.filter((s) => this.db!.objectStoreNames.contains(s));
     const transaction = this.db.transaction(stores, "readwrite");
 
     for (const storeName of stores) {
@@ -1102,6 +1158,58 @@ export class IndexedDBService {
     }
 
     return report;
+  }
+
+  // --- Catalog release archive (v13) ---
+
+  async getCatalogReleases(): Promise<StoredCatalogRelease[]> {
+    if (!this.db) await this.init();
+    if (!this.db!.objectStoreNames.contains("catalogReleases")) {
+      return [];
+    }
+    const all = (await this.execute(
+      "catalogReleases",
+      "getAll"
+    )) as StoredCatalogRelease[];
+    return all.sort((a, b) =>
+      String(b.publishedAt).localeCompare(String(a.publishedAt))
+    );
+  }
+
+  async getCatalogRelease(id: string): Promise<StoredCatalogRelease | null> {
+    if (!this.db) await this.init();
+    if (!this.db!.objectStoreNames.contains("catalogReleases")) {
+      return null;
+    }
+    const row = (await this.execute(
+      "catalogReleases",
+      "get",
+      id
+    )) as StoredCatalogRelease | undefined;
+    return row ?? null;
+  }
+
+  /**
+   * Persist a release snapshot and prune to MAX_STORED_CATALOG_RELEASES (newest kept).
+   */
+  async saveCatalogRelease(
+    release: StoredCatalogRelease
+  ): Promise<StoredCatalogRelease[]> {
+    if (!this.db) await this.init();
+    if (!this.db!.objectStoreNames.contains("catalogReleases")) {
+      throw new Error(
+        "catalogReleases store missing — bitte App neu laden (DB-Upgrade v13)"
+      );
+    }
+    await this.execute("catalogReleases", "put", release);
+    const all = await this.getCatalogReleases();
+    if (all.length > MAX_STORED_CATALOG_RELEASES) {
+      const toRemove = all.slice(MAX_STORED_CATALOG_RELEASES);
+      for (const old of toRemove) {
+        await this.execute("catalogReleases", "delete", old.id);
+      }
+    }
+    return this.getCatalogReleases();
   }
 
   // Generate a stable hash of all data for comparison

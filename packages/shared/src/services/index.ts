@@ -40,3 +40,14 @@ export {
   importOpsFromExportData,
 } from "./catalogApply";
 export type { CatalogApplyDb } from "./catalogApply";
+export {
+  diffCatalogEntities,
+  summarizeDiffCounts,
+} from "./catalogDiff";
+export type {
+  CatalogDiffItem,
+  CatalogDiffResult,
+  CatalogDiffChangeKind,
+} from "./catalogDiff";
+export type { StoredCatalogRelease } from "./indexeddb";
+export { MAX_STORED_CATALOG_RELEASES } from "./indexeddb";

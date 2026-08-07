@@ -1,5 +1,5 @@
 /**
- * Manage: version management — release catalog packages with SemVer + changelog history.
+ * Manage: version archive (last 10), dirty indicator, diff & rollback.
  */
 import React, { useEffect, useMemo, useState } from "react";
 import {
@@ -20,6 +20,9 @@ import {
   Code,
   Divider,
   Box,
+  Table,
+  ScrollArea,
+  Tooltip,
 } from "@mantine/core";
 import {
   IconRocket,
@@ -28,9 +31,14 @@ import {
   IconAlertCircle,
   IconTag,
   IconFingerprint,
+  IconGitCompare,
+  IconArrowBackUp,
+  IconDownload,
+  IconCircleDot,
 } from "@tabler/icons-react";
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
+import { modals } from "@mantine/modals";
 import { useStore, useShallow } from "../store/hooks";
 import {
   bumpSemVer,
@@ -39,6 +47,9 @@ import {
   extractCatalogFromState,
   type SemVerBump,
 } from "../services/catalog";
+import type { CatalogDiffResult } from "../services/catalogDiff";
+import { summarizeDiffCounts } from "../services/catalogDiff";
+import type { StoredCatalogRelease } from "../services/indexeddb";
 
 function stableCatalogId(): string {
   const key = "skillgrid-manage-catalog-id";
@@ -53,6 +64,19 @@ function stableCatalogId(): string {
   }
 }
 
+const KIND_LABEL: Record<string, string> = {
+  categories: "Kategorie",
+  subcategories: "Unterkategorie",
+  skills: "Skill",
+  roles: "Rolle",
+};
+
+const CHANGE_LABEL: Record<string, { label: string; color: string }> = {
+  added: { label: "Neu", color: "green" },
+  removed: { label: "Entfernt", color: "red" },
+  changed: { label: "Geändert", color: "blue" },
+};
+
 export const CatalogReleasePanel: React.FC = () => {
   const {
     projectTitle,
@@ -61,7 +85,14 @@ export const CatalogReleasePanel: React.FC = () => {
     subcategories,
     skills,
     roles,
+    storedCatalogReleases,
+    hasUnpublishedCatalogChanges,
     publishCatalogRelease,
+    refreshCatalogReleases,
+    refreshCatalogDirtyState,
+    diffAgainstRelease,
+    rollbackToRelease,
+    redownloadRelease,
   } = useStore(
     useShallow((s) => ({
       projectTitle: s.projectTitle,
@@ -70,11 +101,20 @@ export const CatalogReleasePanel: React.FC = () => {
       subcategories: s.subcategories,
       skills: s.skills,
       roles: s.roles,
+      storedCatalogReleases: s.storedCatalogReleases,
+      hasUnpublishedCatalogChanges: s.hasUnpublishedCatalogChanges,
       publishCatalogRelease: s.publishCatalogRelease,
+      refreshCatalogReleases: s.refreshCatalogReleases,
+      refreshCatalogDirtyState: s.refreshCatalogDirtyState,
+      diffAgainstRelease: s.diffAgainstRelease,
+      rollbackToRelease: s.rollbackToRelease,
+      redownloadRelease: s.redownloadRelease,
     }))
   );
 
-  const [opened, { open, close }] = useDisclosure(false);
+  const [publishOpen, { open: openPublish, close: closePublish }] =
+    useDisclosure(false);
+  const [diffOpen, { open: openDiff, close: closeDiff }] = useDisclosure(false);
   const [busy, setBusy] = useState(false);
   const [catalogName, setCatalogName] = useState(
     installedCatalogMeta?.name || projectTitle || "Unternehmens-Katalog"
@@ -84,6 +124,8 @@ export const CatalogReleasePanel: React.FC = () => {
   const [notes, setNotes] = useState("");
   const [useManual, setUseManual] = useState(false);
   const [catalogFingerprint, setCatalogFingerprint] = useState<string>("…");
+  const [activeDiff, setActiveDiff] = useState<CatalogDiffResult | null>(null);
+  const [diffTitle, setDiffTitle] = useState("");
 
   const catalogId = useMemo(() => stableCatalogId(), []);
   const currentVersion = installedCatalogMeta?.version || "—";
@@ -92,19 +134,15 @@ export const CatalogReleasePanel: React.FC = () => {
     return bumpSemVer(installedCatalogMeta?.version || "0.0.0", bump);
   }, [bump, useManual, manualVersion, installedCatalogMeta?.version]);
 
-  const changelog = installedCatalogMeta?.changelog || [];
+  const releases: StoredCatalogRelease[] = storedCatalogReleases || [];
 
-  // Katalog-Fingerprint: nur Skills/Rollen/Kategorien (nicht Mitarbeiter)
+  // Fingerprint + dirty when catalog entities change
   useEffect(() => {
     let cancelled = false;
     (async () => {
       const extract = extractCatalogFromState(
         { categories, subcategories, skills, roles },
-        {
-          catalogId: "fp",
-          name: "fp",
-          version: "0.0.0",
-        }
+        { catalogId: "fp", name: "fp", version: "0.0.0" }
       );
       if (!extract.package) {
         if (!cancelled) setCatalogFingerprint("—");
@@ -112,11 +150,16 @@ export const CatalogReleasePanel: React.FC = () => {
       }
       const fp = await computeCatalogFingerprint(extract.package.entities);
       if (!cancelled) setCatalogFingerprint(fp);
+      await refreshCatalogDirtyState();
     })();
     return () => {
       cancelled = true;
     };
-  }, [categories, subcategories, skills, roles]);
+  }, [categories, subcategories, skills, roles, refreshCatalogDirtyState]);
+
+  useEffect(() => {
+    void refreshCatalogReleases();
+  }, [refreshCatalogReleases]);
 
   const handlePublish = async () => {
     if (useManual && !isValidSemVer(manualVersion.trim())) {
@@ -162,11 +205,11 @@ export const CatalogReleasePanel: React.FC = () => {
       notifications.show({
         title: `Version ${result.package?.meta.version} freigegeben`,
         message:
-          "JSON-Paket wurde heruntergeladen. Team-Apps können diese Version importieren.",
+          "Snapshot lokal gespeichert (max. 10) und JSON heruntergeladen.",
         color: "green",
       });
       setNotes("");
-      close();
+      closePublish();
     } catch (e) {
       notifications.show({
         title: "Fehler",
@@ -178,14 +221,107 @@ export const CatalogReleasePanel: React.FC = () => {
     }
   };
 
+  const showDiff = async (releaseId?: string, label?: string) => {
+    setBusy(true);
+    try {
+      const diff = await diffAgainstRelease(releaseId);
+      if (!diff) {
+        notifications.show({
+          title: "Kein Vergleich möglich",
+          message: "Keine gespeicherte Version zum Vergleichen.",
+          color: "orange",
+        });
+        return;
+      }
+      setActiveDiff(diff);
+      setDiffTitle(label || (releaseId ? `vs. v${releaseId}` : "vs. letzte Version"));
+      openDiff();
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleRollback = (release: StoredCatalogRelease) => {
+    modals.openConfirmModal({
+      title: `Rollback auf v${release.version}?`,
+      centered: true,
+      children: (
+        <Text size="sm">
+          Der Live-Katalog wird auf den Stand von <strong>v{release.version}</strong>{" "}
+          ({release.publishedAt.slice(0, 10)}) zurückgesetzt. Skills/Rollen, die
+          in dieser Version nicht enthalten sind, werden als{" "}
+          <em>veraltet</em> markiert (nicht hart gelöscht).
+        </Text>
+      ),
+      labels: { confirm: "Rollback ausführen", cancel: "Abbrechen" },
+      confirmProps: { color: "orange" },
+      onConfirm: async () => {
+        setBusy(true);
+        try {
+          const result = await rollbackToRelease(release.id);
+          if (!result.ok) {
+            notifications.show({
+              title: "Rollback fehlgeschlagen",
+              message: result.errors.map((e) => e.message).join("; "),
+              color: "red",
+            });
+            return;
+          }
+          notifications.show({
+            title: `Rollback auf v${release.version}`,
+            message: "Katalog wiederhergestellt.",
+            color: "green",
+          });
+        } finally {
+          setBusy(false);
+        }
+      },
+    });
+  };
+
+  const diffCounts = activeDiff ? summarizeDiffCounts(activeDiff) : null;
+
   return (
     <Box style={{ width: "100%" }}>
-      <Title order={2} mb="lg">
-        Versionen & Releases
-      </Title>
+      <Group justify="space-between" mb="lg" align="flex-start">
+        <Title order={2}>Versionen & Releases</Title>
+        {hasUnpublishedCatalogChanges ? (
+          <Badge
+            size="lg"
+            color="orange"
+            variant="filled"
+            leftSection={<IconCircleDot size={14} />}
+          >
+            Unveröffentlichte Änderungen
+          </Badge>
+        ) : releases.length > 0 ? (
+          <Badge size="lg" color="green" variant="light">
+            Entspricht letzter Version
+          </Badge>
+        ) : null}
+      </Group>
 
       <Stack gap="lg">
-        {/* Status: Katalog-Fingerprint + Zähler (ohne Mitarbeiter) */}
+        {hasUnpublishedCatalogChanges && (
+          <Alert
+            icon={<IconAlertCircle size={16} />}
+            color="orange"
+            variant="light"
+            title="Änderungen noch nicht freigegeben"
+          >
+            Der Live-Katalog weicht von der zuletzt gespeicherten Version ab.
+            Bitte eine neue Version freigeben, sobald die Änderungen fertig
+            sind.{" "}
+            <Button
+              variant="subtle"
+              size="compact-xs"
+              onClick={() => showDiff(undefined, "Aktuell vs. letzte Version")}
+            >
+              Unterschiede anzeigen
+            </Button>
+          </Alert>
+        )}
+
         <Card withBorder shadow="xs" radius="md">
           <Group justify="space-between" align="flex-start">
             <Stack gap={4}>
@@ -199,9 +335,9 @@ export const CatalogReleasePanel: React.FC = () => {
                 </Text>
               </Group>
               <Text size="xs" c="dimmed" maw={420}>
-                Fingerprint aus <strong>Kategorien, Unterkategorien, Skills und
-                Rollen</strong> (SHA-256, 10 Zeichen). Mitarbeiter und
-                Bewertungen fließen nicht ein — nur der Katalog-Inhalt.
+                Fingerprint nur aus <strong>Kategorien, Skills und Rollen</strong>{" "}
+                (SHA-256). Die letzten <strong>10 freigegebenen Versionen</strong>{" "}
+                werden vollständig im Browser archiviert.
               </Text>
             </Stack>
             <Group gap="xl">
@@ -211,12 +347,11 @@ export const CatalogReleasePanel: React.FC = () => {
                 </Text>
                 <Badge
                   variant="outline"
-                  color="indigo"
+                  color={hasUnpublishedCatalogChanges ? "orange" : "indigo"}
                   size="lg"
                   styles={{
                     label: { fontFamily: "monospace", letterSpacing: "1px" },
                   }}
-                  title="Ändert sich, sobald Skills/Rollen/Kategorien geändert werden"
                 >
                   {catalogFingerprint}
                 </Badge>
@@ -262,107 +397,175 @@ export const CatalogReleasePanel: React.FC = () => {
                   <Title order={4}>Version freigeben</Title>
                 </Group>
                 <Text size="sm" c="dimmed" maw={560}>
-                  Veröffentliche den aktuellen Stand von Skills, Kategorien und
-                  Rollen als versioniertes Katalog-Paket. Teams importieren diese
-                  Datei als verbindliche Vorlage.
+                  Snapshot speichern (max. 10), JSON herunterladen und
+                  Versionsverlauf fortschreiben.
                 </Text>
               </Stack>
-              <Stack gap={4} align="flex-end">
-                <Text size="xs" c="dimmed">
-                  Aktuelle freigegebene Version
-                </Text>
-                <Badge
-                  size="xl"
-                  variant="light"
-                  color="indigo"
-                  leftSection={<IconTag size={14} />}
-                >
-                  {currentVersion === "—"
-                    ? "Noch kein Release"
-                    : `v${currentVersion}`}
-                </Badge>
-              </Stack>
+              <Badge
+                size="xl"
+                variant="light"
+                color="indigo"
+                leftSection={<IconTag size={14} />}
+              >
+                {currentVersion === "—"
+                  ? "Noch kein Release"
+                  : `v${currentVersion}`}
+              </Badge>
             </Group>
 
             <Group>
               <Button
                 leftSection={<IconPackageExport size={16} />}
                 color="indigo"
-                onClick={open}
+                onClick={openPublish}
               >
                 Neue Version freigeben…
               </Button>
+              {releases[0] && (
+                <Button
+                  variant="light"
+                  leftSection={<IconGitCompare size={16} />}
+                  loading={busy}
+                  onClick={() =>
+                    showDiff(releases[0].id, `Aktuell vs. v${releases[0].version}`)
+                  }
+                >
+                  Diff zur letzten Version
+                </Button>
+              )}
+            </Group>
+          </Stack>
+        </Card>
+
+        <Card withBorder shadow="sm" radius="md">
+          <Stack gap="md">
+            <Group gap="xs">
+              <IconHistory size={16} />
+              <Text fw={600} size="sm">
+                Archiv (letzte {releases.length}/10 Versionen)
+              </Text>
             </Group>
 
-            {changelog.length > 0 ? (
-              <Stack gap="sm" mt="sm">
-                <Group gap="xs">
-                  <IconHistory size={16} />
-                  <Text fw={600} size="sm">
-                    Versionsverlauf
-                  </Text>
-                </Group>
-                <Timeline active={0} bulletSize={24} lineWidth={2} color="indigo">
-                  {changelog.map((entry) => (
-                    <Timeline.Item
-                      key={`${entry.version}-${entry.date}`}
-                      bullet={
-                        <ThemeIcon
-                          size={22}
-                          radius="xl"
-                          color="indigo"
-                          variant="light"
-                        >
-                          <IconTag size={12} />
-                        </ThemeIcon>
-                      }
-                      title={
-                        <Group gap="xs">
-                          <Code>v{entry.version}</Code>
-                          <Text size="xs" c="dimmed">
-                            {entry.date}
-                          </Text>
-                        </Group>
-                      }
-                    >
-                      <Text size="sm" mt={4}>
-                        {entry.notes}
-                      </Text>
-                    </Timeline.Item>
-                  ))}
-                </Timeline>
-              </Stack>
-            ) : (
+            {releases.length === 0 ? (
               <Alert
                 icon={<IconAlertCircle size={16} />}
                 color="gray"
                 variant="light"
                 title="Noch keine Releases"
               >
-                Nach dem ersten Freigeben erscheint hier der Verlauf. Jede Version
-                erzeugt eine JSON-Datei für SkillGrid Team.
+                Nach dem ersten Freigeben erscheinen hier bis zu 10 vollständige
+                Snapshots zum Diff, erneuten Download und Rollback.
               </Alert>
+            ) : (
+              <Timeline active={0} bulletSize={24} lineWidth={2} color="indigo">
+                {releases.map((release, index) => (
+                  <Timeline.Item
+                    key={release.id}
+                    bullet={
+                      <ThemeIcon
+                        size={22}
+                        radius="xl"
+                        color="indigo"
+                        variant={index === 0 ? "filled" : "light"}
+                      >
+                        <IconTag size={12} />
+                      </ThemeIcon>
+                    }
+                    title={
+                      <Group gap="xs" wrap="wrap">
+                        <Code>v{release.version}</Code>
+                        <Text size="xs" c="dimmed">
+                          {release.publishedAt.slice(0, 10)}
+                        </Text>
+                        {index === 0 && (
+                          <Badge size="xs" variant="light" color="green">
+                            Aktuell freigegeben
+                          </Badge>
+                        )}
+                      </Group>
+                    }
+                  >
+                    <Text size="sm" mt={4} mb="xs">
+                      {release.notes}
+                    </Text>
+                    <Group gap="xs">
+                      <Tooltip label="Unterschiede zum Live-Katalog">
+                        <Button
+                          size="compact-xs"
+                          variant="light"
+                          leftSection={<IconGitCompare size={12} />}
+                          onClick={() =>
+                            showDiff(
+                              release.id,
+                              `Aktuell vs. v${release.version}`
+                            )
+                          }
+                        >
+                          Diff
+                        </Button>
+                      </Tooltip>
+                      <Tooltip label="JSON erneut herunterladen">
+                        <Button
+                          size="compact-xs"
+                          variant="light"
+                          leftSection={<IconDownload size={12} />}
+                          onClick={async () => {
+                            try {
+                              await redownloadRelease(release.id);
+                              notifications.show({
+                                title: "Download",
+                                message: `v${release.version}`,
+                                color: "blue",
+                              });
+                            } catch (e) {
+                              notifications.show({
+                                title: "Fehler",
+                                message:
+                                  e instanceof Error ? e.message : String(e),
+                                color: "red",
+                              });
+                            }
+                          }}
+                        >
+                          Download
+                        </Button>
+                      </Tooltip>
+                      <Tooltip label="Live-Katalog auf diesen Stand setzen">
+                        <Button
+                          size="compact-xs"
+                          variant="light"
+                          color="orange"
+                          leftSection={<IconArrowBackUp size={12} />}
+                          onClick={() => handleRollback(release)}
+                        >
+                          Rollback
+                        </Button>
+                      </Tooltip>
+                    </Group>
+                  </Timeline.Item>
+                ))}
+              </Timeline>
             )}
           </Stack>
         </Card>
       </Stack>
 
+      {/* Publish modal */}
       <Modal
-        opened={opened}
-        onClose={close}
+        opened={publishOpen}
+        onClose={closePublish}
         title="Neue Katalog-Version freigeben"
         size="lg"
         centered
       >
         <Stack gap="md">
           <Text size="sm" c="dimmed">
-            Der aktuelle Stand der Skills und Rollen wird als{" "}
-            <strong>v{nextPreview}</strong> verpackt und heruntergeladen.
+            Snapshot als <strong>v{nextPreview}</strong> speichern (Archiv +
+            Download).
           </Text>
 
           <TextInput
             label="Katalog-Name"
-            description="Erscheint im Dateinamen und in Team-Importen"
             value={catalogName}
             onChange={(e) => setCatalogName(e.currentTarget.value)}
           />
@@ -405,25 +608,19 @@ export const CatalogReleasePanel: React.FC = () => {
                 onChange={(e) => setManualVersion(e.currentTarget.value)}
               />
             )}
-            <Text size="xs" c="dimmed">
-              <strong>Patch</strong> = kleine Korrekturen ·{" "}
-              <strong>Minor</strong> = neue Skills/Rollen ·{" "}
-              <strong>Major</strong> = harte Entfernungen / Breaking Changes
-            </Text>
           </Stack>
 
           <Textarea
             label="Release-Notizen"
-            description="Was hat sich geändert? (wird im Versionsverlauf gespeichert)"
-            placeholder="z. B. Neue Rolle Senior-Dev, Skill Cloud-Basics hinzugefügt…"
             minRows={3}
             value={notes}
             onChange={(e) => setNotes(e.currentTarget.value)}
             required
+            placeholder="Was hat sich geändert?"
           />
 
-          <Group justify="flex-end" mt="sm">
-            <Button variant="default" onClick={close}>
+          <Group justify="flex-end">
+            <Button variant="default" onClick={closePublish}>
               Abbrechen
             </Button>
             <Button
@@ -432,10 +629,82 @@ export const CatalogReleasePanel: React.FC = () => {
               loading={busy}
               onClick={handlePublish}
             >
-              v{nextPreview} freigeben & herunterladen
+              v{nextPreview} freigeben
             </Button>
           </Group>
         </Stack>
+      </Modal>
+
+      {/* Diff modal */}
+      <Modal
+        opened={diffOpen}
+        onClose={closeDiff}
+        title={`Unterschiede — ${diffTitle}`}
+        size="xl"
+        centered
+      >
+        {activeDiff && diffCounts && (
+          <Stack gap="md">
+            {activeDiff.isIdentical ? (
+              <Alert color="green" icon={<IconAlertCircle size={16} />}>
+                Keine Unterschiede — Live-Katalog entspricht dieser Version.
+              </Alert>
+            ) : (
+              <>
+                <Group gap="md">
+                  <Badge color="green">+{diffCounts.added} neu</Badge>
+                  <Badge color="red">−{diffCounts.removed} entfernt</Badge>
+                  <Badge color="blue">~{diffCounts.changed} geändert</Badge>
+                </Group>
+                <ScrollArea h={360}>
+                  <Table striped highlightOnHover withTableBorder>
+                    <Table.Thead>
+                      <Table.Tr>
+                        <Table.Th>Änderung</Table.Th>
+                        <Table.Th>Typ</Table.Th>
+                        <Table.Th>Name</Table.Th>
+                        <Table.Th>Detail</Table.Th>
+                      </Table.Tr>
+                    </Table.Thead>
+                    <Table.Tbody>
+                      {activeDiff.items.map((item) => (
+                        <Table.Tr key={`${item.kind}-${item.change}-${item.id}`}>
+                          <Table.Td>
+                            <Badge
+                              size="sm"
+                              color={CHANGE_LABEL[item.change].color}
+                            >
+                              {CHANGE_LABEL[item.change].label}
+                            </Badge>
+                          </Table.Td>
+                          <Table.Td>
+                            <Text size="sm">{KIND_LABEL[item.kind] || item.kind}</Text>
+                          </Table.Td>
+                          <Table.Td>
+                            <Text size="sm" fw={500}>
+                              {item.label}
+                            </Text>
+                            <Text size="xs" c="dimmed" ff="monospace">
+                              {item.id.slice(0, 8)}…
+                            </Text>
+                          </Table.Td>
+                          <Table.Td>
+                            <Text size="xs" c="dimmed">
+                              {item.detail || "—"}
+                            </Text>
+                          </Table.Td>
+                        </Table.Tr>
+                      ))}
+                    </Table.Tbody>
+                  </Table>
+                </ScrollArea>
+              </>
+            )}
+            <Button onClick={closeDiff} fullWidth variant="default">
+              Schließen
+            </Button>
+          </Stack>
+        )}
       </Modal>
     </Box>
   );
