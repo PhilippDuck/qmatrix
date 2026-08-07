@@ -50,7 +50,7 @@ import { SkillMatrix } from "@skillgrid/shared/components/SkillMatrix";
 import { DataManagement } from "@skillgrid/shared/components/DataManagement";
 import { Dashboard } from "@skillgrid/shared/components/Dashboard/Dashboard";
 import { QualificationPlan } from "@skillgrid/shared/components/QualificationPlan";
-import { WelcomeModal } from "@skillgrid/shared/components/WelcomeModal";
+
 import { ChangelogModal } from "@skillgrid/shared/components/ChangelogModal";
 import { PrivacyModal } from "@skillgrid/shared/components/PrivacyModal";
 import { HistoryDrawer } from "@skillgrid/shared/components/shared/HistoryDrawer";
@@ -785,7 +785,7 @@ function AppContent() {
         </div>
       </AppShell.Main>
       <HistoryDrawer opened={historyOpened} onClose={closeHistory} />
-      <WelcomeModal />
+      {/* No WelcomeModal in Team — start with catalog import / ops data, not skill authoring */}
       <ChangelogModal opened={changelogOpened} onClose={closeChangelog} />
       <PrivacyModal opened={privacyOpened} onClose={closePrivacy} />
     </AppShell>

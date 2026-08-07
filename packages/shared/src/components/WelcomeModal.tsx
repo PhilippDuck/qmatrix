@@ -94,9 +94,18 @@ export function WelcomeModal() {
                 >
                     <Text size="sm" fw={700} mb="xs">🚀 Empfohlener Start:</Text>
                     <List type="ordered" size="sm" spacing={4} withPadding>
-                        <List.Item>Definieren Sie unter <b>Stammdaten</b> Ihre Abteilungen und Rollen.</List.Item>
-                        <List.Item>Erstellen Sie erste <b>Skills</b> und Kategorien.</List.Item>
-                        <List.Item>Fügen Sie <b>Mitarbeiter</b> hinzu und weisen Sie ihnen Rollen zu.</List.Item>
+                        <List.Item>
+                            <b>Katalog importieren</b> unter System (Export aus SkillGrid Manage) —
+                            Skills, Kategorien und Rollen kommen zentral von dort.
+                        </List.Item>
+                        <List.Item>
+                            Legen Sie unter <b>Stammdaten</b> Abteilungen und <b>Mitarbeiter</b> an
+                            und weisen Sie Rollen zu.
+                        </List.Item>
+                        <List.Item>
+                            Bewerten Sie Kompetenzen in der <b>Skill-Matrix</b> und planen Sie
+                            Qualifizierung.
+                        </List.Item>
                     </List>
                 </Box>
 
