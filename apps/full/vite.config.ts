@@ -29,6 +29,18 @@ export default defineConfig({
   resolve: {
     alias: {
       "@skillgrid/shared": path.join(repoRoot, "packages/shared/src"),
+      "@skillgrid/shared/types": path.join(
+        repoRoot,
+        "packages/shared/src/types/index.ts"
+      ),
+      "@skillgrid/shared/constants": path.join(
+        repoRoot,
+        "packages/shared/src/constants/index.ts"
+      ),
+      "@skillgrid/shared/utils": path.join(
+        repoRoot,
+        "packages/shared/src/utils/index.ts"
+      ),
     },
   },
   server: {

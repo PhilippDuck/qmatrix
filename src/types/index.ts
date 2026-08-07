@@ -1,25 +1,5 @@
-export type {
-  Employee,
-  Category,
-  SubCategory,
-  Skill,
-  SkillLevel,
-  Assessment,
-  AssessmentLogEntry,
-  Department,
-  EmployeeRole,
-  AppSettings,
-  QualificationPlan,
-  QualificationMeasure,
-  SavedView,
-  EntityType,
-  ChangeAction,
-  ChangeHistoryEntry,
-  ExportData,
-  MergeReport,
-  MergeItemDiff,
-  MergeDiff,
-  SkillGap,
-} from "./domain";
-
-export type { AppTab, NavParams, NavigateFn } from "./navigation";
+/**
+ * Compatibility re-export — source of truth is `@skillgrid/shared`.
+ * Existing `from "../types"` imports keep working until call sites migrate.
+ */
+export type * from "@skillgrid/shared/types";
