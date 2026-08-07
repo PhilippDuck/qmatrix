@@ -365,6 +365,7 @@ const App: FC = () => {
                         userSelect: "none",
                         whiteSpace: "nowrap",
                         flexShrink: 0,
+                        marginRight: 6,
                       }}
                     >
                       {collapsed ? "Manage" : "SkillGrid Manage"}
