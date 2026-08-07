@@ -255,9 +255,11 @@ const NodeCard: React.FC<{
           */}
         </Group>
 
-        <Text fw={600} size={labelSize} style={{ lineHeight: 1.2 }}>
-          {node.name || "Untitled"}
-        </Text>
+        {node.name?.trim() ? (
+          <Text fw={600} size={labelSize} style={{ lineHeight: 1.2 }}>
+            {node.name}
+          </Text>
+        ) : null}
 
         {node.children.length > 0 && !node.children[0].isAddNode ? (
           <Badge variant="outline" color="gray" size="xs">
@@ -439,7 +441,7 @@ const SkillOrgChart: React.FC<SkillOrgChartProps> = ({
   subcategories,
   skills,
   roles = [],
-  projectTitle = "Skill Matrix",
+  projectTitle = "",
   onEditCategory,
   onEditSubCategory,
   onEditSkill,
@@ -576,10 +578,12 @@ const SkillOrgChart: React.FC<SkillOrgChartProps> = ({
       });
     }
 
+    const rootTitle = (projectTitle || "").trim();
     const rootNode: HierarchyNode = {
       type: "root" as const,
       id: "root-project",
-      name: projectTitle,
+      // Empty title → root card shows only icon (no "Untitled")
+      name: rootTitle,
       children: categoryNodes,
     };
 
@@ -670,15 +674,29 @@ const SkillOrgChart: React.FC<SkillOrgChartProps> = ({
             lineColor={lineColor}
             lineBorderRadius="10px"
             label={
-              <NodeCard
-                node={tree}
-                roles={roles}
-                onClick={() => handleNodeClick(tree)}
-                clipboardItem={clipboardItem}
-                onCopy={onCopy}
-                onCut={onCut}
-                onPaste={onPaste}
-              />
+              tree.type === "root" && !tree.name?.trim() ? (
+                // Hide empty project root ("Untitled") — keep tree structure only
+                <Box
+                  style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: "50%",
+                    margin: "0 auto",
+                    background: lineColor,
+                    opacity: 0.35,
+                  }}
+                />
+              ) : (
+                <NodeCard
+                  node={tree}
+                  roles={roles}
+                  onClick={() => handleNodeClick(tree)}
+                  clipboardItem={clipboardItem}
+                  onCopy={onCopy}
+                  onCut={onCut}
+                  onPaste={onPaste}
+                />
+              )
             }
           >
             {tree.children.map((child) => (

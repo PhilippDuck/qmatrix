@@ -219,7 +219,8 @@ export const CategoryManager: React.FC = () => {
     });
   };
 
-  const [activeTab, setActiveTab] = useState<string | null>("chart");
+  // Always open on list when entering Skills & Kategorien
+  const [activeTab, setActiveTab] = useState<string | null>("list");
 
   // ... (keep existing helper consts)
   // Get ALL subcategories for this category (recursive list building happens in component)
