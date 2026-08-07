@@ -15,6 +15,7 @@ import {
 } from "@mantine/core";
 import { useHotkeys } from "@mantine/hooks";
 import { Department, EmployeeRole } from "../../services/indexeddb";
+import { useCapabilities } from "../../store/hooks";
 
 export type FormMode = "category" | "subcategory" | "skill";
 
@@ -88,11 +89,16 @@ export const EntityFormDrawer: React.FC<EntityFormDrawerProps> = ({
   readOnly = false,
 }) => {
   const [confirmationOpen, setConfirmationOpen] = React.useState(false);
+  const { departments: showDepartments } = useCapabilities();
 
   const hasChanges = () => {
     if (inputValue !== initialValues.name) return true;
     if (inputDescription !== initialValues.description) return true;
-    if ((selectedDepartmentId || null) !== (initialValues.departmentId || null)) return true;
+    if (
+      showDepartments &&
+      (selectedDepartmentId || null) !== (initialValues.departmentId || null)
+    )
+      return true;
 
     // Array comparison
     const currentRoles = (selectedRoleIds || []).slice().sort();
@@ -191,25 +197,37 @@ export const EntityFormDrawer: React.FC<EntityFormDrawerProps> = ({
                 <>
                   <Divider label="Zuordnung & Anforderungen" labelPosition="center" />
 
-                  <Select
-                    label="Zuständige Abteilung (Optional)"
-                    placeholder="Wähle eine Abteilung"
-                    data={departments.map(d => ({ value: d.id!, label: d.name }))}
-                    value={selectedDepartmentId}
-                    onChange={(val) => onDepartmentChange?.(val)}
-                    clearable
-                    searchable
-                    disabled={readOnly}
-                  />
+                  {/* Departments only in Full/Team — Manage has no Abteilungen */}
+                  {showDepartments && (
+                    <Select
+                      label="Zuständige Abteilung (Optional)"
+                      placeholder="Wähle eine Abteilung"
+                      data={departments.map((d) => ({
+                        value: d.id!,
+                        label: d.name,
+                      }))}
+                      value={selectedDepartmentId}
+                      onChange={(val) => onDepartmentChange?.(val)}
+                      clearable
+                      searchable
+                      disabled={readOnly}
+                    />
+                  )}
 
                   {/* K18: role membership is SoT on RoleManager — skill form is reverse index only */}
                   <MultiSelect
                     label="Gefordert von Rollen (Anzeige)"
-                    description="Rollen-Zuordnung und Level unter Stammdaten → Rollen bearbeiten"
+                    description={
+                      showDepartments
+                        ? "Rollen-Zuordnung und Level unter Stammdaten → Rollen bearbeiten"
+                        : "Rollen-Zuordnung und Level unter Rollen bearbeiten"
+                    }
                     placeholder="Keine Rollen verknüpft"
-                    data={roles.map(r => ({ value: r.id!, label: r.name }))}
+                    data={roles.map((r) => ({ value: r.id!, label: r.name }))}
                     value={selectedRoleIds || []}
-                    onChange={() => { /* read-only reverse index */ }}
+                    onChange={() => {
+                      /* read-only reverse index */
+                    }}
                     searchable
                     readOnly
                     disabled
