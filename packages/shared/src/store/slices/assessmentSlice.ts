@@ -1,9 +1,10 @@
 import type { DbService } from "../../services/indexeddb";
+import type { AppCapabilities } from "../../types/capabilities";
 import type { Assessment, AssessmentLogEntry } from "../../types";
 import { recordChange } from "../recordChange";
 import type { AppSlice, AssessmentSlice } from "../types";
 
-export const createAssessmentSlice = (db: DbService): AppSlice<AssessmentSlice> => (set, get) => ({
+export const createAssessmentSlice = (db: DbService, caps: AppCapabilities): AppSlice<AssessmentSlice> => (set, get) => ({
   assessments: [],
 
   setAssessment: async (employeeId, skillId, level, note?: string) => {

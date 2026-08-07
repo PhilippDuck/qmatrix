@@ -1,10 +1,11 @@
 import type { DbService } from "../../services/indexeddb";
 import type { PrefixedStorage } from "../prefixedStorage";
+import type { AppCapabilities } from "../../types/capabilities";
 import { runLoadTimeMigrations } from "../../services/dataMigrations";
 import type { Assessment } from "../../types";
 import type { AppSlice, CoreSlice } from "../types";
 
-export const createCoreSlice = (db: DbService, storage: PrefixedStorage): AppSlice<CoreSlice> => (set, get) => ({
+export const createCoreSlice = (db: DbService, storage: PrefixedStorage, _caps: AppCapabilities): AppSlice<CoreSlice> => (set, get) => ({
   projectTitle: "",
   dataHash: "",
   loading: true,

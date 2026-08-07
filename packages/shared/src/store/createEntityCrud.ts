@@ -5,6 +5,8 @@
 
 import type { DbService } from "../services/indexeddb";
 import type { EntityType } from "../types";
+import type { AppCapabilities, CapabilityFlag } from "../types/capabilities";
+import { checkCapability } from "./capabilities";
 import { recordChange, failAndMaybeReload } from "./recordChange";
 import type { AppState } from "./types";
 
@@ -56,7 +58,21 @@ export interface EntityCrudConfig<
   errorMessage?: string;
   /** After create: optionally transform list (e.g. sort views) */
   afterAddList?: (list: T[], entity: T) => T[];
+  /**
+   * When set, create/update/delete are blocked unless the capability is true.
+   * Required for catalog listKeys (categories, subcategories, skills, roles).
+   */
+  capabilityKey?: CapabilityFlag;
 }
+
+/** Catalog CRUD must declare catalogAuthoring (design §6.4 / K18). */
+export type CatalogCrudConfig<
+  T extends { id?: string },
+  TCreate = Omit<T, "id" | "updatedAt">,
+  TUpdate = TCreate,
+> = EntityCrudConfig<T, TCreate, TUpdate> & {
+  capabilityKey: "catalogAuthoring";
+};
 
 export interface EntityCrudHandlers<TCreate, TUpdate> {
   add: (data: TCreate) => Promise<string>;
@@ -82,6 +98,7 @@ export function createEntityCrudHandlers<
   TUpdate = TCreate,
 >(
   db: DbService,
+  caps: AppCapabilities,
   set: Set,
   get: Get,
   config: EntityCrudConfig<T, TCreate, TUpdate>
@@ -95,8 +112,24 @@ export function createEntityCrudHandlers<
   const fail = (err: unknown, reload: boolean): Promise<never> =>
     failAndMaybeReload(set, get, err, config.errorMessage || "Failed", reload);
 
+  /** Returns denial reason or null if allowed. */
+  const denyReason = (action: string): string | null => {
+    if (!config.capabilityKey) return null;
+    const result = checkCapability(caps, config.capabilityKey, action);
+    if (result.ok) return null;
+    if (import.meta.env.DEV) {
+      console.error(result.reason);
+    }
+    set({ error: result.reason });
+    return result.reason;
+  };
+
   return {
     add: async (data) => {
+      const denied = denyReason(`create ${config.entityType}`);
+      if (denied) {
+        throw new Error(denied);
+      }
       try {
         const id = await config.dbAdd(data);
         const entity = config.buildNew
@@ -121,6 +154,9 @@ export function createEntityCrudHandlers<
     },
 
     update: async (id, data) => {
+      if (denyReason(`update ${config.entityType}`)) {
+        return;
+      }
       try {
         const existing = getList().find((e) => e.id === id);
         const updated = config.buildUpdated
@@ -144,6 +180,9 @@ export function createEntityCrudHandlers<
     },
 
     remove: async (id) => {
+      if (denyReason(`delete ${config.entityType}`)) {
+        return;
+      }
       try {
         const existing = getList().find((e) => e.id === id);
         let previousData: unknown = existing;

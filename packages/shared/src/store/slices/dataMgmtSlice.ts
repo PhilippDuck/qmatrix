@@ -1,10 +1,25 @@
 import type { DbService } from "../../services/indexeddb";
+import type { AppCapabilities } from "../../types/capabilities";
 import type { ExportData } from "../../types";
+import { checkCapability } from "../capabilities";
 import type { AppSlice, DataMgmtSlice } from "../types";
 
-export const createDataMgmtSlice = (db: DbService): AppSlice<DataMgmtSlice> => (set, get) => ({
+function requireCap(
+  caps: AppCapabilities,
+  key: "fullBackupExport" | "fullBackupImport",
+  action: string
+): void {
+  const result = checkCapability(caps, key, action);
+  if (!result.ok) {
+    if (import.meta.env.DEV) console.error(result.reason);
+    throw new Error(result.reason);
+  }
+}
+
+export const createDataMgmtSlice = (db: DbService, caps: AppCapabilities): AppSlice<DataMgmtSlice> => (set, get) => ({
   exportData: async () => {
     try {
+      requireCap(caps, "fullBackupExport", "exportData");
       const dbData = await db.exportData();
       const state = get();
       const data: ExportData = {
@@ -37,6 +52,7 @@ export const createDataMgmtSlice = (db: DbService): AppSlice<DataMgmtSlice> => (
 
   importData: async (jsonData) => {
     try {
+      requireCap(caps, "fullBackupImport", "importData");
       const data = JSON.parse(jsonData);
       await db.importData(data);
       await get().refreshAllData();
@@ -48,6 +64,7 @@ export const createDataMgmtSlice = (db: DbService): AppSlice<DataMgmtSlice> => (
 
   mergeData: async (jsonData) => {
     try {
+      requireCap(caps, "fullBackupImport", "mergeData");
       const data: ExportData = JSON.parse(jsonData);
       const report = await db.mergeData(data);
       await get().refreshAllData();
@@ -60,6 +77,7 @@ export const createDataMgmtSlice = (db: DbService): AppSlice<DataMgmtSlice> => (
 
   diffData: async (jsonData) => {
     try {
+      requireCap(caps, "fullBackupImport", "diffData");
       const data: ExportData = JSON.parse(jsonData);
       return await db.diffData(data);
     } catch (err) {
@@ -70,6 +88,7 @@ export const createDataMgmtSlice = (db: DbService): AppSlice<DataMgmtSlice> => (
 
   applyMerge: async (diff, selectedIds) => {
     try {
+      requireCap(caps, "fullBackupImport", "applyMerge");
       const report = await db.applyMerge(diff, selectedIds);
       await get().refreshAllData();
       return report;

@@ -1,7 +1,9 @@
 import type { DbService } from "../../services/indexeddb";
+import type { AppCapabilities } from "../../types/capabilities";
+import { CATALOG_ENTITY_TYPES, checkCapability } from "../capabilities";
 import type { AppSlice, HistorySlice } from "../types";
 
-export const createHistorySlice = (db: DbService): AppSlice<HistorySlice> => (set, get) => ({
+export const createHistorySlice = (db: DbService, caps: AppCapabilities): AppSlice<HistorySlice> => (set, get) => ({
   changeHistory: [],
 
   refreshChangeHistory: async () => {
@@ -18,6 +20,19 @@ export const createHistorySlice = (db: DbService): AppSlice<HistorySlice> => (se
       const entry = await db.getChangeHistoryById(historyEntryId);
       if (!entry || entry.undone) {
         throw new Error("Eintrag nicht gefunden oder bereits rückgängig gemacht");
+      }
+
+      if (CATALOG_ENTITY_TYPES.has(entry.entityType)) {
+        const denied = checkCapability(
+          caps,
+          "historyUndoCatalog",
+          `undo ${entry.entityType}`
+        );
+        if (!denied.ok) {
+          if (import.meta.env.DEV) console.error(denied.reason);
+          set({ error: denied.reason });
+          throw new Error(denied.reason);
+        }
       }
 
       switch (entry.action) {

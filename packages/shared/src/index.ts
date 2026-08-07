@@ -8,7 +8,7 @@ export const SHARED_SPIKE = "skillgrid-shared-ok" as const;
 
 export const SHARED_SPIKE_META = {
   package: "@skillgrid/shared",
-  phase: "pr3-store-factory",
+  phase: "pr4-capability-guards",
 } as const;
 
 export type * from "./types";

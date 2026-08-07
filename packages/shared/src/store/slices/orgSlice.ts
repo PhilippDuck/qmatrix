@@ -1,13 +1,15 @@
 import type { DbService } from "../../services/indexeddb";
+import type { AppCapabilities } from "../../types/capabilities";
+import { checkCapability } from "../capabilities";
 import type { Department, EmployeeRole } from "../../types";
 import { createEntityCrudHandlers, nameLabel } from "../createEntityCrud";
 import type { AppSlice, OrgSlice } from "../types";
 
-export const createOrgSlice = (db: DbService): AppSlice<OrgSlice> => (set, get) => {
+export const createOrgSlice = (db: DbService, caps: AppCapabilities): AppSlice<OrgSlice> => (set, get) => {
   const departments = createEntityCrudHandlers<
     Department,
     Omit<Department, "id" | "updatedAt">
-  >(db, set, get, {
+  >(db, caps, set, get, {
     entityType: "department",
     listKey: "departments",
     getLabel: nameLabel<Department>(),
@@ -16,9 +18,10 @@ export const createOrgSlice = (db: DbService): AppSlice<OrgSlice> => (set, get) 
     dbDelete: (id) => db.deleteDepartment(id),
   });
 
-  const roles = createEntityCrudHandlers<EmployeeRole>(db, set, get, {
+  const roles = createEntityCrudHandlers<EmployeeRole>(db, caps, set, get, {
     entityType: "role",
     listKey: "roles",
+    capabilityKey: "catalogAuthoring",
     getLabel: nameLabel<EmployeeRole>(),
     dbAdd: (data) => db.addRole(data),
     dbUpdate: (id, data) => db.updateRole(id, data),
@@ -38,6 +41,12 @@ export const createOrgSlice = (db: DbService): AppSlice<OrgSlice> => (set, get) 
     deleteRole: roles.remove,
 
     updateSkillsForRole: async (roleId, skillIds) => {
+      const denied = checkCapability(caps, "catalogAuthoring", "updateSkillsForRole");
+      if (!denied.ok) {
+        if (import.meta.env.DEV) console.error(denied.reason);
+        set({ error: denied.reason });
+        throw new Error(denied.reason);
+      }
       try {
         await db.updateSkillsForRole(roleId, skillIds);
         await get().refreshAllData();

@@ -24,23 +24,21 @@ export interface CreateAppStoreDeps {
 export type AppStoreApi = StoreApi<AppState>;
 
 /**
- * Factory: builds a Zustand store closed over db + storage.
+ * Factory: builds a Zustand store closed over db + storage + capabilities.
  * Slices do not import module-level singletons.
  */
 export function createAppStore(deps: CreateAppStoreDeps): AppStoreApi {
-  const { db, storage } = deps;
-  // capabilities reserved for PR 4 guards — threaded for AppProviders parity
-  void deps.capabilities;
+  const { db, capabilities: caps, storage } = deps;
 
   return createStore<AppState>()((...a) => ({
-    ...createCoreSlice(db, storage)(...a),
-    ...createEmployeeSlice(db)(...a),
-    ...createHierarchySlice(db)(...a),
-    ...createAssessmentSlice(db)(...a),
-    ...createOrgSlice(db)(...a),
-    ...createQualificationSlice(db)(...a),
-    ...createViewSlice(db)(...a),
-    ...createHistorySlice(db)(...a),
-    ...createDataMgmtSlice(db)(...a),
+    ...createCoreSlice(db, storage, caps)(...a),
+    ...createEmployeeSlice(db, caps)(...a),
+    ...createHierarchySlice(db, caps)(...a),
+    ...createAssessmentSlice(db, caps)(...a),
+    ...createOrgSlice(db, caps)(...a),
+    ...createQualificationSlice(db, caps)(...a),
+    ...createViewSlice(db, caps)(...a),
+    ...createHistorySlice(db, caps)(...a),
+    ...createDataMgmtSlice(db, caps)(...a),
   }));
 }

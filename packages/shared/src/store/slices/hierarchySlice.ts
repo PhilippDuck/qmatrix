@@ -1,12 +1,14 @@
 import type { DbService } from "../../services/indexeddb";
+import type { AppCapabilities } from "../../types/capabilities";
 import type { Category, Skill, SubCategory } from "../../types";
 import { createEntityCrudHandlers, nameLabel } from "../createEntityCrud";
 import type { AppSlice, HierarchySlice } from "../types";
 
-export const createHierarchySlice = (db: DbService): AppSlice<HierarchySlice> => (set, get) => {
-  const categories = createEntityCrudHandlers<Category>(db, set, get, {
+export const createHierarchySlice = (db: DbService, caps: AppCapabilities): AppSlice<HierarchySlice> => (set, get) => {
+  const categories = createEntityCrudHandlers<Category>(db, caps, set, get, {
     entityType: "category",
     listKey: "categories",
+    capabilityKey: "catalogAuthoring",
     getLabel: nameLabel<Category>(),
     dbAdd: (data) => db.addCategory(data),
     dbUpdate: (id, data) => db.updateCategory(id, data),
@@ -40,9 +42,10 @@ export const createHierarchySlice = (db: DbService): AppSlice<HierarchySlice> =>
     },
   });
 
-  const subcategories = createEntityCrudHandlers<SubCategory>(db, set, get, {
+  const subcategories = createEntityCrudHandlers<SubCategory>(db, caps, set, get, {
     entityType: "subcategory",
     listKey: "subcategories",
+    capabilityKey: "catalogAuthoring",
     getLabel: nameLabel<SubCategory>(),
     dbAdd: (data) => db.addSubCategory(data),
     dbUpdate: (id, data) => db.updateSubCategory(id, data),
@@ -83,9 +86,10 @@ export const createHierarchySlice = (db: DbService): AppSlice<HierarchySlice> =>
     },
   });
 
-  const skills = createEntityCrudHandlers<Skill>(db, set, get, {
+  const skills = createEntityCrudHandlers<Skill>(db, caps, set, get, {
     entityType: "skill",
     listKey: "skills",
+    capabilityKey: "catalogAuthoring",
     getLabel: nameLabel<Skill>(),
     dbAdd: (data) => db.addSkill(data),
     dbUpdate: (id, data) => db.updateSkill(id, data),
