@@ -398,6 +398,7 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = React.memo(({ onNavigate 
   }, []);
 
   const handleOpenAddSkill = useCallback((subCategoryId: string) => {
+    if (!catalogAuthoring) return;
     setEditEntityId(null);
     setEditEntityType('skill');
     setEditEntityName("");
@@ -413,7 +414,7 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = React.memo(({ onNavigate 
       subCategoryIds: [],
     });
     setEditDrawerOpened(true);
-  }, []);
+  }, [catalogAuthoring]);
 
   const handleEditSkill = useCallback((skillId: string) => {
     const skill = skills.find((s) => s.id === skillId);

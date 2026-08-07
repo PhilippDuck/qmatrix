@@ -98,7 +98,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
             >
               Ersten Mitarbeiter anlegen
             </Button>
-            {showCatalogLoad ? (
+            {showCatalogLoad && (
               <Button
                 leftSection={<IconPackageImport size={20} />}
                 variant="default"
@@ -107,7 +107,8 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
               >
                 Katalog laden
               </Button>
-            ) : (
+            )}
+            {catalogAuthoring && (
               <Button
                 leftSection={<IconBulb size={20} />}
                 variant="default"
