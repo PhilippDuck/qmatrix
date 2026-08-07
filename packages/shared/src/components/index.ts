@@ -14,5 +14,6 @@ export {
   UnpublishedCatalogBadge,
   OPEN_PUBLISH_SESSION_KEY,
 } from "./UnpublishedCatalogBadge";
+export { CatalogMergeImport } from "./CatalogMergeImport";
 export { ManageGlobalBackup } from "./ManageGlobalBackup";
 export { SystemDangerZone } from "./SystemDangerZone";
