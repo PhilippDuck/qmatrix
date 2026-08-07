@@ -21,14 +21,19 @@ import {
 } from "@tabler/icons-react";
 import { Dropzone, FileRejection } from "@mantine/dropzone";
 import classes from "./EmptyState.module.css";
-import { useCatalogAuthoring } from "../../hooks/useCatalogAuthoring";
+import {
+  useCatalogAuthoring,
+  useCatalogImport,
+} from "../../hooks/useCatalogAuthoring";
 
 interface EmptyStateProps {
   onAddEmployee: () => void;
   onAddSkill: () => void;
-  /** Team / ops: load catalog package from Manage (preferred over creating skills). */
+  /** Load catalog package (Manage release JSON). */
   onLoadCatalog?: () => void;
   onImport: (file: File) => Promise<void>;
+  /** Employees already present — focus on catalog, not first-employee CTA. */
+  hasEmployees?: boolean;
 }
 
 export const EmptyState: React.FC<EmptyStateProps> = ({
@@ -36,17 +41,36 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   onAddSkill,
   onLoadCatalog,
   onImport,
+  hasEmployees = false,
 }) => {
   const openRef = useRef<() => void>(null);
   const catalogAuthoring = useCatalogAuthoring();
-  // Team: no authoring → Katalog laden; Full: Skill erstellen
-  const showCatalogLoad = !catalogAuthoring && !!onLoadCatalog;
+  const catalogImport = useCatalogImport();
+  // Team / Full: offer Manage catalog package when import is allowed
+  const showCatalogLoad = catalogImport && !!onLoadCatalog;
 
   const handleDrop = async (files: File[]) => {
     if (files.length > 0) {
       await onImport(files[0]);
     }
   };
+
+  const title = hasEmployees
+    ? "Skill-Katalog fehlt"
+    : "Herzlich willkommen";
+
+  const description = (() => {
+    if (showCatalogLoad && hasEmployees) {
+      return "Es sind bereits Mitarbeiter vorhanden, aber noch keine Skills oder Kategorien. Laden Sie den Skill-Katalog aus SkillGrid Manage, um die Matrix zu füllen.";
+    }
+    if (showCatalogLoad && !hasEmployees) {
+      return "Ihre Skill-Matrix ist noch leer. Laden Sie zuerst den Katalog aus SkillGrid Manage, dann legen Sie Mitarbeiter an.";
+    }
+    if (hasEmployees) {
+      return "Mitarbeiter sind vorhanden, aber noch keine Skills. Erstellen Sie Skills oder importieren Sie einen Katalog.";
+    }
+    return "Ihre Skill-Matrix ist noch leer. Fügen Sie Mitarbeiter und Skills hinzu, um zu beginnen.";
+  })();
 
   return (
     <Box h="100%" style={{ display: "flex", flexDirection: "column" }}>
@@ -81,31 +105,32 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
 
           <Stack align="center" gap={0}>
             <Title order={3} ta="center">
-              Herzlich willkommen
+              {title}
             </Title>
             <Text size="md" c="dimmed" ta="center" maw={420}>
-              {showCatalogLoad
-                ? "Ihre Skill-Matrix ist noch leer. Laden Sie zuerst den Katalog aus SkillGrid Manage, dann legen Sie Mitarbeiter an."
-                : "Ihre Skill-Matrix ist noch leer. Fügen Sie Mitarbeiter und Skills hinzu, um zu beginnen."}
+              {description}
             </Text>
           </Stack>
 
           <Group>
-            <Button
-              leftSection={<IconUserPlus size={20} />}
-              size="md"
-              onClick={onAddEmployee}
-            >
-              Ersten Mitarbeiter anlegen
-            </Button>
             {showCatalogLoad && (
               <Button
                 leftSection={<IconPackageImport size={20} />}
-                variant="default"
                 size="md"
+                variant={hasEmployees || !catalogAuthoring ? "filled" : "default"}
                 onClick={onLoadCatalog}
               >
                 Katalog laden
+              </Button>
+            )}
+            {!hasEmployees && (
+              <Button
+                leftSection={<IconUserPlus size={20} />}
+                size="md"
+                variant={showCatalogLoad ? "default" : "filled"}
+                onClick={onAddEmployee}
+              >
+                Ersten Mitarbeiter anlegen
               </Button>
             )}
             {catalogAuthoring && (
@@ -115,7 +140,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
                 size="md"
                 onClick={onAddSkill}
               >
-                Ersten Skill erstellen
+                {hasEmployees ? "Skill erstellen" : "Ersten Skill erstellen"}
               </Button>
             )}
           </Group>

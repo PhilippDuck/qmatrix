@@ -706,7 +706,8 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = React.memo(({ onNavigate 
         // ... (unchanged) ...
       }}
     >
-      {employees.length === 0 && categories.length === 0 ? (
+      {/* No skills/categories yet — offer catalog import even if employees exist */}
+      {categories.length === 0 && skills.length === 0 ? (
         <>
           <input
             ref={catalogFileRef}
@@ -739,6 +740,7 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = React.memo(({ onNavigate 
             }}
           />
           <EmptyState
+            hasEmployees={employees.length > 0}
             onAddEmployee={() => setEmployeeDrawerOpened(true)}
             onAddSkill={() => setSkillDrawerOpened(true)}
             onLoadCatalog={() => catalogFileRef.current?.click()}
