@@ -10,5 +10,9 @@ export { PrivacyModal } from "./PrivacyModal";
 export { HistoryDrawer } from "./shared/HistoryDrawer";
 export { SkillGridLogo } from "./shared/SkillGridLogo";
 export { CatalogReleasePanel } from "./CatalogReleasePanel";
+export {
+  UnpublishedCatalogBadge,
+  OPEN_PUBLISH_SESSION_KEY,
+} from "./UnpublishedCatalogBadge";
 export { ManageGlobalBackup } from "./ManageGlobalBackup";
 export { SystemDangerZone } from "./SystemDangerZone";

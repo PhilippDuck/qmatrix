@@ -34,7 +34,6 @@ import {
   IconGitCompare,
   IconArrowBackUp,
   IconDownload,
-  IconCircleDot,
 } from "@tabler/icons-react";
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
@@ -50,6 +49,10 @@ import {
 import type { CatalogDiffResult } from "../services/catalogDiff";
 import { summarizeDiffCounts } from "../services/catalogDiff";
 import type { StoredCatalogRelease } from "../services/indexeddb";
+import {
+  OPEN_PUBLISH_SESSION_KEY,
+  UnpublishedCatalogBadge,
+} from "./UnpublishedCatalogBadge";
 
 function stableCatalogId(): string {
   const key = "skillgrid-manage-catalog-id";
@@ -114,6 +117,20 @@ export const CatalogReleasePanel: React.FC = () => {
 
   const [publishOpen, { open: openPublish, close: closePublish }] =
     useDisclosure(false);
+
+  // Opened from header "ungesichert" HoverCard → Version freigeben
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem(OPEN_PUBLISH_SESSION_KEY) === "1") {
+        sessionStorage.removeItem(OPEN_PUBLISH_SESSION_KEY);
+        if (hasUnpublishedCatalogChanges) {
+          openPublish();
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+  }, [hasUnpublishedCatalogChanges, openPublish]);
   const [diffOpen, { open: openDiff, close: closeDiff }] = useDisclosure(false);
   const [busy, setBusy] = useState(false);
   const [catalogName, setCatalogName] = useState(
@@ -298,14 +315,13 @@ export const CatalogReleasePanel: React.FC = () => {
       <Group justify="space-between" mb="lg" align="flex-start">
         <Title order={2}>Versionen & Releases</Title>
         {hasUnpublishedCatalogChanges ? (
-          <Badge
+          <UnpublishedCatalogBadge
             size="lg"
-            color="orange"
-            variant="filled"
-            leftSection={<IconCircleDot size={14} />}
-          >
-            Unveröffentlichte Änderungen
-          </Badge>
+            label="Unveröffentlichte Änderungen"
+            onPublish={() => {
+              if (canPublish) openPublish();
+            }}
+          />
         ) : releases.length > 0 ? (
           <Badge size="lg" color="green" variant="light">
             Entspricht letzter Version

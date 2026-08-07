@@ -44,6 +44,7 @@ import { CatalogReleasePanel } from "@skillgrid/shared/components/CatalogRelease
 import { SystemDangerZone } from "@skillgrid/shared/components/SystemDangerZone";
 import { ManageGlobalBackup } from "@skillgrid/shared/components/ManageGlobalBackup";
 import { HistoryDrawer } from "@skillgrid/shared/components/shared/HistoryDrawer";
+import { UnpublishedCatalogBadge } from "@skillgrid/shared/components/UnpublishedCatalogBadge";
 import { PrivacyProvider } from "@skillgrid/shared/context/PrivacyContext";
 import { SkillGridLogo } from "@skillgrid/shared/components/shared/SkillGridLogo";
 /** Always in sync with apps/manage/package.json (not Katalog-Release, not Full). */
@@ -258,11 +259,11 @@ const App: FC = () => {
                         Katalog —
                       </Badge>
                     )}
-                    {hasUnpublishedCatalogChanges && (
-                      <Badge variant="filled" color="orange" size="sm" style={{ flexShrink: 0 }}>
-                        ungesichert
-                      </Badge>
-                    )}
+                    <UnpublishedCatalogBadge
+                      size="sm"
+                      label="ungesichert"
+                      onPublish={() => setActiveTab("releases")}
+                    />
                   </Group>
                 </Group>
                 <Group gap="xs" wrap="nowrap" style={{ flexShrink: 0 }}>
