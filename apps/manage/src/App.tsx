@@ -378,37 +378,21 @@ const App: FC = () => {
                   </ActionIcon>
                   <SkillGridLogo size={collapsed ? 28 : 32} />
                   <Group gap={6} wrap="nowrap" style={{ minWidth: 0 }}>
-                    {!collapsed && (
-                      <>
-                        <Title
-                          order={4}
-                          c="blue"
-                          style={{
-                            letterSpacing: -0.5,
-                            fontSize: "1.1rem",
-                            transition: "all 0.2s ease",
-                            userSelect: "none",
-                            whiteSpace: "nowrap",
-                            flexShrink: 0,
-                          }}
-                        >
-                          SKILLGRID
-                        </Title>
-                        <Badge
-                          variant="light"
-                          color="blue"
-                          size="sm"
-                          style={{ flexShrink: 0, marginRight: 4 }}
-                        >
-                          Manage
-                        </Badge>
-                      </>
-                    )}
-                    {collapsed && (
-                      <Badge variant="light" color="blue" size="sm" style={{ flexShrink: 0 }}>
-                        Manage
-                      </Badge>
-                    )}
+                    <Title
+                      order={4}
+                      c="blue"
+                      style={{
+                        letterSpacing: -0.5,
+                        fontSize: "1.1rem",
+                        transition: "all 0.2s ease",
+                        userSelect: "none",
+                        whiteSpace: "nowrap",
+                        flexShrink: 0,
+                        marginRight: 6,
+                      }}
+                    >
+                      {collapsed ? "MANAGE" : "SKILLGRID Manage"}
+                    </Title>
                     {installedCatalogMeta?.version ? (
                       <Tooltip label="Freigegebene Katalog-Version (Live)">
                         <Badge variant="outline" color="gray" size="sm" style={{ flexShrink: 0 }}>
