@@ -31,12 +31,15 @@ export interface CatalogApplyDb {
   getSkills: () => Promise<Skill[]>;
   getRoles: () => Promise<EmployeeRole[]>;
   getEmployees: () => Promise<Employee[]>;
-  getSettings: () => Promise<{
-    id: string;
-    projectTitle: string;
-    updatedAt: number;
-    installedCatalogMeta?: CatalogPackage["meta"];
-  }>;
+  getSettings: () => Promise<
+    | {
+        id: string;
+        projectTitle: string;
+        updatedAt: number;
+        installedCatalogMeta?: CatalogPackage["meta"];
+      }
+    | undefined
+  >;
   execute: (
     storeName: string,
     method: "add" | "put" | "delete" | "get" | "getAll" | "clear",
@@ -91,7 +94,12 @@ export async function applyCatalogPackage(
 
   const pkg = validation.package;
   const partial = pkg.meta.partial === true;
-  const settings = await db.getSettings();
+  // Fresh Manage DB may have no settings row yet
+  const settings = (await db.getSettings()) ?? {
+    id: "default",
+    projectTitle: "",
+    updatedAt: Date.now(),
+  };
   const previousMeta = settings.installedCatalogMeta;
 
   if (
@@ -381,7 +389,7 @@ export async function applyCatalogPackage(
 
   // Settings meta
   await db.saveSettings({
-    projectTitle: settings.projectTitle,
+    projectTitle: settings.projectTitle || "",
     installedCatalogMeta: pkg.meta,
   });
 
