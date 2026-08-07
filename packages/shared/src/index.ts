@@ -36,6 +36,7 @@ export {
   isValidSemVer,
   parseSemVer,
   compareSemVer,
+  bumpSemVer,
   validateCatalogPackage,
   extractCatalogFromState,
   extractCatalogFromExport,

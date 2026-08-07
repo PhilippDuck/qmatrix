@@ -8,3 +8,5 @@ export { WelcomeModal } from "./WelcomeModal";
 export { ChangelogModal } from "./ChangelogModal";
 export { PrivacyModal } from "./PrivacyModal";
 export { HistoryDrawer } from "./shared/HistoryDrawer";
+export { SkillGridLogo } from "./shared/SkillGridLogo";
+export { CatalogReleasePanel } from "./CatalogReleasePanel";

@@ -23,6 +23,7 @@ export {
   isValidSemVer,
   parseSemVer,
   compareSemVer,
+  bumpSemVer,
   validateCatalogPackage,
   extractCatalogFromState,
   extractCatalogFromExport,
@@ -32,6 +33,7 @@ export {
   recomputeRequiredByRoleIds,
   canonicalEntitiesJson,
 } from "./catalog";
+export type { SemVerBump } from "./catalog";
 export {
   applyCatalogPackage,
   importOpsFromExportData,

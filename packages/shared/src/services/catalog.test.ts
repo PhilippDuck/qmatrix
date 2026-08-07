@@ -4,6 +4,7 @@ import {
   extractCatalogFromState,
   isValidSemVer,
   compareSemVer,
+  bumpSemVer,
   recomputeRequiredByRoleIds,
   catalogDownloadFilename,
   computeContentHash,
@@ -54,6 +55,13 @@ describe("isValidSemVer / compareSemVer", () => {
     expect(compareSemVer("1.0.0", "1.0.1")).toBe(-1);
     expect(compareSemVer("2.0.0", "1.9.9")).toBe(1);
     expect(compareSemVer("1.2.3", "1.2.3")).toBe(0);
+  });
+
+  it("bumps versions", () => {
+    expect(bumpSemVer("1.2.3", "patch")).toBe("1.2.4");
+    expect(bumpSemVer("1.2.3", "minor")).toBe("1.3.0");
+    expect(bumpSemVer("1.2.3", "major")).toBe("2.0.0");
+    expect(bumpSemVer("bogus", "minor")).toBe("0.1.0");
   });
 });
 

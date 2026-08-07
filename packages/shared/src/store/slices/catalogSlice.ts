@@ -10,10 +10,14 @@ import type {
   OpsImportReport,
 } from "../../types/catalog";
 import type { ExportData } from "../../types";
+import type { CatalogChangelogEntry, CatalogMeta, SemVer } from "../../types/catalog";
 import {
   extractCatalogFromState,
   withContentHash,
   catalogDownloadFilename,
+  bumpSemVer,
+  isValidSemVer,
+  type SemVerBump,
 } from "../../services/catalog";
 import {
   applyCatalogPackage,
@@ -21,6 +25,19 @@ import {
 } from "../../services/catalogApply";
 import { checkCapability } from "../capabilities";
 import type { AppSlice } from "../types";
+
+export interface PublishCatalogOptions {
+  /** Stable product-line id (one Manage DB = one catalogId). */
+  catalogId: string;
+  name: string;
+  /** Explicit version, or omit and use bump from current. */
+  version?: SemVer;
+  bump?: SemVerBump;
+  releaseNotes: string;
+  publisher?: string;
+  /** Download JSON after publish (default true). */
+  download?: boolean;
+}
 
 export interface CatalogSlice {
   lastCatalogApplyReport: CatalogApplyResult["report"] | null;
@@ -30,6 +47,12 @@ export interface CatalogSlice {
     meta: CatalogExtractMetaInput
   ) => Promise<CatalogExtractResult>;
   downloadCatalogPackage: (pkg: CatalogPackage) => void;
+  /**
+   * Manage release: bump version, append changelog, persist meta, download package.
+   */
+  publishCatalogRelease: (
+    options: PublishCatalogOptions
+  ) => Promise<CatalogExtractResult>;
   importCatalog: (
     jsonOrPackage: string | unknown,
     options?: CatalogApplyOptions
@@ -101,6 +124,151 @@ export const createCatalogSlice =
       URL.revokeObjectURL(url);
     },
 
+    publishCatalogRelease: async (options) => {
+      const denied = checkCapability(
+        caps,
+        "catalogVersioning",
+        "publishCatalogRelease"
+      );
+      if (!denied.ok) {
+        // Fall back to plain export if versioning not available
+        const exportDenied = checkCapability(
+          caps,
+          "catalogExport",
+          "publishCatalogRelease"
+        );
+        if (!exportDenied.ok) {
+          set({ error: denied.reason });
+          return {
+            ok: false,
+            errors: [
+              {
+                path: "capabilities",
+                message: denied.reason,
+                severity: "error" as const,
+              },
+            ],
+            report: {
+              warnings: [],
+              orphanSkillRoleLinks: [],
+              counts: {
+                categories: 0,
+                subcategories: 0,
+                skills: 0,
+                roles: 0,
+              },
+            },
+          };
+        }
+      }
+
+      const state = get();
+      const previous = state.installedCatalogMeta;
+      const currentVersion = previous?.version || "0.0.0";
+      let nextVersion = options.version;
+      if (!nextVersion) {
+        nextVersion = bumpSemVer(currentVersion, options.bump || "minor");
+      }
+      if (!isValidSemVer(nextVersion)) {
+        const message = `Ungültige Version: ${nextVersion}`;
+        set({ error: message });
+        return {
+          ok: false,
+          errors: [
+            { path: "version", message, severity: "error" as const },
+          ],
+          report: {
+            warnings: [],
+            orphanSkillRoleLinks: [],
+            counts: {
+              categories: 0,
+              subcategories: 0,
+              skills: 0,
+              roles: 0,
+            },
+          },
+        };
+      }
+
+      const today = new Date().toISOString().slice(0, 10);
+      const newEntry: CatalogChangelogEntry = {
+        version: nextVersion,
+        date: today,
+        notes: options.releaseNotes.trim() || `Release ${nextVersion}`,
+      };
+      const previousChangelog: CatalogChangelogEntry[] =
+        previous?.changelog || [];
+      // Newest first
+      const changelog = [
+        newEntry,
+        ...previousChangelog.filter((e) => e.version !== nextVersion),
+      ];
+
+      const extract = extractCatalogFromState(
+        {
+          categories: state.categories,
+          subcategories: state.subcategories,
+          skills: state.skills,
+          roles: state.roles,
+        },
+        {
+          catalogId: options.catalogId,
+          name: options.name.trim() || "SkillGrid Katalog",
+          version: nextVersion,
+          publisher: options.publisher,
+          changelog,
+          partial: false,
+        }
+      );
+
+      if (!extract.ok || !extract.package) {
+        set({
+          lastCatalogExtractWarnings: extract.report.warnings.map(
+            (w) => w.message
+          ),
+          error:
+            extract.errors.map((e) => e.message).join("; ") ||
+            "Release fehlgeschlagen",
+        });
+        return extract;
+      }
+
+      // Manage publish blocks on orphan skill-role links (K18)
+      if (
+        caps.catalogVersioning &&
+        extract.report.orphanSkillRoleLinks.length > 0
+      ) {
+        const message =
+          "Release blockiert: Skills haben Rollen-Links, die nicht in Rollen.requiredSkills stehen. Bitte unter Rollen bereinigen.";
+        set({ error: message });
+        return {
+          ok: false,
+          errors: [
+            { path: "requiredSkills", message, severity: "error" as const },
+          ],
+          report: extract.report,
+        };
+      }
+
+      let pkg = extract.package;
+      pkg = await withContentHash(pkg);
+
+      const meta: CatalogMeta = pkg.meta;
+      await get().setInstalledCatalogMeta(meta);
+
+      if (options.download !== false) {
+        get().downloadCatalogPackage(pkg);
+      }
+
+      set({
+        lastCatalogExtractWarnings: extract.report.warnings.map(
+          (w) => w.message
+        ),
+      });
+
+      return { ...extract, package: pkg, ok: true };
+    },
+
     importCatalog: async (jsonOrPackage, options) => {
       const denied = checkCapability(caps, "catalogImport", "importCatalog");
       if (!denied.ok) {
@@ -127,6 +295,7 @@ export const createCatalogSlice =
         const result = await applyCatalogPackage(db, raw, options);
         if (result.ok) {
           set({ lastCatalogApplyReport: result.report ?? null });
+          // refreshAllData reloads installedCatalogMeta from settings (set by apply)
           await get().refreshAllData();
         } else {
           set({

@@ -53,6 +53,16 @@ export function compareSemVer(a: SemVer, b: SemVer): number {
   return 0;
 }
 
+export type SemVerBump = "major" | "minor" | "patch";
+
+/** Bump a SemVer string. Invalid input falls back to 0.0.0 before bump. */
+export function bumpSemVer(version: string, bump: SemVerBump): SemVer {
+  const parsed = parseSemVer(version) ?? { major: 0, minor: 0, patch: 0 };
+  if (bump === "major") return `${parsed.major + 1}.0.0`;
+  if (bump === "minor") return `${parsed.major}.${parsed.minor + 1}.0`;
+  return `${parsed.major}.${parsed.minor}.${parsed.patch + 1}`;
+}
+
 function err(path: string, message: string): CatalogValidationIssue {
   return { path, message, severity: "error" };
 }

@@ -47,8 +47,10 @@ import {
   useFullBackupExport,
   useFullBackupImport,
 } from "../hooks/useCatalogAuthoring";
+import { useCapabilities } from "../store/hooks";
 import { withContentHash } from "../services/catalog";
 import { TextInput } from "@mantine/core";
+import { CatalogReleasePanel } from "./CatalogReleasePanel";
 
 interface ActionInfo {
   type: string;
@@ -61,6 +63,7 @@ export const DataManagement = () => {
   const canCatalogVersioning = useCatalogVersioning();
   const canFullBackupExport = useFullBackupExport();
   const canFullBackupImport = useFullBackupImport();
+  const { pdfReports } = useCapabilities();
 
   const {
     exportData,
@@ -385,18 +388,21 @@ export const DataManagement = () => {
           </Group>
         </Card>
 
-        {(canCatalogExport || canCatalogImport) && (
+        {/* Manage: full release / version history UI */}
+        {canCatalogVersioning && <CatalogReleasePanel />}
+
+        {/* Full/Team: simple catalog extract or import without Manage release flow */}
+        {!canCatalogVersioning && (canCatalogExport || canCatalogImport) && (
           <Card withBorder shadow="sm" radius="md">
             <Stack gap="md">
               <Group gap="xs">
                 <IconPackage size={20} style={{ color: "var(--mantine-color-indigo-filled)" }} />
-                <Title order={4}>
-                  {canCatalogVersioning ? "Katalog veröffentlichen" : "Skill- & Rollen-Katalog"}
-                </Title>
+                <Title order={4}>Skill- & Rollen-Katalog</Title>
               </Group>
               <Text size="xs" c="dimmed">
-                Versioniertes Katalog-Paket (Skills, Kategorien, Rollen) – getrennt vom
-                vollständigen Backup. Source of Truth für SkillGrid Team.
+                Katalog-Paket (Skills, Kategorien, Rollen) – getrennt vom vollständigen Backup.
+                {canCatalogImport &&
+                  " Import aktualisiert den Katalog, ohne Mitarbeiter und Bewertungen zu löschen."}
               </Text>
               {canCatalogExport && (
                 <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm">
@@ -424,7 +430,7 @@ export const DataManagement = () => {
                     variant="light"
                     color="indigo"
                   >
-                    {canCatalogVersioning ? "Veröffentlichen" : "Katalog exportieren"}
+                    Katalog exportieren
                   </Button>
                 )}
                 {canCatalogImport && (
@@ -552,58 +558,60 @@ export const DataManagement = () => {
 
         </SimpleGrid>
 
-        {/* Report Bereich - Full Width */}
-        <Card withBorder shadow="sm" radius="md">
-          <Group justify="space-between" align="flex-start">
-            <Box style={{ flex: 1 }}>
-              <Group gap="xs" mb="xs">
-                <IconFileText size={20} style={{ color: "var(--mantine-color-teal-filled)" }} />
-                <Title order={4}>Quartalsbericht</Title>
-              </Group>
-              <Text size="sm" c="dimmed" mb="md" maw={600}>
-                Erzeugt eine Management Summary als PDF. Diese enthält wichtige KPIs wie den Gesamt-Qualifikationsscore,
-                das Wachstum im gewählten Zeitraum sowie eine Performance-Übersicht nach Kategorien.
-              </Text>
+        {/* Report only in Full/Team (pdfReports), not Manage */}
+        {pdfReports && (
+          <Card withBorder shadow="sm" radius="md">
+            <Group justify="space-between" align="flex-start">
+              <Box style={{ flex: 1 }}>
+                <Group gap="xs" mb="xs">
+                  <IconFileText size={20} style={{ color: "var(--mantine-color-teal-filled)" }} />
+                  <Title order={4}>Quartalsbericht</Title>
+                </Group>
+                <Text size="sm" c="dimmed" mb="md" maw={600}>
+                  Erzeugt eine Management Summary als PDF. Diese enthält wichtige KPIs wie den Gesamt-Qualifikationsscore,
+                  das Wachstum im gewählten Zeitraum sowie eine Performance-Übersicht nach Kategorien.
+                </Text>
 
-              <Group align="flex-end">
-                <Select
-                  label="Jahr"
-                  placeholder="Jahr"
-                  w={100}
-                  data={Array.from({ length: 5 }, (_, i) => (new Date().getFullYear() - i).toString())}
-                  value={reportYear}
-                  onChange={(v) => setReportYear(v || new Date().getFullYear().toString())}
-                  allowDeselect={false}
-                />
-                <Select
-                  label="Quartal"
-                  placeholder="Q"
-                  w={80}
-                  data={[
-                    { value: "1", label: "Q1" },
-                    { value: "2", label: "Q2" },
-                    { value: "3", label: "Q3" },
-                    { value: "4", label: "Q4" },
-                  ]}
-                  value={reportQuarter}
-                  onChange={(v) => setReportQuarter(v || "1")}
-                  allowDeselect={false}
-                />
-                <Button
-                  leftSection={<IconFileText size={16} />}
-                  onClick={handleGenerateReport}
-                  variant="light"
-                  color="teal"
-                  loading={isGeneratingReport}
-                >
-                  PDF Erstellen
-                </Button>
-              </Group>
-            </Box>
+                <Group align="flex-end">
+                  <Select
+                    label="Jahr"
+                    placeholder="Jahr"
+                    w={100}
+                    data={Array.from({ length: 5 }, (_, i) => (new Date().getFullYear() - i).toString())}
+                    value={reportYear}
+                    onChange={(v) => setReportYear(v || new Date().getFullYear().toString())}
+                    allowDeselect={false}
+                  />
+                  <Select
+                    label="Quartal"
+                    placeholder="Q"
+                    w={80}
+                    data={[
+                      { value: "1", label: "Q1" },
+                      { value: "2", label: "Q2" },
+                      { value: "3", label: "Q3" },
+                      { value: "4", label: "Q4" },
+                    ]}
+                    value={reportQuarter}
+                    onChange={(v) => setReportQuarter(v || "1")}
+                    allowDeselect={false}
+                  />
+                  <Button
+                    leftSection={<IconFileText size={16} />}
+                    onClick={handleGenerateReport}
+                    variant="light"
+                    color="teal"
+                    loading={isGeneratingReport}
+                  >
+                    PDF Erstellen
+                  </Button>
+                </Group>
+              </Box>
 
-            <IconFileText size={80} style={{ opacity: 0.1 }} />
-          </Group>
-        </Card>
+              <IconFileText size={80} style={{ opacity: 0.1 }} />
+            </Group>
+          </Card>
+        )}
 
         {/* Modal für die Auswahl der Änderungen */}
         <Modal

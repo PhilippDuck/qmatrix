@@ -7,6 +7,7 @@ import type { AppSlice, CoreSlice } from "../types";
 
 export const createCoreSlice = (db: DbService, storage: PrefixedStorage, _caps: AppCapabilities): AppSlice<CoreSlice> => (set, get) => ({
   projectTitle: "",
+  installedCatalogMeta: null,
   dataHash: "",
   loading: true,
   error: null,
@@ -81,6 +82,7 @@ export const createCoreSlice = (db: DbService, storage: PrefixedStorage, _caps: 
         savedViews: (views || []).sort((a, b) => (a.order ?? 9999) - (b.order ?? 9999)),
         changeHistory: history || [],
         projectTitle: settings?.projectTitle || "",
+        installedCatalogMeta: settings?.installedCatalogMeta ?? null,
         dataHash: hash || "",
         employees: migrated.employees,
         loading: false,
@@ -96,11 +98,34 @@ export const createCoreSlice = (db: DbService, storage: PrefixedStorage, _caps: 
 
   updateProjectTitle: async (title) => {
     try {
-      await db.saveSettings({ projectTitle: title });
+      const state = get();
+      await db.saveSettings({
+        projectTitle: title,
+        installedCatalogMeta: state.installedCatalogMeta ?? undefined,
+      });
       set({ projectTitle: title });
-      await get().refreshAllData();
     } catch (err) {
       console.error(err);
+    }
+  },
+
+  setInstalledCatalogMeta: async (meta) => {
+    try {
+      const state = get();
+      await db.saveSettings({
+        projectTitle: state.projectTitle || "",
+        installedCatalogMeta: meta ?? undefined,
+      });
+      set({ installedCatalogMeta: meta });
+    } catch (err) {
+      console.error(err);
+      set({
+        error:
+          err instanceof Error
+            ? err.message
+            : "Katalog-Meta konnte nicht gespeichert werden",
+      });
+      throw err;
     }
   },
 });

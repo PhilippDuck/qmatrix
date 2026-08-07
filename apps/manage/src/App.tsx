@@ -1,5 +1,5 @@
 /**
- * SkillGrid Manage — catalog SoT shell (skills, roles, publish).
+ * SkillGrid Manage — zentrale Katalog-Verwaltung (Skills, Rollen, Versionen).
  */
 import { useState, useEffect, type FC } from "react";
 import {
@@ -24,7 +24,7 @@ import { useDisclosure, useLocalStorage } from "@mantine/hooks";
 import {
   IconSun,
   IconMoon,
-  IconSettings,
+  IconRocket,
   IconTags,
   IconBadge,
   IconChevronLeft,
@@ -39,6 +39,7 @@ import { CategoryManager } from "@skillgrid/shared/components/CategoryManager";
 import { RoleManager } from "@skillgrid/shared/components/organization/RoleManager";
 import { DataManagement } from "@skillgrid/shared/components/DataManagement";
 import { PrivacyProvider } from "@skillgrid/shared/context/PrivacyContext";
+import { SkillGridLogo } from "@skillgrid/shared/components/shared/SkillGridLogo";
 import "@mantine/core/styles.css";
 import "@mantine/dates/styles.css";
 import "@mantine/notifications/styles.css";
@@ -49,12 +50,12 @@ const theme = createTheme({
 
 const APP_VERSION = `v${__APP_VERSION__}`;
 
-type ManageTab = "skills" | "roles" | "system";
+type ManageTab = "skills" | "roles" | "releases";
 
 const NAV_ITEMS: { value: ManageTab; label: string; icon: Icon }[] = [
   { value: "skills", label: "Skills & Kategorien", icon: IconTags },
   { value: "roles", label: "Rollen", icon: IconBadge },
-  { value: "system", label: "Katalog / System", icon: IconSettings },
+  { value: "releases", label: "Versionen & Releases", icon: IconRocket },
 ];
 
 function ColorSchemeToggle() {
@@ -87,12 +88,13 @@ const App: FC = () => {
     defaultValue: "skills",
   });
 
-  const { loading, error, initDb, projectTitle } = useStore(
+  const { loading, error, initDb, projectTitle, installedCatalogMeta } = useStore(
     useShallow((s) => ({
       loading: s.loading,
       error: s.error,
       initDb: s.initDb,
       projectTitle: s.projectTitle,
+      installedCatalogMeta: s.installedCatalogMeta,
     }))
   );
 
@@ -111,6 +113,7 @@ const App: FC = () => {
       <MantineProvider theme={theme} defaultColorScheme="auto">
         <Center h="100vh">
           <Stack align="center" gap="sm">
+            <SkillGridLogo size={48} />
             <Loader size="lg" />
             <Text c="dimmed" size="sm">
               SkillGrid Manage wird geladen…
@@ -129,7 +132,7 @@ const App: FC = () => {
           <AppShell
             header={{ height: 56 }}
             navbar={{
-              width: collapsed ? 72 : 240,
+              width: collapsed ? 72 : 260,
               breakpoint: "sm",
               collapsed: { mobile: !opened },
             }}
@@ -137,14 +140,29 @@ const App: FC = () => {
           >
             <AppShell.Header>
               <Group h="100%" px="md" justify="space-between">
-                <Group>
+                <Group gap="sm">
                   <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
-                  <Title order={3}>
-                    {projectTitle || "SkillGrid Manage"}
-                  </Title>
-                  <Badge variant="light" color="indigo" size="sm">
-                    Katalog SoT
-                  </Badge>
+                  <SkillGridLogo size={32} />
+                  <div>
+                    <Group gap="xs">
+                      <Title order={4} c="indigo">
+                        SkillGrid Manage
+                      </Title>
+                      <Badge variant="light" color="indigo" size="sm">
+                        Katalog-Verwaltung
+                      </Badge>
+                      {installedCatalogMeta?.version && (
+                        <Badge variant="outline" color="gray" size="sm">
+                          freigegeben v{installedCatalogMeta.version}
+                        </Badge>
+                      )}
+                    </Group>
+                    {projectTitle && (
+                      <Text size="xs" c="dimmed">
+                        {projectTitle}
+                      </Text>
+                    )}
+                  </div>
                 </Group>
                 <Group gap="xs">
                   <Text size="xs" c="dimmed">
@@ -170,6 +188,13 @@ const App: FC = () => {
                   />
                 ))}
               </Stack>
+              {!collapsed && (
+                <Text size="xs" c="dimmed" px="xs" mb="sm">
+                  Zentrale Pflege von Skills & Rollen. Nach Änderungen eine{" "}
+                  <strong>Version freigeben</strong> und die Datei in Team
+                  importieren.
+                </Text>
+              )}
               <ActionIcon
                 variant="subtle"
                 onClick={() => setCollapsed((c) => !c)}
@@ -182,7 +207,7 @@ const App: FC = () => {
             <AppShell.Main>
               {activeTab === "skills" && <CategoryManager />}
               {activeTab === "roles" && <RoleManager />}
-              {activeTab === "system" && <DataManagement />}
+              {activeTab === "releases" && <DataManagement />}
             </AppShell.Main>
           </AppShell>
         </PrivacyProvider>

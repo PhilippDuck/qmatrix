@@ -28,6 +28,8 @@ export type AppSlice<T> = StateCreator<AppState, [], [], T>;
 
 export interface CoreSlice {
   projectTitle: string;
+  /** Last published / installed catalog meta (release history lives in meta.changelog). */
+  installedCatalogMeta: import("../types/catalog").CatalogMeta | null;
   dataHash: string;
   loading: boolean;
   error: string | null;
@@ -36,6 +38,10 @@ export interface CoreSlice {
   initDb: () => Promise<void>;
   refreshAllData: () => Promise<void>;
   updateProjectTitle: (title: string) => Promise<void>;
+  /** Persist catalog release meta (Manage publish / Team import). */
+  setInstalledCatalogMeta: (
+    meta: import("../types/catalog").CatalogMeta | null
+  ) => Promise<void>;
 }
 
 export interface EmployeeSlice {
