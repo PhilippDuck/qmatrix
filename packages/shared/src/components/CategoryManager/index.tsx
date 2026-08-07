@@ -661,7 +661,7 @@ export const CategoryManager: React.FC = () => {
               subcategories={subcategories}
               skills={skills}
               roles={roles}
-              projectTitle={projectTitle}
+              projectTitle={projectTitle?.trim() || "Katalog"}
               onEditCategory={(cat) => openForm("category", cat.id!, cat.name, cat.description || "")}
               onEditSubCategory={(sub) => {
                 setSelectedCategory(sub.categoryId);

@@ -17,6 +17,7 @@ import {
   Tooltip,
   Text,
   Badge,
+  TextInput,
   useMantineColorScheme,
   useComputedColorScheme,
   Box,
@@ -34,6 +35,7 @@ import {
   IconChevronRight,
   IconHistory,
   IconDeviceFloppy,
+  IconEdit,
   type Icon,
 } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
@@ -214,11 +216,15 @@ const App: FC = () => {
     defaultValue: "skills",
   });
 
+  const [isEditingCatalogName, setIsEditingCatalogName] = useState(false);
+  const [tempCatalogName, setTempCatalogName] = useState("");
+
   const {
     loading,
     error,
     initDb,
     projectTitle,
+    updateProjectTitle,
     installedCatalogMeta,
     hasUnpublishedCatalogChanges,
     categories,
@@ -236,6 +242,7 @@ const App: FC = () => {
       error: s.error,
       initDb: s.initDb,
       projectTitle: s.projectTitle,
+      updateProjectTitle: s.updateProjectTitle,
       installedCatalogMeta: s.installedCatalogMeta,
       hasUnpublishedCatalogChanges: s.hasUnpublishedCatalogChanges,
       categories: s.categories,
@@ -277,12 +284,26 @@ const App: FC = () => {
     initDb();
   }, [initDb]);
 
+  // Once: seed catalog name from last release meta if project title empty
+  useEffect(() => {
+    if (loading) return;
+    if (!projectTitle?.trim() && installedCatalogMeta?.name?.trim()) {
+      void updateProjectTitle(installedCatalogMeta.name.trim());
+    }
+  }, [loading, projectTitle, installedCatalogMeta?.name, updateProjectTitle]);
+
   // Keep header "ungesicherte Änderungen" badge in sync while editing skills/roles
   useEffect(() => {
     if (!loading) {
       void refreshCatalogDirtyState();
     }
   }, [loading, categories, subcategories, skills, roles, refreshCatalogDirtyState]);
+
+  const handleCatalogNameSave = () => {
+    const next = tempCatalogName.trim();
+    void updateProjectTitle(next);
+    setIsEditingCatalogName(false);
+  };
 
   useEffect(() => {
     if (error) {
@@ -358,9 +379,9 @@ const App: FC = () => {
             transitionDuration={0}
             styles={{ root: { height: "100dvh" } }}
           >
-            <AppShell.Header>
+            <AppShell.Header style={{ position: "relative" }}>
               <Group h="100%" px="md" justify="space-between" wrap="nowrap">
-                <Group gap="sm" wrap="nowrap" style={{ minWidth: 0 }}>
+                <Group gap="sm" wrap="nowrap" style={{ minWidth: 0, flex: 1 }}>
                   <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
                   {/* Sidebar collapse — same place as Full (header, left of logo) */}
                   <ActionIcon
@@ -412,12 +433,71 @@ const App: FC = () => {
                     />
                   </Group>
                 </Group>
-                <Group gap="xs" wrap="nowrap" style={{ flexShrink: 0 }}>
-                  {projectTitle && (
-                    <Text size="sm" c="dimmed" visibleFrom="lg" lineClamp={1} maw={180}>
-                      {projectTitle}
-                    </Text>
+
+                {/* Catalog name — SoT for organigram root, releases, header */}
+                <Box
+                  style={{
+                    position: "absolute",
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                    maxWidth: "min(360px, 40vw)",
+                  }}
+                  visibleFrom="sm"
+                >
+                  {isEditingCatalogName ? (
+                    <TextInput
+                      value={tempCatalogName}
+                      onChange={(e) => setTempCatalogName(e.currentTarget.value)}
+                      onBlur={handleCatalogNameSave}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          e.currentTarget.blur();
+                        }
+                        if (e.key === "Escape") setIsEditingCatalogName(false);
+                      }}
+                      size="sm"
+                      autoFocus
+                      placeholder="Katalogname"
+                      styles={{
+                        input: {
+                          textAlign: "center",
+                          fontWeight: 700,
+                          fontSize: "var(--mantine-font-size-md)",
+                        },
+                      }}
+                    />
+                  ) : (
+                    <Tooltip label="Katalogname bearbeiten (Organigramm, Releases)">
+                      <Group
+                        gap={6}
+                        justify="center"
+                        wrap="nowrap"
+                        onClick={() => {
+                          setTempCatalogName(projectTitle || "");
+                          setIsEditingCatalogName(true);
+                        }}
+                        style={{ cursor: "pointer", userSelect: "none" }}
+                      >
+                        <Text
+                          fw={700}
+                          size="md"
+                          lineClamp={1}
+                          c={projectTitle ? undefined : "dimmed"}
+                        >
+                          {projectTitle || "Katalogname eingeben"}
+                        </Text>
+                        <IconEdit
+                          size={16}
+                          color="var(--mantine-color-gray-5)"
+                          style={{ opacity: 0.5, flexShrink: 0 }}
+                        />
+                      </Group>
+                    </Tooltip>
                   )}
+                </Box>
+
+                <Group gap="xs" wrap="nowrap" style={{ flexShrink: 0 }}>
                   <QuickBackupButton
                     needsAttention={needsBackupAttention}
                     lastUpdate={lastUpdate}

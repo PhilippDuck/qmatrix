@@ -148,9 +148,11 @@ export const CatalogReleasePanel: React.FC = () => {
   }, [hasUnpublishedCatalogChanges, openPublish]);
   const [diffOpen, { open: openDiff, close: closeDiff }] = useDisclosure(false);
   const [busy, setBusy] = useState(false);
-  const [catalogName, setCatalogName] = useState(
-    installedCatalogMeta?.name || projectTitle || "Unternehmens-Katalog"
-  );
+  /** Catalog name SoT = projectTitle (header); not re-entered per release. */
+  const catalogName =
+    projectTitle?.trim() ||
+    installedCatalogMeta?.name?.trim() ||
+    "Unternehmens-Katalog";
   const [bump, setBump] = useState<SemVerBump>("minor");
   const [manualVersion, setManualVersion] = useState("");
   const [notes, setNotes] = useState("");
@@ -227,11 +229,11 @@ export const CatalogReleasePanel: React.FC = () => {
     try {
       const result = await publishCatalogRelease({
         catalogId,
-        name: catalogName.trim() || "Unternehmens-Katalog",
+        name: catalogName,
         bump: useManual ? undefined : bump,
         version: useManual ? manualVersion.trim() : undefined,
         releaseNotes: notes.trim(),
-        publisher: projectTitle || "SkillGrid Manage",
+        publisher: "SkillGrid Manage",
         download: true,
       });
 
@@ -682,11 +684,16 @@ export const CatalogReleasePanel: React.FC = () => {
             Download).
           </Text>
 
-          <TextInput
-            label="Katalog-Name"
-            value={catalogName}
-            onChange={(e) => setCatalogName(e.currentTarget.value)}
-          />
+          <Text size="sm">
+            Katalog:{" "}
+            <Text span fw={600}>
+              {catalogName}
+            </Text>
+            <Text span size="xs" c="dimmed">
+              {" "}
+              (Name oben in der Navigation bearbeiten)
+            </Text>
+          </Text>
 
           <Stack gap={6}>
             <Text size="sm" fw={500}>
