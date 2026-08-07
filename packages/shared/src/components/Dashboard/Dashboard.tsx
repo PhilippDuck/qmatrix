@@ -237,17 +237,18 @@ export const Dashboard: React.FC = () => {
         // Goal Fulfillment (Role Targets + Individual Targets)
         let totalTargets = 0;
         let metTargets = 0;
-        const roleMap = new Map(roles.map(r => [r.name, r]));
+        const roleById = new Map(roles.map((r) => [r.id!, r]));
+        const roleByName = new Map(roles.map((r) => [r.name, r]));
         // Track aggregated gaps per skill (consistent with Goal Fulfillment)
         const skillGapDiffs = new Map<string, { totalGap: number, count: number }>();
 
         activeEmployees.forEach(emp => {
             const targets = new Map<string, number>();
 
-            // 1. Role Targets
+            // 1. Role Targets (roles stored as ids; dual-resolve legacy names)
             if (emp.roles) {
-                emp.roles.forEach(rName => {
-                    const r = roleMap.get(rName);
+                emp.roles.forEach((ref) => {
+                    const r = roleById.get(ref) ?? roleByName.get(ref);
                     if (r?.requiredSkills) {
                         r.requiredSkills.forEach(req => {
                             const current = targets.get(req.skillId) || 0;
@@ -428,7 +429,9 @@ export const Dashboard: React.FC = () => {
 
         // Role distribution (employees can have multiple roles)
         const roleDistribution = roles.map(role => {
-            const count = employees.filter(e => e.roles?.includes(role.name)).length;
+            const count = employees.filter(
+              (e) => e.roles?.includes(role.id!) || e.roles?.includes(role.name)
+            ).length;
             return { role, count };
         }).filter(r => r.count > 0).sort((a, b) => b.count - a.count);
 

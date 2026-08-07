@@ -1,6 +1,7 @@
 import { useMemo, useCallback } from "react";
 import { Employee, Category, SubCategory, Skill, Assessment, Department, EmployeeRole } from "../store/hooks";
 import { getMaxRoleTargetForSkill } from "../utils/skillCalculations";
+import { employeeMatchesRoleFilter } from "../utils/roleRefs";
 import { MatrixColumn } from "../components/SkillMatrix/types";
 import { MetricMode } from "./useMatrixState";
 import { useMantineColorScheme } from "@mantine/core";
@@ -108,11 +109,8 @@ export function useMatrixCalculations({
         }
 
         if (filterRoles.length > 0) {
-            const selectedRoleNames = roles
-                .filter(r => filterRoles.includes(r.id!))
-                .map(r => r.name);
             result = result.filter((e) =>
-                e.roles && e.roles.some((role: string) => selectedRoleNames.includes(role))
+                employeeMatchesRoleFilter(e.roles, filterRoles, roles)
             );
         }
 

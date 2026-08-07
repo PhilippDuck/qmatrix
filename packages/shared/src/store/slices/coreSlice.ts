@@ -64,6 +64,7 @@ export const createCoreSlice = (db: DbService, storage: PrefixedStorage, _caps: 
       const migrated = await runLoadTimeMigrations(db, {
         employees: emps || [],
         departments: depts || [],
+        roles: rls || [],
         qualificationPlans: qPlans || [],
         qualificationMeasures: qMeasures || [],
       });
@@ -74,7 +75,7 @@ export const createCoreSlice = (db: DbService, storage: PrefixedStorage, _caps: 
         skills: sks || [],
         assessments: asms || [],
         departments: migrated.departments,
-        roles: rls || [],
+        roles: migrated.roles,
         qualificationPlans: migrated.qualificationPlans,
         qualificationMeasures: migrated.qualificationMeasures,
         savedViews: (views || []).sort((a, b) => (a.order ?? 9999) - (b.order ?? 9999)),

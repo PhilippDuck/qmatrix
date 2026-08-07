@@ -23,6 +23,7 @@ import { notifications } from "@mantine/notifications";
 import { IconPlus, IconHistory, IconUser } from "@tabler/icons-react";
 import { HistoryTimeline } from "./HistoryTimeline";
 import { useStore, useShallow } from "../../store/hooks";
+import { findRole, roleLabels, toRoleIds } from "../../utils/roleRefs";
 
 interface EmployeeDrawerProps {
   opened: boolean;
@@ -65,17 +66,18 @@ export const EmployeeDrawer: React.FC<EmployeeDrawerProps> = ({
 
   useEffect(() => {
     if (opened) {
+      // Form shows role names; storage uses IDs (convert both ways)
       setFormData({
         name: initialData?.name || "",
         department: departments.find(d => d.id === initialData?.department)?.name || initialData?.department || "",
-        roles: initialData?.roles || [],
+        roles: roleLabels(initialData?.roles, roles),
         isActive: initialData?.isActive !== undefined ? initialData.isActive : true,
         deactivationDate: initialData?.deactivationDate ? new Date(initialData.deactivationDate) : null,
         reactivationDate: initialData?.reactivationDate ? new Date(initialData.reactivationDate) : null,
       });
       setActiveTab("details");
     }
-  }, [opened, initialData]);
+  }, [opened, initialData, departments, roles]);
 
   const handleSave = async () => {
     if (!formData.name.trim()) return;
@@ -112,17 +114,35 @@ export const EmployeeDrawer: React.FC<EmployeeDrawerProps> = ({
         }
       }
 
-      // Check and create Roles if new
+      // Resolve/create roles → store IDs (K17)
+      let rolesSnapshot = roles;
+      const finalRoleIds: string[] = [];
+      const seen = new Set<string>();
       for (const roleName of trimmedRoles) {
-        if (!roles.some(r => r.name === roleName)) {
-          await addRole({ name: roleName });
+        let role = findRole(roleName, rolesSnapshot);
+        if (!role?.id) {
+          const newId = await addRole({ name: roleName });
+          rolesSnapshot = [
+            ...rolesSnapshot,
+            { id: newId, name: roleName },
+          ];
+          role = { id: newId, name: roleName };
+        }
+        if (role.id && !seen.has(role.id)) {
+          seen.add(role.id);
+          finalRoleIds.push(role.id);
         }
       }
+      // Prefer store snapshot after creates when available
+      const normalizedIds =
+        toRoleIds(finalRoleIds, rolesSnapshot).length > 0
+          ? toRoleIds(finalRoleIds, rolesSnapshot)
+          : finalRoleIds;
 
       await onSave(
         formData.name.trim(),
         finalDeptId,
-        trimmedRoles,
+        normalizedIds,
         formData.isActive,
         formData.deactivationDate,
         formData.reactivationDate

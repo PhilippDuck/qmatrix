@@ -7,7 +7,8 @@ export interface Employee {
   id?: string;
   name: string;
   department?: string;
-  roles?: string[]; // Multiple roles per employee
+  /** Role IDs (K17). Legacy data may still hold names until load-time migration. */
+  roles?: string[];
   isActive?: boolean; // Default true if undefined
   deactivationDate?: string; // ISO Date String
   reactivationDate?: string; // ISO Date String

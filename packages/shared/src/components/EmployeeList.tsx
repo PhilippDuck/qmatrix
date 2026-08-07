@@ -16,6 +16,7 @@ import { useStore, useShallow } from "../store/hooks";
 import { usePrivacy } from "../context/PrivacyContext";
 import { Employee } from "../services/indexeddb";
 import { EmployeeDrawer } from "./shared/EmployeeDrawer";
+import { employeeHasRole, roleLabels } from "../utils/roleRefs";
 
 export const EmployeeList: React.FC = () => {
   const { employees, addEmployee, updateEmployee, deleteEmployee, roles, departments } = useStore(
@@ -136,7 +137,10 @@ export const EmployeeList: React.FC = () => {
   const filteredEmployees = [...employees]
     .sort((a, b) => a.name.localeCompare(b.name, 'de'))
     .filter((emp) => {
-      if (filterRole && (!emp.roles || !emp.roles.includes(filterRole))) return false;
+      if (filterRole) {
+        const role = roles.find((r) => r.id === filterRole);
+        if (!role || !employeeHasRole(emp.roles, role, roles)) return false;
+      }
       if (filterDepartment && emp.department !== filterDepartment) return false;
       return true;
     });
@@ -159,7 +163,7 @@ export const EmployeeList: React.FC = () => {
           <Select
             label="Filter nach Rolle"
             placeholder="Alle Rollen"
-            data={roles.map(r => r.name)}
+            data={roles.map((r) => ({ value: r.id!, label: r.name }))}
             value={filterRole}
             onChange={setFilterRole}
             clearable
@@ -221,7 +225,9 @@ export const EmployeeList: React.FC = () => {
                       size="sm"
                       c={employee.roles && employee.roles.length > 0 ? "inherit" : "dimmed"}
                     >
-                      {employee.roles && employee.roles.length > 0 ? employee.roles.join(", ") : "-"}
+                      {employee.roles && employee.roles.length > 0
+                        ? roleLabels(employee.roles, roles).join(", ")
+                        : "-"}
                     </Text>
                   </Table.Td>
                   <Table.Td style={{ paddingRight: "20px" }}>

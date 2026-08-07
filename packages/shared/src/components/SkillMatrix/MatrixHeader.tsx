@@ -97,13 +97,14 @@ const EmployeeInfoCard: React.FC<{
               )}
               {emp.roles && emp.roles.length > 0 && (
                 <Stack gap={2}>
-                  {emp.roles.map((roleName, idx) => {
-                    const role = roles.find(r => r.name === roleName);
+                  {emp.roles.map((roleRef, idx) => {
+                    const role = roles.find((r) => r.id === roleRef || r.name === roleRef);
+                    const label = role?.name ?? roleRef;
                     const RoleIcon = getIconByName(role?.icon);
                     return (
                       <Group key={idx} gap={6}>
                         <RoleIcon size={12} color="gray" />
-                        <Text size="xs" c="dimmed">{roleName}</Text>
+                        <Text size="xs" c="dimmed">{label}</Text>
                       </Group>
                     );
                   })}
@@ -689,11 +690,12 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
                     </Text>
                     {emp.roles && emp.roles.length > 0 && (
                       <Group gap={2} wrap="nowrap" style={{ flexShrink: 0 }}>
-                        {emp.roles.slice(0, 3).map((roleName: string, idx: number) => {
-                          const role = roles.find(r => r.name === roleName);
+                        {emp.roles.slice(0, 3).map((roleRef: string, idx: number) => {
+                          const role = roles.find((r) => r.id === roleRef || r.name === roleRef);
+                          const label = role?.name ?? roleRef;
                           const RoleIcon = getIconByName(role?.icon);
                           return (
-                            <Tooltip key={idx} label={`${roleName} – Details anzeigen`} withArrow position="top">
+                            <Tooltip key={idx} label={`${label} – Details anzeigen`} withArrow position="top">
                               <ThemeIcon
                                 size={14}
                                 variant="light"
