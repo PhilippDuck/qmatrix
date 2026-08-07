@@ -29,6 +29,9 @@ import {
   IconPencil,
   IconPlus,
   IconInfoCircle,
+  IconFold,
+  IconFoldDown,
+  IconFoldUp,
 } from "@tabler/icons-react";
 import type {
   Category,
@@ -72,12 +75,57 @@ export const SkillTreeView: React.FC<SkillOverviewData & SkillTreeActions> = ({
 }) => {
   const canEdit = !readOnly;
   const [open, setOpen] = useState<Record<string, boolean>>({});
+  /** 0 = all collapsed; higher = more levels open */
+  const [expandLevel, setExpandLevel] = useState(0);
   const [q, setQ] = useState("");
 
   const toggle = (id: string) =>
     setOpen((s) => ({ ...s, [id]: !s[id] }));
 
   const query = q.trim().toLowerCase();
+
+  const subDepthMap = useMemo(() => {
+    const byId = new Map(subcategories.map((s) => [s.id!, s]));
+    const depthOf = (sub: SubCategory, seen = new Set<string>()): number => {
+      if (!sub.parentSubCategoryId) return 0;
+      if (seen.has(sub.id!)) return 0;
+      seen.add(sub.id!);
+      const parent = byId.get(sub.parentSubCategoryId);
+      return parent ? depthOf(parent, seen) + 1 : 0;
+    };
+    const map = new Map<string, number>();
+    for (const s of subcategories) {
+      if (s.id) map.set(s.id, depthOf(s));
+    }
+    return map;
+  }, [subcategories]);
+
+  const maxExpandLevel = useMemo(() => {
+    let maxSub = 0;
+    for (const d of subDepthMap.values()) maxSub = Math.max(maxSub, d);
+    // 0 collapsed, 1 categories, 2+ categories+subs (maxSub+2 so deepest subs open)
+    return categories.length === 0 ? 0 : maxSub + 2;
+  }, [categories.length, subDepthMap]);
+
+  const applyExpandLevel = (level: number) => {
+    const next: Record<string, boolean> = {};
+    for (const cat of categories) {
+      if (cat.id) next[cat.id] = level >= 1;
+    }
+    for (const sub of subcategories) {
+      if (!sub.id) continue;
+      const d = subDepthMap.get(sub.id) ?? 0;
+      // level 2 opens depth-0 subs, level 3 opens depth 0–1, …
+      next[sub.id] = level >= d + 2;
+    }
+    setOpen(next);
+    setExpandLevel(level);
+  };
+
+  const collapseAll = () => applyExpandLevel(0);
+  const expandAll = () => applyExpandLevel(maxExpandLevel);
+  const expandOneMore = () =>
+    applyExpandLevel(Math.min(expandLevel + 1, maxExpandLevel));
 
   const tree = useMemo(() => {
     const match = (name: string, desc?: string) => {
@@ -203,6 +251,7 @@ export const SkillTreeView: React.FC<SkillOverviewData & SkillTreeActions> = ({
               alignItems: "center",
               gap: 6,
               flexShrink: 0,
+              minWidth: 0,
             }}
           >
             {hasKids ? (
@@ -273,8 +322,9 @@ export const SkillTreeView: React.FC<SkillOverviewData & SkillTreeActions> = ({
               </Group>
             ) : null
           )}
+          <Box style={{ flex: 1, minWidth: 8 }} />
           <Badge size="xs" variant="light" color="gray" style={{ flexShrink: 0 }}>
-            {node.skills.length}
+            {node.skills.length} Skills
           </Badge>
         </Group>
         {expanded && (
@@ -325,18 +375,59 @@ export const SkillTreeView: React.FC<SkillOverviewData & SkillTreeActions> = ({
 
   return (
     <Stack gap="sm" h="100%" style={{ minHeight: 0 }}>
-      <Group gap="sm" wrap="nowrap">
+      <Group gap="sm" wrap="wrap">
         <TextInput
           placeholder="Suchen in Kategorien, Bereichen, Skills…"
           leftSection={<IconSearch size={16} />}
           value={q}
           onChange={(e) => setQ(e.currentTarget.value)}
           size="sm"
-          style={{ flex: 1 }}
+          style={{ flex: 1, minWidth: 180 }}
         />
-        {canEdit && onAddCategory && (
-          <ButtonLikeAdd onClick={onAddCategory} label="Kategorie" />
-        )}
+        <Group gap={4} wrap="nowrap">
+          <Tooltip label="Alles einklappen">
+            <ActionIcon
+              variant="light"
+              color="gray"
+              size="lg"
+              onClick={collapseAll}
+              disabled={expandLevel === 0 && Object.keys(open).length === 0}
+            >
+              <IconFold size={16} />
+            </ActionIcon>
+          </Tooltip>
+          <Tooltip
+            label={
+              expandLevel >= maxExpandLevel
+                ? "Bereits voll ausgeklappt"
+                : `Eine Stufe weiter aufklappen (${expandLevel} → ${Math.min(expandLevel + 1, maxExpandLevel)})`
+            }
+          >
+            <ActionIcon
+              variant="light"
+              color="blue"
+              size="lg"
+              onClick={expandOneMore}
+              disabled={maxExpandLevel === 0 || expandLevel >= maxExpandLevel}
+            >
+              <IconFoldDown size={16} />
+            </ActionIcon>
+          </Tooltip>
+          <Tooltip label="Alles ausklappen">
+            <ActionIcon
+              variant="light"
+              color="blue"
+              size="lg"
+              onClick={expandAll}
+              disabled={maxExpandLevel === 0}
+            >
+              <IconFoldUp size={16} />
+            </ActionIcon>
+          </Tooltip>
+          {canEdit && onAddCategory && (
+            <ButtonLikeAdd onClick={onAddCategory} label="Kategorie" />
+          )}
+        </Group>
       </Group>
       <ScrollArea style={{ flex: 1 }} offsetScrollbars type="auto">
         <style>{`
@@ -365,6 +456,7 @@ export const SkillTreeView: React.FC<SkillOverviewData & SkillTreeActions> = ({
                       alignItems: "center",
                       gap: 6,
                       flexShrink: 0,
+                      minWidth: 0,
                     }}
                   >
                     {expanded ? (
@@ -410,6 +502,7 @@ export const SkillTreeView: React.FC<SkillOverviewData & SkillTreeActions> = ({
                       </Group>
                     ) : null
                   )}
+                  <Box style={{ flex: 1, minWidth: 8 }} />
                   <Badge size="xs" variant="light" style={{ flexShrink: 0 }}>
                     {skillCount} Skills
                   </Badge>
