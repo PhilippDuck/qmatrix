@@ -124,7 +124,7 @@ const NodeCard: React.FC<{
       minWidth = 150;
       maxWidth = 300;
       icon = IconSitemap;
-      color = "indigo";
+      color = "blue";
       labelSize = "md";
       break;
     case "category":

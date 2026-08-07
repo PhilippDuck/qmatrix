@@ -20,6 +20,7 @@ import {
   useMantineColorScheme,
   useComputedColorScheme,
   Box,
+  type MantineColorScheme,
 } from "@mantine/core";
 import { useDisclosure, useLocalStorage, useHotkeys } from "@mantine/hooks";
 import {
@@ -54,8 +55,24 @@ import "@mantine/core/styles.css";
 import "@mantine/dates/styles.css";
 import "@mantine/notifications/styles.css";
 
+/** Same palette as Full / Team (blue primary + dark surface scale). */
 const theme = createTheme({
-  primaryColor: "indigo",
+  primaryColor: "blue",
+  colors: {
+    dark: [
+      "#C1C2C5", // 0 - Text
+      "#A6A7AB", // 1
+      "#909296", // 2
+      "#5c5f66", // 3
+      "#373A40", // 4
+      "#2C2E33", // 5
+      "#25262b", // 6
+      "#1A1B1E", // 7 - Surfaces
+      "#141517", // 8 - Background
+      "#101113", // 9 - Deep Background
+    ],
+  },
+  // Mantine default system stack (= Full): no custom fontFamily
 });
 
 /** Source of truth: apps/manage/package.json → shown as "App vX.Y.Z". */
@@ -303,9 +320,14 @@ const App: FC = () => {
     ],
   ]);
 
+  const [colorScheme] = useLocalStorage<MantineColorScheme>({
+    key: "skillgrid-color-scheme",
+    defaultValue: "light",
+  });
+
   if (loading) {
     return (
-      <MantineProvider theme={theme} defaultColorScheme="auto">
+      <MantineProvider theme={theme} defaultColorScheme={colorScheme}>
         <Center h="100vh">
           <Stack align="center" gap="sm">
             <SkillGridLogo size={48} />
@@ -320,7 +342,7 @@ const App: FC = () => {
   }
 
   return (
-    <MantineProvider theme={theme} defaultColorScheme="auto">
+    <MantineProvider theme={theme} defaultColorScheme={colorScheme}>
       <ModalsProvider>
         <Notifications position="top-right" />
         <PrivacyProvider>
@@ -358,7 +380,7 @@ const App: FC = () => {
                   <Group gap={6} wrap="nowrap" style={{ minWidth: 0 }}>
                     <Title
                       order={4}
-                      c="indigo"
+                      c="blue"
                       style={{
                         letterSpacing: -0.5,
                         fontSize: "1.05rem",
@@ -450,7 +472,7 @@ const App: FC = () => {
                         if (opened) toggle();
                       }}
                       variant="light"
-                      color="indigo"
+                      color="blue"
                       style={{
                         borderRadius: 6,
                         height: 40,

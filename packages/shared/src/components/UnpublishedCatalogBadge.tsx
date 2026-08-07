@@ -335,7 +335,7 @@ export const UnpublishedCatalogBadge: React.FC<UnpublishedCatalogBadgeProps> = (
             </Button>
             <Button
               size="xs"
-              color="indigo"
+              color="blue"
               leftSection={<IconRocket size={14} />}
               disabled={busy}
               onClick={handlePublish}

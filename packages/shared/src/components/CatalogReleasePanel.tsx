@@ -390,7 +390,7 @@ export const CatalogReleasePanel: React.FC = () => {
                 </Text>
                 <Badge
                   variant="outline"
-                  color={hasUnpublishedCatalogChanges ? "orange" : "indigo"}
+                  color={hasUnpublishedCatalogChanges ? "orange" : "blue"}
                   size="lg"
                   styles={{
                     label: { fontFamily: "monospace", letterSpacing: "1px" },
@@ -435,7 +435,7 @@ export const CatalogReleasePanel: React.FC = () => {
                 <Group gap="xs">
                   <IconRocket
                     size={20}
-                    style={{ color: "var(--mantine-color-indigo-filled)" }}
+                    style={{ color: "var(--mantine-color-blue-filled)" }}
                   />
                   <Title order={4}>Version freigeben</Title>
                 </Group>
@@ -447,7 +447,7 @@ export const CatalogReleasePanel: React.FC = () => {
               <Badge
                 size="xl"
                 variant="light"
-                color="indigo"
+                color="blue"
                 leftSection={<IconTag size={14} />}
               >
                 {currentVersion === "—"
@@ -468,7 +468,7 @@ export const CatalogReleasePanel: React.FC = () => {
               >
                 <Button
                   leftSection={<IconPackageExport size={16} />}
-                  color="indigo"
+                  color="blue"
                   onClick={openPublish}
                   disabled={!canPublish}
                 >
@@ -554,7 +554,7 @@ export const CatalogReleasePanel: React.FC = () => {
                             <ThemeIcon
                               size={22}
                               radius="xl"
-                              color={active ? "green" : "indigo"}
+                              color={active ? "green" : "blue"}
                               variant={active ? "filled" : "light"}
                             >
                               <IconTag size={12} />
@@ -739,7 +739,7 @@ export const CatalogReleasePanel: React.FC = () => {
               Abbrechen
             </Button>
             <Button
-              color="indigo"
+              color="blue"
               leftSection={<IconRocket size={16} />}
               loading={busy}
               onClick={handlePublish}
