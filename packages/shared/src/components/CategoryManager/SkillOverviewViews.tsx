@@ -17,7 +17,6 @@ import {
   SegmentedControl,
   Tooltip,
   ActionIcon,
-  Menu,
 } from "@mantine/core";
 import {
   IconSearch,
@@ -33,6 +32,7 @@ import {
   IconFold,
   IconFoldDown,
   IconFoldUp,
+  IconListTree,
 } from "@tabler/icons-react";
 import type {
   Category,
@@ -76,8 +76,11 @@ export const SkillTreeView: React.FC<SkillOverviewData & SkillTreeActions> = ({
 }) => {
   const canEdit = !readOnly;
   const [open, setOpen] = useState<Record<string, boolean>>({});
-  /** 0 = all collapsed; higher = more levels open */
-  const [expandLevel, setExpandLevel] = useState(0);
+  /**
+   * 4-click cycle index:
+   * 0 = eingeklappt, 1 = Stufe 1, 2 = Stufe 2, 3 = alles offen → nächster Klick → 0
+   */
+  const [cycleStep, setCycleStep] = useState(0);
   const [q, setQ] = useState("");
 
   const toggle = (id: string) =>
@@ -120,13 +123,41 @@ export const SkillTreeView: React.FC<SkillOverviewData & SkillTreeActions> = ({
       next[sub.id] = level >= d + 2;
     }
     setOpen(next);
-    setExpandLevel(level);
   };
 
-  const collapseAll = () => applyExpandLevel(0);
-  const expandAll = () => applyExpandLevel(maxExpandLevel);
-  const expandOneMore = () =>
-    applyExpandLevel(Math.min(expandLevel + 1, maxExpandLevel));
+  /** Klick-Zyklus: Stufe → Stufe → alles → einklappen → von vorn */
+  const cycleExpand = () => {
+    if (maxExpandLevel === 0) return;
+    const nextStep = (cycleStep + 1) % 4;
+    const targets = [
+      0,
+      Math.min(1, maxExpandLevel),
+      Math.min(2, maxExpandLevel),
+      maxExpandLevel,
+    ];
+    applyExpandLevel(targets[nextStep]);
+    setCycleStep(nextStep);
+  };
+
+  const expandCycleLabel =
+    maxExpandLevel === 0
+      ? "Nichts zum Aufklappen"
+      : cycleStep === 0
+        ? "1. Klick: eine Stufe aufklappen"
+        : cycleStep === 1
+          ? "2. Klick: nächste Stufe"
+          : cycleStep === 2
+            ? "3. Klick: alles ausklappen"
+            : "4. Klick: alles einklappen";
+
+  const ExpandCycleIcon =
+    cycleStep === 0
+      ? IconListTree
+      : cycleStep === 1
+        ? IconFoldDown
+        : cycleStep === 2
+          ? IconFoldUp
+          : IconFold;
 
   const tree = useMemo(() => {
     const match = (name: string, desc?: string) => {
@@ -383,46 +414,17 @@ export const SkillTreeView: React.FC<SkillOverviewData & SkillTreeActions> = ({
   return (
     <Stack gap="sm" h="100%" style={{ minHeight: 0 }}>
       <Group gap="sm" wrap="nowrap">
-        <Menu shadow="sm" width={200} position="bottom-start">
-          <Menu.Target>
-            <Tooltip label="Ein- / Ausklappen">
-              <ActionIcon
-                variant="light"
-                color="gray"
-                size="lg"
-                disabled={maxExpandLevel === 0 && categories.length === 0}
-              >
-                <IconFold size={16} />
-              </ActionIcon>
-            </Tooltip>
-          </Menu.Target>
-          <Menu.Dropdown>
-            <Menu.Item
-              leftSection={<IconFold size={14} />}
-              onClick={collapseAll}
-              disabled={expandLevel === 0 && Object.keys(open).length === 0}
-            >
-              Alles einklappen
-            </Menu.Item>
-            <Menu.Item
-              leftSection={<IconFoldDown size={14} />}
-              onClick={expandOneMore}
-              disabled={maxExpandLevel === 0 || expandLevel >= maxExpandLevel}
-            >
-              Eine Stufe weiter
-              {expandLevel < maxExpandLevel
-                ? ` (${expandLevel}→${expandLevel + 1})`
-                : ""}
-            </Menu.Item>
-            <Menu.Item
-              leftSection={<IconFoldUp size={14} />}
-              onClick={expandAll}
-              disabled={maxExpandLevel === 0}
-            >
-              Alles ausklappen
-            </Menu.Item>
-          </Menu.Dropdown>
-        </Menu>
+        <Tooltip label={expandCycleLabel}>
+          <ActionIcon
+            variant="light"
+            color="gray"
+            size="lg"
+            onClick={cycleExpand}
+            disabled={maxExpandLevel === 0 && categories.length === 0}
+          >
+            <ExpandCycleIcon size={16} />
+          </ActionIcon>
+        </Tooltip>
         <TextInput
           placeholder="Suchen in Kategorien, Bereichen, Skills…"
           leftSection={<IconSearch size={16} />}
