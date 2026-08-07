@@ -28,6 +28,7 @@ import {
   IconAlertCircle,
   IconPencil,
   IconPlus,
+  IconInfoCircle,
 } from "@tabler/icons-react";
 import type {
   Category,
@@ -159,21 +160,50 @@ export const SkillTreeView: React.FC<SkillOverviewData & SkillTreeActions> = ({
     background: bg,
   });
 
+  /** Info + edit actions right after the label; only visible on row hover */
+  const inlineMeta = (
+    description: string | undefined,
+    actions: React.ReactNode
+  ) => (
+    <Group gap={2} wrap="nowrap" className="skill-tree-inline" style={{ flexShrink: 0 }}>
+      {description?.trim() ? (
+        <Tooltip
+          label={description}
+          multiline
+          maw={280}
+          withArrow
+          openDelay={200}
+        >
+          <ThemeIcon
+            size={16}
+            variant="transparent"
+            color="gray"
+            style={{ cursor: "help" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <IconInfoCircle size={12} />
+          </ThemeIcon>
+        </Tooltip>
+      ) : null}
+      {actions}
+    </Group>
+  );
+
   const renderSub = (node: SubNode, depth: number): React.ReactNode => {
     const id = node.sub.id!;
     const expanded = isOpen(id);
     const hasKids = node.children.length > 0 || node.skills.length > 0;
     return (
       <Box key={id} className="skill-tree-row">
-        <Group
-          gap={4}
-          wrap="nowrap"
-          style={rowStyle(depth)}
-          onDoubleClick={() => canEdit && onEditSubCategory?.(node.sub)}
-        >
+        <Group gap={4} wrap="nowrap" style={rowStyle(depth)}>
           <UnstyledButton
             onClick={() => toggle(id)}
-            style={{ display: "flex", alignItems: "center", gap: 6, flex: 1, minWidth: 0 }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              flexShrink: 0,
+            }}
           >
             {hasKids ? (
               expanded ? (
@@ -187,62 +217,65 @@ export const SkillTreeView: React.FC<SkillOverviewData & SkillTreeActions> = ({
             <ThemeIcon size={20} variant="light" color="cyan" radius="sm">
               <IconTags size={12} />
             </ThemeIcon>
-            <Text size="sm" fw={500} lineClamp={1} style={{ flex: 1, textAlign: "left" }}>
+            <Text size="sm" fw={500} lineClamp={1}>
               {node.sub.name}
             </Text>
-            <Badge size="xs" variant="light" color="gray">
-              {node.skills.length}
-            </Badge>
           </UnstyledButton>
-          {canEdit && (
-            <Group gap={2} wrap="nowrap" className="skill-tree-actions">
-              {onAddSkill && (
-                <Tooltip label="Skill hinzufügen">
-                  <ActionIcon
-                    size="xs"
-                    variant="subtle"
-                    color="teal"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onAddSkill(id);
-                    }}
-                  >
-                    <IconPlus size={12} />
-                  </ActionIcon>
-                </Tooltip>
-              )}
-              {onAddSubCategory && (
-                <Tooltip label="Unterbereich hinzufügen">
-                  <ActionIcon
-                    size="xs"
-                    variant="subtle"
-                    color="cyan"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onAddSubCategory(node.sub.categoryId, id);
-                    }}
-                  >
-                    <IconPlus size={12} />
-                  </ActionIcon>
-                </Tooltip>
-              )}
-              {onEditSubCategory && (
-                <Tooltip label="Bearbeiten">
-                  <ActionIcon
-                    size="xs"
-                    variant="subtle"
-                    color="gray"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onEditSubCategory(node.sub);
-                    }}
-                  >
-                    <IconPencil size={12} />
-                  </ActionIcon>
-                </Tooltip>
-              )}
-            </Group>
+          {inlineMeta(
+            node.sub.description,
+            canEdit ? (
+              <Group gap={0} wrap="nowrap">
+                {onAddSkill && (
+                  <Tooltip label="Skill hinzufügen">
+                    <ActionIcon
+                      size="xs"
+                      variant="subtle"
+                      color="teal"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onAddSkill(id);
+                      }}
+                    >
+                      <IconPlus size={12} />
+                    </ActionIcon>
+                  </Tooltip>
+                )}
+                {onAddSubCategory && (
+                  <Tooltip label="Unterbereich hinzufügen">
+                    <ActionIcon
+                      size="xs"
+                      variant="subtle"
+                      color="cyan"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onAddSubCategory(node.sub.categoryId, id);
+                      }}
+                    >
+                      <IconPlus size={12} />
+                    </ActionIcon>
+                  </Tooltip>
+                )}
+                {onEditSubCategory && (
+                  <Tooltip label="Bearbeiten">
+                    <ActionIcon
+                      size="xs"
+                      variant="subtle"
+                      color="gray"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEditSubCategory(node.sub);
+                      }}
+                    >
+                      <IconPencil size={12} />
+                    </ActionIcon>
+                  </Tooltip>
+                )}
+              </Group>
+            ) : null
           )}
+          <Badge size="xs" variant="light" color="gray" style={{ flexShrink: 0 }}>
+            {node.skills.length}
+          </Badge>
         </Group>
         {expanded && (
           <>
@@ -253,30 +286,33 @@ export const SkillTreeView: React.FC<SkillOverviewData & SkillTreeActions> = ({
                 wrap="nowrap"
                 className="skill-tree-row"
                 style={rowStyle(depth + 1)}
-                onDoubleClick={() => canEdit && onEditSkill?.(sk)}
               >
                 <Box w={14} />
                 <ThemeIcon size={18} variant="light" color="teal" radius="sm">
                   <IconBulb size={11} />
                 </ThemeIcon>
-                <Text size="sm" style={{ flex: 1 }} lineClamp={1}>
+                <Text size="sm" lineClamp={1}>
                   {sk.name}
                 </Text>
+                {inlineMeta(
+                  sk.description,
+                  canEdit && onEditSkill ? (
+                    <Tooltip label="Bearbeiten">
+                      <ActionIcon
+                        size="xs"
+                        variant="subtle"
+                        color="gray"
+                        onClick={() => onEditSkill(sk)}
+                      >
+                        <IconPencil size={12} />
+                      </ActionIcon>
+                    </Tooltip>
+                  ) : null
+                )}
                 {sk.catalogDeprecated && (
                   <Badge size="xs" color="orange" variant="light">
                     veraltet
                   </Badge>
-                )}
-                {canEdit && onEditSkill && (
-                  <ActionIcon
-                    size="xs"
-                    variant="subtle"
-                    color="gray"
-                    className="skill-tree-actions"
-                    onClick={() => onEditSkill(sk)}
-                  >
-                    <IconPencil size={12} />
-                  </ActionIcon>
                 )}
               </Group>
             ))}
@@ -302,15 +338,10 @@ export const SkillTreeView: React.FC<SkillOverviewData & SkillTreeActions> = ({
           <ButtonLikeAdd onClick={onAddCategory} label="Kategorie" />
         )}
       </Group>
-      {canEdit && (
-        <Text size="xs" c="dimmed">
-          Doppelklick oder Stift = bearbeiten · + = hinzufügen
-        </Text>
-      )}
       <ScrollArea style={{ flex: 1 }} offsetScrollbars type="auto">
         <style>{`
-          .skill-tree-actions { opacity: 0.35; }
-          .skill-tree-row:hover .skill-tree-actions { opacity: 1; }
+          .skill-tree-inline { opacity: 0; transition: opacity 0.12s ease; }
+          .skill-tree-row:hover .skill-tree-inline { opacity: 1; }
         `}</style>
         {tree.length === 0 ? (
           <Text c="dimmed" size="sm" ta="center" py="xl">
@@ -326,7 +357,6 @@ export const SkillTreeView: React.FC<SkillOverviewData & SkillTreeActions> = ({
                   gap={4}
                   wrap="nowrap"
                   style={rowStyle(0, "var(--mantine-color-default-hover)")}
-                  onDoubleClick={() => canEdit && onEditCategory?.(cat)}
                 >
                   <UnstyledButton
                     onClick={() => toggle(id)}
@@ -334,8 +364,7 @@ export const SkillTreeView: React.FC<SkillOverviewData & SkillTreeActions> = ({
                       display: "flex",
                       alignItems: "center",
                       gap: 6,
-                      flex: 1,
-                      minWidth: 0,
+                      flexShrink: 0,
                     }}
                   >
                     {expanded ? (
@@ -346,41 +375,44 @@ export const SkillTreeView: React.FC<SkillOverviewData & SkillTreeActions> = ({
                     <ThemeIcon size={22} variant="light" color="blue" radius="sm">
                       <IconCategory size={13} />
                     </ThemeIcon>
-                    <Text size="sm" fw={600} lineClamp={1} style={{ flex: 1, textAlign: "left" }}>
+                    <Text size="sm" fw={600} lineClamp={1}>
                       {cat.name}
                     </Text>
-                    <Badge size="xs" variant="light">
-                      {skillCount} Skills
-                    </Badge>
                   </UnstyledButton>
-                  {canEdit && (
-                    <Group gap={2} wrap="nowrap" className="skill-tree-actions">
-                      {onAddSubCategory && (
-                        <Tooltip label="Bereich hinzufügen">
-                          <ActionIcon
-                            size="xs"
-                            variant="subtle"
-                            color="cyan"
-                            onClick={() => onAddSubCategory(id)}
-                          >
-                            <IconPlus size={12} />
-                          </ActionIcon>
-                        </Tooltip>
-                      )}
-                      {onEditCategory && (
-                        <Tooltip label="Bearbeiten">
-                          <ActionIcon
-                            size="xs"
-                            variant="subtle"
-                            color="gray"
-                            onClick={() => onEditCategory(cat)}
-                          >
-                            <IconPencil size={12} />
-                          </ActionIcon>
-                        </Tooltip>
-                      )}
-                    </Group>
+                  {inlineMeta(
+                    cat.description,
+                    canEdit ? (
+                      <Group gap={0} wrap="nowrap">
+                        {onAddSubCategory && (
+                          <Tooltip label="Bereich hinzufügen">
+                            <ActionIcon
+                              size="xs"
+                              variant="subtle"
+                              color="cyan"
+                              onClick={() => onAddSubCategory(id)}
+                            >
+                              <IconPlus size={12} />
+                            </ActionIcon>
+                          </Tooltip>
+                        )}
+                        {onEditCategory && (
+                          <Tooltip label="Bearbeiten">
+                            <ActionIcon
+                              size="xs"
+                              variant="subtle"
+                              color="gray"
+                              onClick={() => onEditCategory(cat)}
+                            >
+                              <IconPencil size={12} />
+                            </ActionIcon>
+                          </Tooltip>
+                        )}
+                      </Group>
+                    ) : null
                   )}
+                  <Badge size="xs" variant="light" style={{ flexShrink: 0 }}>
+                    {skillCount} Skills
+                  </Badge>
                 </Group>
                 {expanded &&
                   (subs as SubNode[]).map((s) => renderSub(s, 1))}
