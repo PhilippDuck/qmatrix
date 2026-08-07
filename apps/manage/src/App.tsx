@@ -211,6 +211,8 @@ const App: FC = () => {
   const [opened, { toggle }] = useDisclosure();
   const [historyOpened, { open: openHistory, close: closeHistory }] =
     useDisclosure(false);
+  const [changelogOpened, { open: openChangelog, close: closeChangelog }] =
+    useDisclosure(false);
   const [collapsed, setCollapsed] = useLocalStorage({
     key: "skillgrid-manage-nav-collapsed",
     defaultValue: false,
@@ -610,7 +612,11 @@ const App: FC = () => {
                   marginTop: "auto",
                 }}
               >
-                <AppVersionBadge version={APP_VERSION} expanded={!collapsed} />
+                <AppVersionBadge
+                  version={APP_VERSION}
+                  expanded={!collapsed}
+                  onClick={openChangelog}
+                />
               </Box>
             </AppShell.Navbar>
 
@@ -647,6 +653,12 @@ const App: FC = () => {
               )}
             </AppShell.Main>
             <HistoryDrawer opened={historyOpened} onClose={closeHistory} />
+            <ChangelogModal
+              opened={changelogOpened}
+              onClose={closeChangelog}
+              content={manageChangelog}
+              appName="SkillGrid Manage"
+            />
           </AppShell>
         </PrivacyProvider>
       </ModalsProvider>
