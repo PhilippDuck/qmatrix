@@ -101,7 +101,7 @@ export const manageCapabilities: AppCapabilities = {
   localStoragePrefix: "skillgrid-manage-",
 };
 
-/** Team: ops app, catalog read-only, import catalog + selective ops. */
+/** Team: ops app, catalog read-only authoring; catalog import + full disaster-recovery backup. */
 export const teamCapabilities: AppCapabilities = {
   variant: "team",
   displayName: "SkillGrid Team",
@@ -115,8 +115,10 @@ export const teamCapabilities: AppCapabilities = {
   catalogImport: true,
   catalogExport: false,
   catalogVersioning: false,
+  /** Local Team DB: employees, assessments, plans — export for backup */
   fullBackupExport: true,
-  fullBackupImport: false,
+  /** Restore/merge Team backups (disaster recovery); not a substitute for Manage catalog SoT */
+  fullBackupImport: true,
   selectiveOpsImport: true,
   pdfReports: true,
   historyUndoCatalog: false,

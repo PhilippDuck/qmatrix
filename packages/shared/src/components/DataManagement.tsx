@@ -457,8 +457,9 @@ export const DataManagement = () => {
                   <Title order={4}>Backup</Title>
                 </Group>
                 <Text size="xs" c="dimmed">
-                  Exportiere alle Mitarbeiter, Kategorien, Skills und Bewertungen
-                  als JSON-Datei.
+                  {variant === "team"
+                    ? "Sicherung der Team-Datenbank: Mitarbeiter, Bewertungen, Pläne und der geladene Katalog-Stand als JSON."
+                    : "Exportiere alle Mitarbeiter, Kategorien, Skills und Bewertungen als JSON-Datei."}
                 </Text>
               </Box>
               <Button
@@ -485,8 +486,9 @@ export const DataManagement = () => {
                   <Title order={4}>Datenabgleich</Title>
                 </Group>
                 <Text size="xs" c="dimmed">
-                  Vergleicht ein Backup mit der aktuellen Datenbank. Nur neuere oder
-                  fehlende Daten werden hinzugefügt.
+                  {variant === "team"
+                    ? "Team-Backup mit der lokalen DB abgleichen (z. B. nach Gerätwechsel). Auswahl, was übernommen wird."
+                    : "Vergleicht ein Backup mit der aktuellen Datenbank. Nur neuere oder fehlende Daten werden hinzugefügt."}
                 </Text>
               </Box>
               <Button
@@ -519,8 +521,9 @@ export const DataManagement = () => {
                   <Title order={4}>Wiederherstellen</Title>
                 </Group>
                 <Text size="xs" c="dimmed">
-                  Lade eine JSON-Datei hoch. Bestehende Daten werden dabei vollständig
-                  überschrieben.
+                  {variant === "team"
+                    ? "Team-Backup vollständig wiederherstellen. Überschreibt die lokale Team-DB (Notfall)."
+                    : "Lade eine JSON-Datei hoch. Bestehende Daten werden dabei vollständig überschrieben."}
                 </Text>
               </Box>
               <Button
