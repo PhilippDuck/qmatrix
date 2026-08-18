@@ -8,3 +8,4 @@ export * from "./skillGaps";
 export * from "./skillsHierarchyExport";
 export * from "./rolesHierarchyExport";
 export * from "./catalogChangeNotes";
+export * from "./catalogBlueprint";

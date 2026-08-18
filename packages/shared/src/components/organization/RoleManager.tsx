@@ -34,7 +34,10 @@ import { RoleIconPicker, getIconByName } from "../shared/RoleIconPicker";
 import { RoleDetailDrawer } from "../shared/RoleDetailDrawer";
 import { RoleRichTextEditorField } from "../shared/RoleRichTextEditor";
 import { LEVELS } from "../../constants/skillLevels";
-import { useCatalogAuthoring } from "../../hooks/useCatalogAuthoring";
+import { useCatalogAuthoring, useCatalogBlueprintAuthoring } from "../../hooks/useCatalogAuthoring";
+import { isBlueprintEntity } from "../../utils/catalogVisibility";
+import { BlueprintExportBar } from "../shared/BlueprintExportBar";
+import { CatalogBlueprintTag } from "../shared/CatalogBlueprintTag";
 import { notifications } from "@mantine/notifications";
 import { CatalogMergeImport } from "../CatalogMergeImport";
 import { CatalogDirtyTag } from "../shared/CatalogDirtyTag";
@@ -103,6 +106,10 @@ interface RoleManagerProps {
 
 export const RoleManager: React.FC<RoleManagerProps> = ({ initialEditRoleId, onClearParams }) => {
     const catalogAuthoring = useCatalogAuthoring();
+    const catalogBlueprintAuthoring = useCatalogBlueprintAuthoring();
+    const canMutateCatalog = catalogAuthoring || catalogBlueprintAuthoring;
+    const canMutateRole = (role: { catalogSource?: string }) =>
+        catalogAuthoring || (catalogBlueprintAuthoring && isBlueprintEntity(role));
     const { roles, skills, employees, categories, subcategories, projectTitle, addRole, updateRole, deleteRole, updateSkillsForRole } = useStore(
         useShallow((s) => ({
             roles: s.roles,
@@ -446,13 +453,17 @@ export const RoleManager: React.FC<RoleManagerProps> = ({ initialEditRoleId, onC
                             </Menu.Item>
                         </Menu.Dropdown>
                     </Menu>
-                    {catalogAuthoring && (
+                    {canMutateCatalog && (
                         <Button leftSection={<IconPlus size={16} />} onClick={handleOpenAdd}>
-                            Rolle hinzufügen
+                            {catalogBlueprintAuthoring && !catalogAuthoring
+                                ? "Blaupause hinzufügen"
+                                : "Rolle hinzufügen"}
                         </Button>
                     )}
                 </Group>
             </Group>
+
+            <BlueprintExportBar />
 
             <Tabs defaultValue="list" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                 <Tabs.List mb="md">
@@ -507,6 +518,7 @@ export const RoleManager: React.FC<RoleManagerProps> = ({ initialEditRoleId, onC
                                                         <Text size="sm" fw={isRoot ? 600 : 400}>
                                                             {role.name}
                                                         </Text>
+                                                        <CatalogBlueprintTag entity={role} />
                                                         <CatalogDirtyTag kind="roles" id={role.id} />
                                                         {isRoot && roles.some(r => r.inheritsFromId === role.id) && (
                                                             <Badge size="xs" variant="light" color="blue">
@@ -576,7 +588,7 @@ export const RoleManager: React.FC<RoleManagerProps> = ({ initialEditRoleId, onC
                                                                 <IconEye size={16} />
                                                             </ActionIcon>
                                                         </Tooltip>
-                                                        {catalogAuthoring && (
+                                                        {canMutateRole(role) && (
                                                             <>
                                                                 <Tooltip label="Bearbeiten" withArrow position="top">
                                                                     <ActionIcon variant="subtle" color="blue" onClick={() => handleOpenEdit(role)}>
@@ -889,7 +901,7 @@ export const RoleManager: React.FC<RoleManagerProps> = ({ initialEditRoleId, onC
                         </Stack>
                     </Box>
                     <Group justify="space-between" mt="md" pt="md" style={{ borderTop: '1px solid var(--mantine-color-default-border)' }}>
-                        {editingId && catalogAuthoring ? (
+                        {editingId && canMutateRole(roles.find((r) => r.id === editingId) || {}) ? (
                             <Button
                                 color="red"
                                 variant="light"
@@ -905,9 +917,11 @@ export const RoleManager: React.FC<RoleManagerProps> = ({ initialEditRoleId, onC
                         )}
                         <Group>
                             <Button variant="default" onClick={handleCloseAttempt}>
-                                {catalogAuthoring ? "Abbrechen" : "Schließen"}
+                                {canMutateCatalog ? "Abbrechen" : "Schließen"}
                             </Button>
-                            {catalogAuthoring && (
+                            {(editingId
+                                ? canMutateRole(roles.find((r) => r.id === editingId) || {})
+                                : canMutateCatalog) && (
                                 <Button onClick={handleSave} loading={loading}>
                                     Speichern
                                 </Button>

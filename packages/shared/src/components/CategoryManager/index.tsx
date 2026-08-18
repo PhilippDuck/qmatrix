@@ -17,7 +17,9 @@ import {
   IconLayoutGrid,
 } from "@tabler/icons-react";
 import { useStore, useShallow } from "../../store/hooks";
-import { useCatalogAuthoring } from "../../hooks/useCatalogAuthoring";
+import { useCatalogAuthoring, useCatalogBlueprintAuthoring } from "../../hooks/useCatalogAuthoring";
+import { isBlueprintEntity } from "../../utils/catalogVisibility";
+import { BlueprintExportBar } from "../shared/BlueprintExportBar";
 import { CategoryColumn } from "./CategoryColumn";
 import { SubcategoryColumn } from "./SubcategoryColumn";
 import { SkillColumn } from "./SkillColumn";
@@ -39,6 +41,11 @@ import { CatalogMergeImport } from "../CatalogMergeImport";
 
 export const CategoryManager: React.FC = () => {
   const catalogAuthoring = useCatalogAuthoring();
+  const catalogBlueprintAuthoring = useCatalogBlueprintAuthoring();
+  const canMutateCatalog = catalogAuthoring || catalogBlueprintAuthoring;
+  const canMutateEntity = (entity: { catalogSource?: string }) =>
+    catalogAuthoring ||
+    (catalogBlueprintAuthoring && isBlueprintEntity(entity));
   const {
     categories,
     addCategory,
@@ -552,7 +559,7 @@ export const CategoryManager: React.FC = () => {
             </Group>
           )}
 
-          {catalogAuthoring && (
+          {canMutateCatalog && catalogAuthoring && (
             <CatalogMergeImport variant="toolbar" scope="skills" />
           )}
 
@@ -603,6 +610,8 @@ export const CategoryManager: React.FC = () => {
           </Menu>
         </Group>
       </Group>
+
+      <BlueprintExportBar />
 
       {/* ... tabs ... */}
 
@@ -657,7 +666,8 @@ export const CategoryManager: React.FC = () => {
               onEdit={(cat) => openForm("category", cat.id!, cat.name, cat.description || "")}
               onDelete={deleteCategory}
               getSubcategoryCount={(id) => getSubCategoriesByCategory(id).length}
-              readOnly={!catalogAuthoring}
+              readOnly={!canMutateCatalog}
+              canMutate={canMutateEntity}
             />
 
             <SubcategoryColumn
@@ -670,7 +680,8 @@ export const CategoryManager: React.FC = () => {
               onDelete={deleteSubCategory}
               getSkillCount={(id) => getSkillsBySubCategory(id).length}
               onAddNested={(parentId) => openForm("subcategory", null, "", "", null, [], parentId)}
-              readOnly={!catalogAuthoring}
+              readOnly={!canMutateCatalog}
+              canMutate={canMutateEntity}
             />
 
             <SkillColumn
@@ -688,7 +699,8 @@ export const CategoryManager: React.FC = () => {
                 )
               }
               onDelete={deleteSkill}
-              readOnly={!catalogAuthoring}
+              readOnly={!canMutateCatalog}
+              canMutate={canMutateEntity}
             />
           </Group>
         </Tabs.Panel>
@@ -700,7 +712,7 @@ export const CategoryManager: React.FC = () => {
               subcategories={subcategories}
               skills={skills}
               roles={roles}
-              readOnly={!catalogAuthoring}
+              readOnly={!canMutateCatalog}
               onEditCategory={(cat) =>
                 openForm("category", cat.id!, cat.name, cat.description || "")
               }
@@ -720,10 +732,10 @@ export const CategoryManager: React.FC = () => {
                 );
               }}
               onAddCategory={
-                catalogAuthoring ? () => openForm("category") : undefined
+                canMutateCatalog ? () => openForm("category") : undefined
               }
               onAddSubCategory={
-                catalogAuthoring
+                canMutateCatalog
                   ? (catId, parentSubId) => {
                       setSelectedCategory(catId);
                       openForm(
@@ -739,7 +751,7 @@ export const CategoryManager: React.FC = () => {
                   : undefined
               }
               onAddSkill={
-                catalogAuthoring
+                canMutateCatalog
                   ? (subId) => {
                       setSelectedSubCategory(subId);
                       openForm("skill");
@@ -774,9 +786,9 @@ export const CategoryManager: React.FC = () => {
                   skill.requiredByRoleIds || []
                 );
               }}
-              onAddCategory={catalogAuthoring ? () => openForm("category") : undefined}
+              onAddCategory={canMutateCatalog ? () => openForm("category") : undefined}
               onAddSubCategory={
-                catalogAuthoring
+                canMutateCatalog
                   ? (catId, parentSubId) => {
                       setSelectedCategory(catId);
                       openForm("subcategory", null, "", "", null, [], parentSubId);
@@ -784,7 +796,7 @@ export const CategoryManager: React.FC = () => {
                   : undefined
               }
               onAddSkill={
-                catalogAuthoring
+                canMutateCatalog
                   ? (subCatId) => {
                       setSelectedSubCategory(subCatId);
                       openForm("skill");
@@ -839,13 +851,35 @@ export const CategoryManager: React.FC = () => {
         onRolesChange={setSelectedRoleIds}
         onSubcategoriesChange={setSelectedSubCategoryIds}
         onSave={handleSave}
-        onDelete={catalogAuthoring ? handleDelete : undefined}
+        onDelete={
+          !editingId
+            ? undefined
+            : canMutateEntity(
+                (formMode === "category"
+                  ? categories.find((c) => c.id === editingId)
+                  : formMode === "subcategory"
+                    ? subcategories.find((s) => s.id === editingId)
+                    : skills.find((s) => s.id === editingId)) || {}
+              )
+              ? handleDelete
+              : undefined
+        }
         departments={departments}
         roles={roles}
         subcategories={subcategoryOptions}
         initialValues={initialValues}
         parentContext={parentContextString}
-        readOnly={!catalogAuthoring}
+        readOnly={
+          editingId
+            ? !canMutateEntity(
+                (formMode === "category"
+                  ? categories.find((c) => c.id === editingId)
+                  : formMode === "subcategory"
+                    ? subcategories.find((s) => s.id === editingId)
+                    : skills.find((s) => s.id === editingId)) || {}
+              )
+            : !canMutateCatalog
+        }
       />
 
     </Box>

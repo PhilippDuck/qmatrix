@@ -8,6 +8,7 @@ const teamCaps: AppCapabilities = {
   variant: "team",
   displayName: "SkillGrid Team",
   catalogAuthoring: false,
+  catalogBlueprintAuthoring: true,
   catalogVersioning: false,
   catalogExport: false,
   historyUndoCatalog: false,
@@ -31,6 +32,13 @@ describe("checkCapability", () => {
       expect(result.reason).toContain("team");
       expect(result.reason).toContain("catalogAuthoring");
     }
+  });
+
+  it("allows team blueprint authoring", () => {
+    expect(
+      checkCapability(teamCaps, "catalogBlueprintAuthoring", "add blueprint")
+        .ok
+    ).toBe(true);
   });
 });
 

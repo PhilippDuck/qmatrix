@@ -53,7 +53,8 @@ import {
   type ManageBackupPackage,
 } from "../../services/manageBackup";
 import { checkCapability } from "../capabilities";
-import type { AppSlice } from "../types";
+import type { AppSlice, AppState } from "../types";
+import { findResolvedBlueprintIds } from "../../utils/catalogBlueprint";
 
 export interface PublishCatalogOptions {
   /** Stable product-line id (one Manage DB = one catalogId). */
@@ -200,6 +201,49 @@ async function pruneOrphanCatalogNotes(
   if (next.length === notes.length) return;
   set({ pendingCatalogNotes: next });
   await persistSettingsWithNotes(db, get);
+}
+
+async function pruneResolvedBlueprints(get: () => AppState): Promise<void> {
+  const first = findResolvedBlueprintIds(get());
+  for (const id of first.skills) {
+    await get().deleteSkill(id);
+  }
+  for (const id of first.roles) {
+    await get().deleteRole(id);
+  }
+
+  const afterLeaves = get();
+  const resolved = findResolvedBlueprintIds(afterLeaves);
+  const leftoverSkills = afterLeaves.skills;
+  const leftoverSubs = afterLeaves.subcategories;
+  const emptyResolvedSubs = resolved.subcategories.filter((id) => {
+    const hasChildSub = leftoverSubs.some((s) => s.parentSubCategoryId === id);
+    const hasSkill = leftoverSkills.some((s) => s.subCategoryId === id);
+    return !hasChildSub && !hasSkill;
+  });
+  const subById = new Map(leftoverSubs.filter((s) => s.id).map((s) => [s.id!, s]));
+  const subDepth = (id: string): number => {
+    let depth = 0;
+    let current = subById.get(id);
+    const seen = new Set<string>();
+    while (current?.parentSubCategoryId && !seen.has(current.parentSubCategoryId)) {
+      seen.add(current.parentSubCategoryId);
+      depth += 1;
+      current = subById.get(current.parentSubCategoryId);
+    }
+    return depth;
+  };
+  emptyResolvedSubs.sort((a, b) => subDepth(b) - subDepth(a));
+  for (const id of emptyResolvedSubs) {
+    await get().deleteSubCategory(id);
+  }
+
+  const afterSubs = get();
+  const remainingSubs = afterSubs.subcategories;
+  for (const id of findResolvedBlueprintIds(afterSubs).categories) {
+    if (remainingSubs.some((s) => s.categoryId === id)) continue;
+    await get().deleteCategory(id);
+  }
 }
 
 async function persistSettingsWithNotes(
@@ -972,6 +1016,9 @@ export const createCatalogSlice =
           set({ lastCatalogApplyReport: result.report ?? null });
           // refreshAllData reloads installedCatalogMeta from settings (set by apply)
           await get().refreshAllData();
+          if (caps.catalogBlueprintAuthoring) {
+            await pruneResolvedBlueprints(get);
+          }
         } else {
           set({
             error: result.errors.map((e) => e.message).join("; ") || "Catalog import failed",

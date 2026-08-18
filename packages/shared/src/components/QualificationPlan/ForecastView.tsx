@@ -32,6 +32,10 @@ import {
 import { useStore, useShallow } from "../../store/hooks";
 import { usePrivacy } from "../../context/PrivacyContext";
 import {
+    filterOperationalRoles,
+    filterOperationalSkills,
+} from "../../utils/catalogVisibility";
+import {
     generateForecastWithPlans,
     ForecastResult,
     ForecastCategoryBar,
@@ -479,16 +483,25 @@ export const ForecastView: React.FC = () => {
 
     const [horizonMonths, setHorizonMonths] = useState<string>("6");
 
+    const operationalSkills = useMemo(
+        () => filterOperationalSkills(skills, subcategories, categories),
+        [skills, subcategories, categories]
+    );
+    const operationalRoles = useMemo(
+        () => filterOperationalRoles(roles),
+        [roles]
+    );
+
     const forecast: ForecastResult = useMemo(() => {
         return generateForecastWithPlans(
             employees,
             assessments,
             qualificationMeasures,
             qualificationPlans,
-            skills,
+            operationalSkills,
             categories,
             subcategories,
-            roles,
+            operationalRoles,
             parseInt(horizonMonths, 10)
         );
     }, [
@@ -496,10 +509,10 @@ export const ForecastView: React.FC = () => {
         assessments,
         qualificationMeasures,
         qualificationPlans,
-        skills,
+        operationalSkills,
         categories,
         subcategories,
-        roles,
+        operationalRoles,
         horizonMonths,
     ]);
 
@@ -515,10 +528,10 @@ export const ForecastView: React.FC = () => {
                 assessments,
                 qualificationMeasures,
                 qualificationPlans,
-                skills,
+                operationalSkills,
                 categories,
                 subcategories,
-                roles,
+                operationalRoles,
                 m
             );
 
@@ -540,10 +553,10 @@ export const ForecastView: React.FC = () => {
         assessments,
         qualificationMeasures,
         qualificationPlans,
-        skills,
+        operationalSkills,
         categories,
         subcategories,
-        roles,
+        operationalRoles,
         horizonMonths
     ]);
 

@@ -1,4 +1,9 @@
 
+## [2.27.0] - 2026-08-18
+
+### Neue Funktionen
+- **Team-Blaupausen**: SkillGrid Team kann Kategorien, Skills und Rollen als Vorschläge anlegen. Sie sind als „Blaupause“ markiert, tauchen nicht in der Matrix auf und lassen sich nach Manage exportieren (Format `skillgrid-team-blueprint-v1`). Manage importiert sie als Merge-Vorschläge. Nach einem Katalog-Import in Team werden übernommene Blaupausen entfernt.
+
 ## [2.26.0] - 2026-08-18
 
 ### Behobene Fehler

@@ -45,6 +45,11 @@ import {
 } from "@tabler/icons-react";
 import { AssessmentLogEntry } from "../../store/hooks";
 import { useStore, useShallow } from "../../store/hooks";
+import {
+    filterOperationalCategories,
+    filterOperationalRoles,
+    filterOperationalSkills,
+} from "../../utils/catalogVisibility";
 import { getScoreColor } from "../../utils/skillCalculations";
 import { getIconByName } from "../shared/RoleIconPicker";
 import { InstalledCatalogBadge } from "../shared/InstalledCatalogBadge";
@@ -136,7 +141,7 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, subtitle, icon, color
 export const Dashboard: React.FC = () => {
     const {
         employees,
-        skills,
+        allSkills,
         assessments,
         categories,
         subcategories,
@@ -146,7 +151,7 @@ export const Dashboard: React.FC = () => {
     } = useStore(
         useShallow((s) => ({
             employees: s.employees,
-            skills: s.skills,
+            allSkills: s.skills,
             assessments: s.assessments,
             categories: s.categories,
             subcategories: s.subcategories,
@@ -154,6 +159,18 @@ export const Dashboard: React.FC = () => {
             roles: s.roles,
             getAllHistory: s.getAllHistory,
         }))
+    );
+    const skills = useMemo(
+        () => filterOperationalSkills(allSkills, subcategories, categories),
+        [allSkills, subcategories, categories]
+    );
+    const operationalRoles = useMemo(
+        () => filterOperationalRoles(roles),
+        [roles]
+    );
+    const operationalCategories = useMemo(
+        () => filterOperationalCategories(categories),
+        [categories]
     );
     const { colorScheme } = useMantineColorScheme();
     const isDark = colorScheme === 'dark';
@@ -238,8 +255,8 @@ export const Dashboard: React.FC = () => {
         // Goal Fulfillment (Role Targets + Individual Targets)
         let totalTargets = 0;
         let metTargets = 0;
-        const roleById = new Map(roles.map((r) => [r.id!, r]));
-        const roleByName = new Map(roles.map((r) => [r.name, r]));
+        const roleById = new Map(operationalRoles.map((r) => [r.id!, r]));
+        const roleByName = new Map(operationalRoles.map((r) => [r.name, r]));
         // Track aggregated gaps per skill (consistent with Goal Fulfillment)
         const skillGapDiffs = new Map<string, { totalGap: number, count: number }>();
 
@@ -429,7 +446,7 @@ export const Dashboard: React.FC = () => {
         }).sort((a, b) => b.avgScore - a.avgScore);
 
         // Role distribution (employees can have multiple roles)
-        const roleDistribution = roles.map(role => {
+        const roleDistribution = operationalRoles.map(role => {
             const count = employees.filter(
               (e) => e.roles?.includes(role.id!) || e.roles?.includes(role.name)
             ).length;
@@ -437,7 +454,7 @@ export const Dashboard: React.FC = () => {
         }).filter(r => r.count > 0).sort((a, b) => b.count - a.count);
 
         // Category coverage
-        const categoryStats = categories.map(cat => {
+        const categoryStats = operationalCategories.map(cat => {
             const catSubcategories = subcategories.filter(s => s.categoryId === cat.id);
             const catSkillIds = skills
                 .filter(s => catSubcategories.some(sub => sub.id === s.subCategoryId))
@@ -480,7 +497,7 @@ export const Dashboard: React.FC = () => {
             recentSkillChanges,
             departmentProgress,
         };
-    }, [employees, skills, assessments, categories, subcategories, departments, roles, historyLogs, period]);
+    }, [employees, skills, assessments, operationalCategories, subcategories, departments, operationalRoles, historyLogs, period]);
 
 
 

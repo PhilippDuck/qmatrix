@@ -63,6 +63,11 @@ export interface EntityCrudConfig<
    * Required for catalog listKeys (categories, subcategories, skills, roles).
    */
   capabilityKey?: CapabilityFlag;
+  /**
+   * Catalog entity: Team may mutate only with catalogBlueprintAuthoring,
+   * and only blueprint rows (creates are forced to catalogSource=blueprint).
+   */
+  catalogEntity?: boolean;
 }
 
 /** Catalog CRUD must declare catalogAuthoring (design §6.4 / K18). */
@@ -113,7 +118,27 @@ export function createEntityCrudHandlers<
     failAndMaybeReload(set, get, err, config.errorMessage || "Failed", reload);
 
   /** Returns denial reason or null if allowed. */
-  const denyReason = (action: string): string | null => {
+  const denyReason = (
+    action: string,
+    existing?: T
+  ): string | null => {
+    if (!config.capabilityKey && !config.catalogEntity) return null;
+
+    if (config.catalogEntity) {
+      if (caps.catalogAuthoring) return null;
+      if (caps.catalogBlueprintAuthoring) {
+        const isCreate = action.startsWith("create");
+        if (isCreate) return null;
+        const source = (existing as { catalogSource?: string } | undefined)
+          ?.catalogSource;
+        if (source === "blueprint") return null;
+        const reason = `[${caps.variant}] Offizielle Katalog-Einträge nicht änderbar`;
+        if (import.meta.env.DEV) console.error(reason);
+        set({ error: reason });
+        return reason;
+      }
+    }
+
     if (!config.capabilityKey) return null;
     const result = checkCapability(caps, config.capabilityKey, action);
     if (result.ok) return null;
@@ -131,10 +156,16 @@ export function createEntityCrudHandlers<
         throw new Error(denied);
       }
       try {
-        const id = await config.dbAdd(data);
+        const payload =
+          config.catalogEntity &&
+          caps.catalogBlueprintAuthoring &&
+          !caps.catalogAuthoring
+            ? ({ ...data, catalogSource: "blueprint" } as TCreate)
+            : data;
+        const id = await config.dbAdd(payload);
         const entity = config.buildNew
-          ? config.buildNew(data, id)
-          : defaultBuildNew<T, TCreate>(data, id);
+          ? config.buildNew(payload, id)
+          : defaultBuildNew<T, TCreate>(payload, id);
         const list = [...getList(), entity];
         setList(config.afterAddList ? config.afterAddList(list, entity) : list);
         await recordChange(
@@ -154,16 +185,22 @@ export function createEntityCrudHandlers<
     },
 
     update: async (id, data) => {
-      if (denyReason(`update ${config.entityType}`)) {
+      const existing = getList().find((e) => e.id === id);
+      if (denyReason(`update ${config.entityType}`, existing)) {
         return;
       }
       try {
-        const existing = getList().find((e) => e.id === id);
+        const updatePayload =
+          config.catalogEntity &&
+          caps.catalogBlueprintAuthoring &&
+          !caps.catalogAuthoring
+            ? ({ ...data, catalogSource: "blueprint" } as TUpdate)
+            : data;
         const updated = config.buildUpdated
-          ? config.buildUpdated(existing, data, id)
-          : defaultBuildUpdated<T, TUpdate>(existing, data, id);
+          ? config.buildUpdated(existing, updatePayload, id)
+          : defaultBuildUpdated<T, TUpdate>(existing, updatePayload, id);
         setList(getList().map((e) => (e.id === id ? updated : e)));
-        await config.dbUpdate(id, data);
+        await config.dbUpdate(id, updatePayload);
         await recordChange(
           db,
           get,
@@ -180,11 +217,11 @@ export function createEntityCrudHandlers<
     },
 
     remove: async (id) => {
-      if (denyReason(`delete ${config.entityType}`)) {
+      const existing = getList().find((e) => e.id === id);
+      if (denyReason(`delete ${config.entityType}`, existing)) {
         return;
       }
       try {
-        const existing = getList().find((e) => e.id === id);
         let previousData: unknown = existing;
 
         if (config.prepareDelete) {

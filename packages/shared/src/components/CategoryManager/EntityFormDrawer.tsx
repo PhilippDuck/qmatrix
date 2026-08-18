@@ -12,10 +12,12 @@ import {
   MultiSelect,
   Modal,
   Box,
+  Alert,
 } from "@mantine/core";
 import { useHotkeys } from "@mantine/hooks";
 import { Department, EmployeeRole } from "../../services/indexeddb";
 import { useCapabilities } from "../../store/hooks";
+import { useBlueprintOnlyAuthoring } from "../../hooks/useCatalogAuthoring";
 
 export type FormMode = "category" | "subcategory" | "skill";
 
@@ -90,6 +92,7 @@ export const EntityFormDrawer: React.FC<EntityFormDrawerProps> = ({
 }) => {
   const [confirmationOpen, setConfirmationOpen] = React.useState(false);
   const { departments: showDepartments } = useCapabilities();
+  const blueprintOnly = useBlueprintOnlyAuthoring();
 
   const hasChanges = () => {
     if (inputValue !== initialValues.name) return true;
@@ -140,13 +143,23 @@ export const EntityFormDrawer: React.FC<EntityFormDrawerProps> = ({
         overlayProps={{ backgroundOpacity: 0.5, blur: 4 }}
         title={
           <Text fw={700} size="lg">
-            {editingId ? "Eintrag bearbeiten" : "Neuer Eintrag"}
+            {editingId
+              ? "Eintrag bearbeiten"
+              : blueprintOnly
+                ? "Neue Blaupause"
+                : "Neuer Eintrag"}
           </Text>
         }
       >
         <Stack gap="md" h="calc(100vh - 100px)" justify="space-between">
           <Box style={{ flex: 1, overflowY: 'auto', paddingRight: 4 }}>
             <Stack gap="md">
+              {blueprintOnly && !editingId && (
+                <Alert color="grape" variant="light">
+                  Wird als Blaupause angelegt — nicht in der Matrix. Später nach
+                  SkillGrid Manage exportieren.
+                </Alert>
+              )}
               {parentContext && (
                 <div
                   style={{

@@ -9,6 +9,12 @@ export const createAssessmentSlice = (db: DbService, caps: AppCapabilities): App
 
   setAssessment: async (employeeId, skillId, level, note?: string) => {
     try {
+      const targetSkill = get().skills.find((s) => s.id === skillId);
+      if (targetSkill?.catalogSource === "blueprint") {
+        const reason = "Blaupausen-Skills können nicht bewertet werden";
+        set({ error: reason });
+        throw new Error(reason);
+      }
       const existingKey = `${employeeId}-${skillId}`;
       const existing = get().assessments.find(
         (a) => a.employeeId === employeeId && a.skillId === skillId

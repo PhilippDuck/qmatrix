@@ -103,6 +103,33 @@ describe("parseExternalCatalogImport", () => {
     );
   });
 
+  it("parses team blueprint export as suggestions", () => {
+    const raw = {
+      format: "skillgrid-team-blueprint-v1",
+      exportedAt: "2026-08-18T00:00:00.000Z",
+      projectTitle: "Team Nord",
+      entities: {
+        categories: [{ id: "c-live", name: "Technik" }],
+        subcategories: [
+          { id: "sc-live", name: "Backend", categoryId: "c-live" },
+        ],
+        skills: [{ id: "sk-new", name: "Go", subCategoryId: "sc-live" }],
+        roles: [{ id: "r-new", name: "Architekt" }],
+      },
+    };
+    const parsed = parseExternalCatalogImport(raw, live);
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.mode).toBe("suggestions");
+    expect(parsed.sourceLabel).toContain("Team-Blaupause");
+    const go = parsed.package.entities.skills.find((s) => s.name === "Go");
+    expect(go).toBeTruthy();
+    expect(go!.subCategoryId).toBe("sc-live");
+    expect(
+      parsed.package.entities.roles.some((r) => r.name === "Architekt")
+    ).toBe(true);
+  });
+
   it("parses roles export and binds skills by name", () => {
     const rolesExport = buildRolesHierarchyExport(
       [

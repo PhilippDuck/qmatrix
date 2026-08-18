@@ -20,6 +20,7 @@ import { QualificationPlan, SkillGap } from "../../store/hooks";
 import { useStore, useShallow } from "../../store/hooks";
 import { usePrivacy } from "../../context/PrivacyContext";
 import { SkillGapAnalysis } from "./SkillGapAnalysis";
+import { filterOperationalRoles } from "../../utils/catalogVisibility";
 
 interface PlanFormProps {
   opened: boolean;
@@ -318,7 +319,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({
                 label="Zielrolle (Optional)"
                 placeholder="Keine Zielrolle (Individuelle Entwicklung)"
                 leftSection={<IconTarget size={16} />}
-                data={roles.map((r) => ({ value: r.id!, label: r.name }))}
+                data={filterOperationalRoles(roles).map((r) => ({ value: r.id!, label: r.name }))}
                 value={formData.targetRoleId}
                 onChange={(value) =>
                   setFormData({ ...formData, targetRoleId: value || "" })

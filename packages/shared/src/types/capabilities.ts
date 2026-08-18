@@ -17,6 +17,8 @@ export interface AppCapabilities {
   assessments: boolean;
 
   catalogAuthoring: boolean;
+  /** Team: create/edit only catalogSource=blueprint proposals for Manage. */
+  catalogBlueprintAuthoring: boolean;
   catalogImport: boolean;
   catalogExport: boolean;
   catalogVersioning: boolean;
@@ -56,6 +58,7 @@ export const fullCapabilities: AppCapabilities = {
   departments: true,
   assessments: true,
   catalogAuthoring: true,
+  catalogBlueprintAuthoring: false,
   catalogImport: true,
   catalogExport: true,
   catalogVersioning: false,
@@ -84,6 +87,7 @@ export const manageCapabilities: AppCapabilities = {
   departments: false,
   assessments: false,
   catalogAuthoring: true,
+  catalogBlueprintAuthoring: false,
   catalogImport: true,
   catalogExport: true,
   catalogVersioning: true,
@@ -112,6 +116,7 @@ export const teamCapabilities: AppCapabilities = {
   departments: true,
   assessments: true,
   catalogAuthoring: false,
+  catalogBlueprintAuthoring: true,
   catalogImport: true,
   catalogExport: false,
   catalogVersioning: false,

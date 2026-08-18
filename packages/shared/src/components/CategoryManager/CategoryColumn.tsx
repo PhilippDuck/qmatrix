@@ -18,7 +18,9 @@ import {
   IconInfoCircle,
 } from "@tabler/icons-react";
 import { Category } from "../../store/hooks";
+import { useBlueprintOnlyAuthoring } from "../../hooks/useCatalogAuthoring";
 import { CatalogDirtyTag } from "../shared/CatalogDirtyTag";
+import { CatalogBlueprintTag } from "../shared/CatalogBlueprintTag";
 
 interface CategoryColumnProps {
   categories: Category[];
@@ -30,6 +32,7 @@ interface CategoryColumnProps {
   getSubcategoryCount: (categoryId: string) => number;
   /** When true, hide add/edit/delete (Team catalog read-only). */
   readOnly?: boolean;
+  canMutate?: (category: Category) => boolean;
 }
 
 export const CategoryColumn: React.FC<CategoryColumnProps> = ({
@@ -41,7 +44,11 @@ export const CategoryColumn: React.FC<CategoryColumnProps> = ({
   onDelete,
   getSubcategoryCount,
   readOnly = false,
+  canMutate,
 }) => {
+  const allowEdit = (cat: Category) =>
+    canMutate ? canMutate(cat) : !readOnly;
+  const blueprintOnly = useBlueprintOnlyAuthoring();
   return (
     <Card withBorder shadow="sm" radius="md" style={{ flex: 1 }}>
       <Group justify="space-between" mb="md">
@@ -56,7 +63,7 @@ export const CategoryColumn: React.FC<CategoryColumnProps> = ({
             leftSection={<IconPlus size={14} />}
             onClick={onAdd}
           >
-            Neu
+            {blueprintOnly ? "Blaupause" : "Neu"}
           </Button>
         )}
       </Group>
@@ -88,6 +95,7 @@ export const CategoryColumn: React.FC<CategoryColumnProps> = ({
                     >
                       {cat.name}
                     </Text>
+                    <CatalogBlueprintTag entity={cat} />
                     <CatalogDirtyTag kind="categories" id={cat.id} />
                     {cat.description && (
                       <Tooltip
@@ -106,7 +114,7 @@ export const CategoryColumn: React.FC<CategoryColumnProps> = ({
                 </Group>
               </Table.Td>
               <Table.Td style={{ width: 70 }}>
-                {!readOnly && (
+                {allowEdit(cat) && (
                   <Group gap={4} justify="flex-end">
                     <ActionIcon
                       size="sm"

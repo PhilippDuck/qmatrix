@@ -16,7 +16,7 @@ export interface Employee {
 }
 
 /** Provenance of catalog entities after Manage/Team import (K20). */
-export type CatalogSource = "catalog" | "local";
+export type CatalogSource = "catalog" | "local" | "blueprint";
 
 export interface Category {
   id?: string;

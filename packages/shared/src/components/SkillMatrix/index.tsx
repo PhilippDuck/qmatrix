@@ -66,6 +66,12 @@ import { MatrixProvider, useMatrixContextValue } from "./MatrixContext";
 import { SegmentedControl } from "@mantine/core";
 import { MatrixColumn } from "./types";
 import type { NavigateFn } from "../../types";
+import {
+  filterOperationalCategories,
+  filterOperationalRoles,
+  filterOperationalSkills,
+  filterOperationalSubcategories,
+} from "../../utils/catalogVisibility";
 
 interface SkillMatrixProps {
   onNavigate?: NavigateFn;
@@ -250,6 +256,23 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = React.memo(({ onNavigate 
     return map;
   }, [qualificationMeasures]);
 
+  const operationalSkills = useMemo(
+    () => filterOperationalSkills(skills, subcategories, categories),
+    [skills, subcategories, categories]
+  );
+  const operationalCategories = useMemo(
+    () => filterOperationalCategories(categories),
+    [categories]
+  );
+  const operationalSubcategories = useMemo(
+    () => filterOperationalSubcategories(subcategories, categories),
+    [subcategories, categories]
+  );
+  const operationalRoles = useMemo(
+    () => filterOperationalRoles(roles),
+    [roles]
+  );
+
   const {
     displayedEmployees,
     displayedCategories,
@@ -260,7 +283,13 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = React.memo(({ onNavigate 
     calculateEmployeeAverage,
     getAssessment: getAssessmentFast,
   } = useMatrixCalculations({
-    employees, categories, subcategories, skills, departments, roles, getAssessment, assessments: deferredAssessments,
+    employees,
+    categories: operationalCategories,
+    subcategories: operationalSubcategories,
+    skills: operationalSkills,
+    departments,
+    roles: operationalRoles,
+    getAssessment, assessments: deferredAssessments,
     focusEmployeeId, showInactive, filterDepartments, filterRoles, filterEmployees,
     filterLevels, filterSkills, showOnlyGaps,
     employeeSort, filterCategories, skillSort, metricMode, showMaxValues: metricMode, groupingMode, hideEmployees, hideNaColumns, isEditMode
@@ -705,7 +734,8 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = React.memo(({ onNavigate 
     onNavigate,
   });
 
-  const hasCatalog = categories.length > 0 || skills.length > 0;
+  const hasCatalog =
+    operationalCategories.length > 0 || operationalSkills.length > 0;
   const isCompletelyEmpty = employees.length === 0 && !hasCatalog;
 
   const handleLoadCatalogFile = useCallback(async (file: File) => {
@@ -799,10 +829,10 @@ export const SkillMatrix: React.FC<SkillMatrixProps> = React.memo(({ onNavigate 
             setShowOnlyGaps={setShowOnlyGaps}
             employees={employees}
             departments={departments}
-            roles={roles}
-            categories={categories}
-            subcategories={subcategories}
-            skills={skills}
+            roles={operationalRoles}
+            categories={operationalCategories}
+            subcategories={operationalSubcategories}
+            skills={operationalSkills}
             isEditMode={isEditMode}
             setIsEditMode={setIsEditMode}
             setSkillDrawerOpened={setSkillDrawerOpened}

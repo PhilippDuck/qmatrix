@@ -7,6 +7,10 @@ import {
 import type { QualificationMeasure, QualificationPlan } from "../../types";
 import { createEntityCrudHandlers } from "../createEntityCrud";
 import type { AppSlice, QualificationSlice } from "../types";
+import {
+  filterOperationalRoles,
+  filterOperationalSkills,
+} from "../../utils/catalogVisibility";
 
 export const createQualificationSlice = (db: DbService, caps: AppCapabilities): AppSlice<QualificationSlice> => (set, get) => {
   const planLabel = (item: Partial<QualificationPlan>, fallbackId = "") => {
@@ -85,8 +89,12 @@ export const createQualificationSlice = (db: DbService, caps: AppCapabilities): 
       return computeSkillGapsForEmployee(
         {
           assessments: state.assessments,
-          roles: state.roles,
-          skills: state.skills,
+          roles: filterOperationalRoles(state.roles),
+          skills: filterOperationalSkills(
+            state.skills,
+            state.subcategories,
+            state.categories
+          ),
           subcategories: state.subcategories,
           categories: state.categories,
           employees: state.employees,

@@ -25,6 +25,7 @@ import { HistoryTimeline } from "./HistoryTimeline";
 import { useStore, useShallow } from "../../store/hooks";
 import { findRole, roleLabels, toRoleIds } from "../../utils/roleRefs";
 import { useCatalogAuthoring } from "../../hooks/useCatalogAuthoring";
+import { filterOperationalRoles } from "../../utils/catalogVisibility";
 
 interface EmployeeDrawerProps {
   opened: boolean;
@@ -310,7 +311,7 @@ export const EmployeeDrawer: React.FC<EmployeeDrawerProps> = ({
                     <TagsInput
                       label="Rollen / Qualifikations-Level"
                       placeholder="Wähle Rollen oder erstelle neu"
-                      data={roles.map(r => r.name)}
+                      data={filterOperationalRoles(roles).map(r => r.name)}
                       value={formData.roles}
                       onChange={(value) => setFormData({ ...formData, roles: value })}
                       splitChars={[',']}

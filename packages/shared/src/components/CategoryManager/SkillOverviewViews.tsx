@@ -42,6 +42,7 @@ import type {
   EmployeeRole,
 } from "../../services/indexeddb";
 import { CatalogDirtyTag } from "../shared/CatalogDirtyTag";
+import { CatalogBlueprintTag } from "../shared/CatalogBlueprintTag";
 
 export interface SkillOverviewData {
   categories: Category[];
@@ -328,6 +329,7 @@ export const SkillTreeView: React.FC<SkillOverviewData & SkillTreeActions> = ({
             <Text size="sm" fw={500} lineClamp={1}>
               {node.sub.name}
             </Text>
+            <CatalogBlueprintTag entity={node.sub} />
             <CatalogDirtyTag kind="subcategories" id={node.sub.id} />
           </UnstyledButton>
           {inlineMeta(
@@ -404,6 +406,7 @@ export const SkillTreeView: React.FC<SkillOverviewData & SkillTreeActions> = ({
                 <Text size="sm" lineClamp={1}>
                   {sk.name}
                 </Text>
+                <CatalogBlueprintTag entity={sk} />
                 <CatalogDirtyTag kind="skills" id={sk.id} />
                 {inlineMeta(
                   sk.description,
@@ -503,6 +506,7 @@ export const SkillTreeView: React.FC<SkillOverviewData & SkillTreeActions> = ({
                     <Text size="sm" fw={600} lineClamp={1}>
                       {cat.name}
                     </Text>
+                    <CatalogBlueprintTag entity={cat} />
                     <CatalogDirtyTag kind="categories" id={cat.id} />
                   </UnstyledButton>
                   {inlineMeta(
@@ -685,6 +689,7 @@ export const SkillTableView: React.FC<SkillOverviewData> = ({
                       <Text size="sm" fw={500}>
                         {sk.name}
                       </Text>
+                      <CatalogBlueprintTag entity={sk} />
                       <CatalogDirtyTag kind="skills" id={sk.id} />
                     </Group>
                     {sk.description && (

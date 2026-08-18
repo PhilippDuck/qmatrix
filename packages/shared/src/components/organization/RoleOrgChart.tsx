@@ -6,6 +6,7 @@ import { EmployeeRole, Skill, Employee, Category, SubCategory } from "../../serv
 import { getIconByName } from "../shared/RoleIconPicker";
 import { usePrivacy } from "../../context/PrivacyContext";
 import { CatalogDirtyTag } from "../shared/CatalogDirtyTag";
+import { CatalogBlueprintTag } from "../shared/CatalogBlueprintTag";
 
 interface RoleOrgChartProps {
     roles: EmployeeRole[];
@@ -170,6 +171,7 @@ const RoleCard: React.FC<{
                     <Text size="xs" fw={600} ta="center" style={{ maxWidth: 100 }}>
                         {role.name}
                     </Text>
+                    <CatalogBlueprintTag entity={role} />
                     <CatalogDirtyTag kind="roles" id={role.id} />
 
                     {roleEmployees.length > 0 && (

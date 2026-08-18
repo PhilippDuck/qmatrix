@@ -68,7 +68,7 @@ Stand: Feature-Branch monorepo Full / Manage / Team.
 |---|------|-----------|
 | T6 | Nur Mitarbeiter anlegen | Matrix **bleibt**; Banner „Skill-Katalog fehlt“ + Katalog laden |
 | T7 | Badge auf Matrix-Titel | **Katalog —** |
-| T8 | Kein Skill/Kategorie erstellen (Toolbar, Kontextmenü, Stammdaten Skills) | Create-UI fehlt / read-only |
+| T8 | Matrix: kein Skill erstellen (Toolbar, Kontextmenü) | Create-UI fehlt; Mitarbeiter anlegen bleibt |
 
 ### B3 Mit Katalog (Import in Team)
 
@@ -78,8 +78,11 @@ Stand: Feature-Branch monorepo Full / Manage / Team.
 | T10 | Matrix | Zeilen = Katalog-Skills; Spalten = Mitarbeiter |
 | T11 | Bewertung setzen / Zielniveau | Speichert, bleibt nach Reload |
 | T12 | Filter, Views, Gruppierung | Wie gewohnt |
-| T13 | Stammdaten: Skills | Anzeigen ok, **kein** Authoring |
-| T14 | Rollen | Lesen ok; Anlegen neuer Katalog-Rollen blockiert falls so designed |
+| T13 | Stammdaten: Skills | Offizielle Einträge lesbar; **Blaupause** anlegen möglich |
+| T14 | Rollen | Offizielle Rollen lesbar; **Blaupause hinzufügen** möglich |
+| T14b | Blaupause anlegen | Tag „Blaupause“ + Hinweis; **nicht** in der Matrix |
+| T14c | Blaupausen exportieren | JSON `skillgrid-team-blueprint-v1`; in Manage als Merge-Vorschlag importierbar |
+| T14d | Katalog-Reimport nach Übernahme in Manage | Passende Blaupausen verschwinden |
 
 ### B4 Ops-Daten
 

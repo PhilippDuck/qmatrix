@@ -21,7 +21,7 @@ Dieses Design spezifiziert die Aufteilung in **drei Apps in einem Monorepo**:
 
 1. **SkillGrid Full** – funktional äquivalent zur heutigen App (v2.24.0); inkl. lokaler Katalog-Autorenschaft und optionalem Katalog-Import.
 2. **SkillGrid Manage** – schlanke Admin-/Katalog-App: Source of Truth für Skills, Kategorien und Rollen mit **SemVer-Versionierung**, Changelog und Export versionierter Katalog-Pakete.
-3. **SkillGrid Team** – Team-App mit Mitarbeitern, Matrix, Assessments, Qualifizierung und Dashboard; Katalog (Skills/Rollen/Kategorien) ist **read-only** und wird nur via Katalog-Import aktualisiert.
+3. **SkillGrid Team** – Team-App mit Mitarbeitern, Matrix, Assessments, Qualifizierung und Dashboard; der **offizielle Katalog** ist read-only (Import aus Manage). Team darf zusätzlich **Blaupausen** (`catalogSource=blueprint`) als Vorschläge anlegen und nach Manage exportieren — sie erscheinen nicht in der Matrix.
 
 Gemeinsamer Code wandert in `packages/shared`. Jede App hat eigenen Vite-Entrypoint, Capability-Config, **eigene Store-Instanz** (kein globaler `useStore`-Singleton über Apps hinweg), IndexedDB-Namen (Full behält Legacy-DB-Namen) und Deploy-Origin.
 
@@ -123,8 +123,8 @@ Gemeinsamer Code wandert in `packages/shared`. Jede App hat eigenen Vite-Entrypo
 
 | User Story | Full | Manage | Team |
 |------------|:----:|:------:|:----:|
-| Skills/Kategorien anlegen & editieren | ✓ | ✓ | ✗ (read-only Anzeige) |
-| Rollen inkl. requiredSkills pflegen | ✓ | ✓ | ✗ (read-only) |
+| Skills/Kategorien anlegen & editieren | ✓ | ✓ | nur Blaupausen (nicht in der Matrix) |
+| Rollen inkl. requiredSkills pflegen | ✓ | ✓ | nur Blaupausen-Rollen |
 | Katalog versioniert publishen (SemVer+Changelog) | ✗ (nur Roh-Extrakt) | ✓ | ✗ |
 | Katalog-Paket importieren/aktualisieren | ✓ optional | ✓ load-to-edit | ✓ primär |
 | Mitarbeiter CRUD | ✓ | ✗ | ✓ |
@@ -433,6 +433,7 @@ export interface AppCapabilities {
   assessments: boolean;
 
   catalogAuthoring: boolean;
+  catalogBlueprintAuthoring: boolean; // Team: nur catalogSource=blueprint
   catalogImport: boolean;
   catalogExport: boolean;       // raw extract and/or publish
   catalogVersioning: boolean;   // SemVer publish UI – Manage only
@@ -464,6 +465,7 @@ export interface AppCapabilities {
 | dashboard / matrix / qualification / assessments | ✓ | – | ✓ |
 | employees / departments | ✓ | – | ✓ |
 | catalogAuthoring | ✓ | ✓ | – |
+| catalogBlueprintAuthoring | – | – | ✓ |
 | catalogImport | ✓ | ✓ (load) | ✓ |
 | catalogExport | ✓ Roh | ✓ Publish | – |
 | catalogVersioning | – | ✓ | – |

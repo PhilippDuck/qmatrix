@@ -18,7 +18,9 @@ import {
   IconInfoCircle,
 } from "@tabler/icons-react";
 import { Skill } from "../../store/hooks";
+import { useBlueprintOnlyAuthoring } from "../../hooks/useCatalogAuthoring";
 import { CatalogDirtyTag } from "../shared/CatalogDirtyTag";
+import { CatalogBlueprintTag } from "../shared/CatalogBlueprintTag";
 
 interface SkillColumnProps {
   skills: Skill[];
@@ -27,6 +29,7 @@ interface SkillColumnProps {
   onEdit: (skill: Skill) => void;
   onDelete: (skillId: string) => void;
   readOnly?: boolean;
+  canMutate?: (skill: Skill) => boolean;
 }
 
 export const SkillColumn: React.FC<SkillColumnProps> = ({
@@ -36,7 +39,11 @@ export const SkillColumn: React.FC<SkillColumnProps> = ({
   onEdit,
   onDelete,
   readOnly = false,
+  canMutate,
 }) => {
+  const allowEdit = (skill: Skill) =>
+    canMutate ? canMutate(skill) : !readOnly;
+  const blueprintOnly = useBlueprintOnlyAuthoring();
   return (
     <Card
       withBorder
@@ -57,7 +64,7 @@ export const SkillColumn: React.FC<SkillColumnProps> = ({
             leftSection={<IconPlus size={14} />}
             onClick={onAdd}
           >
-            Neu
+            {blueprintOnly ? "Blaupause" : "Neu"}
           </Button>
         )}
       </Group>
@@ -72,6 +79,7 @@ export const SkillColumn: React.FC<SkillColumnProps> = ({
                     <Text size="sm" c={skill.catalogDeprecated ? "dimmed" : undefined}>
                       {skill.name}
                     </Text>
+                    <CatalogBlueprintTag entity={skill} />
                     <CatalogDirtyTag kind="skills" id={skill.id} />
                     {skill.catalogDeprecated && (
                       <Badge size="xs" color="gray" variant="outline">
@@ -91,7 +99,7 @@ export const SkillColumn: React.FC<SkillColumnProps> = ({
                   </Group>
                 </Table.Td>
                 <Table.Td style={{ width: 70 }}>
-                  {!readOnly ? (
+                  {allowEdit(skill) ? (
                     <Group gap={4} justify="flex-end">
                       <ActionIcon
                         size="sm"

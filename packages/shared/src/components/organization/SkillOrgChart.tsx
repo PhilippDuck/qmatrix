@@ -34,6 +34,7 @@ import {
   EmployeeRole,
 } from "../../services/indexeddb";
 import { CatalogDirtyTag } from "../shared/CatalogDirtyTag";
+import { CatalogBlueprintTag } from "../shared/CatalogBlueprintTag";
 import type { CatalogEntityKind } from "../../types/catalog";
 
 // ----------------------------------------------------------------------------
@@ -271,8 +272,13 @@ const NodeCard: React.FC<{
             <Text fw={600} size={labelSize} style={{ lineHeight: 1.2 }} ta="center">
               {node.name}
             </Text>
-            {!node.isAddNode && orgChartDirtyKind(node.type) && (
-              <CatalogDirtyTag kind={orgChartDirtyKind(node.type)!} id={node.id} />
+            {!node.isAddNode && (
+              <>
+                <CatalogBlueprintTag entity={node.data} />
+                {orgChartDirtyKind(node.type) && (
+                  <CatalogDirtyTag kind={orgChartDirtyKind(node.type)!} id={node.id} />
+                )}
+              </>
             )}
           </Stack>
         ) : null}

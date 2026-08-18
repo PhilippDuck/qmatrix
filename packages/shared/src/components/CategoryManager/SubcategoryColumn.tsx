@@ -18,7 +18,9 @@ import {
   IconInfoCircle,
 } from "@tabler/icons-react";
 import { SubCategory } from "../../store/hooks";
+import { useBlueprintOnlyAuthoring } from "../../hooks/useCatalogAuthoring";
 import { CatalogDirtyTag } from "../shared/CatalogDirtyTag";
+import { CatalogBlueprintTag } from "../shared/CatalogBlueprintTag";
 
 interface SubcategoryColumnProps {
   subcategories: SubCategory[];
@@ -31,6 +33,7 @@ interface SubcategoryColumnProps {
   getSkillCount: (subcategoryId: string) => number;
   onAddNested: (parentId: string) => void;
   readOnly?: boolean;
+  canMutate?: (sub: SubCategory) => boolean;
 }
 
 export const SubcategoryColumn: React.FC<SubcategoryColumnProps> = ({
@@ -44,7 +47,11 @@ export const SubcategoryColumn: React.FC<SubcategoryColumnProps> = ({
   getSkillCount,
   onAddNested,
   readOnly = false,
+  canMutate,
 }) => {
+  const allowEdit = (sub: SubCategory) =>
+    canMutate ? canMutate(sub) : !readOnly;
+  const blueprintOnly = useBlueprintOnlyAuthoring();
 
   const renderSubcategoryRow = (sub: SubCategory, depth: number = 0) => {
     return (
@@ -75,6 +82,7 @@ export const SubcategoryColumn: React.FC<SubcategoryColumnProps> = ({
                 >
                   {sub.name}
                 </Text>
+                <CatalogBlueprintTag entity={sub} />
                 <CatalogDirtyTag kind="subcategories" id={sub.id} />
                 {sub.description && (
                   <Tooltip
@@ -93,42 +101,48 @@ export const SubcategoryColumn: React.FC<SubcategoryColumnProps> = ({
             </Group>
           </Table.Td>
           <Table.Td style={{ width: 100 }}>
-            {!readOnly && (
+            {(!readOnly || allowEdit(sub)) && (
               <Group gap={4} justify="flex-end">
-                <ActionIcon
-                  size="sm"
-                  variant="subtle"
-                  color="blue"
-                  title="Untergruppe hinzufügen"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onAddNested(sub.id!);
-                  }}
-                >
-                  <IconPlus size={14} />
-                </ActionIcon>
-                <ActionIcon
-                  size="sm"
-                  variant="subtle"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onEdit(sub);
-                  }}
-                >
-                  <IconEdit size={14} />
-                </ActionIcon>
-                <ActionIcon
-                  size="sm"
-                  variant="subtle"
-                  color="red"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (confirm("Unterkategorie löschen?"))
-                      onDelete(sub.id!);
-                  }}
-                >
-                  <IconTrash size={14} />
-                </ActionIcon>
+                {!readOnly && (
+                  <ActionIcon
+                    size="sm"
+                    variant="subtle"
+                    color="blue"
+                    title="Untergruppe hinzufügen"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onAddNested(sub.id!);
+                    }}
+                  >
+                    <IconPlus size={14} />
+                  </ActionIcon>
+                )}
+                {allowEdit(sub) && (
+                  <>
+                    <ActionIcon
+                      size="sm"
+                      variant="subtle"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEdit(sub);
+                      }}
+                    >
+                      <IconEdit size={14} />
+                    </ActionIcon>
+                    <ActionIcon
+                      size="sm"
+                      variant="subtle"
+                      color="red"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (confirm("Unterkategorie löschen?"))
+                          onDelete(sub.id!);
+                      }}
+                    >
+                      <IconTrash size={14} />
+                    </ActionIcon>
+                  </>
+                )}
               </Group>
             )}
           </Table.Td>
@@ -178,7 +192,7 @@ export const SubcategoryColumn: React.FC<SubcategoryColumnProps> = ({
             leftSection={<IconPlus size={14} />}
             onClick={onAdd}
           >
-            Neu
+            {blueprintOnly ? "Blaupause" : "Neu"}
           </Button>
         )}
       </Group>

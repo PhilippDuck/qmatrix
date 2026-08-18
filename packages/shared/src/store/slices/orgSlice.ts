@@ -22,6 +22,7 @@ export const createOrgSlice = (db: DbService, caps: AppCapabilities): AppSlice<O
     entityType: "role",
     listKey: "roles",
     capabilityKey: "catalogAuthoring",
+    catalogEntity: true,
     getLabel: nameLabel<EmployeeRole>(),
     dbAdd: (data) => db.addRole(data),
     dbUpdate: (id, data) => db.updateRole(id, data),
@@ -41,11 +42,22 @@ export const createOrgSlice = (db: DbService, caps: AppCapabilities): AppSlice<O
     deleteRole: roles.remove,
 
     updateSkillsForRole: async (roleId, skillIds) => {
-      const denied = checkCapability(caps, "catalogAuthoring", "updateSkillsForRole");
-      if (!denied.ok) {
-        if (import.meta.env.DEV) console.error(denied.reason);
-        set({ error: denied.reason });
-        throw new Error(denied.reason);
+      const role = get().roles.find((r) => r.id === roleId);
+      const officialOk = checkCapability(
+        caps,
+        "catalogAuthoring",
+        "updateSkillsForRole"
+      );
+      const blueprintOk =
+        caps.catalogBlueprintAuthoring && role?.catalogSource === "blueprint";
+      if (!officialOk.ok && !blueprintOk) {
+        const reason =
+          officialOk.ok === false
+            ? officialOk.reason
+            : `[${caps.variant}] Offizielle Rolle nicht änderbar`;
+        if (import.meta.env.DEV) console.error(reason);
+        set({ error: reason });
+        throw new Error(reason);
       }
       try {
         await db.updateSkillsForRole(roleId, skillIds);

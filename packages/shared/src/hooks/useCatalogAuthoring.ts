@@ -5,6 +5,17 @@ export function useCatalogAuthoring(): boolean {
   return useCapabilities().catalogAuthoring;
 }
 
+/** Team: create/edit blueprint proposals only. */
+export function useCatalogBlueprintAuthoring(): boolean {
+  return useCapabilities().catalogBlueprintAuthoring;
+}
+
+/** Team-only authoring: new catalog rows are blueprints, official rows stay read-only. */
+export function useBlueprintOnlyAuthoring(): boolean {
+  const caps = useCapabilities();
+  return caps.catalogBlueprintAuthoring && !caps.catalogAuthoring;
+}
+
 export function useHistoryUndoCatalog(): boolean {
   return useCapabilities().historyUndoCatalog;
 }

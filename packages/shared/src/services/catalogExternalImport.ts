@@ -24,6 +24,7 @@ import type {
 } from "../utils/rolesHierarchyExport";
 import { LEVELS } from "../constants/skillLevels";
 import { parseImportAsCatalogPackage } from "./catalogMerge";
+import { isTeamBlueprintExport } from "../utils/catalogBlueprint";
 
 export type ExternalImportMode = "snapshot" | "suggestions";
 export type CatalogMergeScope = "all" | "skills" | "roles";
@@ -800,7 +801,18 @@ export function parseExternalCatalogImport(
   if (obj && typeof obj === "object") {
     const rec = obj as Record<string, unknown>;
 
-    if (isSkillsHierarchy(rec)) {
+    if (isTeamBlueprintExport(rec)) {
+      entities = {
+        categories: rec.entities.categories || [],
+        subcategories: rec.entities.subcategories || [],
+        skills: rec.entities.skills || [],
+        roles: rec.entities.roles || [],
+      };
+      sourceLabel = rec.projectTitle
+        ? `Team-Blaupause · ${rec.projectTitle}`
+        : "Team-Blaupause";
+      projectName = rec.projectTitle || "Team-Blaupause";
+    } else if (isSkillsHierarchy(rec)) {
       entities = flattenSkillsHierarchy(rec);
       sourceLabel = rec.projectTitle || "Skills-Hierarchie";
       projectName = rec.projectTitle || projectName;
