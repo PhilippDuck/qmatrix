@@ -18,6 +18,7 @@ import {
   IconInfoCircle,
 } from "@tabler/icons-react";
 import { Category } from "../../store/hooks";
+import { CatalogDirtyTag } from "../shared/CatalogDirtyTag";
 
 interface CategoryColumnProps {
   categories: Category[];
@@ -87,6 +88,7 @@ export const CategoryColumn: React.FC<CategoryColumnProps> = ({
                     >
                       {cat.name}
                     </Text>
+                    <CatalogDirtyTag kind="categories" id={cat.id} />
                     {cat.description && (
                       <Tooltip
                         label={cat.description}

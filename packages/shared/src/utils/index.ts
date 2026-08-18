@@ -6,3 +6,5 @@ export * from "./catalogVisibility";
 export * from "./skillCalculations";
 export * from "./skillGaps";
 export * from "./skillsHierarchyExport";
+export * from "./rolesHierarchyExport";
+export * from "./catalogChangeNotes";

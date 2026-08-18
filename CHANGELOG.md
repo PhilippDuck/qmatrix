@@ -1,4 +1,20 @@
 
+## [2.26.0] - 2026-08-18
+
+### Behobene Fehler
+- **Timeline / Rückgängig nach Katalog-Merge**: Ein Merge schrieb nur einen Katalog-Eintrag ohne den vorherigen Stand. „Rückgängig“ markierte den Eintrag als undone, stellte aber nichts wieder her. Merge speichert jetzt den Katalog-Snapshot; Undo setzt Kategorien, Skills und Rollen zurück.
+- **Ungesichert-Hover ohne Version**: Rollback war deaktiviert, wenn noch keine Version freigegeben war. Jetzt kann auf einen leeren Katalog zurückgesetzt werden (in der Historie rückgängig machbar).
+- **Version freigeben im Hover**: Öffnet das Freigabe-Popup auf jeder Manage-Seite (nicht nur unter Versionen & Releases).
+- **Schnellspeichern-Indikator**: Der rote Punkt am Disketten-Icon blieb nach dem Backup, weil er auch „Katalog ungesichert“ anzeigte. Er gilt jetzt nur noch für ungesichertes lokales Backup; die orange Badge bleibt für ungesicherte Katalog-Versionen.
+- **Ungesicherte Katalog-Einträge**: In Manage tragen neue Skills/Kategorien/Rollen ein grünes Tag „Neu“, geänderte ein blaues „Geändert“ (Liste, Baum, Tabelle, Rollen).
+- **Änderungsnotizen vor dem Release**: Am Neu-/Geändert-Tag kann man kurze Notizen anheften. Sie erscheinen im Ungesichert-Hover und landen automatisch im Releasetext.
+- **Notizen zentral & nach Rollback/Release**: Neu-Tags und Notiz-Icons verschwinden nach Freigabe oder Rollback. Rollback löscht die Entwurfsnotizen. Alle Notizen lassen sich unter Versionen, im Hover und im Freigabe-Dialog bearbeiten.
+
+### Neue Funktionen
+- **Skills & Kategorien importieren (Full + Manage)**: Neben dem bestehenden Export gibt es in Kategorien & Skills einen Import (Datei oder Text). Unterstützt Katalog-JSON, den Skills-Export, Markdown-Struktur und Namenslisten. Gleiche Namen werden gemerged, neue Einträge erscheinen als Vorschläge zur Auswahl.
+- **Rollen exportieren**: In Rollen & Level gibt es dasselbe Export-Menü wie bei Skills (Markdown, Textbaum, vollständiges JSON mit Vererbung und Skill-Zuordnungen).
+- **Rollen importieren (Full + Manage)**: Rollen-Export, Katalog-JSON, Markdown oder eine Namensliste können als Merge/Vorschläge übernommen werden. Skill-Zuordnungen werden über den Namen an lokale Skills gebunden.
+
 ## [2.25.0] - 2026-08-07
 
 ### Neue Funktionen

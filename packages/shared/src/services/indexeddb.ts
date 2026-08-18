@@ -1274,6 +1274,7 @@ export class IndexedDBService {
       projectTitle: data.settings?.projectTitle || "",
       updatedAt: Date.now(),
       installedCatalogMeta: data.settings?.installedCatalogMeta,
+      pendingCatalogNotes: data.settings?.pendingCatalogNotes,
     };
     await this.execute("settings", "put", settings);
 

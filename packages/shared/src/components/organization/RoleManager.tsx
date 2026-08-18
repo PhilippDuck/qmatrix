@@ -23,8 +23,9 @@ import {
     Tooltip,
     ThemeIcon,
     Accordion,
+    Menu,
 } from "@mantine/core";
-import { IconPlus, IconTrash, IconBadge, IconArrowUpRight, IconEdit, IconList, IconHierarchy, IconX, IconEye } from "@tabler/icons-react";
+import { IconPlus, IconTrash, IconBadge, IconArrowUpRight, IconEdit, IconList, IconHierarchy, IconX, IconEye, IconDownload, IconChevronDown, IconMarkdown, IconFileTypeTxt, IconBraces } from "@tabler/icons-react";
 import { useDisclosure } from "@mantine/hooks";
 import { useStore, useShallow } from "../../store/hooks";
 import { EmployeeRole } from "../../services/indexeddb";
@@ -34,6 +35,15 @@ import { RoleDetailDrawer } from "../shared/RoleDetailDrawer";
 import { RoleRichTextEditorField } from "../shared/RoleRichTextEditor";
 import { LEVELS } from "../../constants/skillLevels";
 import { useCatalogAuthoring } from "../../hooks/useCatalogAuthoring";
+import { notifications } from "@mantine/notifications";
+import { CatalogMergeImport } from "../CatalogMergeImport";
+import { CatalogDirtyTag } from "../shared/CatalogDirtyTag";
+import {
+    buildRolesHierarchyExport,
+    downloadRolesHierarchyJson,
+    downloadRolesHierarchyMarkdown,
+    downloadRolesHierarchyTree,
+} from "../../utils/rolesHierarchyExport";
 
 const stripHtml = (html: string) => html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 
@@ -93,13 +103,14 @@ interface RoleManagerProps {
 
 export const RoleManager: React.FC<RoleManagerProps> = ({ initialEditRoleId, onClearParams }) => {
     const catalogAuthoring = useCatalogAuthoring();
-    const { roles, skills, employees, categories, subcategories, addRole, updateRole, deleteRole, updateSkillsForRole } = useStore(
+    const { roles, skills, employees, categories, subcategories, projectTitle, addRole, updateRole, deleteRole, updateSkillsForRole } = useStore(
         useShallow((s) => ({
             roles: s.roles,
             skills: s.skills,
             employees: s.employees,
             categories: s.categories,
             subcategories: s.subcategories,
+            projectTitle: s.projectTitle,
             addRole: s.addRole,
             updateRole: s.updateRole,
             deleteRole: s.deleteRole,
@@ -349,15 +360,98 @@ export const RoleManager: React.FC<RoleManagerProps> = ({ initialEditRoleId, onC
         return Array.from(skillsMap.values());
     }, [inheritsFrom, roles]);
 
+    type RoleExportFormat = "markdown" | "tree" | "json";
+
+    const handleExportRoles = (format: RoleExportFormat) => {
+        try {
+            const payload = buildRolesHierarchyExport(roles, skills, projectTitle);
+            if (format === "markdown") {
+                downloadRolesHierarchyMarkdown(payload, projectTitle);
+            } else if (format === "tree") {
+                downloadRolesHierarchyTree(payload, projectTitle);
+            } else {
+                downloadRolesHierarchyJson(payload, projectTitle);
+            }
+            const formatLabel =
+                format === "markdown"
+                    ? "Markdown (nur Namen)"
+                    : format === "tree"
+                        ? "Textbaum (nur Namen)"
+                        : "JSON (vollständig)";
+            notifications.show({
+                title: "Export erstellt",
+                message: `${payload.counts.roles} Rollen als ${formatLabel}.`,
+                color: "green",
+            });
+        } catch (error) {
+            console.error("Rollen-Export fehlgeschlagen:", error);
+            notifications.show({
+                title: "Export fehlgeschlagen",
+                message: "Die Rollen konnten nicht exportiert werden.",
+                color: "red",
+            });
+        }
+    };
+
     return (
         <Stack gap="lg" style={{ height: '100%' }}>
             <Group justify="space-between">
                 <Title order={3}>Rollen & Qualifikations-Level verwalten</Title>
-                {catalogAuthoring && (
-                    <Button leftSection={<IconPlus size={16} />} onClick={handleOpenAdd}>
-                        Rolle hinzufügen
-                    </Button>
-                )}
+                <Group gap="sm">
+                    {catalogAuthoring && (
+                        <CatalogMergeImport variant="toolbar" scope="roles" />
+                    )}
+                    <Menu shadow="md" width={320} position="bottom-end">
+                        <Menu.Target>
+                            <Button
+                                variant="light"
+                                color="blue"
+                                size="sm"
+                                leftSection={<IconDownload size={16} />}
+                                rightSection={<IconChevronDown size={14} />}
+                            >
+                                Exportieren
+                            </Button>
+                        </Menu.Target>
+                        <Menu.Dropdown>
+                            <Menu.Label>Nur Struktur (Namen)</Menu.Label>
+                            <Menu.Item
+                                leftSection={<IconMarkdown size={16} />}
+                                onClick={() => handleExportRoles("markdown")}
+                            >
+                                Markdown (.md)
+                                <Text size="xs" c="dimmed">
+                                    Gut lesbar in Chat, Mail, Notion, GitHub
+                                </Text>
+                            </Menu.Item>
+                            <Menu.Item
+                                leftSection={<IconFileTypeTxt size={16} />}
+                                onClick={() => handleExportRoles("tree")}
+                            >
+                                Textbaum (.txt)
+                                <Text size="xs" c="dimmed">
+                                    Baumansicht, maximal übersichtlich
+                                </Text>
+                            </Menu.Item>
+                            <Menu.Divider />
+                            <Menu.Label>Vollständig</Menu.Label>
+                            <Menu.Item
+                                leftSection={<IconBraces size={16} />}
+                                onClick={() => handleExportRoles("json")}
+                            >
+                                JSON (.json)
+                                <Text size="xs" c="dimmed">
+                                    Mit IDs, Vererbung und Skill-Zuordnungen
+                                </Text>
+                            </Menu.Item>
+                        </Menu.Dropdown>
+                    </Menu>
+                    {catalogAuthoring && (
+                        <Button leftSection={<IconPlus size={16} />} onClick={handleOpenAdd}>
+                            Rolle hinzufügen
+                        </Button>
+                    )}
+                </Group>
             </Group>
 
             <Tabs defaultValue="list" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
@@ -413,6 +507,7 @@ export const RoleManager: React.FC<RoleManagerProps> = ({ initialEditRoleId, onC
                                                         <Text size="sm" fw={isRoot ? 600 : 400}>
                                                             {role.name}
                                                         </Text>
+                                                        <CatalogDirtyTag kind="roles" id={role.id} />
                                                         {isRoot && roles.some(r => r.inheritsFromId === role.id) && (
                                                             <Badge size="xs" variant="light" color="blue">
                                                                 {roles.filter(r => r.inheritsFromId === role.id).length} Unterrollen

@@ -268,8 +268,8 @@ const App: FC = () => {
 
   const lastUpdate =
     changeHistory.length > 0 ? changeHistory[0].timestamp : null;
-  const needsBackupAttention =
-    hasUnsavedChanges || hasUnpublishedCatalogChanges;
+  // Floppy = local backup only. Unpublished catalog has its own orange badge.
+  const needsBackupAttention = hasUnsavedChanges;
 
   const handleQuickBackup = async () => {
     try {
@@ -464,7 +464,6 @@ const App: FC = () => {
                       <UnpublishedCatalogBadge
                         size="sm"
                         label="ungesichert"
-                        onPublish={() => setActiveTab("releases")}
                       />
                     </Group>
                   </Group>

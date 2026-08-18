@@ -104,6 +104,8 @@ export interface AppSettings {
     minAppFormatVersion: number;
     partial?: boolean;
   };
+  /** Draft notes on unpublished catalog edits; consumed at next Manage release. */
+  pendingCatalogNotes?: import("./catalog").CatalogChangeNote[];
 }
 
 export interface QualificationPlan {

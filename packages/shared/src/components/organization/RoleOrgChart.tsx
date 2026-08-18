@@ -5,6 +5,7 @@ import { IconBulb, IconUsers } from "@tabler/icons-react";
 import { EmployeeRole, Skill, Employee, Category, SubCategory } from "../../services/indexeddb";
 import { getIconByName } from "../shared/RoleIconPicker";
 import { usePrivacy } from "../../context/PrivacyContext";
+import { CatalogDirtyTag } from "../shared/CatalogDirtyTag";
 
 interface RoleOrgChartProps {
     roles: EmployeeRole[];
@@ -169,6 +170,7 @@ const RoleCard: React.FC<{
                     <Text size="xs" fw={600} ta="center" style={{ maxWidth: 100 }}>
                         {role.name}
                     </Text>
+                    <CatalogDirtyTag kind="roles" id={role.id} />
 
                     {roleEmployees.length > 0 && (
                         <Tooltip.Group>

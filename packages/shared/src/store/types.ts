@@ -30,6 +30,7 @@ export interface CoreSlice {
   projectTitle: string;
   /** Last published / installed catalog meta (release history lives in meta.changelog). */
   installedCatalogMeta: import("../types/catalog").CatalogMeta | null;
+  pendingCatalogNotes: import("../types/catalog").CatalogChangeNote[];
   dataHash: string;
   loading: boolean;
   error: string | null;

@@ -17,6 +17,16 @@ export type CatalogEntityKind =
   | "skills"
   | "roles";
 
+/** Short note attached to an unpublished catalog change (feeds the release text). */
+export interface CatalogChangeNote {
+  id: string;
+  kind: CatalogEntityKind;
+  entityId: string;
+  entityLabel: string;
+  text: string;
+  createdAt: number;
+}
+
 export interface CatalogChangelogEntry {
   version: SemVer;
   date: string; // YYYY-MM-DD

@@ -41,7 +41,7 @@ export const createDataMgmtSlice = (db: DbService, caps: AppCapabilities): AppSl
       a.click();
       URL.revokeObjectURL(url);
 
-      set({ hasUnsavedChanges: false });
+      get().setHasUnsavedChanges(false);
 
       return data;
     } catch (err) {

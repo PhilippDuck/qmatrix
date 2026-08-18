@@ -41,6 +41,7 @@ import type {
   Skill,
   EmployeeRole,
 } from "../../services/indexeddb";
+import { CatalogDirtyTag } from "../shared/CatalogDirtyTag";
 
 export interface SkillOverviewData {
   categories: Category[];
@@ -327,6 +328,7 @@ export const SkillTreeView: React.FC<SkillOverviewData & SkillTreeActions> = ({
             <Text size="sm" fw={500} lineClamp={1}>
               {node.sub.name}
             </Text>
+            <CatalogDirtyTag kind="subcategories" id={node.sub.id} />
           </UnstyledButton>
           {inlineMeta(
             node.sub.description,
@@ -402,6 +404,7 @@ export const SkillTreeView: React.FC<SkillOverviewData & SkillTreeActions> = ({
                 <Text size="sm" lineClamp={1}>
                   {sk.name}
                 </Text>
+                <CatalogDirtyTag kind="skills" id={sk.id} />
                 {inlineMeta(
                   sk.description,
                   canEdit && onEditSkill ? (
@@ -500,6 +503,7 @@ export const SkillTreeView: React.FC<SkillOverviewData & SkillTreeActions> = ({
                     <Text size="sm" fw={600} lineClamp={1}>
                       {cat.name}
                     </Text>
+                    <CatalogDirtyTag kind="categories" id={cat.id} />
                   </UnstyledButton>
                   {inlineMeta(
                     cat.description,
@@ -677,9 +681,12 @@ export const SkillTableView: React.FC<SkillOverviewData> = ({
               rows.map(({ sk, sub, cat, roleCount }) => (
                 <Table.Tr key={sk.id}>
                   <Table.Td>
-                    <Text size="sm" fw={500}>
-                      {sk.name}
-                    </Text>
+                    <Group gap={6} wrap="nowrap">
+                      <Text size="sm" fw={500}>
+                        {sk.name}
+                      </Text>
+                      <CatalogDirtyTag kind="skills" id={sk.id} />
+                    </Group>
                     {sk.description && (
                       <Text size="xs" c="dimmed" lineClamp={1}>
                         {sk.description}

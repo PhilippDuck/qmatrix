@@ -18,6 +18,7 @@ import {
   IconInfoCircle,
 } from "@tabler/icons-react";
 import { SubCategory } from "../../store/hooks";
+import { CatalogDirtyTag } from "../shared/CatalogDirtyTag";
 
 interface SubcategoryColumnProps {
   subcategories: SubCategory[];
@@ -74,6 +75,7 @@ export const SubcategoryColumn: React.FC<SubcategoryColumnProps> = ({
                 >
                   {sub.name}
                 </Text>
+                <CatalogDirtyTag kind="subcategories" id={sub.id} />
                 {sub.description && (
                   <Tooltip
                     label={sub.description}

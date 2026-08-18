@@ -38,8 +38,10 @@ export type { SemVerBump } from "./catalog";
 export {
   applyCatalogPackage,
   importOpsFromExportData,
+  restoreCatalogFromSnapshot,
+  isCatalogUndoSnapshot,
 } from "./catalogApply";
-export type { CatalogApplyDb } from "./catalogApply";
+export type { CatalogApplyDb, CatalogUndoSnapshot } from "./catalogApply";
 export {
   diffCatalogEntities,
   summarizeDiffCounts,
@@ -67,6 +69,17 @@ export {
   buildManageDemoCatalogPackage,
   manageDemoCatalogSummary,
 } from "./manageDemoCatalog";
+export {
+  parseExternalCatalogImport,
+  remapCatalogEntitiesByName,
+  flattenSkillsHierarchy,
+  scopeKinds,
+} from "./catalogExternalImport";
+export type {
+  CatalogMergeScope,
+  ExternalImportMode,
+  ParseExternalImportResult,
+} from "./catalogExternalImport";
 export type {
   ManageBackupPackage,
   ManageBackupData,

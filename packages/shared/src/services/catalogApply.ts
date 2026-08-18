@@ -37,6 +37,7 @@ export interface CatalogApplyDb {
         projectTitle: string;
         updatedAt: number;
         installedCatalogMeta?: CatalogPackage["meta"];
+        pendingCatalogNotes?: import("../types/catalog").CatalogChangeNote[];
       }
     | undefined
   >;
@@ -48,6 +49,7 @@ export interface CatalogApplyDb {
   saveSettings: (settings: {
     projectTitle: string;
     installedCatalogMeta?: CatalogPackage["meta"];
+    pendingCatalogNotes?: import("../types/catalog").CatalogChangeNote[];
   }) => Promise<void>;
   updateEmployee: (
     id: string,
@@ -73,6 +75,102 @@ function isCatalogSourced(entity: {
   catalogSource?: string;
 }): boolean {
   return entity.catalogSource === "catalog";
+}
+
+/** Stored in change-history previousData so a merge can be undone atomically. */
+export interface CatalogUndoSnapshot {
+  catalogSnapshot: true;
+  categories: Category[];
+  subcategories: SubCategory[];
+  skills: Skill[];
+  roles: EmployeeRole[];
+  installedCatalogMeta: CatalogPackage["meta"] | null;
+}
+
+export function isCatalogUndoSnapshot(
+  value: unknown
+): value is CatalogUndoSnapshot {
+  if (!value || typeof value !== "object") return false;
+  const v = value as Record<string, unknown>;
+  return (
+    v.catalogSnapshot === true &&
+    Array.isArray(v.categories) &&
+    Array.isArray(v.subcategories) &&
+    Array.isArray(v.skills) &&
+    Array.isArray(v.roles)
+  );
+}
+
+function cloneEntities<T>(items: T[]): T[] {
+  return items.map((item) => ({ ...item }));
+}
+
+/**
+ * Restore catalog entities to a pre-merge snapshot.
+ * Extra rows added by the merge are removed via execute (no deleteSkill cascade).
+ */
+export async function restoreCatalogFromSnapshot(
+  db: CatalogApplyDb,
+  snapshot: CatalogUndoSnapshot
+): Promise<void> {
+  const currentCats = await db.getCategories();
+  const currentSubs = await db.getSubCategories();
+  const currentSkills = await db.getSkills();
+  const currentRoles = await db.getRoles();
+
+  const snapCatIds = new Set(
+    snapshot.categories.map((c) => c.id).filter(Boolean) as string[]
+  );
+  const snapSubIds = new Set(
+    snapshot.subcategories.map((s) => s.id).filter(Boolean) as string[]
+  );
+  const snapSkillIds = new Set(
+    snapshot.skills.map((s) => s.id).filter(Boolean) as string[]
+  );
+  const snapRoleIds = new Set(
+    snapshot.roles.map((r) => r.id).filter(Boolean) as string[]
+  );
+
+  for (const cat of snapshot.categories) {
+    if (cat.id) await db.execute("categories", "put", cat);
+  }
+  for (const sub of snapshot.subcategories) {
+    if (sub.id) await db.execute("subcategories", "put", sub);
+  }
+  for (const skill of snapshot.skills) {
+    if (skill.id) await db.execute("skills", "put", skill);
+  }
+  for (const role of snapshot.roles) {
+    if (role.id) await db.execute("roles", "put", role);
+  }
+
+  for (const skill of currentSkills) {
+    if (skill.id && !snapSkillIds.has(skill.id)) {
+      await db.execute("skills", "delete", skill.id);
+    }
+  }
+  for (const sub of currentSubs) {
+    if (sub.id && !snapSubIds.has(sub.id)) {
+      await db.execute("subcategories", "delete", sub.id);
+    }
+  }
+  for (const cat of currentCats) {
+    if (cat.id && !snapCatIds.has(cat.id)) {
+      await db.execute("categories", "delete", cat.id);
+    }
+  }
+  for (const role of currentRoles) {
+    if (role.id && !snapRoleIds.has(role.id)) {
+      await db.execute("roles", "delete", role.id);
+    }
+  }
+
+  const settings = await db.getSettings();
+  await db.saveSettings({
+    projectTitle: settings?.projectTitle || "",
+    installedCatalogMeta: snapshot.installedCatalogMeta ?? undefined,
+    pendingCatalogNotes: settings?.pendingCatalogNotes,
+  });
 }
 
 /**
@@ -185,6 +283,14 @@ export async function applyCatalogPackage(
   const localSkills = await db.getSkills();
   const localRoles = await db.getRoles();
   const employees = await db.getEmployees();
+  const undoSnapshot: CatalogUndoSnapshot = {
+    catalogSnapshot: true,
+    categories: cloneEntities(localCategories),
+    subcategories: cloneEntities(localSubs),
+    skills: cloneEntities(localSkills),
+    roles: cloneEntities(localRoles),
+    installedCatalogMeta: previousMeta ?? null,
+  };
 
   const localCatById = new Map(localCategories.map((c) => [c.id!, c]));
   const localSubById = new Map(localSubs.map((s) => [s.id!, s]));
@@ -407,12 +513,14 @@ export async function applyCatalogPackage(
     await db.saveSettings({
       projectTitle: settings.projectTitle || "",
       installedCatalogMeta: pkg.meta,
+      pendingCatalogNotes: settings.pendingCatalogNotes,
     });
   } else if (!settings.projectTitle && !previousMeta) {
     // Ensure a settings row exists on first content merge without inventing a release
     await db.saveSettings({
       projectTitle: settings.projectTitle || "",
       installedCatalogMeta: previousMeta,
+      pendingCatalogNotes: settings.pendingCatalogNotes,
     });
   }
 
@@ -424,7 +532,7 @@ export async function applyCatalogPackage(
         ? `Katalog v${pkg.meta.version}`
         : "Katalog-Inhalte gemerged (Version unverändert)",
       action: previousMeta ? "update" : "create",
-      previousData: previousMeta ?? null,
+      previousData: undoSnapshot,
       newData: {
         meta: updateInstalledMeta ? pkg.meta : previousMeta,
         contentOnly: !updateInstalledMeta,

@@ -24,11 +24,16 @@ import {
   IconRocket,
   IconArrowBackUp,
 } from "@tabler/icons-react";
+import { useDisclosure } from "@mantine/hooks";
 import { modals } from "@mantine/modals";
 import { notifications } from "@mantine/notifications";
 import { useStore, useShallow } from "../store/hooks";
 import type { CatalogDiffItem, CatalogDiffResult } from "../services/catalogDiff";
 import { summarizeDiffCounts } from "../services/catalogDiff";
+import { CatalogPublishModal } from "./CatalogPublishModal";
+import { CatalogChangeNotesPanel } from "./CatalogChangeNotesPanel";
+import { notesForEntity } from "../utils/catalogChangeNotes";
+import type { CatalogChangeNote } from "../types/catalog";
 
 const KIND_LABEL: Record<string, string> = {
   categories: "Kategorie",
@@ -59,9 +64,16 @@ export interface UnpublishedCatalogBadgeProps {
   onRolledBack?: () => void;
 }
 
-function DiffItemRow({ item }: { item: CatalogDiffItem }) {
+function DiffItemRow({
+  item,
+  notes,
+}: {
+  item: CatalogDiffItem;
+  notes: CatalogChangeNote[];
+}) {
   const meta = CHANGE_META[item.change] || CHANGE_META.changed;
   const Icon = meta.icon;
+  const itemNotes = notesForEntity(notes, item.kind, item.id);
   return (
     <Group gap="xs" wrap="nowrap" align="flex-start">
       <ThemeIcon size={22} radius="sm" variant="light" color={meta.color}>
@@ -75,6 +87,11 @@ function DiffItemRow({ item }: { item: CatalogDiffItem }) {
           {KIND_LABEL[item.kind] || item.kind} · {meta.label}
           {item.detail ? ` — ${item.detail}` : ""}
         </Text>
+        {itemNotes.map((n) => (
+          <Text key={n.id} size="xs" c="teal" lineClamp={2}>
+            „{n.text}“
+          </Text>
+        ))}
       </Box>
     </Group>
   );
@@ -91,20 +108,24 @@ export const UnpublishedCatalogBadge: React.FC<UnpublishedCatalogBadgeProps> = (
     storedCatalogReleases,
     diffAgainstRelease,
     rollbackToRelease,
+    rollbackToEmptyCatalog,
     categories,
     subcategories,
     skills,
     roles,
+    pendingCatalogNotes,
   } = useStore(
     useShallow((s) => ({
       hasUnpublishedCatalogChanges: s.hasUnpublishedCatalogChanges,
       storedCatalogReleases: s.storedCatalogReleases,
       diffAgainstRelease: s.diffAgainstRelease,
       rollbackToRelease: s.rollbackToRelease,
+      rollbackToEmptyCatalog: s.rollbackToEmptyCatalog,
       categories: s.categories,
       subcategories: s.subcategories,
       skills: s.skills,
       roles: s.roles,
+      pendingCatalogNotes: s.pendingCatalogNotes,
     }))
   );
 
@@ -112,6 +133,8 @@ export const UnpublishedCatalogBadge: React.FC<UnpublishedCatalogBadgeProps> = (
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [opened, setOpened] = useState(false);
+  const [publishOpened, { open: openPublish, close: closePublish }] =
+    useDisclosure(false);
 
   const latestRelease = storedCatalogReleases[0] ?? null;
 
@@ -186,20 +209,47 @@ export const UnpublishedCatalogBadge: React.FC<UnpublishedCatalogBadgeProps> = (
   const counts = diff ? summarizeDiffCounts(diff) : null;
 
   const handlePublish = () => {
-    try {
-      sessionStorage.setItem(OPEN_PUBLISH_SESSION_KEY, "1");
-    } catch {
-      /* ignore */
-    }
+    openPublish();
     onPublish?.();
   };
 
   const handleRollback = () => {
     if (!latestRelease) {
-      notifications.show({
-        title: "Kein Rollback möglich",
-        message: "Es gibt noch keine freigegebene Version als Basis.",
-        color: "orange",
+      modals.openConfirmModal({
+        title: "Auf leeren Katalog zurücksetzen?",
+        centered: true,
+        children: (
+          <Text size="sm">
+            Es gibt noch keine freigegebene Version. Rollback verwirft alle
+            aktuellen Kategorien, Skills und Rollen — die App ist danach wieder
+            leer (wie nach dem ersten Start). In der Historie kannst du das
+            rückgängig machen.
+          </Text>
+        ),
+        labels: { confirm: "Katalog leeren", cancel: "Abbrechen" },
+        confirmProps: { color: "orange" },
+        onConfirm: async () => {
+          setBusy(true);
+          try {
+            const result = await rollbackToEmptyCatalog();
+            if (!result.ok) {
+              notifications.show({
+                title: "Rollback fehlgeschlagen",
+                message: result.errors.map((e) => e.message).join("; "),
+                color: "red",
+              });
+              return;
+            }
+            notifications.show({
+              title: "Katalog geleert",
+              message: "Ungesicherte Einträge verworfen.",
+              color: "green",
+            });
+            onRolledBack?.();
+          } finally {
+            setBusy(false);
+          }
+        },
       });
       return;
     }
@@ -241,6 +291,7 @@ export const UnpublishedCatalogBadge: React.FC<UnpublishedCatalogBadgeProps> = (
   };
 
   return (
+    <>
     <HoverCard
       width={360}
       shadow="md"
@@ -308,7 +359,11 @@ export const UnpublishedCatalogBadge: React.FC<UnpublishedCatalogBadgeProps> = (
             <ScrollArea.Autosize mah={220} offsetScrollbars type="auto">
               <Stack gap={6} pr={4}>
                 {diff.items.map((item) => (
-                  <DiffItemRow key={`${item.kind}-${item.id}-${item.change}`} item={item} />
+                  <DiffItemRow
+                    key={`${item.kind}-${item.id}-${item.change}`}
+                    item={item}
+                    notes={pendingCatalogNotes || []}
+                  />
                 ))}
               </Stack>
             </ScrollArea.Autosize>
@@ -320,6 +375,13 @@ export const UnpublishedCatalogBadge: React.FC<UnpublishedCatalogBadgeProps> = (
             </Text>
           )}
 
+          {(pendingCatalogNotes || []).length > 0 && (
+            <>
+              <Divider />
+              <CatalogChangeNotesPanel compact />
+            </>
+          )}
+
           <Divider />
 
           <Group gap="xs" grow>
@@ -328,10 +390,10 @@ export const UnpublishedCatalogBadge: React.FC<UnpublishedCatalogBadgeProps> = (
               variant="light"
               color="orange"
               leftSection={<IconArrowBackUp size={14} />}
-              disabled={!latestRelease || busy}
+              disabled={busy}
               onClick={handleRollback}
             >
-              Rollback
+              {latestRelease ? "Rollback" : "Auf leer"}
             </Button>
             <Button
               size="xs"
@@ -346,5 +408,7 @@ export const UnpublishedCatalogBadge: React.FC<UnpublishedCatalogBadgeProps> = (
         </Stack>
       </HoverCard.Dropdown>
     </HoverCard>
+    <CatalogPublishModal opened={publishOpened} onClose={closePublish} />
+    </>
   );
 };

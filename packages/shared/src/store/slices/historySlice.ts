@@ -1,5 +1,9 @@
 import type { DbService } from "../../services/indexeddb";
 import type { AppCapabilities } from "../../types/capabilities";
+import {
+  isCatalogUndoSnapshot,
+  restoreCatalogFromSnapshot,
+} from "../../services/catalogApply";
 import { CATALOG_ENTITY_TYPES, checkCapability } from "../capabilities";
 import type { AppSlice, HistorySlice } from "../types";
 
@@ -22,7 +26,10 @@ export const createHistorySlice = (db: DbService, caps: AppCapabilities): AppSli
         throw new Error("Eintrag nicht gefunden oder bereits rückgängig gemacht");
       }
 
-      if (CATALOG_ENTITY_TYPES.has(entry.entityType)) {
+      if (
+        CATALOG_ENTITY_TYPES.has(entry.entityType) ||
+        entry.entityType === "catalog"
+      ) {
         const denied = checkCapability(
           caps,
           "historyUndoCatalog",
@@ -33,6 +40,18 @@ export const createHistorySlice = (db: DbService, caps: AppCapabilities): AppSli
           set({ error: denied.reason });
           throw new Error(denied.reason);
         }
+      }
+
+      if (entry.entityType === "catalog") {
+        if (!isCatalogUndoSnapshot(entry.previousData)) {
+          throw new Error(
+            "Dieser Merge kann nicht rückgängig gemacht werden — es fehlt der gespeicherte Katalog-Stand (älterer Eintrag)."
+          );
+        }
+        await restoreCatalogFromSnapshot(db, entry.previousData);
+        await db.markHistoryEntryUndone(historyEntryId);
+        await get().refreshAllData();
+        return;
       }
 
       switch (entry.action) {

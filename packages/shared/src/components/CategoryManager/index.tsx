@@ -35,6 +35,7 @@ import {
   downloadSkillsHierarchyMarkdown,
   downloadSkillsHierarchyTree,
 } from "../../utils/skillsHierarchyExport";
+import { CatalogMergeImport } from "../CatalogMergeImport";
 
 export const CategoryManager: React.FC = () => {
   const catalogAuthoring = useCatalogAuthoring();
@@ -549,6 +550,10 @@ export const CategoryManager: React.FC = () => {
                 </ActionIcon>
               </Tooltip>
             </Group>
+          )}
+
+          {catalogAuthoring && (
+            <CatalogMergeImport variant="toolbar" scope="skills" />
           )}
 
           <Menu shadow="md" width={320} position="bottom-end">

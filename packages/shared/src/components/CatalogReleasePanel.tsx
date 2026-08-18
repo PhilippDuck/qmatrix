@@ -1,7 +1,7 @@
 /**
  * Manage: version archive (last 10), dirty indicator, diff & rollback.
  */
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Title,
   Group,
@@ -10,9 +10,6 @@ import {
   Card,
   Text,
   Badge,
-  TextInput,
-  Textarea,
-  SegmentedControl,
   Modal,
   ThemeIcon,
   Alert,
@@ -40,33 +37,16 @@ import { notifications } from "@mantine/notifications";
 import { modals } from "@mantine/modals";
 import { useStore, useShallow } from "../store/hooks";
 import {
-  bumpSemVer,
-  isValidSemVer,
   computeCatalogFingerprint,
   extractCatalogFromState,
-  type SemVerBump,
 } from "../services/catalog";
 import type { CatalogDiffResult } from "../services/catalogDiff";
 import { summarizeDiffCounts } from "../services/catalogDiff";
 import type { StoredCatalogRelease } from "../services/indexeddb";
-import {
-  OPEN_PUBLISH_SESSION_KEY,
-  UnpublishedCatalogBadge,
-} from "./UnpublishedCatalogBadge";
+import { UnpublishedCatalogBadge } from "./UnpublishedCatalogBadge";
 import { CatalogMergeImport } from "./CatalogMergeImport";
-
-function stableCatalogId(): string {
-  const key = "skillgrid-manage-catalog-id";
-  try {
-    const existing = localStorage.getItem(key);
-    if (existing) return existing;
-    const id = crypto.randomUUID();
-    localStorage.setItem(key, id);
-    return id;
-  } catch {
-    return crypto.randomUUID();
-  }
-}
+import { CatalogPublishModal } from "./CatalogPublishModal";
+import { CatalogChangeNotesPanel } from "./CatalogChangeNotesPanel";
 
 /** Date + local time for release archive rows. */
 function formatReleasePublishedAt(iso: string): string {
@@ -97,7 +77,6 @@ const CHANGE_LABEL: Record<string, { label: string; color: string }> = {
 
 export const CatalogReleasePanel: React.FC = () => {
   const {
-    projectTitle,
     installedCatalogMeta,
     categories,
     subcategories,
@@ -105,7 +84,6 @@ export const CatalogReleasePanel: React.FC = () => {
     roles,
     storedCatalogReleases,
     hasUnpublishedCatalogChanges,
-    publishCatalogRelease,
     refreshCatalogReleases,
     refreshCatalogDirtyState,
     diffAgainstRelease,
@@ -113,7 +91,6 @@ export const CatalogReleasePanel: React.FC = () => {
     redownloadRelease,
   } = useStore(
     useShallow((s) => ({
-      projectTitle: s.projectTitle,
       installedCatalogMeta: s.installedCatalogMeta,
       categories: s.categories,
       subcategories: s.subcategories,
@@ -121,7 +98,6 @@ export const CatalogReleasePanel: React.FC = () => {
       roles: s.roles,
       storedCatalogReleases: s.storedCatalogReleases,
       hasUnpublishedCatalogChanges: s.hasUnpublishedCatalogChanges,
-      publishCatalogRelease: s.publishCatalogRelease,
       refreshCatalogReleases: s.refreshCatalogReleases,
       refreshCatalogDirtyState: s.refreshCatalogDirtyState,
       diffAgainstRelease: s.diffAgainstRelease,
@@ -132,31 +108,8 @@ export const CatalogReleasePanel: React.FC = () => {
 
   const [publishOpen, { open: openPublish, close: closePublish }] =
     useDisclosure(false);
-
-  // Opened from header "ungesichert" HoverCard → Version freigeben
-  useEffect(() => {
-    try {
-      if (sessionStorage.getItem(OPEN_PUBLISH_SESSION_KEY) === "1") {
-        sessionStorage.removeItem(OPEN_PUBLISH_SESSION_KEY);
-        if (hasUnpublishedCatalogChanges) {
-          openPublish();
-        }
-      }
-    } catch {
-      /* ignore */
-    }
-  }, [hasUnpublishedCatalogChanges, openPublish]);
   const [diffOpen, { open: openDiff, close: closeDiff }] = useDisclosure(false);
   const [busy, setBusy] = useState(false);
-  /** Catalog name SoT = projectTitle (header); not re-entered per release. */
-  const catalogName =
-    projectTitle?.trim() ||
-    installedCatalogMeta?.name?.trim() ||
-    "Unternehmens-Katalog";
-  const [bump, setBump] = useState<SemVerBump>("minor");
-  const [manualVersion, setManualVersion] = useState("");
-  const [notes, setNotes] = useState("");
-  const [useManual, setUseManual] = useState(false);
   const [catalogFingerprint, setCatalogFingerprint] = useState<string>("…");
   const [activeDiff, setActiveDiff] = useState<CatalogDiffResult | null>(null);
   const [diffTitle, setDiffTitle] = useState("");
@@ -165,12 +118,7 @@ export const CatalogReleasePanel: React.FC = () => {
   const canDiffLatest =
     hasUnpublishedCatalogChanges && (storedCatalogReleases?.length ?? 0) > 0;
 
-  const catalogId = useMemo(() => stableCatalogId(), []);
   const currentVersion = installedCatalogMeta?.version || "—";
-  const nextPreview = useMemo(() => {
-    if (useManual && manualVersion.trim()) return manualVersion.trim();
-    return bumpSemVer(installedCatalogMeta?.version || "0.0.0", bump);
-  }, [bump, useManual, manualVersion, installedCatalogMeta?.version]);
 
   const releases: StoredCatalogRelease[] = storedCatalogReleases || [];
 
@@ -206,66 +154,6 @@ export const CatalogReleasePanel: React.FC = () => {
   useEffect(() => {
     void refreshCatalogReleases();
   }, [refreshCatalogReleases]);
-
-  const handlePublish = async () => {
-    if (useManual && !isValidSemVer(manualVersion.trim())) {
-      notifications.show({
-        title: "Ungültige Version",
-        message: "Bitte SemVer verwenden, z. B. 1.2.0",
-        color: "red",
-      });
-      return;
-    }
-    if (!notes.trim()) {
-      notifications.show({
-        title: "Release-Notizen fehlen",
-        message: "Kurz beschreiben, was sich in dieser Version geändert hat.",
-        color: "orange",
-      });
-      return;
-    }
-
-    setBusy(true);
-    try {
-      const result = await publishCatalogRelease({
-        catalogId,
-        name: catalogName,
-        bump: useManual ? undefined : bump,
-        version: useManual ? manualVersion.trim() : undefined,
-        releaseNotes: notes.trim(),
-        publisher: "SkillGrid Manage",
-        download: true,
-      });
-
-      if (!result.ok) {
-        notifications.show({
-          title: "Release fehlgeschlagen",
-          message:
-            result.errors.map((e) => e.message).join("; ") ||
-            "Unbekannter Fehler",
-          color: "red",
-        });
-        return;
-      }
-
-      notifications.show({
-        title: `Version ${result.package?.meta.version} freigegeben`,
-        message:
-          "Snapshot gespeichert (max. 10). JSON + TXT (Änderungsbeschreibung) heruntergeladen.",
-        color: "green",
-      });
-      setNotes("");
-      closePublish();
-    } catch (e) {
-      notifications.show({
-        title: "Fehler",
-        message: e instanceof Error ? e.message : String(e),
-        color: "red",
-      });
-    } finally {
-      setBusy(false);
-    }
-  };
 
   const showDiff = async (releaseId?: string, label?: string) => {
     setBusy(true);
@@ -335,9 +223,6 @@ export const CatalogReleasePanel: React.FC = () => {
           <UnpublishedCatalogBadge
             size="lg"
             label="Unveröffentlichte Änderungen"
-            onPublish={() => {
-              if (canPublish) openPublish();
-            }}
           />
         ) : releases.length > 0 ? (
           <Badge size="lg" color="green" variant="light">
@@ -347,6 +232,7 @@ export const CatalogReleasePanel: React.FC = () => {
       </Group>
 
       <Stack gap="lg">
+        <CatalogChangeNotesPanel />
         <CatalogMergeImport />
 
         {hasUnpublishedCatalogChanges && (
@@ -670,95 +556,7 @@ export const CatalogReleasePanel: React.FC = () => {
         </Card>
       </Stack>
 
-      {/* Publish modal */}
-      <Modal
-        opened={publishOpen}
-        onClose={closePublish}
-        title="Neue Katalog-Version freigeben"
-        size="lg"
-        centered
-      >
-        <Stack gap="md">
-          <Text size="sm" c="dimmed">
-            Snapshot als <strong>v{nextPreview}</strong> speichern (Archiv +
-            Download).
-          </Text>
-
-          <Text size="sm">
-            Katalog:{" "}
-            <Text span fw={600}>
-              {catalogName}
-            </Text>
-            <Text span size="xs" c="dimmed">
-              {" "}
-              (Name oben in der Navigation bearbeiten)
-            </Text>
-          </Text>
-
-          <Stack gap={6}>
-            <Text size="sm" fw={500}>
-              Versionsnummer
-            </Text>
-            <SegmentedControl
-              fullWidth
-              value={useManual ? "manual" : bump}
-              onChange={(v) => {
-                if (v === "manual") setUseManual(true);
-                else {
-                  setUseManual(false);
-                  setBump(v as SemVerBump);
-                }
-              }}
-              data={[
-                {
-                  value: "patch",
-                  label: `Patch → ${bumpSemVer(installedCatalogMeta?.version || "0.0.0", "patch")}`,
-                },
-                {
-                  value: "minor",
-                  label: `Minor → ${bumpSemVer(installedCatalogMeta?.version || "0.0.0", "minor")}`,
-                },
-                {
-                  value: "major",
-                  label: `Major → ${bumpSemVer(installedCatalogMeta?.version || "0.0.0", "major")}`,
-                },
-                { value: "manual", label: "Manuell" },
-              ]}
-            />
-            {useManual && (
-              <TextInput
-                label="SemVer"
-                placeholder="1.4.0"
-                value={manualVersion}
-                onChange={(e) => setManualVersion(e.currentTarget.value)}
-              />
-            )}
-          </Stack>
-
-          <Textarea
-            label="Release-Notizen"
-            minRows={3}
-            value={notes}
-            onChange={(e) => setNotes(e.currentTarget.value)}
-            required
-            placeholder="Was hat sich geändert?"
-          />
-
-          <Group justify="flex-end">
-            <Button variant="default" onClick={closePublish}>
-              Abbrechen
-            </Button>
-            <Button
-              color="blue"
-              leftSection={<IconRocket size={16} />}
-              loading={busy}
-              onClick={handlePublish}
-            >
-              v{nextPreview} freigeben
-            </Button>
-          </Group>
-        </Stack>
-      </Modal>
+      <CatalogPublishModal opened={publishOpen} onClose={closePublish} />
 
       {/* Diff modal */}
       <Modal

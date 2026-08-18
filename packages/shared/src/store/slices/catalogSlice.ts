@@ -14,7 +14,13 @@ import type {
   OpsImportReport,
 } from "../../types/catalog";
 import type { ExportData } from "../../types";
-import type { CatalogChangelogEntry, CatalogMeta, SemVer } from "../../types/catalog";
+import type {
+  CatalogChangelogEntry,
+  CatalogChangeNote,
+  CatalogEntityKind,
+  CatalogMeta,
+  SemVer,
+} from "../../types/catalog";
 import {
   extractCatalogFromState,
   withContentHash,
@@ -27,6 +33,8 @@ import {
 import {
   applyCatalogPackage,
   importOpsFromExportData,
+  restoreCatalogFromSnapshot,
+  type CatalogUndoSnapshot,
 } from "../../services/catalogApply";
 import {
   diffCatalogEntities,
@@ -67,6 +75,8 @@ export interface CatalogSlice {
   storedCatalogReleases: StoredCatalogRelease[];
   /** Live catalog differs from newest stored release. */
   hasUnpublishedCatalogChanges: boolean;
+  /** Entity-level unpublished diff vs last release (or all-added if none). */
+  catalogDirtyDiff: CatalogDiffResult | null;
 
   extractCatalog: (
     meta: CatalogExtractMetaInput
@@ -91,6 +101,11 @@ export interface CatalogSlice {
   diffAgainstRelease: (releaseId?: string) => Promise<CatalogDiffResult | null>;
   /** Restore live catalog to a stored release snapshot. */
   rollbackToRelease: (releaseId: string) => Promise<CatalogApplyResult>;
+  /**
+   * No published baseline: drop all live catalog entities (empty Manage).
+   * Undoable via change history snapshot.
+   */
+  rollbackToEmptyCatalog: () => Promise<CatalogApplyResult>;
   redownloadRelease: (releaseId: string) => Promise<void>;
   /**
    * Disaster-recovery backup: live catalog + up to 10 release snapshots + settings.
@@ -98,6 +113,15 @@ export interface CatalogSlice {
    */
   exportManageBackup: (label?: string) => Promise<ManageBackupPackage>;
   importManageBackup: (jsonData: string) => Promise<void>;
+  addCatalogChangeNote: (
+    kind: CatalogEntityKind,
+    entityId: string,
+    entityLabel: string,
+    text: string
+  ) => Promise<void>;
+  deleteCatalogChangeNote: (noteId: string) => Promise<void>;
+  updateCatalogChangeNote: (noteId: string, text: string) => Promise<void>;
+  clearPendingCatalogNotes: () => Promise<void>;
   importCatalog: (
     jsonOrPackage: string | unknown,
     options?: CatalogApplyOptions
@@ -142,6 +166,58 @@ function liveEntitiesFromState(state: {
   return extract.package?.entities ?? null;
 }
 
+async function pruneOrphanCatalogNotes(
+  db: DbService,
+  get: () => {
+    pendingCatalogNotes: CatalogChangeNote[];
+    categories: { id?: string }[];
+    subcategories: { id?: string }[];
+    skills: { id?: string }[];
+    roles: { id?: string }[];
+    projectTitle: string;
+    installedCatalogMeta: CatalogMeta | null;
+  },
+  set: (partial: { pendingCatalogNotes: CatalogChangeNote[] }) => void
+): Promise<void> {
+  const state = get();
+  const notes = state.pendingCatalogNotes || [];
+  if (notes.length === 0) return;
+  const ids: Record<string, Set<string>> = {
+    categories: new Set(
+      (state.categories || []).map((c) => c.id).filter(Boolean) as string[]
+    ),
+    subcategories: new Set(
+      (state.subcategories || []).map((s) => s.id).filter(Boolean) as string[]
+    ),
+    skills: new Set(
+      (state.skills || []).map((s) => s.id).filter(Boolean) as string[]
+    ),
+    roles: new Set(
+      (state.roles || []).map((r) => r.id).filter(Boolean) as string[]
+    ),
+  };
+  const next = notes.filter((n) => ids[n.kind]?.has(n.entityId));
+  if (next.length === notes.length) return;
+  set({ pendingCatalogNotes: next });
+  await persistSettingsWithNotes(db, get);
+}
+
+async function persistSettingsWithNotes(
+  db: DbService,
+  get: () => {
+    projectTitle: string;
+    installedCatalogMeta: CatalogMeta | null;
+    pendingCatalogNotes: CatalogChangeNote[];
+  }
+): Promise<void> {
+  const state = get();
+  await db.saveSettings({
+    projectTitle: state.projectTitle || "",
+    installedCatalogMeta: state.installedCatalogMeta ?? undefined,
+    pendingCatalogNotes: state.pendingCatalogNotes,
+  });
+}
+
 export const createCatalogSlice =
   (db: DbService, caps: AppCapabilities): AppSlice<CatalogSlice> =>
   (set, get) => ({
@@ -149,6 +225,7 @@ export const createCatalogSlice =
     lastCatalogExtractWarnings: [],
     storedCatalogReleases: [],
     hasUnpublishedCatalogChanges: false,
+    catalogDirtyDiff: null,
 
     extractCatalog: async (meta) => {
       const denied = checkCapability(caps, "catalogExport", "extractCatalog");
@@ -357,6 +434,7 @@ export const createCatalogSlice =
         notes: newEntry.notes,
         previousPackage: previousRelease?.package ?? null,
         previousVersion: previousRelease?.version ?? null,
+        changeNotes: get().pendingCatalogNotes,
       });
 
       const meta: CatalogMeta = pkg.meta;
@@ -376,6 +454,16 @@ export const createCatalogSlice =
         set({
           storedCatalogReleases: list,
           hasUnpublishedCatalogChanges: false,
+          catalogDirtyDiff: {
+            items: [],
+            isIdentical: true,
+            summary: {
+              categories: { added: 0, removed: 0, changed: 0 },
+              subcategories: { added: 0, removed: 0, changed: 0 },
+              skills: { added: 0, removed: 0, changed: 0 },
+              roles: { added: 0, removed: 0, changed: 0 },
+            },
+          },
         });
       } catch (e) {
         console.error("Failed to archive catalog release", e);
@@ -385,6 +473,9 @@ export const createCatalogSlice =
       if (options.download !== false) {
         get().downloadCatalogPackage(pkg, { notesText });
       }
+
+      await get().clearPendingCatalogNotes();
+      await get().refreshCatalogDirtyState();
 
       set({
         lastCatalogExtractWarnings: extract.report.warnings.map(
@@ -411,7 +502,10 @@ export const createCatalogSlice =
         const state = get();
         const live = liveEntitiesFromState(state);
         if (!live) {
-          set({ hasUnpublishedCatalogChanges: false });
+          set({
+            hasUnpublishedCatalogChanges: false,
+            catalogDirtyDiff: null,
+          });
           return;
         }
         const releases =
@@ -420,23 +514,41 @@ export const createCatalogSlice =
             : await db.getCatalogReleases();
         const latest = releases[0];
         if (!latest) {
-          // No release yet: dirty if catalog has any entities
+          // No release yet: everything live is unpublished ("added")
+          const empty = {
+            categories: [],
+            subcategories: [],
+            skills: [],
+            roles: [],
+          };
+          const diff = diffCatalogEntities(live, empty);
           const hasAny =
             live.categories.length +
               live.skills.length +
               live.roles.length >
             0;
-          set({ hasUnpublishedCatalogChanges: hasAny });
+          set({
+            hasUnpublishedCatalogChanges: hasAny,
+            catalogDirtyDiff: diff,
+          });
+          await pruneOrphanCatalogNotes(db, get, set);
           return;
         }
         // MUST use same comparison as Diff UI (not raw contentHash — that
         // falsely flagged catalogSource / requiredByRoleIds noise).
         const baseline = latest.package?.entities ?? live;
         const diff = diffCatalogEntities(live, baseline);
-        set({ hasUnpublishedCatalogChanges: !diff.isIdentical });
+        set({
+          hasUnpublishedCatalogChanges: !diff.isIdentical,
+          catalogDirtyDiff: diff,
+        });
+        await pruneOrphanCatalogNotes(db, get, set);
       } catch (e) {
         console.error(e);
-        set({ hasUnpublishedCatalogChanges: false });
+        set({
+          hasUnpublishedCatalogChanges: false,
+          catalogDirtyDiff: null,
+        });
       }
     },
 
@@ -492,27 +604,199 @@ export const createCatalogSlice =
         };
       }
 
-      // Restore exact snapshot: soft-deprecate anything not in that release
-      const result = await applyCatalogPackage(db, release.package, {
-        missingPolicy: "soft",
-        allowDowngrade: true,
-        allowCatalogIdChange: true,
-      });
-
-      if (result.ok) {
-        // Point "aktuell freigegeben" at the restored snapshot (not newest archive entry)
+      // Exact restore so unpublished Neu-Einträge wirklich weg sind (nicht nur veraltet).
+      const ents = release.package.entities;
+      try {
+        await restoreCatalogFromSnapshot(db, {
+          catalogSnapshot: true,
+          categories: (ents.categories || []).map((c) => ({ ...c })),
+          subcategories: (ents.subcategories || []).map((s) => ({ ...s })),
+          skills: (ents.skills || []).map((s) => ({ ...s })),
+          roles: (ents.roles || []).map((r) => ({ ...r })),
+          installedCatalogMeta: release.package.meta,
+        });
+        await get().clearPendingCatalogNotes();
         await get().setInstalledCatalogMeta(release.package.meta);
         await get().refreshAllData();
         await get().refreshCatalogReleases();
         await get().refreshCatalogDirtyState();
-      } else {
-        set({
-          error:
-            result.errors.map((e) => e.message).join("; ") ||
-            "Rollback fehlgeschlagen",
-        });
+        return {
+          ok: true,
+          errors: [],
+          report: {
+            added: {
+              categories: 0,
+              subcategories: 0,
+              skills: 0,
+              roles: 0,
+            },
+            updated: {
+              categories: 0,
+              subcategories: 0,
+              skills: 0,
+              roles: 0,
+            },
+            deprecated: {
+              categories: 0,
+              subcategories: 0,
+              skills: 0,
+              roles: 0,
+            },
+            hardRemoved: {
+              categories: 0,
+              subcategories: 0,
+              skills: 0,
+              roles: 0,
+            },
+            roleNameRewrites: 0,
+            orphanAssessments: 0,
+            orphanMeasures: 0,
+            hierarchyWarnings: 0,
+            warnings: [],
+            newVersion: release.package.meta.version,
+            catalogId: release.package.meta.catalogId,
+          },
+        };
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : "Rollback fehlgeschlagen";
+        set({ error: message });
+        return {
+          ok: false,
+          errors: [{ path: "", message, severity: "error" as const }],
+        };
       }
-      return result;
+    },
+
+    rollbackToEmptyCatalog: async () => {
+      const denied = checkCapability(
+        caps,
+        "catalogAuthoring",
+        "rollbackToEmptyCatalog"
+      );
+      if (!denied.ok) {
+        set({ error: denied.reason });
+        return {
+          ok: false,
+          errors: [
+            {
+              path: "capabilities",
+              message: denied.reason,
+              severity: "error" as const,
+            },
+          ],
+        };
+      }
+
+      const state = get();
+      const snapshot: CatalogUndoSnapshot = {
+        catalogSnapshot: true,
+        categories: (state.categories || []).map((c) => ({ ...c })),
+        subcategories: (state.subcategories || []).map((s) => ({ ...s })),
+        skills: (state.skills || []).map((s) => ({ ...s })),
+        roles: (state.roles || []).map((r) => ({ ...r })),
+        installedCatalogMeta:
+          state.installedCatalogMeta ?? null,
+      };
+
+      const empty: CatalogUndoSnapshot = {
+        catalogSnapshot: true,
+        categories: [],
+        subcategories: [],
+        skills: [],
+        roles: [],
+        installedCatalogMeta: null,
+      };
+
+      try {
+        await restoreCatalogFromSnapshot(db, empty);
+        await get().clearPendingCatalogNotes();
+        await db.addChangeHistoryEntry({
+          entityType: "catalog",
+          entityId: snapshot.installedCatalogMeta?.catalogId || "empty-catalog",
+          entityLabel: "Katalog geleert (keine Version)",
+          action: "delete",
+          previousData: snapshot,
+          newData: {
+            emptied: true,
+            reportSummary: {
+              added: {
+                categories: 0,
+                subcategories: 0,
+                skills: 0,
+                roles: 0,
+              },
+              updated: {
+                categories: 0,
+                subcategories: 0,
+                skills: 0,
+                roles: 0,
+              },
+              deprecated: {
+                categories: 0,
+                subcategories: 0,
+                skills: 0,
+                roles: 0,
+              },
+              hardRemoved: {
+                categories: snapshot.categories.length,
+                subcategories: snapshot.subcategories.length,
+                skills: snapshot.skills.length,
+                roles: snapshot.roles.length,
+              },
+            },
+          },
+          timestamp: Date.now(),
+          undone: false,
+        });
+        await get().refreshAllData();
+        await get().refreshCatalogDirtyState();
+        return {
+          ok: true,
+          errors: [],
+          report: {
+            added: {
+              categories: 0,
+              subcategories: 0,
+              skills: 0,
+              roles: 0,
+            },
+            updated: {
+              categories: 0,
+              subcategories: 0,
+              skills: 0,
+              roles: 0,
+            },
+            deprecated: {
+              categories: 0,
+              subcategories: 0,
+              skills: 0,
+              roles: 0,
+            },
+            hardRemoved: {
+              categories: snapshot.categories.length,
+              subcategories: snapshot.subcategories.length,
+              skills: snapshot.skills.length,
+              roles: snapshot.roles.length,
+            },
+            roleNameRewrites: 0,
+            orphanAssessments: 0,
+            orphanMeasures: 0,
+            hierarchyWarnings: 0,
+            warnings: [],
+            newVersion: "0.0.0",
+            catalogId: snapshot.installedCatalogMeta?.catalogId || "empty-catalog",
+          },
+        };
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : "Rollback auf leer fehlgeschlagen";
+        set({ error: message });
+        return {
+          ok: false,
+          errors: [{ path: "", message, severity: "error" as const }],
+        };
+      }
     },
 
     redownloadRelease: async (releaseId) => {
@@ -569,6 +853,8 @@ export const createCatalogSlice =
               state.installedCatalogMeta ??
               settings.installedCatalogMeta ??
               undefined,
+            pendingCatalogNotes:
+              state.pendingCatalogNotes ?? settings.pendingCatalogNotes,
           },
           catalogReleases: releases,
         },
@@ -584,7 +870,7 @@ export const createCatalogSlice =
       a.click();
       URL.revokeObjectURL(url);
 
-      set({ hasUnsavedChanges: false });
+      get().setHasUnsavedChanges(false);
       return pkg;
     },
 
@@ -611,6 +897,51 @@ export const createCatalogSlice =
       await db.importManageCatalogData(backup.data);
       await get().refreshAllData();
       await get().refreshCatalogReleases();
+    },
+
+    addCatalogChangeNote: async (kind, entityId, entityLabel, text) => {
+      const trimmed = text.trim();
+      if (!trimmed) return;
+      const note: CatalogChangeNote = {
+        id: crypto.randomUUID(),
+        kind,
+        entityId,
+        entityLabel,
+        text: trimmed,
+        createdAt: Date.now(),
+      };
+      set({
+        pendingCatalogNotes: [...(get().pendingCatalogNotes || []), note],
+      });
+      await persistSettingsWithNotes(db, get);
+    },
+
+    deleteCatalogChangeNote: async (noteId) => {
+      set({
+        pendingCatalogNotes: (get().pendingCatalogNotes || []).filter(
+          (n) => n.id !== noteId
+        ),
+      });
+      await persistSettingsWithNotes(db, get);
+    },
+
+    updateCatalogChangeNote: async (noteId, text) => {
+      const trimmed = text.trim();
+      if (!trimmed) {
+        await get().deleteCatalogChangeNote(noteId);
+        return;
+      }
+      set({
+        pendingCatalogNotes: (get().pendingCatalogNotes || []).map((n) =>
+          n.id === noteId ? { ...n, text: trimmed } : n
+        ),
+      });
+      await persistSettingsWithNotes(db, get);
+    },
+
+    clearPendingCatalogNotes: async () => {
+      set({ pendingCatalogNotes: [] });
+      await persistSettingsWithNotes(db, get);
     },
 
     importCatalog: async (jsonOrPackage, options) => {

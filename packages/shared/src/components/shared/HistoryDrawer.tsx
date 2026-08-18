@@ -31,6 +31,7 @@ import {
 import { ChangeHistoryEntry, EntityType, Employee, Skill, SubCategory, Category, Department, EmployeeRole, useStore, useShallow } from "../../store/hooks";
 import { useHistoryUndoCatalog } from "../../hooks/useCatalogAuthoring";
 import { CATALOG_ENTITY_TYPES } from "../../store/capabilities";
+import { notifications } from "@mantine/notifications";
 
 interface HistoryDrawerProps {
   opened: boolean;
@@ -220,6 +221,28 @@ function generateDescription(entry: ChangeHistoryEntry, ctx: DataContext): { des
         return { description: `"${previousData?.name}" → "${newData?.name}"` };
       }
       return { description: 'Abteilung aktualisiert' };
+    }
+
+    case 'catalog': {
+      if ((newData as { emptied?: boolean } | null)?.emptied) {
+        return { description: 'Auf leeren Katalog zurückgesetzt' };
+      }
+      const summary = (newData as { reportSummary?: {
+        added?: Record<string, number>;
+        updated?: Record<string, number>;
+        deprecated?: Record<string, number>;
+      } } | null)?.reportSummary;
+      if (!summary) return { description: 'Katalog-Merge' };
+      const sum = (rec?: Record<string, number>) =>
+        rec ? Object.values(rec).reduce((a, b) => a + b, 0) : 0;
+      const added = sum(summary.added);
+      const updated = sum(summary.updated);
+      const deprecated = sum(summary.deprecated);
+      const parts = [];
+      if (added) parts.push(`+${added} neu`);
+      if (updated) parts.push(`${updated} aktualisiert`);
+      if (deprecated) parts.push(`${deprecated} als veraltet`);
+      return { description: parts.join(' · ') || 'Katalog-Merge' };
     }
 
     case 'role': {
@@ -436,8 +459,18 @@ export function HistoryDrawer({ opened, onClose }: HistoryDrawerProps) {
   const handleUndo = async (entryId: string) => {
     try {
       await undoChange(entryId);
+      notifications.show({
+        title: "Rückgängig",
+        message: "Die Änderung wurde zurückgenommen.",
+        color: "blue",
+      });
     } catch (err) {
       console.error('Undo failed:', err);
+      notifications.show({
+        title: "Rückgängig nicht möglich",
+        message: err instanceof Error ? err.message : "Die Änderung konnte nicht zurückgenommen werden.",
+        color: "red",
+      });
     }
   };
 

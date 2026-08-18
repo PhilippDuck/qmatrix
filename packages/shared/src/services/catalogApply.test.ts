@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { applyCatalogPackage, importOpsFromExportData } from "./catalogApply";
+import {
+  applyCatalogPackage,
+  importOpsFromExportData,
+  isCatalogUndoSnapshot,
+  restoreCatalogFromSnapshot,
+} from "./catalogApply";
 import type { CatalogApplyDb } from "./catalogApply";
 import type { CatalogPackage } from "../types/catalog";
 import type {
@@ -45,8 +50,10 @@ function createMemoryDb(seed?: {
     ]),
   };
 
-  const db: CatalogApplyDb & { stores: typeof stores } = {
+  const history: unknown[] = [];
+  const db: CatalogApplyDb & { stores: typeof stores; history: unknown[] } = {
     stores,
+    history,
     getCategories: async () =>
       Array.from(stores.categories.values()) as Category[],
     getSubCategories: async () =>
@@ -89,6 +96,10 @@ function createMemoryDb(seed?: {
     },
     updateEmployee: async (id, employee) => {
       stores.employees.set(id, { id, ...employee });
+    },
+    addChangeHistoryEntry: async (entry) => {
+      history.push(entry);
+      return "h1";
     },
   };
   return db;
@@ -243,6 +254,55 @@ describe("applyCatalogPackage", () => {
     expect(db.stores.skills.get("sk1")).toMatchObject({
       departmentId: "local-dept",
     });
+  });
+
+  it("records a catalog undo snapshot and restore removes merged extras", async () => {
+    const db = createMemoryDb({
+      categories: [{ id: "c-old", name: "Alt" }],
+      subcategories: [{ id: "s-old", categoryId: "c-old", name: "Alt-Bereich" }],
+      skills: [{ id: "sk-old", subCategoryId: "s-old", name: "Alt-Skill" }],
+      roles: [{ id: "r-old", name: "Alt-Rolle", requiredSkills: [] }],
+    });
+    const result = await applyCatalogPackage(db, pkgV1, {
+      missingPolicy: "keep",
+      allowCatalogIdChange: true,
+    });
+    expect(result.ok).toBe(true);
+    expect(db.stores.skills.has("sk1")).toBe(true);
+
+    const history = (db as unknown as { history: { previousData: unknown }[] })
+      .history;
+    expect(history.length).toBe(1);
+    expect(isCatalogUndoSnapshot(history[0].previousData)).toBe(true);
+    const snap = history[0].previousData;
+    if (!isCatalogUndoSnapshot(snap)) throw new Error("expected snapshot");
+
+    await restoreCatalogFromSnapshot(db, snap);
+    expect(db.stores.skills.has("sk1")).toBe(false);
+    expect(db.stores.categories.has("c1")).toBe(false);
+    expect(db.stores.skills.get("sk-old")).toMatchObject({ name: "Alt-Skill" });
+    expect(db.stores.roles.get("r-old")).toMatchObject({ name: "Alt-Rolle" });
+  });
+
+  it("empty snapshot restore clears the catalog", async () => {
+    const db = createMemoryDb({
+      categories: [{ id: "c1", name: "Tech" }],
+      subcategories: [{ id: "s1", categoryId: "c1", name: "Lang" }],
+      skills: [{ id: "sk1", subCategoryId: "s1", name: "TS" }],
+      roles: [{ id: "r1", name: "Dev", requiredSkills: [] }],
+    });
+    await restoreCatalogFromSnapshot(db, {
+      catalogSnapshot: true,
+      categories: [],
+      subcategories: [],
+      skills: [],
+      roles: [],
+      installedCatalogMeta: null,
+    });
+    expect(db.stores.categories.size).toBe(0);
+    expect(db.stores.subcategories.size).toBe(0);
+    expect(db.stores.skills.size).toBe(0);
+    expect(db.stores.roles.size).toBe(0);
   });
 });
 

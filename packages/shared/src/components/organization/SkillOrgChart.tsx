@@ -33,6 +33,8 @@ import {
   SubCategory,
   EmployeeRole,
 } from "../../services/indexeddb";
+import { CatalogDirtyTag } from "../shared/CatalogDirtyTag";
+import type { CatalogEntityKind } from "../../types/catalog";
 
 // ----------------------------------------------------------------------------
 // Types
@@ -54,6 +56,15 @@ interface HierarchyNode {
   data?: any;
   isAddNode?: boolean;
   parentId?: string;
+}
+
+function orgChartDirtyKind(
+  type: HierarchyNode["type"]
+): CatalogEntityKind | null {
+  if (type === "category") return "categories";
+  if (type === "subcategory") return "subcategories";
+  if (type === "skill") return "skills";
+  return null;
 }
 
 interface SkillOrgChartProps {
@@ -256,9 +267,14 @@ const NodeCard: React.FC<{
         </Group>
 
         {node.name?.trim() ? (
-          <Text fw={600} size={labelSize} style={{ lineHeight: 1.2 }}>
-            {node.name}
-          </Text>
+          <Stack gap={4} align="center">
+            <Text fw={600} size={labelSize} style={{ lineHeight: 1.2 }} ta="center">
+              {node.name}
+            </Text>
+            {!node.isAddNode && orgChartDirtyKind(node.type) && (
+              <CatalogDirtyTag kind={orgChartDirtyKind(node.type)!} id={node.id} />
+            )}
+          </Stack>
         ) : null}
 
         {node.children.length > 0 && !node.children[0].isAddNode ? (

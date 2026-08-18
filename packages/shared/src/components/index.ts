@@ -16,6 +16,7 @@ export {
 } from "./shared/AppVersionBadge";
 export { InstalledCatalogBadge } from "./shared/InstalledCatalogBadge";
 export { CatalogReleasePanel } from "./CatalogReleasePanel";
+export { CatalogPublishModal } from "./CatalogPublishModal";
 export {
   UnpublishedCatalogBadge,
   OPEN_PUBLISH_SESSION_KEY,

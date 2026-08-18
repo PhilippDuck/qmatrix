@@ -18,6 +18,7 @@ import {
   IconInfoCircle,
 } from "@tabler/icons-react";
 import { Skill } from "../../store/hooks";
+import { CatalogDirtyTag } from "../shared/CatalogDirtyTag";
 
 interface SkillColumnProps {
   skills: Skill[];
@@ -71,6 +72,7 @@ export const SkillColumn: React.FC<SkillColumnProps> = ({
                     <Text size="sm" c={skill.catalogDeprecated ? "dimmed" : undefined}>
                       {skill.name}
                     </Text>
+                    <CatalogDirtyTag kind="skills" id={skill.id} />
                     {skill.catalogDeprecated && (
                       <Badge size="xs" color="gray" variant="outline">
                         Veraltet

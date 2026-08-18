@@ -2,7 +2,16 @@
  * Human-readable release notes TXT alongside catalog JSON downloads.
  */
 
-import type { CatalogMeta, CatalogPackage } from "../types/catalog";
+import type {
+  CatalogChangeNote,
+  CatalogMeta,
+  CatalogPackage,
+} from "../types/catalog";
+import {
+  compilePendingCatalogNotes,
+  notesForEntity,
+  stripCompiledNotesFromSummary,
+} from "../utils/catalogChangeNotes";
 import {
   diffCatalogEntities,
   summarizeDiffCounts,
@@ -42,6 +51,8 @@ export interface BuildReleaseNotesInput {
   /** Previous release package for entity-level diff (optional) */
   previousPackage?: CatalogPackage | null;
   previousVersion?: string | null;
+  /** Per-entity draft notes collected while editing */
+  changeNotes?: CatalogChangeNote[];
 }
 
 /**
@@ -50,7 +61,7 @@ export interface BuildReleaseNotesInput {
 export function buildCatalogReleaseNotesText(
   input: BuildReleaseNotesInput
 ): string {
-  const { pkg, notes, previousPackage, previousVersion } = input;
+  const { pkg, notes, previousPackage, previousVersion, changeNotes } = input;
   const meta = pkg.meta;
   const published = meta.publishedAt
     ? new Date(meta.publishedAt).toLocaleString("de-DE")
@@ -77,7 +88,15 @@ export function buildCatalogReleaseNotesText(
     lines.push(`Vergleich mit:  (erstes Release / kein Vorgänger)`);
   }
 
-  lines.push("", "Änderungsgrund", "--------------", notes.trim() || "(keine Notizen)", "");
+  const compiled = compilePendingCatalogNotes(changeNotes || []);
+  const summary = stripCompiledNotesFromSummary(notes, compiled);
+  lines.push(
+    "",
+    "Änderungsgrund",
+    "--------------",
+    summary || "(kein übergreifender Text — siehe Notizen an den Änderungen)",
+    ""
+  );
 
   const e = pkg.entities;
   lines.push(
@@ -92,7 +111,7 @@ export function buildCatalogReleaseNotesText(
 
   if (previousPackage?.entities) {
     const diff = diffCatalogEntities(pkg.entities, previousPackage.entities);
-    lines.push(...formatDiffSection(diff));
+    lines.push(...formatDiffSection(diff, changeNotes || []));
   } else {
     lines.push(
       "Detail-Diff",
@@ -100,6 +119,9 @@ export function buildCatalogReleaseNotesText(
       "Kein Vorgänger im Archiv — alle Entitäten sind Teil des initialen Stands.",
       ""
     );
+    if (compiled) {
+      lines.push("Notizen zu einzelnen Änderungen", compiled, "");
+    }
   }
 
   if (pkg.contentHash) {
@@ -119,7 +141,10 @@ export function buildCatalogReleaseNotesText(
   return lines.join("\n");
 }
 
-function formatDiffSection(diff: CatalogDiffResult): string[] {
+function formatDiffSection(
+  diff: CatalogDiffResult,
+  changeNotes: import("../types/catalog").CatalogChangeNote[] = []
+): string[] {
   const counts = summarizeDiffCounts(diff);
   const lines: string[] = [
     "Änderungen gegenüber Vorgänger",
@@ -150,6 +175,9 @@ function formatDiffSection(diff: CatalogDiffResult): string[] {
       const kind = KIND_DE[item.kind] || item.kind;
       lines.push(`  • [${kind}] ${item.label}`);
       if (item.detail) lines.push(`      ${item.detail}`);
+      for (const note of notesForEntity(changeNotes, item.kind, item.id)) {
+        lines.push(`      Notiz: ${note.text.trim()}`);
+      }
     }
     lines.push("");
   }

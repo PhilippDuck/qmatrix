@@ -40,4 +40,5 @@ export const CATALOG_ENTITY_TYPES = new Set([
   "subcategory",
   "skill",
   "role",
+  "catalog",
 ]);

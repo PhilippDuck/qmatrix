@@ -8,6 +8,7 @@ import type { AppSlice, CoreSlice } from "../types";
 export const createCoreSlice = (db: DbService, storage: PrefixedStorage, _caps: AppCapabilities): AppSlice<CoreSlice> => (set, get) => ({
   projectTitle: "",
   installedCatalogMeta: null,
+  pendingCatalogNotes: [],
   dataHash: "",
   loading: true,
   error: null,
@@ -83,6 +84,7 @@ export const createCoreSlice = (db: DbService, storage: PrefixedStorage, _caps: 
         changeHistory: history || [],
         projectTitle: settings?.projectTitle || "",
         installedCatalogMeta: settings?.installedCatalogMeta ?? null,
+        pendingCatalogNotes: settings?.pendingCatalogNotes ?? [],
         dataHash: hash || "",
         employees: migrated.employees,
         loading: false,
@@ -109,6 +111,7 @@ export const createCoreSlice = (db: DbService, storage: PrefixedStorage, _caps: 
       await db.saveSettings({
         projectTitle: title,
         installedCatalogMeta: state.installedCatalogMeta ?? undefined,
+        pendingCatalogNotes: state.pendingCatalogNotes,
       });
       set({ projectTitle: title });
     } catch (err) {
@@ -122,6 +125,7 @@ export const createCoreSlice = (db: DbService, storage: PrefixedStorage, _caps: 
       await db.saveSettings({
         projectTitle: state.projectTitle || "",
         installedCatalogMeta: meta ?? undefined,
+        pendingCatalogNotes: state.pendingCatalogNotes,
       });
       set({ installedCatalogMeta: meta });
     } catch (err) {
